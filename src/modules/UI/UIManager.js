@@ -34,6 +34,12 @@ export default class UIManager {
             const channel = this.channels[payload.agentId];
             if (channel) {
                 channel.updateStatuses(payload.statuses);
+                if (payload.equipment) {
+                    channel.updateEquipment(payload.equipment);
+                }
+                if (payload.stats) {
+                    channel.updateStats(payload.stats);
+                }
             }
         });
         EventBus.on(EventBus.EVENTS.DEBUG_SWAP_CHARACTER, (payload) => {

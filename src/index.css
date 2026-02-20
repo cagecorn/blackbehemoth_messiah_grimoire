@@ -85,9 +85,18 @@ body {
     font-size: 16px;
     position: relative;
     z-index: 10;
-    display: flex;
     align-items: center;
+    min-height: 32px;
+    padding: 0 5px;
 }
+
+.header-toggles {
+    display: flex;
+    gap: 6px;
+    margin-left: auto;
+}
+
+
 
 .chat-name-select {
     background: transparent;
@@ -99,13 +108,7 @@ body {
     cursor: pointer;
     outline: none;
     appearance: none;
-    /* remove default arrow */
     padding-right: 15px;
-    /* space for custom arrow */
-}
-
-/* Add a custom small arrow for the dropdown to make it obvious it's clickable */
-.chat-name-select {
     background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23bb88ff%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
     background-repeat: no-repeat;
     background-position: right 2px top 50%;
@@ -117,11 +120,52 @@ body {
     color: #e0e0e0;
 }
 
+.status-row-second {
+    display: flex;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+    margin-bottom: 5px;
+    padding: 4px;
+    min-height: 24px;
+    position: relative;
+    z-index: 11;
+}
+
 .status-container {
     display: flex;
     align-items: center;
-    margin-left: 8px;
     gap: 4px;
+    flex-wrap: wrap;
+}
+
+.status-container.buffs {
+    margin-right: 10px;
+}
+
+.status-container.status-effects {
+    margin-left: 0;
+}
+
+.chat-view-toggle {
+    margin-left: auto;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #fff;
+    border-radius: 4px;
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    transition: background 0.2s;
+    z-index: 20;
+}
+
+.chat-view-toggle:hover {
+    background: rgba(255, 255, 255, 0.3);
 }
 
 .status-icon {
@@ -159,6 +203,86 @@ body {
     margin: 0;
     position: relative;
     z-index: 1;
+}
+
+/* Status View Specifics */
+.chat-status-view {
+    flex: 1;
+    display: none;
+    flex-direction: column;
+    padding: 10px;
+    overflow-y: auto;
+    z-index: 5;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 6px;
+}
+
+.stat-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.stat-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 5px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+}
+
+.stat-label {
+    color: #88ccff;
+    font-weight: bold;
+    font-family: 'Consolas', monospace;
+}
+
+.stat-value {
+    color: #ffffff;
+    font-family: 'Consolas', monospace;
+}
+
+/* Gear View Specifics */
+.chat-gear-view {
+    flex: 1;
+    display: none;
+    flex-direction: column;
+    gap: 12px;
+    padding: 10px 5px;
+    overflow-y: auto;
+    z-index: 5;
+}
+
+.gear-slot {
+    display: flex;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+    padding: 10px;
+    font-size: 14px;
+    transition: border-color 0.2s;
+}
+
+.gear-slot:hover {
+    border-color: rgba(187, 136, 255, 0.4);
+}
+
+.slot-label {
+    color: #bb88ff;
+    font-weight: bold;
+    width: 80px;
+    flex-shrink: 0;
+}
+
+.slot-value {
+    color: #e0e0e0;
+    font-family: 'Consolas', monospace;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .chat-form input {

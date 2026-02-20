@@ -55,9 +55,9 @@ export default class SongOfProtection {
         const totalMAtk = caster.getTotalMAtk ? caster.getTotalMAtk() : caster.mAtk;
         const shieldAmount = totalMAtk * this.shieldMultiplier;
 
-        if (caster.showSpeechBubble) {
-            caster.showSpeechBubble("수호의 선율이여...!");
-        }
+        // if (caster.showSpeechBubble) {
+        //     caster.showSpeechBubble("수호의 선율이여...!");
+        // }
 
         // Apply shield to all active allies
         const allies = alliedGroup.getChildren();

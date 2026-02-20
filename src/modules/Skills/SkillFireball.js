@@ -56,9 +56,9 @@ export default class SkillFireball {
         const damage = totalMAtk * 2.5; // Fireball multiplier!
 
         // Announce the cast
-        if (caster.showSpeechBubble) {
-            caster.showSpeechBubble("Meteor... Strike!!");
-        }
+        // if (caster.showSpeechBubble) {
+        //     caster.showSpeechBubble("Meteor... Strike!!");
+        // }
         EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, `[스킬] ${caster.unitName || '누군가'}가 파이어볼을 시전했습니다! 🔥`);
 
         // 1. Create the meteor high up and diagonally offset

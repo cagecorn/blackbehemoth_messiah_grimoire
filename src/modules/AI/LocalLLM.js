@@ -17,13 +17,11 @@ class LocalLLM {
     async checkStatus() {
         console.log('[LocalLLM] Checking status...');
         try {
-            // Lightweight call to check model availability
             const response = await fetch('http://localhost:1234/v1/models', {
                 method: 'GET'
             });
             if (response.ok) {
                 const data = await response.json();
-                // If modelName exists, use it. Otherwise, use the first available model.
                 const modelExists = data.data.find(m => m.id === this.modelName);
                 if (modelExists) {
                     this.isReady = true;
@@ -58,7 +56,8 @@ class LocalLLM {
 너의 이름은 ${characterConfig.name}이며, 너의 성격과 특징은 다음과 같다: ${characterConfig.personality}
 말투는 캐릭터의 성격에 맞춰서 생생하게 표현하되, 1-2문장의 짧은 대사로 하라.
 다음 최근 기억들을 참고하여 대답하라:
-${contextString}`
+${contextString}
+**중요: 너의 내면 심리나 상황 설명, 괄호()로 묶인 지시문은 절대 출력하지 말고 오직 대사만 출력하라.**`
         };
 
         const userMessage = {
@@ -74,7 +73,7 @@ ${contextString}`
                     model: this.modelName,
                     messages: [systemMessage, userMessage],
                     temperature: 0.7,
-                    max_tokens: 100
+                    max_tokens: 200
                 })
             });
 
@@ -82,7 +81,8 @@ ${contextString}`
 
             const data = await response.json();
             this.isReady = true; // Success implies ready
-            return data.choices[0].message.content.trim();
+            const content = data.choices[0].message.content.trim();
+            return this.sanitizeBark(content);
         } catch (error) {
             console.error('[LocalLLM] Error:', error);
             return "... (묵묵부답입니다)";
@@ -100,7 +100,8 @@ ${contextString}`
             content: `${this.baseSystemPrompt}
 너의 이름은 ${characterConfig.name}이며, 너의 성격과 특징은 다음과 같다: ${characterConfig.personality}
 지금은 전투 중이거나 던전을 탐험 중인 상황이다.
-이 상황에 어울리는 짧고 강렬한, 혹은 너의 성격이 묻어나는 재치 있는 대사 한 마디를 한국어로 작성하라. (CoT를 통해 캐릭터의 내면 심리를 먼저 생각한 뒤, 최종 대사만 출력하라)`
+이 상황에 어울리는 짧고 강렬한 대사 한 마디를 한국어로 작성하라.
+**중요: 너의 내면 심리나 상황 설명, 괄호()로 묶인 지시문은 절대 출력하지 말고 오직 대사만 출력하라.**`
         };
 
         const userMessage = {
@@ -125,15 +126,89 @@ ${contextString}`
             const data = await response.json();
             let content = data.choices[0].message.content.trim();
 
-            // If CoT is present in <thought> tags or similar, extract the final text
-            // (Assuming the model follows the instruction to output only the final bark if requested, 
-            // but some models might still show thought process)
-            // Simplified for now: assume the model gives the bark.
+            // Sanitization: Remove <thought> tags, (parentheses), [brackets], and any CoT artifacts
+            content = this.sanitizeBark(content);
+
             return content;
         } catch (error) {
             console.error('[LocalLLM] Bark Error:', error);
             return null;
         }
+    }
+
+    /**
+     * Generate a reaction to a previous bark (Tsukkomi).
+     */
+    async generateReactionBark(characterConfig, previousSpeakerName, previousText) {
+        console.log(`[LocalLLM] Generating reaction for ${characterConfig.name} to ${previousSpeakerName}`);
+
+        const systemMessage = {
+            role: "system",
+            content: `${this.baseSystemPrompt}
+너의 이름은 ${characterConfig.name}이며, 너의 성격과 특징은 다음과 같다: ${characterConfig.personality}
+동료 용병인 '${previousSpeakerName}'이 방금 다음과 같이 말했다: "${previousText}"
+이 대사를 듣고 너의 성격에 맞게 짧고 재치 있는 반응(츳코미)을 한국어로 한 마디 하라.
+**중요: 너의 내면 심리나 상황 설명, 괄호()로 묶인 지시문은 절대 출력하지 말고 오직 대사만 출력하라.**`
+        };
+
+        const userMessage = {
+            role: "user",
+            content: "동료의 말에 대꾸해줘."
+        };
+
+        try {
+            const response = await fetch(this.apiURL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    model: this.modelName,
+                    messages: [systemMessage, userMessage],
+                    temperature: 0.8,
+                    max_tokens: 150
+                })
+            });
+
+            if (!response.ok) throw new Error(`HTTP Error ${response.status}`);
+
+            const data = await response.json();
+            let content = data.choices[0].message.content.trim();
+            return this.sanitizeBark(content);
+        } catch (error) {
+            console.error('[LocalLLM] Reaction Bark Error:', error);
+            return null;
+        }
+    }
+
+    /**
+     * Sanitizes the LLM output to remove thoughts, meta-commentary, and stage directions.
+     */
+    sanitizeBark(text) {
+        if (!text) return "";
+
+        let sanitized = text;
+
+        // 1. Remove <thought>...</thought> tags and their content
+        sanitized = sanitized.replace(/<thought>[\s\S]*?<\/thought>/gi, '');
+
+        // 2. Remove text inside parentheses (often contains CoT or stage directions)
+        sanitized = sanitized.replace(/\([\s\S]*?\)/g, '');
+
+        // 3. Remove text inside square brackets
+        sanitized = sanitized.replace(/\[[\s\S]*?\]/g, '');
+
+        // 4. Remove "CoT:" or "Thought:" labels if they slipped through
+        sanitized = sanitized.replace(/(CoT|thought|생각|추론):\s*/gi, '');
+
+        // 5. Final trim and cleanup
+        sanitized = sanitized.trim();
+
+        // If after cleaning we have multiple quotes, try to take only the one inside quotes
+        const quoteMatch = sanitized.match(/"([^"]+)"/);
+        if (quoteMatch) {
+            sanitized = quoteMatch[1];
+        }
+
+        return sanitized;
     }
 }
 

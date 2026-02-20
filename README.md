@@ -51,11 +51,31 @@
   * `wizard`: 마법사
   * `bard`: 바드
 
+## 캐릭터 로스터 (Characters)
+각 용병 캐릭터는 고유한 성격과 스킬을 보유하고 있으며, LLM 바크 시스템을 통해 각자의 페르소나를 표현합니다.
+
+| ID | 이름 | 직업 | 할당 스킬 | 성격 및 특징 |
+| :--- | :--- | :--- | :--- | :--- |
+| `aren` | 아렌 | `warrior` | `ChargeAttack` | 메시아를 향한 충직한 전사. 고기를 좋아하고 야채를 못 먹음. |
+| `silvi` | 실비 | `warrior` | `StoneSkin` | 가난한 부모님을 돕기 위해 싸우는 소녀 전사. 겁이 많음. |
+| `ella` | 엘라 | `archer` | `KnockbackShot` | 이름 때문에 고민이 많은 츤데레 남성 아처. 뜨개질을 좋아함. |
+| `sera` | 세라 | `healer` | `MassHeal` | 아주 거친 입담을 가진 힐러. 유기동물을 돕는 반전 매력. |
+| `merlin` | 멀린 | `wizard` | `SkillFireball` | 인생은 도박이라고 믿는 마법사. 의외로 가계부를 잘 씀. |
+| `lute` | 루트 | `bard` | `SongOfProtection` | 음치 음유시인. 노래에 대한 열정으로 주변에 민폐를 끼침. |
+
+## 시스템 용어 및 상태 이상 (Global Terms & Status)
+
+* **바크 (Bark):** LLM을 통해 캐릭터가 상황에 맞게 내뱉는 짧은 대사 시스템.
+* **에어본 (Airborne):** 대상을 공중에 띄워 행동을 완전히 봉쇄하는 효과. 그림자가 작아지는 시각적 연출 포함.
+* **넉백 (Knockback):** 대상을 일정 거리 뒤로 밀쳐내는 물리적 반동 효과.
+* **실드 (Shield):** 체력 대신 데미지를 흡수하는 보호막. 노란색 게이지로 표시됨.
+* **피해 감소 (Damage Reduction, DR):** 최종 데미지를 퍼센트 단위로 경감시키는 방어 시스템.
+
 ## 기술 스택
 - **Engine:** Phaser 3
 - **Desktop Framework:** Electron
 - **Build Tool:** Vite
-- **AI / LLM:** (To be defined - e.g., Transformers.js, local/remote reasoning APIs)
+- **AI / LLM:** LM Studio (Local Server) - Gemma 2 / Llama 3 기반 모델 권장
 - **Assets:** [Twemoji](https://github.com/twitter/twemoji) (트위터 무료 이모지 라이브러리 활용)
 
 ---

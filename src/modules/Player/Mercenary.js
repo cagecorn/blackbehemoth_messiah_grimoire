@@ -47,6 +47,14 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         this.eva = config.eva || 0;
         this.crit = config.crit || 0;
 
+        // Equipment Slots
+        this.equipment = {
+            weapon: config.equipment?.weapon || null,
+            armor: config.equipment?.armor || null,
+            necklace: config.equipment?.necklace || null,
+            ring: config.equipment?.ring || null
+        };
+
         // Setup Physics & Rendering
         this.scene.add.existing(this);
         this.scene.physics.add.existing(this);
@@ -142,7 +150,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
 
     showSpeechBubble(text) {
         if (this.currentBubble) this.currentBubble.destroy();
-        this.currentBubble = new SpeechBubble(this.scene, this.x, this.y, text);
+        this.currentBubble = new SpeechBubble(this.scene, this, text);
     }
 
     getTotalAtk() {
@@ -151,6 +159,24 @@ export default class Mercenary extends Phaser.GameObjects.Container {
 
     getTotalMAtk() {
         return this.mAtk + this.bonusMAtk;
+    }
+
+    equipItem(slot, itemData) {
+        if (this.equipment.hasOwnProperty(slot)) {
+            this.equipment[slot] = itemData;
+            this.syncStatusUI();
+            return true;
+        }
+        return false;
+    }
+
+    unequipItem(slot) {
+        if (this.equipment.hasOwnProperty(slot)) {
+            this.equipment[slot] = null;
+            this.syncStatusUI();
+            return true;
+        }
+        return false;
     }
 
     takeDamage(amount, attacker = null) {
@@ -344,21 +370,24 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             statuses.push({
                 name: '에어본 (Airborne)',
                 description: '공중에 떠올라 행동할 수 없습니다.',
-                emoji: '🌪️'
+                emoji: '🌪️',
+                category: 'status'
             });
         }
         if (this.isStunned) {
             statuses.push({
                 name: '기절 (Stunned)',
                 description: '기동 불능 상태입니다.',
-                emoji: '💫'
+                emoji: '💫',
+                category: 'status'
             });
         }
         if (this.isKnockedBack) {
             statuses.push({
                 name: '넉백 (Knockback)',
                 description: '뒤로 밀려나고 있습니다.',
-                emoji: '💨'
+                emoji: '💨',
+                category: 'status'
             });
         }
 
@@ -368,7 +397,8 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             statuses.push({
                 name: '보호막 (Shield)',
                 description: `피해를 흡수합니다. (${shieldAmt.toFixed(0)})`,
-                emoji: '🛡️'
+                emoji: '🛡️',
+                category: 'status'
             });
         }
 
@@ -392,7 +422,8 @@ export default class Mercenary extends Phaser.GameObjects.Container {
                 statuses.push({
                     name: `${buff.type} (버프)`,
                     description: desc,
-                    emoji: emoji
+                    emoji: emoji,
+                    category: 'buff'
                 });
             });
         }
@@ -400,9 +431,29 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         // 3. Check Debuffs (Future-proofing)
         // ...
 
+        const icon_atk_spd = (this.atkSpd / 1000).toFixed(1) + 's';
+
         EventBus.emit(EventBus.EVENTS.STATUS_UPDATED, {
             agentId: this.className,
-            statuses: statuses
+            statuses: statuses,
+            equipment: this.equipment,
+            stats: {
+                hp: this.hp,
+                maxHp: this.maxHp,
+                atk: this.getTotalAtk(),
+                mAtk: this.getTotalMAtk(),
+                def: this.def,
+                mDef: this.mDef,
+                speed: this.speed,
+                atkSpd: icon_atk_spd,
+                atkRange: this.atkRange,
+                rangeMin: this.rangeMin,
+                rangeMax: this.rangeMax,
+                castSpd: this.castSpd,
+                acc: this.acc,
+                eva: this.eva,
+                crit: this.crit
+            }
         });
     }
 }

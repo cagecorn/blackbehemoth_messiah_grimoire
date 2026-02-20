@@ -54,9 +54,9 @@ export default class MassHeal {
         const totalMAtk = caster.getTotalMAtk ? caster.getTotalMAtk() : caster.mAtk;
         const healAmount = totalMAtk * this.healMultiplier;
 
-        if (caster.showSpeechBubble) {
-            caster.showSpeechBubble("빛이여... 무두를 치유하라!");
-        }
+        // if (caster.showSpeechBubble) {
+        //     caster.showSpeechBubble("빛이여... 무두를 치유하라!");
+        // }
 
         // Apply heal to all active allies
         const allies = alliedGroup.getChildren();
