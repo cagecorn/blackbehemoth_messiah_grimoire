@@ -104,6 +104,11 @@ export default function applyMeleeAI(agent, targetListGetter, initialState = 'AG
         if (!a.lastAttackTime) a.lastAttackTime = 0;
         const atkSpd = a.atkSpd || 1000;
 
+        // Prevent attack if shocked
+        if (a.isShocked) {
+            return 1; // RUNNING
+        }
+
         if (now - a.lastAttackTime >= atkSpd) {
             a.lastAttackTime = now;
 

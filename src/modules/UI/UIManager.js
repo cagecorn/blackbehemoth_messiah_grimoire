@@ -164,29 +164,20 @@ export default class UIManager {
     }
 
     handleItemCollected(payload) {
-        // Items can be collected by the Warrior or Archer
         const { emoji, collectorId } = payload;
-        const channel = collectorId || 'warrior';
-        let name = '전사';
-        if (channel === 'archer') name = '아처';
-        if (channel === 'healer') name = '힐러';
-        if (channel === 'wizard') name = '마법사';
-        if (channel === 'bard') name = '바드';
-        this.addLog(channel, `[${name}] 아이템을 획득했습니다: ${emoji} ✨`, '#ffffbb');
+        const name = collectorId || 'someone';
+
+        // Suppressed chat log as per user request, keep console debug
+        console.log(`[Item] ${name} (${collectorId}) collected: ${emoji}`);
     }
 
     handleMonsterKilled(payload) {
         const { monsterId, attackerId } = payload;
-        const targetChannel = attackerId || 'warrior';
+        const attackerName = attackerId || 'warrior';
         const monsterName = (monsterId === 'goblin_sprite') ? '고블린' : '적';
 
-        let attackerName = '전사';
-        if (targetChannel === 'archer') attackerName = '아처';
-        if (targetChannel === 'healer') attackerName = '힐러';
-        if (targetChannel === 'wizard') attackerName = '마법사';
-        if (targetChannel === 'bard') attackerName = '바드';
-
-        this.addLog(targetChannel, `[전투] ${attackerName}가 ${monsterName}을(를) 처치했습니다! 👺💥`, '#ffbbbb');
+        // Suppressed chat log as per user request, keep console debug
+        console.log(`[Combat] ${attackerName} killed ${monsterName} (${monsterId})`);
     }
 
     addLog(agentId, text, color) {

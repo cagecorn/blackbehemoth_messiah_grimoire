@@ -8,7 +8,7 @@ class LocalLLM {
         this.modelName = 'my_final_ai';
         this.isReady = false;
 
-        this.baseSystemPrompt = `너는 판타지 세계관 속 용병이다. 너는 메시아를 위해서 전투를 벌인다. 너는 진중하면서도 동시에 코믹스러운 대사를 외친다. 항상 깊은 사고 (CoT, Chain of Thought)를 할 것. 너는 한국어에 매우 유창하다.`;
+        this.baseSystemPrompt = `너는 판타지 세계관 속 용병이다. 너는 메시아를 위해서 전투를 벌인다. 너는 진중하면서도 동시에 코믹스러운 대사를 외친다. 항상 깊은 사고와 추론 과정(Chain of Thought)을 거칠 것. 너는 한국어에 매우 유창하다.`;
     }
 
     /**
@@ -47,8 +47,8 @@ class LocalLLM {
         console.log(`[LocalLLM] Requesting response for ${characterConfig.name} with memories:`, memories);
 
         const contextString = memories.length > 0
-            ? "Recent Memories:\n" + memories.map(m => `- ${m.text}`).join('\n')
-            : "No specific recent memories.";
+            ? "최근 기억들:\n" + memories.map(m => `- ${m.text}`).join('\n')
+            : "특별한 최근 기억 없음.";
 
         const systemMessage = {
             role: "system",
@@ -57,7 +57,7 @@ class LocalLLM {
 말투는 캐릭터의 성격에 맞춰서 생생하게 표현하되, 1-2문장의 짧은 대사로 하라.
 다음 최근 기억들을 참고하여 대답하라:
 ${contextString}
-**중요: 너의 내면 심리나 상황 설명, 괄호()로 묶인 지시문은 절대 출력하지 말고 오직 대사만 출력하라.**`
+**중요: 너의 내면 심리나 상황 설명, 괄호()로 묶인 지시문은 절대 출력하지 말고 오직 캐릭터의 '대사'만 출력하라.**`
         };
 
         const userMessage = {

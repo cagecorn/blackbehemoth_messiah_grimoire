@@ -84,6 +84,8 @@ export default class BootScene extends Phaser.Scene {
         this.load.svg('emoji_note', 'assets/emojis/1f3b5.svg', { width: 32, height: 32 });
         this.load.svg('emoji_buff', 'assets/emojis/1f4aa.svg', { width: 32, height: 32 });
         this.load.svg('emoji_fire', 'assets/emojis/1f525.svg', { width: 32, height: 32 });
+        this.load.svg('emoji_lightning', 'assets/emojis/26a1.svg', { width: 32, height: 32 });
+        this.load.svg('emoji_bomb', 'assets/emojis/1f4a3.svg', { width: 32, height: 32 });
 
         // Load Character Sprites
         this.load.image('warrior_sprite', 'assets/characters/party/warrior_sprite.png');
@@ -92,6 +94,7 @@ export default class BootScene extends Phaser.Scene {
         this.load.image('wizard_sprite', 'assets/characters/party/wizard_sprite.png');
         this.load.image('bard_sprite', 'assets/characters/party/bard_sprite.png');
         this.load.image('silvi_sprite', 'assets/characters/party/silvi_sprite.png');
+        this.load.image('leona_sprite', 'assets/characters/party/leona_sprite.png');
         this.load.image('goblin_sprite', 'assets/characters/enemies/goblin_sprite.png');
 
         // Load Backgrounds

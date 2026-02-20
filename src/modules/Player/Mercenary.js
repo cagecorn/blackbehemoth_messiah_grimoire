@@ -390,6 +390,14 @@ export default class Mercenary extends Phaser.GameObjects.Container {
                 category: 'status'
             });
         }
+        if (this.isShocked) {
+            statuses.push({
+                name: '감전 (Shock)',
+                description: '전기 충격으로 인해 기본 공격이 불가능합니다.',
+                emoji: '⚡',
+                category: 'status'
+            });
+        }
 
         // 2. Check Shields
         if (this.scene.shieldManager && this.scene.shieldManager.getShield(this) > 0) {

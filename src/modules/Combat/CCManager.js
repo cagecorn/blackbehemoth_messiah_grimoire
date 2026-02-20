@@ -106,8 +106,63 @@ export default class CCManager {
                 }
             }
         });
-
         console.log(`[CCManager] Applied Knockback to ${target.unitName}!`);
+    }
+
+    /**
+     * Applies a Shock effect to the target.
+     * @param {Phaser.GameObjects.Container} target - The entity to be affected
+     * @param {number} duration - How long the effect lasts in ms
+     */
+    applyShock(target, duration = 3000) {
+        if (!target || !target.active || target.hp <= 0) return;
+
+        // If already shocked, just refresh the duration (simplistic)
+        if (target.isShocked) {
+            target.shockDuration = duration;
+            return;
+        }
+
+        target.isShocked = true;
+        target.shockDuration = duration;
+        if (target.syncStatusUI) target.syncStatusUI();
+
+        // 1. Shake Visual
+        const originalX = target.sprite.x;
+        const shakeTween = this.scene.tweens.add({
+            targets: target.sprite,
+            x: originalX + 3,
+            duration: 50,
+            yoyo: true,
+            repeat: -1
+        });
+
+        // 2. Yellow Tint
+        target.sprite.setTint(0xffff00);
+
+        // 3. Particle Effect
+        const emitter = this.scene.add.particles(0, 0, 'emoji_lightning', {
+            speed: { min: 20, max: 50 },
+            scale: { start: 0.4, end: 0 },
+            alpha: { start: 1, end: 0 },
+            lifespan: 500,
+            frequency: 150,
+            follow: target
+        });
+
+        // Timer to handle cleanup
+        this.scene.time.delayedCall(duration, () => {
+            if (target && target.active) {
+                target.isShocked = false;
+                target.sprite.clearTint();
+                target.sprite.x = originalX;
+                if (target.syncStatusUI) target.syncStatusUI();
+            }
+            shakeTween.stop();
+            emitter.destroy();
+        });
+
+        console.log(`[CCManager] Applied Shock to ${target.unitName} for ${duration}ms!`);
     }
 
     update(time, delta) {

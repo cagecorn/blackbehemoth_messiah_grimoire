@@ -305,6 +305,9 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
         const now = this.scene.time.now;
 
         if (dist <= this.atkRange && now - this.lastAttackTime > this.atkSpd) {
+            // Prevent attack if shocked
+            if (this.isShocked) return;
+
             this.lastAttackTime = now;
             this.target.takeDamage(this.atk, this);
 

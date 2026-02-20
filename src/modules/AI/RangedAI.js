@@ -62,6 +62,12 @@ export default function applyRangedAI(unit, skillNode = null) {
         if (stance === 'IDLE' || stance === 'MANUAL') return 2; // FAILED
 
         unit.body.setVelocity(0, 0); // Stop to fire
+
+        // Prevent attack if shocked
+        if (unit.isShocked) {
+            return 1; // RUNNING
+        }
+
         const success = unit.fireProjectile();
         return success ? 0 : 2; // SUCCESS or FAILED
     }, "Sniping (Attack)");

@@ -164,6 +164,14 @@ export const Characters = {
         skillName: 'KnockbackShot',
         personality: '남자임에도 여자 이름을 지어주신 자신의 부모님을 원망하는 아처. 까칠하고 시큰둥하지만, 이따금씩 동료들을 챙기는 츤데레. 뜨개질을 좋아한다.'
     },
+    LEONA: {
+        id: 'leona',
+        classId: 'archer',
+        name: 'Leona (레오나)',
+        sprite: 'leona_sprite',
+        skillName: 'ElectricGrenade',
+        personality: "어린 나이에 군에 입대한 병사. 총기를 다루는 데 능숙하며, 생존을 최우선으로 생각한다. '약육강식'을 믿으며, 무력한 자는 살아남을 수 없다고 생각한다."
+    },
     SERA: {
         id: 'sera',
         classId: 'healer',

@@ -4,6 +4,7 @@ import applyRangedAI from '../AI/RangedAI.js';
 import Blackboard from '../AI/Blackboard.js';
 import { MercenaryClasses } from '../Core/EntityStats.js';
 import KnockbackShot from '../Skills/KnockbackShot.js';
+import ElectricGrenade from '../Skills/ElectricGrenade.js';
 import PlaceholderSkill from '../Skills/PlaceholderSkill.js';
 
 /**
@@ -28,6 +29,13 @@ export default class Archer extends Mercenary {
                 projectileSpeed: 1200, // Very fast
                 knockbackDistance: 180,
                 knockbackDuration: 250
+            });
+        } else if (config.skillName === 'ElectricGrenade') {
+            this.skill = new ElectricGrenade({
+                cooldown: 8000,
+                damageMultiplier: 1.8,
+                aoeRadius: 100,
+                shockDuration: 3000
             });
         } else if (config.skillName === 'PlaceholderSkill') {
             this.skill = new PlaceholderSkill();
