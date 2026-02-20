@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import HealthBar from '../UI/HealthBar.js';
+import CooldownBar from '../UI/CooldownBar.js';
 import EventBus from '../Events/EventBus.js';
 import SpeechBubble from '../UI/SpeechBubble.js';
 
@@ -29,6 +30,10 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         this.def = config.def || 0;
         this.mDef = config.mDef || 0;
 
+        // Dynamic Buffs
+        this.bonusAtk = 0;
+        this.bonusMAtk = 0;
+
         this.speed = config.speed || 100;
         this.atkRange = config.atkRange || 40;
         this.atkSpd = config.atkSpd || 1000;
@@ -50,7 +55,8 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         this.body.setOffset(-radius, -radius);
         this.body.setCollideWorldBounds(true);
 
-        this.healthBar = new HealthBar(scene, x, y - 48, 64, 8);
+        this.healthBar = new HealthBar(scene, x, y - 56, 64, 8); // Moved up slightly
+        this.cooldownBar = new CooldownBar(scene, x, y - 46, 64, 4); // Placed just below HP
 
         // AI Debug Text (only visible if we want, but keeping it simple for now)
         this.aiDebugText = this.scene.add.text(0, -60, '', {
@@ -89,16 +95,23 @@ export default class Mercenary extends Phaser.GameObjects.Container {
     }
 
     handleAICommand(cmd) {
-        const funcName = cmd.function || cmd.name;
-        if (funcName === 'change_mercenary_stance') {
+        const funcName = cmd.command || cmd.function || cmd.name;
+
+        if (funcName === 'set_ai_state' || funcName === 'change_mercenary_stance') {
             const args = cmd.args || cmd.parameters || cmd;
-            if (args && args.stance && this.blackboard) {
+            if (args && args.state && this.blackboard) {
+                const newStance = args.state.toUpperCase();
+                this.blackboard.set('ai_state', newStance);
+            } else if (args && args.stance && this.blackboard) {
                 const newStance = args.stance.toUpperCase();
                 this.blackboard.set('ai_state', newStance);
             }
-        } else if (funcName === 'change_target_priority') {
+        } else if (funcName === 'attack_priority' || funcName === 'change_target_priority') {
             const args = cmd.args || cmd.parameters || cmd;
-            if (args && args.priority && this.blackboard) {
+            if (args && args.role && this.blackboard) {
+                const newPriority = args.role.toUpperCase();
+                this.blackboard.set('target_priority', newPriority);
+            } else if (args && args.priority && this.blackboard) {
                 const newPriority = args.priority.toUpperCase();
                 this.blackboard.set('target_priority', newPriority);
             }
@@ -116,6 +129,14 @@ export default class Mercenary extends Phaser.GameObjects.Container {
 
     showSpeechBubble(text) {
         new SpeechBubble(this.scene, this.x, this.y, text);
+    }
+
+    getTotalAtk() {
+        return this.atk + this.bonusAtk;
+    }
+
+    getTotalMAtk() {
+        return this.mAtk + this.bonusMAtk;
     }
 
     takeDamage(amount, attackerId = null) {
@@ -189,6 +210,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         EventBus.emit(EventBus.EVENTS.UNIT_DIED, this.unitName);
 
         if (this.healthBar) this.healthBar.destroy();
+        if (this.cooldownBar) this.cooldownBar.destroy();
         this.destroy();
     }
 
@@ -197,7 +219,15 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             this.btManager.step();
         }
         if (this.healthBar) {
-            this.healthBar.setPos(this.x, this.y - 48);
+            this.healthBar.setPos(this.x, this.y - 56);
+        }
+        if (this.cooldownBar) {
+            this.cooldownBar.setPos(this.x, this.y - 46);
+            if (this.getSkillProgress) {
+                this.cooldownBar.setValue(this.getSkillProgress());
+            } else {
+                this.cooldownBar.setValue(0); // Empty if no skill
+            }
         }
         if (this.btManager && this.aiDebugText) {
             this.aiDebugText.setText(this.btManager.lastActiveNodeName || 'No Name');

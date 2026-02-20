@@ -57,7 +57,7 @@ export const HealerActions = {
         if (unit.scene.projectileManager) {
             unit.scene.projectileManager.fire(
                 unit.x, unit.y, target.x, target.y,
-                mAtk, 'emoji_sparkle', true, targetGroup
+                mAtk, 'emoji_sparkle', true, targetGroup, unit.className || unit.id
             );
         }
         return true;

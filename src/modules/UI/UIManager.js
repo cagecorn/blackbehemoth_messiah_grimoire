@@ -1,9 +1,10 @@
 import DBManager from '../Database/DBManager.js';
 import ChatChannel from './ChatChannel.js';
 import EventBus from '../Events/EventBus.js';
-import semanticRouter from '../AI/SemanticRouter.js';
+import intentRouter from '../AI/IntentRouter.js';
 import localLLM from '../AI/LocalLLM.js';
 import embeddingGemma from '../AI/EmbeddingGemma.js';
+import { MercenaryClasses } from '../Core/EntityStats.js';
 
 export default class UIManager {
     constructor() {
@@ -32,46 +33,41 @@ export default class UIManager {
     setupChatChannels() {
         if (!this.chatContainer) return;
 
-        // Channel for the Warrior
-        this.channels['warrior'] = new ChatChannel('warrior', 'Warrior (전사)', this.chatContainer, (text) => {
-            this.handlePlayerCommand('warrior', text);
-        });
+        // Dynamically create a chat channel for each configured Mercenary Class
+        Object.values(MercenaryClasses).forEach(config => {
+            const channelId = config.id;
+            const channelName = config.name;
+            const spritePath = `assets/characters/party/${config.sprite}.png`;
 
-        // Channel for the Archer
-        this.channels['archer'] = new ChatChannel('archer', 'Archer (아처)', this.chatContainer, (text) => {
-            this.handlePlayerCommand('archer', text);
-        });
-
-        // Channel for the Healer
-        this.channels['healer'] = new ChatChannel('healer', 'Healer (힐러)', this.chatContainer, (text) => {
-            this.handlePlayerCommand('healer', text);
+            this.channels[channelId] = new ChatChannel(channelId, channelName, spritePath, this.chatContainer, (text) => {
+                this.handlePlayerCommand(channelId, text);
+            });
         });
 
         this.addLog('warrior', 'Messiah Grimoire에 오신 것을 환영합니다!', '#00ffcc');
     }
 
     async handlePlayerCommand(agentId, text) {
-        if (!semanticRouter.isReady) {
-            this.addLog(agentId, `[System] 시맨틱 분석 준비 중...`, '#aaaaaa');
+        if (!intentRouter.isReady) {
+            this.addLog(agentId, `[System] 지휘 시스템 준비 중...`, '#aaaaaa');
             return;
         }
 
-        const result = await semanticRouter.route(text);
+        const result = await intentRouter.route(text);
 
-        if (result.intent !== 'NONE' && result.intent !== 'CHAT') {
-            this.addLog(agentId, `[AI] 명령 해석: ${result.intent} (${(result.score * 100).toFixed(1)}%)`, '#bb88ff');
+        if (result.type === 'COMMAND') {
+            this.addLog(agentId, `[System] 전술 지시 인식됨: ${result.intent}`, '#aaaaaa');
 
-            let eventType;
-            if (agentId === 'warrior') eventType = EventBus.EVENTS.AI_COMMAND;
-            else if (agentId === 'archer') eventType = EventBus.EVENTS.AI_COMMAND_ARCHER;
-            else if (agentId === 'healer') eventType = EventBus.EVENTS.AI_COMMAND_HEALER;
-
-            EventBus.emit(eventType, {
-                function: 'change_mercenary_stance',
-                args: { stance: result.intent }
+            // Emit the command event
+            EventBus.emit(EventBus.EVENTS.AI_COMMAND, {
+                command: result.action.name,
+                args: result.action.arguments
             });
+
+            this.addLog(agentId, `[AI] 전술 행동: ${JSON.stringify(result.action)}`, '#bb88ff');
         } else {
             this.addLog(agentId, `[System] 대화 모드 (기억 분석 중...)`, '#aaaaaa');
+
 
             try {
                 const memories = await embeddingGemma.searchMemory(text);
@@ -97,6 +93,8 @@ export default class UIManager {
         let name = '전사';
         if (channel === 'archer') name = '아처';
         if (channel === 'healer') name = '힐러';
+        if (channel === 'wizard') name = '마법사';
+        if (channel === 'bard') name = '바드';
         this.addLog(channel, `[${name}] 아이템을 획득했습니다: ${emoji} ✨`, '#ffffbb');
     }
 
@@ -108,6 +106,8 @@ export default class UIManager {
         let attackerName = '전사';
         if (targetChannel === 'archer') attackerName = '아처';
         if (targetChannel === 'healer') attackerName = '힐러';
+        if (targetChannel === 'wizard') attackerName = '마법사';
+        if (targetChannel === 'bard') attackerName = '바드';
 
         this.addLog(targetChannel, `[전투] ${attackerName}가 ${monsterName}을(를) 처치했습니다! 👺💥`, '#ffbbbb');
     }

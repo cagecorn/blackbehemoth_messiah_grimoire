@@ -6,7 +6,7 @@ import Phaser from 'phaser';
  * RangedAI
  * Targets enemies but tries to maintain a safe distance (Kiting).
  */
-export default function applyRangedAI(unit) {
+export default function applyRangedAI(unit, skillNode = null) {
     // 1. Behavior Tree Nodes
 
     const hasTarget = new Condition(() => unit.blackboard.get('target') != null, "Has Target?");
@@ -76,12 +76,13 @@ export default function applyRangedAI(unit) {
     const kitingSequence = new Sequence([isTooClose, fleeFromTarget], "Kite Logic");
     const approachSequence = new Sequence([moveToIdealRange], "Approach Logic");
 
-    const autoBehavior = new Selector([
-        attackSequence,
-        kitingSequence,
-        approachSequence,
-        stopAction
-    ], "Combat Selector");
+    const combatBehaviors = [];
+    if (skillNode) {
+        combatBehaviors.push(skillNode); // Highest priority: cast skills if ready
+    }
+    combatBehaviors.push(attackSequence, kitingSequence, approachSequence, stopAction);
+
+    const autoBehavior = new Selector(combatBehaviors, "Combat Selector");
 
     const root = new Selector([
         new Sequence([hasTarget, autoBehavior], "Main Loop"),

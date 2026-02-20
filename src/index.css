@@ -7,60 +7,71 @@ body {
 }
 
 #app-container {
-    position: relative;
     width: 100vw;
     height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    grid-template-rows: 1fr 280px;
+    grid-template-areas:
+        "game inventory"
+        "chat minimap";
+    background-color: #1a1a1a;
+    gap: 2px;
+    /* Small gap between panels for a sleek border effect */
 }
 
 /* 
-  The game container is constrained to the 1280x720 aspect ratio 
-  managed by Phaser.Scale.FIT
+  Game Canvas Wrapper (Top-Left)
 */
 #game-container {
-    position: absolute;
+    grid-area: game;
+    position: relative;
     width: 100%;
     height: 100%;
-    z-index: 1;
-}
-
-/* 
-  The UI container sits ON TOP of the game canvas.
-  We use pointer-events: none to let clicks pass through to the game,
-  but re-enable them for specific UI elements.
-*/
-#ui-wrapper {
-    position: absolute;
-    width: 100vw;
-    height: 100vh;
-    pointer-events: none;
-    /* Pass clicks through to canvas */
-    z-index: 10;
+    background-color: #000;
+    min-width: 0;
+    min-height: 0;
     overflow: hidden;
 }
 
+/* 
+  Chat Container (Bottom-Left)
+*/
 #chat-container {
-    position: absolute;
-    bottom: 20px;
-    left: 20px;
+    grid-area: chat;
     display: flex;
     gap: 15px;
-    pointer-events: none;
-    z-index: 100;
+    padding: 15px;
+    background-color: #222;
+    overflow-x: auto;
+    min-width: 0;
+    min-height: 0;
 }
 
 .chat-channel {
-    width: 300px;
-    height: 250px;
-    background: rgba(0, 0, 0, 0.7);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    flex: 1;
+    min-width: 200px;
+    /* ensure they don't squish too much */
+    background: #111;
+    border: 1px solid #444;
     border-radius: 8px;
     display: flex;
     flex-direction: column;
     padding: 10px;
-    pointer-events: auto;
+    position: relative;
+    overflow: hidden;
+}
+
+.chat-bg-sprite {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 0.10;
+    pointer-events: none;
+    z-index: 0;
+    max-height: 80%;
+    image-rendering: pixelated;
 }
 
 .chat-header {
@@ -70,6 +81,8 @@ body {
     margin-bottom: 5px;
     padding-bottom: 2px;
     font-size: 16px;
+    position: relative;
+    z-index: 1;
 }
 
 .chat-log {
@@ -81,6 +94,8 @@ body {
     flex-direction: column;
     gap: 2px;
     margin-bottom: 5px;
+    position: relative;
+    z-index: 1;
 }
 
 .chat-log::-webkit-scrollbar {
@@ -93,6 +108,8 @@ body {
 
 .chat-form {
     margin: 0;
+    position: relative;
+    z-index: 1;
 }
 
 .chat-form input {
@@ -106,22 +123,40 @@ body {
     font-size: 12px;
 }
 
-/* Right Sidebar */
+/* Right Sidebar (Inventory) (Top-Right) */
 #sidebar-right {
-    position: absolute;
-    right: 0;
-    top: 0;
-    width: 250px;
-    height: 100vh;
-    background: rgba(20, 20, 25, 0.95);
-    border-left: 2px solid #333;
-    pointer-events: auto;
-    /* Catch clicks for UI */
+    grid-area: inventory;
+    background: #222;
     padding: 20px;
-    box-sizing: border-box;
     display: flex;
     flex-direction: column;
     overflow-y: auto;
+    min-width: 0;
+    min-height: 0;
+}
+
+/* Minimap Container (Bottom-Right) */
+#minimap-container {
+    grid-area: minimap;
+    background: #222;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    border-top: 1px solid #444;
+}
+
+.minimap-content {
+    flex: 1;
+    background-color: #111;
+    border: 1px solid #444;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #666;
+    font-size: 14px;
+    font-weight: bold;
+    text-transform: uppercase;
 }
 
 /* Inventory Styles */

@@ -21,21 +21,49 @@ export default class ProjectileManager {
      * @param {number} targetY End Y
      * @param {number} damage Damage amount
      * @param {string} type 'archer' or 'emoji_sparkle'
-     * @param {boolean} isMagic Whether this is a magic attack
+     * @param {Boolean} isMagic Whether this is a magic attack
      * @param {Phaser.GameObjects.Group} targetGroup The group to hit (mercenaries or enemies)
+     * @param {string} shooterId ID of the shooter for kill attribution
      */
-    fire(x, y, targetX, targetY, damage, type = 'archer', isMagic = false, targetGroup = null) {
+    fire(x, y, targetX, targetY, damage, type = 'archer', isMagic = false, targetGroup = null, shooterId = null) {
         let projectile;
         const groupToHit = targetGroup || this.scene.enemies;
 
-        if (type === 'emoji_sparkle') {
-            projectile = this.scene.add.image(x, y, 'emoji_sparkle');
+        if (type === 'laser') {
+            // Draw an instant laser beam using Graphics
+            const graphics = this.scene.add.graphics();
+            graphics.lineStyle(4, 0x00ffff, 1); // Cyan laser
+
+            // Draw the line from shooter to target
+            graphics.beginPath();
+            graphics.moveTo(x, y);
+            graphics.lineTo(targetX, targetY);
+            graphics.strokePath();
+
+            // Laser fades out quickly
+            this.scene.tweens.add({
+                targets: graphics,
+                alpha: 0,
+                duration: 200,
+                ease: 'Power2',
+                onComplete: () => {
+                    graphics.destroy();
+                }
+            });
+
+            // Instant hit calculation
+            this.checkHitAtTarget(targetX, targetY, damage, groupToHit, isMagic, shooterId);
+            return; // Skip standard projectile logic
+        }
+
+        if (type === 'emoji_sparkle' || type === 'emoji_note') {
+            projectile = this.scene.add.image(x, y, type);
             projectile.setDisplaySize(24, 24);
         } else {
             projectile = this.scene.add.text(x, y, '🏹', { fontSize: '24px' });
         }
 
-        if (type === 'emoji_sparkle' || isMagic) {
+        if (type === 'emoji_sparkle' || type === 'emoji_note' || isMagic) {
             this.scene.tweens.add({
                 targets: projectile,
                 x: targetX,
@@ -44,7 +72,7 @@ export default class ProjectileManager {
                 duration: 400,
                 ease: 'Linear',
                 onComplete: () => {
-                    this.checkHitAtTarget(targetX, targetY, damage, groupToHit, isMagic);
+                    this.checkHitAtTarget(targetX, targetY, damage, groupToHit, isMagic, shooterId);
                     projectile.destroy();
                 }
             });
@@ -71,30 +99,30 @@ export default class ProjectileManager {
                     }
                 },
                 onComplete: () => {
-                    this.checkHitAtTarget(targetX, targetY, damage, groupToHit, false);
+                    this.checkHitAtTarget(targetX, targetY, damage, groupToHit, false, shooterId);
                     projectile.destroy();
                 }
             });
         }
     }
 
-    checkHitAtTarget(tx, ty, damage, targetGroup, isMagic) {
+    checkHitAtTarget(tx, ty, damage, targetGroup, isMagic, shooterId) {
         const threshold = 50;
         const hitTarget = targetGroup.getChildren().find(e =>
             e.active && e.hp > 0 && Phaser.Math.Distance.Between(e.x, e.y, tx, ty) <= threshold
         );
 
         if (hitTarget) {
-            this.handleHit(hitTarget, damage, isMagic);
+            this.handleHit(hitTarget, damage, isMagic, shooterId);
         }
     }
 
-    handleHit(target, damage, isMagic) {
+    handleHit(target, damage, isMagic, shooterId) {
         if (target) {
             if (isMagic && target.takeMagicDamage) {
-                target.takeMagicDamage(damage);
+                target.takeMagicDamage(damage, shooterId);
             } else if (target.takeDamage) {
-                target.takeDamage(damage);
+                target.takeDamage(damage, shooterId);
             }
         }
     }

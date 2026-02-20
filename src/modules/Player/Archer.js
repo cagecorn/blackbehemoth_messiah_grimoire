@@ -75,7 +75,7 @@ export default class Archer extends Mercenary {
         if (!target) return false;
 
         this.lastFireTime = now;
-        this.scene.projectileManager.fire(this.x, this.y, target.x, target.y, this.atk);
+        this.scene.projectileManager.fire(this.x, this.y, target.x, target.y, this.atk, 'archer', false, null, this.className);
         return true;
     }
 }

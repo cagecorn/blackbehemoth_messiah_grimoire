@@ -3,7 +3,7 @@
  * Represents a single chat interface for a party member.
  */
 export default class ChatChannel {
-    constructor(id, name, parentElement, onCommand) {
+    constructor(id, name, spritePath, parentElement, onCommand) {
         this.id = id;
         this.name = name;
         this.onCommand = onCommand;
@@ -11,6 +11,7 @@ export default class ChatChannel {
         this.element = document.createElement('div');
         this.element.className = 'chat-channel';
         this.element.innerHTML = `
+            <img class="chat-bg-sprite" src="${spritePath}" alt="bg" draggable="false">
             <div class="chat-header">${name}</div>
             <div class="chat-log" id="log-${id}"></div>
             <form class="chat-form" id="form-${id}">

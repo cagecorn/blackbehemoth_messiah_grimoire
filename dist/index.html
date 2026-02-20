@@ -6,25 +6,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Isac-like RPG</title>
     <!-- Custom CSS for DOM Overlay -->
-  <script type="module" crossorigin src="/assets/index-DllHgi63.js"></script>
-  <link rel="stylesheet" crossorigin href="/assets/index-BYYatkvH.css">
+  <script type="module" crossorigin src="/assets/index-DSSrfh96.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-CK0aWyfP.css">
 </head>
 
 <body>
     <div id="app-container">
-        <!-- Phaser renders here -->
+        <!-- Phaser renders here (Top-Left) -->
         <div id="game-container"></div>
 
-        <!-- DOM UI renders here on top -->
-        <div id="ui-wrapper">
-            <!-- Dynamic Chat Channels Container -->
-            <div id="chat-container"></div>
+        <!-- Inventory Sidebar (Top-Right) -->
+        <div id="sidebar-right">
+            <div class="panel-title">Inventory</div>
+            <div id="inventory-list">
+                <!-- Javascript will populate this with SVGs -->
+            </div>
+        </div>
 
-            <div id="sidebar-right">
-                <div class="panel-title">Inventory</div>
-                <div id="inventory-list">
-                    <!-- Javascript will populate this with SVGs -->
-                </div>
+        <!-- Dynamic Chat Channels Container (Bottom-Left) -->
+        <div id="chat-container"></div>
+
+        <!-- Minimap Placeholder (Bottom-Right) -->
+        <div id="minimap-container">
+            <div class="panel-title">Minimap</div>
+            <div class="minimap-content">
+                <!-- Map visualization will go here -->
             </div>
         </div>
     </div>

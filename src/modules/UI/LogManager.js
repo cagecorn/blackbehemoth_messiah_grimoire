@@ -1,5 +1,5 @@
 import EventBus from '../Events/EventBus.js';
-import functionRouter from '../AI/FunctionRouter.js';
+import intentRouter from '../AI/IntentRouter.js';
 import embeddingGemma from '../AI/EmbeddingGemma.js';
 import localLLM from '../AI/LocalLLM.js';
 
@@ -25,7 +25,6 @@ class LogManager {
         this.addLog('Welcome to Messiah Grimoire!', '#00ffcc');
 
         // Initialize the new FunctionGemma worker
-        functionRouter.init();
     }
 
     addLog(text, color = '#e0e0e0') {
@@ -72,19 +71,24 @@ class LogManager {
             this.addLog(`User: ${text}`, '#ffffff');
             this.chatInput.value = '';
 
-            if (!functionRouter.isReady) {
+            if (!intentRouter.isReady) {
                 this.addLog(`[System] AI Commander is still booting up...`, '#aaaaaa');
                 return;
             }
 
-            this.addLog(`[System] Analyzing command...`, '#aaaaaa');
             try {
-                // Returns parsed JSON function arguments or null
-                const result = await functionRouter.execute(text);
+                const result = await intentRouter.route(text);
 
-                if (result) {
-                    this.addLog(`[AI] Command Processed: ${JSON.stringify(result)}`, '#bb88ff');
-                    // FunctionRouter handles emitting the actual EventBus messages
+                if (result.type === 'COMMAND') {
+                    this.addLog(`[System] Tactical command recognized: ${result.intent}`, '#aaaaaa');
+
+                    // Emit the command event directly
+                    EventBus.emit(EventBus.EVENTS.AI_COMMAND, {
+                        command: result.action.name,
+                        args: result.action.arguments
+                    });
+
+                    this.addLog(`[AI] Executing: ${JSON.stringify(result.action)}`, '#bb88ff');
                 } else {
                     // FALLBACK TO CHAT (RAG + LOCAL LLM)
                     this.addLog(`[System] Conversational intent detected. Consulting memory...`, '#aaaaaa');

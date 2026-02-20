@@ -80,6 +80,58 @@ export const MercenaryClasses = {
         spriteSize: 64,
         spawnOffset: { x: -100, y: 0 },
         aiType: 'SUPPORT'
+    },
+    WIZARD: {
+        id: 'wizard',
+        name: 'Wizard (마법사)',
+        sprite: 'wizard_sprite',
+        maxHp: 65,
+        hp: 65,
+        mp: 150,
+        maxMp: 150,
+        atk: 5,
+        mAtk: 35,
+        def: 5,
+        mDef: 20,
+        speed: 100,
+        atkRange: 250,
+        rangeMin: 120,
+        rangeMax: 250,
+        atkSpd: 1200,
+        castSpd: 1000,
+        acc: 90,
+        eva: 10,
+        crit: 20,
+        physicsRadius: 20,
+        spriteSize: 64,
+        spawnOffset: { x: -140, y: 0 },
+        aiType: 'RANGED'
+    },
+    BARD: {
+        id: 'bard',
+        name: 'Bard (바드)',
+        sprite: 'bard_sprite',
+        maxHp: 75,
+        hp: 75,
+        mp: 120,
+        maxMp: 120,
+        atk: 10,
+        mAtk: 15, // Used for buff scaling
+        def: 5,
+        mDef: 10,
+        speed: 110,
+        atkRange: 200, // Ranged attack distance
+        rangeMin: 150,
+        rangeMax: 220,
+        atkSpd: 1500, // Speed for throwing notes
+        castSpd: 2000, // Speed for applying buffs
+        acc: 90,
+        eva: 20,
+        crit: 5,
+        physicsRadius: 20,
+        spriteSize: 64,
+        spawnOffset: { x: -180, y: 0 },
+        aiType: 'SUPPORT'
     }
 };
 
@@ -147,5 +199,13 @@ export const GameConfig = {
     COMBAT: {
         TICK_RATE_MS: 1000,
         BATTLE_INIT_DISTANCE: 40
+    }
+};
+
+export const StageConfigs = {
+    CURSED_FOREST: {
+        id: 'cursed_forest',
+        name: '저주받은 숲',
+        background: 'bg_cursed_forest'
     }
 };

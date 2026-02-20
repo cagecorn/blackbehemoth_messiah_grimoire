@@ -15,7 +15,7 @@ export default class Goblin extends BaseMonster {
 
     initAI() {
         // Apply the generalized Melee AI
-        // Goblin chases its target (usually the Warrior)
-        applyMeleeAI(this, (agent) => [agent.target], 'AGGRESSIVE');
+        // Goblin searches for the nearest valid mercenary in the scene
+        applyMeleeAI(this, (agent) => agent.scene.mercenaries, 'AGGRESSIVE');
     }
 }

@@ -44,6 +44,13 @@
   * `crit`: 치명타율
   * `id`: 엔티티 고유 식별자
 
+* **직업 명칭 (Class Names):**
+  * `warrior`: 전사
+  * `archer`: 아처
+  * `healer`: 힐러
+  * `wizard`: 마법사
+  * `bard`: 바드
+
 ## 기술 스택
 - **Engine:** Phaser 3
 - **Desktop Framework:** Electron

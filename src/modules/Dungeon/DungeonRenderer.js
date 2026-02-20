@@ -59,6 +59,9 @@ export default class DungeonRenderer {
             });
         });
 
+        // Hide the floor so the beautiful background image shows through
+        this.groundLayer.setAlpha(0);
+
         // Enable collision on walls
         this.wallLayer.setCollisionByExclusion([-1]);
     }

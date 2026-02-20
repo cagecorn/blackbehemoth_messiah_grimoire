@@ -14,6 +14,7 @@ export default class HealthBar {
         this.value = 100;
         this.p = width / 100;
 
+        this.bar.setDepth(9999); // Always on top
         this.draw();
     }
 

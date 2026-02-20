@@ -1,5 +1,4 @@
-import Phaser from 'phaser';
-import semanticRouter from '../modules/AI/SemanticRouter.js';
+import intentRouter from '../modules/AI/IntentRouter.js';
 import embeddingGemma from '../modules/AI/EmbeddingGemma.js';
 import localLLM from '../modules/AI/LocalLLM.js';
 
@@ -9,34 +8,62 @@ export default class BootScene extends Phaser.Scene {
     }
 
     preload() {
-        // ... (preexisting code)
         const width = this.cameras.main.width;
         const height = this.cameras.main.height;
 
+        const barWidth = 360;
+        const barHeight = 12;
+        const barX = width / 2 - barWidth / 2;
+        const barY = height / 2 - barHeight / 2;
+
         const progressBar = this.add.graphics();
         const progressBox = this.add.graphics();
-        progressBox.fillStyle(0x222222, 0.8);
-        progressBox.fillRect(width / 2 - 160, height / 2 - 25, 320, 50);
+
+        // Modern translucent background box
+        progressBox.fillStyle(0x0f0f1a, 0.85);
+        progressBox.fillRoundedRect(barX - 20, barY - 50, barWidth + 40, barHeight + 80, 14);
+        progressBox.lineStyle(1, 0xa78bfa, 0.2);
+        progressBox.strokeRoundedRect(barX - 20, barY - 50, barWidth + 40, barHeight + 80, 14);
 
         this.loadingText = this.make.text({
             x: width / 2,
-            y: height / 2 - 50,
+            y: barY - 28,
             text: 'Loading Assets...',
-            style: { font: '20px monospace', fill: '#ffffff' }
+            style: {
+                font: '16px Inter, sans-serif',
+                fill: '#a78bfa',
+                fontStyle: 'bold'
+            }
         }).setOrigin(0.5);
 
         const percentText = this.make.text({
             x: width / 2,
-            y: height / 2,
+            y: barY + barHeight + 18,
             text: '0%',
-            style: { font: '18px monospace', fill: '#ffffff' }
+            style: {
+                font: '13px Inter, sans-serif',
+                fill: '#94a3b8'
+            }
         }).setOrigin(0.5);
 
         this.load.on('progress', (value) => {
             percentText.setText(parseInt(value * 100) + '%');
             progressBar.clear();
-            progressBar.fillStyle(0xbb88ff, 1);
-            progressBar.fillRect(width / 2 - 150, height / 2 - 15, 300 * value, 30);
+
+            // Track background
+            progressBar.fillStyle(0x1e1e3a, 1);
+            progressBar.fillRoundedRect(barX, barY, barWidth, barHeight, barHeight / 2);
+
+            // Progress fill (violet gradient feel)
+            const fillWidth = barWidth * value;
+            if (fillWidth > 0) {
+                progressBar.fillStyle(0xa78bfa, 1);
+                progressBar.fillRoundedRect(barX, barY, fillWidth, barHeight, barHeight / 2);
+
+                // Highlight shine on top half
+                progressBar.fillStyle(0xffffff, 0.15);
+                progressBar.fillRoundedRect(barX + 2, barY + 1, Math.max(0, fillWidth - 4), barHeight / 2, barHeight / 2);
+            }
         });
 
         this.load.on('complete', () => {
@@ -44,6 +71,7 @@ export default class BootScene extends Phaser.Scene {
             progressBox.destroy();
             percentText.destroy();
             this.loadingText.setText('Initializing AI Models...');
+            this.loadingText.setColor('#38bdf8');
         });
 
         // Load common emoji assets (Twemoji SVGs)
@@ -53,12 +81,20 @@ export default class BootScene extends Phaser.Scene {
         this.load.svg('emoji_wood', 'assets/emojis/1fab5.svg', { width: 32, height: 32 });
         this.load.svg('emoji_sparkle', 'assets/emojis/2728.svg', { width: 32, height: 32 });
         this.load.svg('emoji_herb', 'assets/emojis/1f33f.svg', { width: 32, height: 32 });
+        this.load.svg('emoji_note', 'assets/emojis/1f3b5.svg', { width: 32, height: 32 });
+        this.load.svg('emoji_buff', 'assets/emojis/1f4aa.svg', { width: 32, height: 32 });
+        this.load.svg('emoji_fire', 'assets/emojis/1f525.svg', { width: 32, height: 32 });
 
         // Load Character Sprites
         this.load.image('warrior_sprite', 'assets/characters/party/warrior_sprite.png');
         this.load.image('archer_sprite', 'assets/characters/party/archer_sprite.png');
         this.load.image('healer_sprite', 'assets/characters/party/healer_sprite.png');
+        this.load.image('wizard_sprite', 'assets/characters/party/wizard_sprite.png');
+        this.load.image('bard_sprite', 'assets/characters/party/bard_sprite.png');
         this.load.image('goblin_sprite', 'assets/characters/enemies/goblin_sprite.png');
+
+        // Load Backgrounds
+        this.load.image('bg_cursed_forest', 'assets/background/battle-stage-cursed-forest.png');
     }
 
     create() {
@@ -69,18 +105,18 @@ export default class BootScene extends Phaser.Scene {
 
     async checkAIReadiness() {
         const check = async () => {
-            const routerReady = semanticRouter.isReady;
+            const intentReady = intentRouter.isReady;
             const gemmaReady = embeddingGemma.isReady;
             const llmReady = localLLM.isReady;
 
             let status = 'AI Status: ';
-            status += routerReady ? 'Router OK | ' : 'Router... | ';
-            status += gemmaReady ? 'Gemma OK | ' : 'Gemma... | ';
+            status += intentReady ? 'Intent OK | ' : 'Intent... | ';
+            status += gemmaReady ? 'Embedding OK | ' : 'Embedding... | ';
             status += llmReady ? 'LM Studio OK' : 'LM Studio...';
 
             this.loadingText.setText(status);
 
-            if (routerReady && gemmaReady && llmReady) {
+            if (intentReady && gemmaReady && llmReady) {
                 console.log('All AI Systems Ready. Transitioning.');
                 this.scene.start('TerritoryScene');
             } else {

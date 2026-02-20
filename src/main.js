@@ -7,7 +7,7 @@ import UIManager from './modules/UI/UIManager.js';
 import logManager from './modules/UI/LogManager.js';
 import globalBlackboard from './modules/Events/GlobalBlackboard.js';
 import embeddingGemma from './modules/AI/EmbeddingGemma.js';
-import semanticRouter from './modules/AI/SemanticRouter.js';
+import intentRouter from './modules/AI/IntentRouter.js';
 
 const config = {
     type: Phaser.AUTO,
@@ -39,7 +39,7 @@ logManager.init();
 // Boot up Global Managers
 globalBlackboard.init();
 embeddingGemma.init();
-semanticRouter.init();
+intentRouter.init();
 
 function preload() {
     // Load assets here
