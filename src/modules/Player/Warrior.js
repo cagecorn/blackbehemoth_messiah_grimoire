@@ -65,5 +65,8 @@ export default class Warrior extends Mercenary {
             // Stop moving if purely manual and keys are released
             this.body.setVelocity(0);
         }
+
+        // Apply visual orientation after manual velocity has been calculated and applied
+        this.updateVisualOrientation();
     }
 }

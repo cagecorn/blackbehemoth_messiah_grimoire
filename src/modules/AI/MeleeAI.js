@@ -131,11 +131,18 @@ export default function applyMeleeAI(agent, targetListGetter, initialState = 'AG
         return 1; // RUNNING (Keep attacking as long as they are close)
     }, "Attacking");
 
+    // 5. Idle fallback — stop moving when nothing to do
+    const stopAction = new Action((a, bb) => {
+        if (a.body) a.body.setVelocity(0, 0);
+        bb.set('target', null);
+        return 0; // SUCCESS
+    }, "Idle");
+
     // Sequence: Must be AGGRESSIVE -> Find Target -> Move to Target -> Attack
     const huntSequence = new Sequence([checkStateAggressive, findTarget, chaseTarget, attackTarget], "Hunt Logic");
 
-    // Root Selector
-    const rootSelector = new Selector([huntSequence], "Melee Root");
+    // Root Selector — falls back to idle if no targets
+    const rootSelector = new Selector([huntSequence, stopAction], "Melee Root");
 
     agent.btManager = new BehaviorTreeManager(agent, agent.blackboard, rootSelector);
 }

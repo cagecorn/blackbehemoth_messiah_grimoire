@@ -40,6 +40,11 @@ export default class DungeonScene extends Phaser.Scene {
         this.stageManager = new StageManager(this, StageConfigs.CURSED_FOREST);
         this.stageManager.buildStage(worldSize, worldSize);
 
+        // ★ Set world & camera bounds BEFORE spawning units
+        // so that setCollideWorldBounds(true) in constructors uses the correct dungeon size.
+        this.cameras.main.setBounds(0, 0, worldSize, worldSize);
+        this.physics.world.setBounds(0, 0, worldSize, worldSize);
+
         this.fxManager = new FXManager(this);
         this.aoeManager = new AoeManager(this);
         this.lootManager = new LootManager(this);
@@ -96,10 +101,6 @@ export default class DungeonScene extends Phaser.Scene {
         // Setup Camera to follow player
         this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
 
-        // Match bounds to dungeon size (50x50 tiles @ 32px)
-        this.cameras.main.setBounds(0, 0, worldSize, worldSize);
-        this.physics.world.setBounds(0, 0, worldSize, worldSize);
-
         // Return to Territory
         this.input.keyboard.on('keydown-ESC', () => {
             this.scene.start('TerritoryScene');
@@ -135,6 +136,7 @@ export default class DungeonScene extends Phaser.Scene {
             this.mercenaries.getChildren().forEach(mercenary => {
                 mercenary.update();
                 mercenary.setDepth(mercenary.y);
+                this.clampToCamera(mercenary);
             });
         }
 
@@ -142,7 +144,33 @@ export default class DungeonScene extends Phaser.Scene {
             this.enemies.getChildren().forEach(enemy => {
                 enemy.update();
                 enemy.setDepth(enemy.y);
+                this.clampToCamera(enemy);
             });
+        }
+    }
+
+    clampToCamera(unit) {
+        if (!unit.active || !unit.body) return;
+        const cam = this.cameras.main.worldView;
+        const buffer = 16; // Small padding to keep them fully on-screen
+
+        // If camera hasn't fully initialized its dimensions, skip
+        if (cam.width === 0 || cam.height === 0) return;
+
+        if (unit.x < cam.left + buffer) {
+            unit.x = cam.left + buffer;
+            if (unit.body.velocity.x < 0) unit.body.velocity.x = 0;
+        } else if (unit.x > cam.right - buffer) {
+            unit.x = cam.right - buffer;
+            if (unit.body.velocity.x > 0) unit.body.velocity.x = 0;
+        }
+
+        if (unit.y < cam.top + buffer) {
+            unit.y = cam.top + buffer;
+            if (unit.body.velocity.y < 0) unit.body.velocity.y = 0;
+        } else if (unit.y > cam.bottom - buffer) {
+            unit.y = cam.bottom - buffer;
+            if (unit.body.velocity.y > 0) unit.body.velocity.y = 0;
         }
     }
 }

@@ -21,7 +21,7 @@ export const MercenaryClasses = {
         mDef: 5,
         speed: 100,
         atkSpd: 1200,
-        atkRange: 40,
+        atkRange: 80,
         acc: 90,
         eva: 10,
         crit: 10,
@@ -149,7 +149,7 @@ export const MonsterClasses = {
         def: 2,
         mDef: 2,
         speed: 50,
-        atkRange: 40,
+        atkRange: 80,
         atkSpd: 1500,
         acc: 85,
         eva: 5,
@@ -198,7 +198,7 @@ export const GameConfig = {
     },
     COMBAT: {
         TICK_RATE_MS: 1000,
-        BATTLE_INIT_DISTANCE: 40
+        BATTLE_INIT_DISTANCE: 80
     }
 };
 
