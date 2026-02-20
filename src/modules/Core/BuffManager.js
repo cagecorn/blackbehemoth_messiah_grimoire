@@ -13,7 +13,7 @@ export default class BuffManager {
     /**
      * Applies a hybrid stat buff to a target unit.
      */
-    applyBuff(target, source, type, duration, amountAtk, amountMAtk) {
+    applyBuff(target, source, type, duration, amountAtk, amountMAtk, amountDR = 0) {
         if (!target || !target.active || target.hp <= 0) return;
 
         // Check if target already has this buff type. If so, refresh it and maybe update amounts.
@@ -25,31 +25,20 @@ export default class BuffManager {
         if (existing) {
             existing.expireTime = expireTime;
             // Update the stats if the new buff is stronger
-            if (amountAtk > existing.amountAtk || amountMAtk > existing.amountMAtk) {
+            if (amountAtk > existing.amountAtk || amountMAtk > existing.amountMAtk || amountDR > existing.amountDR) {
                 target.bonusAtk = (target.bonusAtk - existing.amountAtk) + amountAtk;
                 target.bonusMAtk = (target.bonusMAtk - existing.amountMAtk) + amountMAtk;
+                target.bonusDR = (target.bonusDR - (existing.amountDR || 0)) + amountDR;
                 existing.amountAtk = amountAtk;
                 existing.amountMAtk = amountMAtk;
+                existing.amountDR = amountDR;
             }
-            console.log(`[BuffManager] Refreshed ${type} on ${target.unitName}. (Atk+${existing.amountAtk}, mAtk+${existing.amountMAtk})`);
+            console.log(`[BuffManager] Refreshed ${type} on ${target.unitName}. (Atk+${existing.amountAtk}, mAtk+${existing.amountMAtk}, DR+${existing.amountDR})`);
         } else {
             // Apply new buff
             target.bonusAtk += amountAtk;
             target.bonusMAtk += amountMAtk;
-
-            // Visual Icon
-            const icon = this.scene.add.image(target.x, target.y - 50, 'emoji_buff');
-            icon.setDisplaySize(16, 16);
-            icon.setDepth(target.depth + 1);
-
-            // Pop animation
-            this.scene.tweens.add({
-                targets: icon,
-                scaleX: 1.5,
-                scaleY: 1.5,
-                yoyo: true,
-                duration: 200
-            });
+            target.bonusDR = (target.bonusDR || 0) + amountDR;
 
             this.activeBuffs.push({
                 target,
@@ -57,12 +46,14 @@ export default class BuffManager {
                 type,
                 duration,
                 expireTime,
-                icon,
                 amountAtk,
-                amountMAtk
+                amountMAtk,
+                amountDR
             });
 
-            console.log(`[BuffManager] %c${source.unitName}%c applied ${type} to %c${target.unitName}%c. (Atk+${amountAtk}, mAtk+${amountMAtk})`,
+            if (target.syncStatusUI) target.syncStatusUI();
+
+            console.log(`[BuffManager] %c${source.unitName}%c applied ${type} to %c${target.unitName}%c. (Atk+${amountAtk}, mAtk+${amountMAtk}, DR+${amountDR})`,
                 'color:#00ffff; font-weight:bold;', 'color:inherit;', 'color:#ffff00; font-weight:bold;', 'color:inherit;');
         }
     }
@@ -77,19 +68,8 @@ export default class BuffManager {
 
             // If target died or was destroyed, clean up
             if (!buff.target || !buff.target.active || buff.target.hp <= 0) {
-                if (buff.icon) buff.icon.destroy();
                 this.activeBuffs.splice(i, 1);
                 continue;
-            }
-
-            // Update icon position
-            if (buff.icon) {
-                const targetBuffs = this.activeBuffs.filter(b => b.target === buff.target);
-                const index = targetBuffs.indexOf(buff);
-                const offsetX = (index - (targetBuffs.length - 1) / 2) * 16;
-
-                buff.icon.setPosition(buff.target.x + offsetX, buff.target.y - 50);
-                buff.icon.setDepth(buff.target.depth + 1);
             }
 
             // Check expiration
@@ -97,12 +77,13 @@ export default class BuffManager {
                 // Remove Stats
                 buff.target.bonusAtk -= buff.amountAtk;
                 buff.target.bonusMAtk -= buff.amountMAtk;
-
-                // Visual cleanup
-                if (buff.icon) buff.icon.destroy();
+                buff.target.bonusDR -= (buff.amountDR || 0);
 
                 console.log(`[BuffManager] ${buff.type} expired on ${buff.target.unitName}.`);
+                const target = buff.target;
                 this.activeBuffs.splice(i, 1);
+
+                if (target.syncStatusUI) target.syncStatusUI();
             }
         }
     }

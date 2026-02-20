@@ -12,11 +12,12 @@ export default class AoeManager {
     /**
      * Triggers AOE damage originating from (x, y) within a radius.
      */
-    triggerAoe(x, y, radius, damage, sourceId = null) {
-        if (!this.scene.enemies) return;
+    triggerAoe(x, y, radius, damage, sourceId = null, targetGroup = null) {
+        const group = targetGroup || this.scene.enemies;
+        if (!group) return [];
 
-        // Iterate over enemies and apply damage if within radius
-        const enemies = this.scene.enemies.getChildren();
+        // Iterate over entities and apply damage if within radius
+        const enemies = group.getChildren();
         const affectedEnemies = [];
 
         enemies.forEach(enemy => {

@@ -123,8 +123,10 @@ export default class ChargeAttack {
 
                 // Deal Damage and CC
                 if (caster.scene.aoeManager) {
-                    const totalDamage = caster.atk * this.damageMultiplier;
-                    const hitEnemies = caster.scene.aoeManager.triggerAoe(caster.x, caster.y, this.aoeRadius, totalDamage, caster.className);
+                    const totalAtk = caster.getTotalAtk ? caster.getTotalAtk() : caster.atk;
+                    const totalDamage = totalAtk * this.damageMultiplier;
+                    const opposingGroup = caster.scene.enemies.contains(caster) ? caster.scene.mercenaries : caster.scene.enemies;
+                    const hitEnemies = caster.scene.aoeManager.triggerAoe(caster.x, caster.y, this.aoeRadius, totalDamage, caster.className, opposingGroup);
 
                     if (caster.scene.ccManager) {
                         hitEnemies.forEach(hitEnemy => {

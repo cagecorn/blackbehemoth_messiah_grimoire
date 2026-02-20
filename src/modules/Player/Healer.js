@@ -5,23 +5,40 @@ import Blackboard from '../AI/Blackboard.js';
 import { MercenaryClasses } from '../Core/EntityStats.js';
 import { HealerActions } from '../Combat/HealerActions.js';
 import EventBus from '../Events/EventBus.js';
+import MassHeal from '../Skills/MassHeal.js';
+import PlaceholderSkill from '../Skills/PlaceholderSkill.js';
 
 /**
  * Healer.js
  * Support unit. Heals allies and uses magic attacks.
  */
 export default class Healer extends Mercenary {
-    constructor(scene, x, y, warrior) {
-        const config = MercenaryClasses.HEALER;
+    constructor(scene, x, y, warrior, characterConfig = {}) {
+        const config = { ...MercenaryClasses.HEALER, ...characterConfig };
         super(scene, x, y, config);
         this.warrior = warrior;
 
-        this.mAtk = config.mAtk;
-        this.atkSpd = config.atkSpd || 1200;
-        this.castSpd = config.castSpd || 1000;
+        this.mAtk = this.config.mAtk;
+        this.atkSpd = this.config.atkSpd || 1200;
+        this.castSpd = this.config.castSpd || 1000;
         this.lastActionTime = 0;
 
+        // Instantiate Skill dynamically
+        if (config.skillName === 'MassHeal') {
+            this.skill = new MassHeal({
+                cooldown: 8000,
+                healMultiplier: 3.0
+            });
+        } else if (config.skillName === 'PlaceholderSkill') {
+            this.skill = new PlaceholderSkill();
+        }
+
         this.initAI();
+    }
+
+    getSkillProgress() {
+        if (!this.skill) return 0;
+        return this.skill.getCooldownProgress(this.scene.time.now, this.castSpd);
     }
 
     initAI() {
@@ -41,6 +58,13 @@ export default class Healer extends Mercenary {
 
     update() {
         super.update();
+
+        // Auto-cast Mass Heal when off cooldown
+        if (!this.isAirborne && !this.isStunned && !this.isKnockedBack && this.skill) {
+            // We just cast it, the skill handles finding all allies and healing them
+            // Only try if there are active allies taking damage (optional optimization, but we can just cast on cooldown for now)
+            this.skill.execute(this);
+        }
 
         // Always prioritize the nearest enemy to ensure proper kiting
         this.findNearestEnemy();

@@ -2,6 +2,7 @@ import EventBus from '../Events/EventBus.js';
 import intentRouter from '../AI/IntentRouter.js';
 import embeddingGemma from '../AI/EmbeddingGemma.js';
 import localLLM from '../AI/LocalLLM.js';
+import { Characters } from '../Core/EntityStats.js';
 
 class LogManager {
     constructor() {
@@ -17,6 +18,9 @@ class LogManager {
         EventBus.on(EventBus.EVENTS.MONSTER_KILLED, this.handleMonsterKilled, this);
         EventBus.on(EventBus.EVENTS.SYSTEM_MESSAGE, this.handleSystemMessage, this);
         EventBus.on('UNIT_DIED', this.handleUnitDied, this);
+        EventBus.on(EventBus.EVENTS.UNIT_BARK, (payload) => {
+            this.addLog(`[${payload.unitName}] ${payload.text}`, '#00ffcc');
+        });
 
         if (this.chatForm) {
             this.chatForm.addEventListener('submit', this.handleChatSubmit.bind(this));
@@ -102,9 +106,11 @@ class LogManager {
                     this.addLog(`[System] Conversational intent detected. Consulting memory...`, '#aaaaaa');
 
                     const memories = await embeddingGemma.searchMemory(text);
-                    const response = await localLLM.generateResponse(text, memories);
+                    // Defaulting to AREN (Warrior) personality for the main chat fallback
+                    const charConfig = Characters.AREN;
+                    const response = await localLLM.generateResponse(charConfig, text, memories);
 
-                    this.addLog(`[Mercenary] ${response}`, '#00ffcc');
+                    this.addLog(`[${charConfig.name}] ${response}`, '#00ffcc');
                     EventBus.emit(EventBus.EVENTS.AI_RESPONSE, { agentId: 'warrior', text: response });
                 }
 

@@ -68,7 +68,7 @@ export default class LootManager {
 
         // Notify the Global Event Bus
         // Include who collected it for localized UI logs
-        const collectorId = (collector === this.scene.archer) ? 'archer' : 'warrior';
+        const collectorId = collector.className || 'warrior';
         globalEventBus.emit(globalEventBus.EVENTS.ITEM_COLLECTED, {
             emoji: unicodeEmoji,
             collectorId: collectorId

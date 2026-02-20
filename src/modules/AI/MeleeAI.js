@@ -116,15 +116,15 @@ export default function applyMeleeAI(agent, targetListGetter, initialState = 'AG
             });
 
             // Calculate and Apply Damage
-            let damage = a.atk;
+            let damage = a.getTotalAtk ? a.getTotalAtk() : a.atk;
             // Basic Accuracy / Crit check logic could go here
             if (Math.random() * 100 < a.crit) {
                 damage *= 1.5;
             }
 
             if (target.takeDamage) {
-                // Pass a.className so the kill is attributed correctly
-                target.takeDamage(damage, a.className);
+                // Pass a so the kill is attributed correctly and Miss works
+                target.takeDamage(damage, a);
             }
         }
 

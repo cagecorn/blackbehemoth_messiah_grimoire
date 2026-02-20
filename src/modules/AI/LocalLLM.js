@@ -7,6 +7,8 @@ class LocalLLM {
         this.apiURL = 'http://localhost:1234/v1/chat/completions';
         this.modelName = 'my_final_ai';
         this.isReady = false;
+
+        this.baseSystemPrompt = `너는 판타지 세계관 속 용병이다. 너는 메시아를 위해서 전투를 벌인다. 너는 진중하면서도 동시에 코믹스러운 대사를 외친다. 항상 깊은 사고 (CoT, Chain of Thought)를 할 것. 너는 한국어에 매우 유창하다.`;
     }
 
     /**
@@ -43,8 +45,8 @@ class LocalLLM {
         return false;
     }
 
-    async generateResponse(prompt, memories = []) {
-        console.log('[LocalLLM] Requesting response with memories:', memories);
+    async generateResponse(characterConfig, prompt, memories = []) {
+        console.log(`[LocalLLM] Requesting response for ${characterConfig.name} with memories:`, memories);
 
         const contextString = memories.length > 0
             ? "Recent Memories:\n" + memories.map(m => `- ${m.text}`).join('\n')
@@ -52,11 +54,10 @@ class LocalLLM {
 
         const systemMessage = {
             role: "system",
-            content: `당신은 어두운 판타지 세계의 충성스럽고 전투로 단련된 전사 용병입니다. 
-전사는 당신이 보필하는 주인공이며 '메시아'의 의지를 대변합니다. 
-**반드시 한국어로만 대답하세요.** 영어는 절대 사용하지 마세요.
-말투는 전사답게 무겁고 간결하게(1-2문장) 하세요.
-다음 최근 기억들을 참고하여 대답하세요:
+            content: `${this.baseSystemPrompt}
+너의 이름은 ${characterConfig.name}이며, 너의 성격과 특징은 다음과 같다: ${characterConfig.personality}
+말투는 캐릭터의 성격에 맞춰서 생생하게 표현하되, 1-2문장의 짧은 대사로 하라.
+다음 최근 기억들을 참고하여 대답하라:
 ${contextString}`
         };
 
@@ -84,7 +85,54 @@ ${contextString}`
             return data.choices[0].message.content.trim();
         } catch (error) {
             console.error('[LocalLLM] Error:', error);
-            return "... (용병은 무기를 다듬으며 당신의 말에 묵묵부답입니다)";
+            return "... (묵묵부답입니다)";
+        }
+    }
+
+    /**
+     * Generate a random "bark" during combat.
+     */
+    async generateBark(characterConfig) {
+        console.log(`[LocalLLM] Generating bark for ${characterConfig.name}`);
+
+        const systemMessage = {
+            role: "system",
+            content: `${this.baseSystemPrompt}
+너의 이름은 ${characterConfig.name}이며, 너의 성격과 특징은 다음과 같다: ${characterConfig.personality}
+지금은 전투 중이거나 던전을 탐험 중인 상황이다.
+이 상황에 어울리는 짧고 강렬한, 혹은 너의 성격이 묻어나는 재치 있는 대사 한 마디를 한국어로 작성하라. (CoT를 통해 캐릭터의 내면 심리를 먼저 생각한 뒤, 최종 대사만 출력하라)`
+        };
+
+        const userMessage = {
+            role: "user",
+            content: "전투 상황에 맞는 말 한마디 해줘."
+        };
+
+        try {
+            const response = await fetch(this.apiURL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    model: this.modelName,
+                    messages: [systemMessage, userMessage],
+                    temperature: 0.8,
+                    max_tokens: 150
+                })
+            });
+
+            if (!response.ok) throw new Error(`HTTP Error ${response.status}`);
+
+            const data = await response.json();
+            let content = data.choices[0].message.content.trim();
+
+            // If CoT is present in <thought> tags or similar, extract the final text
+            // (Assuming the model follows the instruction to output only the final bark if requested, 
+            // but some models might still show thought process)
+            // Simplified for now: assume the model gives the bark.
+            return content;
+        } catch (error) {
+            console.error('[LocalLLM] Bark Error:', error);
+            return null;
         }
     }
 }

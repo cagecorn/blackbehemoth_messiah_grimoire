@@ -12,6 +12,7 @@ export default class HealthBar {
         this.width = width;
         this.height = height;
         this.value = 100;
+        this.shieldValue = 0; // Shield amount as a percentage of maxHp
         this.p = width / 100;
 
         this.bar.setDepth(9999); // Always on top
@@ -24,9 +25,13 @@ export default class HealthBar {
         this.draw();
     }
 
-    setValue(amount) {
+    setValue(amount, shieldAmount = 0) {
         this.value = amount;
         if (this.value < 0) this.value = 0;
+
+        this.shieldValue = shieldAmount;
+        if (this.shieldValue < 0) this.shieldValue = 0;
+
         this.draw();
     }
 
@@ -46,6 +51,17 @@ export default class HealthBar {
 
         const healthWidth = Math.floor(this.p * this.value);
         this.bar.fillRect(this.x - this.width / 2 + 1, this.y + 1, healthWidth - 2, this.height - 2);
+
+        // Draw Shield (Yellow Overlay)
+        if (this.shieldValue > 0) {
+            this.bar.fillStyle(0xffff00); // Yellow shield
+            // Cap the visual shield at 100% of the bar width so it doesn't flow out
+            let shieldWidth = Math.floor(this.p * this.shieldValue);
+            if (shieldWidth > this.width - 2) shieldWidth = this.width - 2;
+
+            // Draw from the left (covering the HP bar)
+            this.bar.fillRect(this.x - this.width / 2 + 1, this.y + 1, shieldWidth, this.height - 2);
+        }
     }
 
     destroy() {

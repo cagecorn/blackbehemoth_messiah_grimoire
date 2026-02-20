@@ -4,22 +4,27 @@ import applyRangedAI from '../AI/RangedAI.js';
 import Blackboard from '../AI/Blackboard.js';
 import { MercenaryClasses } from '../Core/EntityStats.js';
 import SkillFireball from '../Skills/SkillFireball.js';
+import PlaceholderSkill from '../Skills/PlaceholderSkill.js';
 
 /**
  * Wizard.js
  * Specialist in magic attacks. Follows the Warrior and kites enemies, firing instant lasers.
  */
 export default class Wizard extends Mercenary {
-    constructor(scene, x, y, warrior) {
-        const config = MercenaryClasses.WIZARD;
+    constructor(scene, x, y, warrior, characterConfig = {}) {
+        const config = { ...MercenaryClasses.WIZARD, ...characterConfig };
         super(scene, x, y, config);
         this.warrior = warrior; // Reference to leader
 
-        this.atkSpd = config.atkSpd || 1200;
+        this.atkSpd = this.config.atkSpd || 1200;
         this.lastFireTime = 0;
 
-        // Instantiate Skill
-        this.skill = new SkillFireball();
+        // Instantiate Skill dynamically
+        if (config.skillName === 'SkillFireball') {
+            this.skill = new SkillFireball();
+        } else if (config.skillName === 'PlaceholderSkill') {
+            this.skill = new PlaceholderSkill();
+        }
 
         this.initAI();
     }
@@ -89,7 +94,7 @@ export default class Wizard extends Mercenary {
 
         this.scene.projectileManager.fire(
             this.x, this.y, target.x, target.y,
-            this.mAtk, 'laser', true, null, this.className || this.id
+            this.getTotalMAtk(), 'laser', true, null, this
         );
         return true;
     }

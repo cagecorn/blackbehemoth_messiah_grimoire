@@ -16,7 +16,8 @@ export default class Mercenary extends Phaser.GameObjects.Container {
 
         // Identity
         this.id = config.id + '_' + Phaser.Math.Between(1000, 9999);
-        this.className = config.id;
+        this.className = config.classId || config.id; // e.g., 'warrior'
+        this.characterId = config.id; // e.g., 'aren' or 'silvi'
         this.unitName = config.name;
 
         // Stats
@@ -33,9 +34,12 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         // Dynamic Buffs
         this.bonusAtk = 0;
         this.bonusMAtk = 0;
+        this.bonusDR = 0;
 
         this.speed = config.speed || 100;
         this.atkRange = config.atkRange || 40;
+        this.rangeMin = config.rangeMin || 0;
+        this.rangeMax = config.rangeMax || this.atkRange;
         this.atkSpd = config.atkSpd || 1000;
         this.castSpd = config.castSpd || 1000;
 
@@ -93,6 +97,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
 
         EventBus.on(commandEvent, this.handleAICommand, this);
         EventBus.on(EventBus.EVENTS.AI_RESPONSE, this.handleAIResponse, this);
+        EventBus.on(EventBus.EVENTS.UNIT_BARK, this.handleUnitBark, this);
     }
 
     handleAICommand(cmd) {
@@ -128,8 +133,16 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         }
     }
 
+    handleUnitBark(payload) {
+        // payload: { agentId, characterId, unitName, text }
+        if (payload && payload.characterId === this.characterId) {
+            this.showSpeechBubble(payload.text);
+        }
+    }
+
     showSpeechBubble(text) {
-        new SpeechBubble(this.scene, this.x, this.y, text);
+        if (this.currentBubble) this.currentBubble.destroy();
+        this.currentBubble = new SpeechBubble(this.scene, this.x, this.y, text);
     }
 
     getTotalAtk() {
@@ -140,11 +153,40 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         return this.mAtk + this.bonusMAtk;
     }
 
-    takeDamage(amount, attackerId = null) {
-        // Physical Damage is reduced by Def
-        const finalDamage = Math.max(1, amount - this.def);
-        this.hp -= finalDamage;
-        if (this.hp < 0) this.hp = 0;
+    takeDamage(amount, attacker = null) {
+        // --- 0. Accuracy vs Evasion Check ---
+        if (attacker && typeof attacker === 'object' && attacker.acc !== undefined && this.eva !== undefined) {
+            const hitChance = Math.max(0.05, Math.min(1.0, (attacker.acc - this.eva) / 100.0));
+            if (Math.random() > hitChance) {
+                // MISS!
+                if (this.scene.fxManager) {
+                    this.scene.fxManager.showDamageText(this, 'MISS!', '#ffffff');
+                }
+                console.info(`[Combat] ${attacker.unitName || 'Enemy'} missed ${this.unitName}!`);
+                return;
+            }
+        }
+
+        const attackerId = (attacker && typeof attacker === 'object') ? (attacker.id || attacker.className) : attacker;
+
+        // 1. Physical Damage is reduced by Def
+        let finalDamage = Math.max(1, amount - this.def);
+
+        // 1.5 Damage Reduction Buff
+        if (this.bonusDR > 0) {
+            finalDamage = finalDamage * (1 - this.bonusDR);
+        }
+
+        // 2. Intercept with Shield
+        if (this.scene.shieldManager) {
+            finalDamage = this.scene.shieldManager.takeDamage(this, finalDamage);
+        }
+
+        if (finalDamage > 0) {
+            this.hp -= finalDamage;
+            if (this.hp < 0) this.hp = 0;
+        }
+
         this.updateHealthBar();
 
         if (this.scene.fxManager) {
@@ -161,10 +203,24 @@ export default class Mercenary extends Phaser.GameObjects.Container {
     }
 
     takeMagicDamage(amount, attackerId = null) {
-        // Magic Damage is reduced by mDef
-        const finalDamage = Math.max(1, amount - this.mDef);
-        this.hp -= finalDamage;
-        if (this.hp < 0) this.hp = 0;
+        // 1. Magic Damage is reduced by mDef
+        let finalDamage = Math.max(1, amount - this.mDef);
+
+        // 1.5 Damage Reduction Buff
+        if (this.bonusDR > 0) {
+            finalDamage = finalDamage * (1 - this.bonusDR);
+        }
+
+        // 2. Intercept with Shield
+        if (this.scene.shieldManager) {
+            finalDamage = this.scene.shieldManager.takeDamage(this, finalDamage);
+        }
+
+        if (finalDamage > 0) {
+            this.hp -= finalDamage;
+            if (this.hp < 0) this.hp = 0;
+        }
+
         this.updateHealthBar();
 
         if (this.scene.fxManager) {
@@ -200,7 +256,15 @@ export default class Mercenary extends Phaser.GameObjects.Container {
 
     updateHealthBar() {
         if (this.healthBar) {
-            this.healthBar.setValue((this.hp / this.maxHp) * 100);
+            const hpPercent = (this.hp / this.maxHp) * 100;
+            let shieldPercent = 0;
+
+            if (this.scene && this.scene.shieldManager) {
+                const shieldAmount = this.scene.shieldManager.getShield(this);
+                shieldPercent = (shieldAmount / this.maxHp) * 100;
+            }
+
+            this.healthBar.setValue(hpPercent, shieldPercent);
         }
     }
 
@@ -268,5 +332,77 @@ export default class Mercenary extends Phaser.GameObjects.Container {
                 });
             }
         }
+    }
+
+    syncStatusUI() {
+        if (!this.active || this.hp <= 0) return;
+
+        const statuses = [];
+
+        // 1. Check Crowd Control
+        if (this.isAirborne) {
+            statuses.push({
+                name: '에어본 (Airborne)',
+                description: '공중에 떠올라 행동할 수 없습니다.',
+                emoji: '🌪️'
+            });
+        }
+        if (this.isStunned) {
+            statuses.push({
+                name: '기절 (Stunned)',
+                description: '기동 불능 상태입니다.',
+                emoji: '💫'
+            });
+        }
+        if (this.isKnockedBack) {
+            statuses.push({
+                name: '넉백 (Knockback)',
+                description: '뒤로 밀려나고 있습니다.',
+                emoji: '💨'
+            });
+        }
+
+        // 2. Check Shields
+        if (this.scene.shieldManager && this.scene.shieldManager.getShield(this) > 0) {
+            const shieldAmt = this.scene.shieldManager.getShield(this);
+            statuses.push({
+                name: '보호막 (Shield)',
+                description: `피해를 흡수합니다. (${shieldAmt.toFixed(0)})`,
+                emoji: '🛡️'
+            });
+        }
+
+        // 3. Check Buffs
+        if (this.scene.buffManager) {
+            const myBuffs = this.scene.buffManager.activeBuffs.filter(b => b.target === this);
+            myBuffs.forEach(buff => {
+                let desc = '';
+                if (buff.amountAtk > 0 || buff.amountMAtk > 0) {
+                    desc = `공격력 +${buff.amountAtk}, 마법공격력 +${buff.amountMAtk}`;
+                }
+                if (buff.amountDR > 0) {
+                    desc += (desc ? ', ' : '') + `피해 감소 +${(buff.amountDR * 100).toFixed(0)}%`;
+                }
+
+                let emoji = '💪';
+                if (buff.type === 'Stone Skin') {
+                    emoji = '🪨';
+                }
+
+                statuses.push({
+                    name: `${buff.type} (버프)`,
+                    description: desc,
+                    emoji: emoji
+                });
+            });
+        }
+
+        // 3. Check Debuffs (Future-proofing)
+        // ...
+
+        EventBus.emit(EventBus.EVENTS.STATUS_UPDATED, {
+            agentId: this.className,
+            statuses: statuses
+        });
     }
 }

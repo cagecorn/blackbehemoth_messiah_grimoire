@@ -1,6 +1,6 @@
 export default class CooldownBar {
     constructor(scene, x, y, width = 64, height = 4) {
-        this.bar = new Phaser.GameObjects.Graphics(scene);
+        this.bar = scene.add.graphics();
 
         this.x = x;
         this.y = y;
@@ -8,7 +8,6 @@ export default class CooldownBar {
         this.height = height;
         this.value = 0; // expected from 0 to 1
 
-        scene.add.existing(this.bar);
         this.bar.setDepth(9999); // Always on top
         this.draw();
     }
@@ -32,13 +31,17 @@ export default class CooldownBar {
         this.bar.fillStyle(0x000000);
         this.bar.fillRect(this.x - this.width / 2, this.y, this.width, this.height);
 
+        // Border (white/gray)
+        this.bar.lineStyle(1, 0x555555);
+        this.bar.strokeRect(this.x - this.width / 2, this.y, this.width, this.height);
+
         // Foreground (orange/yellow for cooldown)
         if (this.value > 0) {
             // If ready, make it bright yellow, else orange
             const color = this.value >= 1 ? 0xffff00 : 0xffaa00;
             this.bar.fillStyle(color);
 
-            const displayWidth = this.width * this.value;
+            const displayWidth = Math.max(1, this.width * this.value);
             this.bar.fillRect(this.x - this.width / 2, this.y, displayWidth, this.height);
         }
     }

@@ -3,21 +3,39 @@ import Mercenary from './Mercenary.js';
 import applyBardAI from '../AI/BardAI.js';
 import Blackboard from '../AI/Blackboard.js';
 import { MercenaryClasses } from '../Core/EntityStats.js';
+import SongOfProtection from '../Skills/SongOfProtection.js';
+import PlaceholderSkill from '../Skills/PlaceholderSkill.js';
 
 /**
  * Bard.js
  * Hybrid Support: Applies ATK/mATK buffs to allies, then attacks with notes.
  */
 export default class Bard extends Mercenary {
-    constructor(scene, x, y, warrior) {
-        const config = MercenaryClasses.BARD;
+    constructor(scene, x, y, warrior, characterConfig = {}) {
+        const config = { ...MercenaryClasses.BARD, ...characterConfig };
         super(scene, x, y, config);
         this.warrior = warrior;
 
         this.lastFireTime = 0;
         this.lastBuffTime = 0;
 
+        // Instantiate Skill dynamically
+        if (config.skillName === 'SongOfProtection') {
+            this.skill = new SongOfProtection({
+                cooldown: 10000,
+                shieldMultiplier: 2.5,
+                shieldDuration: 5000
+            });
+        } else if (config.skillName === 'PlaceholderSkill') {
+            this.skill = new PlaceholderSkill();
+        }
+
         this.initAI();
+    }
+
+    getSkillProgress() {
+        if (!this.skill) return 0;
+        return this.skill.getCooldownProgress(this.scene.time.now, this.castSpd);
     }
 
     initAI() {
@@ -33,7 +51,7 @@ export default class Bard extends Mercenary {
 
     castBuff(target) {
         const now = this.scene.time.now;
-        if (now - this.lastBuffTime < this.config.castSpd) return false;
+        if (now - this.lastBuffTime < this.castSpd) return false;
 
         this.lastBuffTime = now;
 
@@ -57,7 +75,7 @@ export default class Bard extends Mercenary {
 
     fireProjectile(target) {
         const now = this.scene.time.now;
-        if (now - this.lastFireTime < this.config.atkSpd) return false;
+        if (now - this.lastFireTime < this.atkSpd) return false;
 
         this.lastFireTime = now;
 
@@ -68,12 +86,20 @@ export default class Bard extends Mercenary {
             yoyo: true
         });
 
-        // Use physical Atk for musical notes
         this.scene.projectileManager.fire(
             this.x, this.y, target.x, target.y,
-            this.getTotalAtk(), 'emoji_note', false, null, this.className || this.id
+            this.getTotalAtk(), 'emoji_note', false, null, this
         );
 
         return true;
+    }
+
+    update() {
+        super.update();
+
+        // Auto-cast Song of Protection when off cooldown
+        if (!this.isAirborne && !this.isStunned && !this.isKnockedBack && this.skill) {
+            this.skill.execute(this);
+        }
     }
 }

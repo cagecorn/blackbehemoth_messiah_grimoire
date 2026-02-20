@@ -91,6 +91,7 @@ export default class BootScene extends Phaser.Scene {
         this.load.image('healer_sprite', 'assets/characters/party/healer_sprite.png');
         this.load.image('wizard_sprite', 'assets/characters/party/wizard_sprite.png');
         this.load.image('bard_sprite', 'assets/characters/party/bard_sprite.png');
+        this.load.image('silvi_sprite', 'assets/characters/party/silvi_sprite.png');
         this.load.image('goblin_sprite', 'assets/characters/enemies/goblin_sprite.png');
 
         // Load Backgrounds

@@ -12,7 +12,7 @@ export const HealerActions = {
         console.log(`[HealerActions] castHeal triggered by ${unit.unitName} for ${target.unitName}`);
         unit.lastActionTime = now;
 
-        const mAtk = unit.mAtk || 10;
+        const mAtk = unit.getTotalMAtk ? unit.getTotalMAtk() : (unit.mAtk || 10);
         const healAmount = mAtk * 1.5;
         target.receiveHeal(healAmount);
 
@@ -43,7 +43,7 @@ export const HealerActions = {
         console.log(`[HealerActions] castAttack triggered by ${unit.unitName} on ${target.unitName}`);
         unit.lastActionTime = now;
 
-        const mAtk = unit.mAtk || 10;
+        const mAtk = unit.getTotalMAtk ? unit.getTotalMAtk() : (unit.mAtk || 10);
 
         // Determine target group: 
         // If unit is a Mercenary (in mercenaries group), targetGroup is enemies.
@@ -57,7 +57,7 @@ export const HealerActions = {
         if (unit.scene.projectileManager) {
             unit.scene.projectileManager.fire(
                 unit.x, unit.y, target.x, target.y,
-                mAtk, 'emoji_sparkle', true, targetGroup, unit.className || unit.id
+                mAtk, 'emoji_sparkle', true, targetGroup, unit
             );
         }
         return true;

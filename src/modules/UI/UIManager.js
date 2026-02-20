@@ -4,7 +4,7 @@ import EventBus from '../Events/EventBus.js';
 import intentRouter from '../AI/IntentRouter.js';
 import localLLM from '../AI/LocalLLM.js';
 import embeddingGemma from '../AI/EmbeddingGemma.js';
-import { MercenaryClasses } from '../Core/EntityStats.js';
+import { MercenaryClasses, Characters } from '../Core/EntityStats.js';
 
 export default class UIManager {
     constructor() {
@@ -30,6 +30,27 @@ export default class UIManager {
         EventBus.on(EventBus.EVENTS.INVENTORY_UPDATED, () => {
             this.inventoryDirty = true;
         });
+        EventBus.on(EventBus.EVENTS.STATUS_UPDATED, (payload) => {
+            const channel = this.channels[payload.agentId];
+            if (channel) {
+                channel.updateStatuses(payload.statuses);
+            }
+        });
+        EventBus.on(EventBus.EVENTS.DEBUG_SWAP_CHARACTER, (payload) => {
+            const { classId, characterId } = payload;
+            const newConfig = Object.values(Characters).find(c => c.id === characterId);
+            if (newConfig && this.channels[classId]) {
+                const spritePath = `assets/characters/party/${newConfig.sprite}.png`;
+                this.channels[classId].updateVisuals(newConfig.name, spritePath);
+            }
+        });
+
+        EventBus.on(EventBus.EVENTS.UNIT_BARK, (payload) => {
+            const { agentId, text, unitName } = payload;
+            if (this.channels[agentId]) {
+                this.channels[agentId].addLog(`[${unitName}] ${text}`, '#00ffcc');
+            }
+        });
 
         // Start render loop
         requestAnimationFrame(this.rafLoop);
@@ -50,15 +71,42 @@ export default class UIManager {
     setupChatChannels() {
         if (!this.chatContainer) return;
 
+        // Group Characters by classId
+        const charactersByClass = {};
+        Object.values(Characters).forEach(char => {
+            if (!charactersByClass[char.classId]) {
+                charactersByClass[char.classId] = [];
+            }
+            charactersByClass[char.classId].push(char);
+        });
+
         // Dynamically create a chat channel for each configured Mercenary Class
         Object.values(MercenaryClasses).forEach(config => {
-            const channelId = config.id;
+            const classId = config.id;
             const channelName = config.name;
+            const classChars = charactersByClass[classId] || [];
+
+            // We default to the class sprite, but DungeonScene will update it on spawn 
+            // if we want, or ChatChannel gets updated when swapped.
             const spritePath = `assets/characters/party/${config.sprite}.png`;
 
-            this.channels[channelId] = new ChatChannel(channelId, channelName, spritePath, this.chatContainer, (text) => {
-                this.handlePlayerCommand(channelId, text);
-            });
+            this.channels[classId] = new ChatChannel(
+                classId,
+                classId,
+                classChars,
+                channelName,
+                spritePath,
+                this.chatContainer,
+                (text) => {
+                    this.handlePlayerCommand(classId, text);
+                },
+                (swapClassId, newCharacterId) => {
+                    EventBus.emit(EventBus.EVENTS.DEBUG_SWAP_CHARACTER, {
+                        classId: swapClassId,
+                        characterId: newCharacterId
+                    });
+                }
+            );
         });
 
         this.addLog('warrior', 'Messiah Grimoire에 오신 것을 환영합니다!', '#00ffcc');
@@ -87,10 +135,16 @@ export default class UIManager {
 
 
             try {
-                const memories = await embeddingGemma.searchMemory(text);
-                const response = await localLLM.generateResponse(text, memories);
+                // Find character config based on the agentId (classId)
+                const channel = this.channels[agentId];
+                const charName = channel ? channel.name : agentId;
+                // Find character config by name or id
+                const charConfig = Object.values(Characters).find(c => c.name.includes(charName) || c.id === charName.toLowerCase());
 
-                this.addLog(agentId, `[${agentId.toUpperCase()}] ${response}`, '#00ffcc');
+                const memories = await embeddingGemma.searchMemory(text);
+                const response = await localLLM.generateResponse(charConfig, text, memories);
+
+                this.addLog(agentId, `[${charName}] ${response}`, '#00ffcc');
 
                 // Let the specific mercenary "say" it in a speech bubble if needed
                 EventBus.emit(EventBus.EVENTS.AI_RESPONSE, {
@@ -154,9 +208,6 @@ export default class UIManager {
             items.sort((a, b) => b.amount - a.amount);
 
             items.forEach(item => {
-                // Determine SVG mapping (our keys are 'emoji_coin', DB stores that)
-                // We need to map 'emoji_coin' back to '1fa99.svg'
-                // For a robust system, the ID should ideally just be the filename or we keep a dictionary
                 const filename = this.getSVGFilename(item.id);
 
                 const div = document.createElement('div');
@@ -174,7 +225,6 @@ export default class UIManager {
         }
     }
 
-    // Temporary mapping helper from Phaser Cache Key to actual SVG filename
     getSVGFilename(key) {
         const map = {
             'emoji_coin': '1fa99.svg',

@@ -16,7 +16,10 @@ class EventBus extends Phaser.Events.EventEmitter {
             AI_COMMAND_HEALER: 'AI_COMMAND_HEALER',
             AI_RESPONSE: 'AI_RESPONSE',
             UNIT_DIED: 'UNIT_DIED',
-            INVENTORY_UPDATED: 'INVENTORY_UPDATED'
+            INVENTORY_UPDATED: 'INVENTORY_UPDATED',
+            STATUS_UPDATED: 'STATUS_UPDATED',
+            DEBUG_SWAP_CHARACTER: 'DEBUG_SWAP_CHARACTER',
+            UNIT_BARK: 'UNIT_BARK'
         };
     }
 }

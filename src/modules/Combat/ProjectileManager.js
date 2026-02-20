@@ -23,9 +23,9 @@ export default class ProjectileManager {
      * @param {string} type 'archer' or 'emoji_sparkle'
      * @param {Boolean} isMagic Whether this is a magic attack
      * @param {Phaser.GameObjects.Group} targetGroup The group to hit (mercenaries or enemies)
-     * @param {string} shooterId ID of the shooter for kill attribution
+     * @param {Object} shooter The shooter object for Miss/Kill attribution
      */
-    fire(x, y, targetX, targetY, damage, type = 'archer', isMagic = false, targetGroup = null, shooterId = null) {
+    fire(x, y, targetX, targetY, damage, type = 'archer', isMagic = false, targetGroup = null, shooter = null) {
         let projectile;
         const groupToHit = targetGroup || this.scene.enemies;
 
@@ -52,7 +52,7 @@ export default class ProjectileManager {
             });
 
             // Instant hit calculation
-            this.checkHitAtTarget(targetX, targetY, damage, groupToHit, isMagic, shooterId);
+            this.checkHitAtTarget(targetX, targetY, damage, groupToHit, isMagic, shooter);
             return; // Skip standard projectile logic
         }
 
@@ -72,7 +72,7 @@ export default class ProjectileManager {
                 duration: 400,
                 ease: 'Linear',
                 onComplete: () => {
-                    this.checkHitAtTarget(targetX, targetY, damage, groupToHit, isMagic, shooterId);
+                    this.checkHitAtTarget(targetX, targetY, damage, groupToHit, isMagic, shooter);
                     projectile.destroy();
                 }
             });
@@ -99,30 +99,30 @@ export default class ProjectileManager {
                     }
                 },
                 onComplete: () => {
-                    this.checkHitAtTarget(targetX, targetY, damage, groupToHit, false, shooterId);
+                    this.checkHitAtTarget(targetX, targetY, damage, groupToHit, false, shooter);
                     projectile.destroy();
                 }
             });
         }
     }
 
-    checkHitAtTarget(tx, ty, damage, targetGroup, isMagic, shooterId) {
+    checkHitAtTarget(tx, ty, damage, targetGroup, isMagic, shooter) {
         const threshold = 50;
         const hitTarget = targetGroup.getChildren().find(e =>
             e.active && e.hp > 0 && Phaser.Math.Distance.Between(e.x, e.y, tx, ty) <= threshold
         );
 
         if (hitTarget) {
-            this.handleHit(hitTarget, damage, isMagic, shooterId);
+            this.handleHit(hitTarget, damage, isMagic, shooter);
         }
     }
 
-    handleHit(target, damage, isMagic, shooterId) {
+    handleHit(target, damage, isMagic, shooter) {
         if (target) {
             if (isMagic && target.takeMagicDamage) {
-                target.takeMagicDamage(damage, shooterId);
+                target.takeMagicDamage(damage, shooter);
             } else if (target.takeDamage) {
-                target.takeDamage(damage, shooterId);
+                target.takeDamage(damage, shooter);
             }
         }
     }

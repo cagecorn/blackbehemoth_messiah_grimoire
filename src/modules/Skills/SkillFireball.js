@@ -83,7 +83,8 @@ export default class SkillFireball {
 
                 // 3. Trigger AOE Damage Manager
                 if (scene.aoeManager) {
-                    scene.aoeManager.triggerAoe(target.x, target.y, this.aoeRadius, damage, caster.className || caster.id);
+                    const opposingGroup = scene.enemies.contains(caster) ? scene.mercenaries : scene.enemies;
+                    scene.aoeManager.triggerAoe(target.x, target.y, this.aoeRadius, damage, caster.className || caster.id, opposingGroup);
                 }
 
                 // 4. Shatter Particle Effect

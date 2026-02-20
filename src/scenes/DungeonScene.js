@@ -12,12 +12,14 @@ import ParticleManager from '../modules/Particles/ParticleManager.js';
 import FXManager from '../modules/Combat/FXManager.js';
 import AoeManager from '../modules/Combat/AoeManager.js';
 import CCManager from '../modules/Combat/CCManager.js';
+import ShieldManager from '../modules/Combat/ShieldManager.js';
 import LootManager from '../modules/Loot/LootManager.js';
-import { MercenaryClasses, MonsterClasses, StageConfigs } from '../modules/Core/EntityStats.js';
+import { MercenaryClasses, MonsterClasses, StageConfigs, Characters } from '../modules/Core/EntityStats.js';
 import SeparationManager from '../modules/Core/SeparationManager.js';
 import BuffManager from '../modules/Core/BuffManager.js';
 import StageManager from '../modules/Environment/StageManager.js';
 import EventBus from '../modules/Events/EventBus.js';
+import BarkManager from '../modules/AI/BarkManager.js';
 
 export default class DungeonScene extends Phaser.Scene {
     constructor() {
@@ -56,35 +58,37 @@ export default class DungeonScene extends Phaser.Scene {
         this.particleManager = new ParticleManager(this);
         this.buffManager = new BuffManager(this);
         this.ccManager = new CCManager(this);
+        this.shieldManager = new ShieldManager(this);
+        this.barkManager = new BarkManager(this);
 
         // Physics Groups
         this.mercenaries = this.physics.add.group();
         this.enemies = this.physics.add.group();
 
-        // Spawn Warrior (Leader)
+        // Spawn Warrior (Leader) -> Aren
         const startPos = this.dungeonManager.getPlayerStartPosition();
-        const warriorConfig = MercenaryClasses.WARRIOR;
-        this.player = new Warrior(this, startPos.x + warriorConfig.spawnOffset.x, startPos.y + warriorConfig.spawnOffset.y);
+        const warriorConfig = Characters.AREN;
+        this.player = new Warrior(this, startPos.x, startPos.y, warriorConfig);
         this.mercenaries.add(this.player);
 
-        // Spawn Archer
-        const archerConfig = MercenaryClasses.ARCHER;
-        this.archer = new Archer(this, startPos.x - 40, startPos.y, this.player);
+        // Spawn Archer -> Ella
+        const archerConfig = Characters.ELLA;
+        this.archer = new Archer(this, startPos.x - 40, startPos.y, this.player, archerConfig);
         this.mercenaries.add(this.archer);
 
-        // Spawn Healer
-        const healerConfig = MercenaryClasses.HEALER;
-        this.healer = new Healer(this, startPos.x - 80, startPos.y, this.player);
+        // Spawn Healer -> Sera
+        const healerConfig = Characters.SERA;
+        this.healer = new Healer(this, startPos.x - 80, startPos.y, this.player, healerConfig);
         this.mercenaries.add(this.healer);
 
-        // Spawn Wizard
-        const wizardConfig = MercenaryClasses.WIZARD;
-        this.wizard = new Wizard(this, startPos.x - 120, startPos.y, this.player);
+        // Spawn Wizard -> Merlin
+        const wizardConfig = Characters.MERLIN;
+        this.wizard = new Wizard(this, startPos.x - 120, startPos.y, this.player, wizardConfig);
         this.mercenaries.add(this.wizard);
 
-        // Spawn Bard
-        const bardConfig = MercenaryClasses.BARD;
-        this.bard = new Bard(this, startPos.x - 160, startPos.y, this.player);
+        // Spawn Bard -> Lute
+        const bardConfig = Characters.LUTE;
+        this.bard = new Bard(this, startPos.x - 160, startPos.y, this.player, bardConfig);
         this.mercenaries.add(this.bard);
 
         // First wave of monsters
@@ -117,6 +121,58 @@ export default class DungeonScene extends Phaser.Scene {
         this.physics.add.overlap(this.mercenaries, this.enemies, (u1, u2) => {
             SeparationManager.applyRepulsion(u1, u2, 60); // Stronger repulsion for enemies
         });
+
+        // Listen for Character Swap
+        EventBus.on(EventBus.EVENTS.DEBUG_SWAP_CHARACTER, this.handleDebugSwap, this);
+    }
+
+    handleDebugSwap(payload) {
+        const { classId, characterId } = payload;
+
+        // Find existing unit
+        const existingUnit = this.mercenaries.getChildren().find(m => m.className === classId);
+        if (!existingUnit) return;
+
+        // Remember position
+        const x = existingUnit.x;
+        const y = existingUnit.y;
+
+        // Get new config
+        const newConfig = Object.values(Characters).find(c => c.id === characterId);
+        if (!newConfig) return;
+
+        // Destroy old
+        existingUnit.destroy();
+
+        // Spawn new
+        let newUnit = null;
+        if (classId === 'warrior') {
+            newUnit = new Warrior(this, x, y, newConfig);
+            this.player = newUnit; // update leader ref
+            this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
+
+            // Update all others' warrior ref
+            this.mercenaries.getChildren().forEach(m => {
+                if (m !== newUnit) m.warrior = newUnit;
+            });
+        } else if (classId === 'archer') {
+            newUnit = new Archer(this, x, y, this.player, newConfig);
+            this.archer = newUnit;
+        } else if (classId === 'healer') {
+            newUnit = new Healer(this, x, y, this.player, newConfig);
+            this.healer = newUnit;
+        } else if (classId === 'wizard') {
+            newUnit = new Wizard(this, x, y, this.player, newConfig);
+            this.wizard = newUnit;
+        } else if (classId === 'bard') {
+            newUnit = new Bard(this, x, y, this.player, newConfig);
+            this.bard = newUnit;
+        }
+
+        if (newUnit) {
+            this.mercenaries.add(newUnit);
+            EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, `[디버그] ${classId} 역할이 [${newConfig.name}](으)로 교체되었습니다. 🔄`);
+        }
     }
 
     update(time, delta) {
@@ -136,6 +192,12 @@ export default class DungeonScene extends Phaser.Scene {
         }
         if (this.ccManager) {
             this.ccManager.update(time, delta);
+        }
+        if (this.shieldManager) {
+            this.shieldManager.update(time, delta);
+        }
+        if (this.barkManager) {
+            this.barkManager.update(time, delta);
         }
 
         if (this.mercenaries) {

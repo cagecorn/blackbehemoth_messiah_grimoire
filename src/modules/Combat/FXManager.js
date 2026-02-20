@@ -18,8 +18,10 @@ export default class FXManager {
     showDamageText(target, amount, color = '#ff0000') {
         if (!target || !target.active) return;
 
+        let displayAmount = typeof amount === 'number' ? `-${amount.toFixed(1)}` : amount;
+
         // High-Resolution crisp text rendering technique:
-        const text = this.scene.add.text(target.x, target.y - 20, `-${amount.toFixed(1)}`, {
+        const text = this.scene.add.text(target.x, target.y - 20, displayAmount, {
             fontSize: '32px',
             fill: color,
             fontStyle: 'bold',
@@ -132,6 +134,45 @@ export default class FXManager {
             duration: duration,
             ease: 'Linear',
             onComplete: () => image.destroy()
+        });
+    }
+
+    /**
+     * Create a rising sparkle particle effect over the target (e.g., for buffs).
+     */
+    createSparkleEffect(target) {
+        if (!target || !target.active) return;
+
+        // Since we don't have a specific sparkle texture defined yet, 
+        // we can use a small graphics object or a default white particle.
+        // For now, let's create a temporary graphics texture if it doesn't exist.
+        if (!this.scene.textures.exists('sparkle_fx')) {
+            const graphics = this.scene.add.graphics();
+            graphics.fillStyle(0xffffff, 1);
+            graphics.fillCircle(4, 4, 4);
+            graphics.generateTexture('sparkle_fx', 8, 8);
+            graphics.destroy();
+        }
+
+        const emitter = this.scene.add.particles(0, 0, 'sparkle_fx', {
+            x: target.x,
+            y: target.y - 30, // Start slightly above the center
+            speed: { min: 20, max: 50 },
+            angle: { min: 240, max: 300 }, // Shooting upwards
+            scale: { start: 1, end: 0 },
+            alpha: { start: 1, end: 0 },
+            lifespan: 800,
+            gravityY: -50,
+            tint: [0xffff00, 0xffa500, 0xffffff], // Gold/yellow sparkles
+            blendMode: 'ADD',
+            quantity: 2,
+            frequency: 50,
+            duration: 500 // Stop emitting after 500ms
+        });
+
+        // Cleanup after emission finishes
+        this.scene.time.delayedCall(1500, () => {
+            if (emitter) emitter.destroy();
         });
     }
 }

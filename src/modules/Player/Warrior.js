@@ -3,14 +3,17 @@ import Mercenary from './Mercenary.js';
 import applyMeleeAI from '../AI/MeleeAI.js';
 import { MercenaryClasses } from '../Core/EntityStats.js';
 import ChargeAttack from '../Skills/ChargeAttack.js';
+import PlaceholderSkill from '../Skills/PlaceholderSkill.js';
+import StoneSkin from '../Skills/StoneSkin.js';
 
 /**
  * Warrior.js
  * Specialist in Melee combat. Supports manual WASD movement for debugging.
  */
 export default class Warrior extends Mercenary {
-    constructor(scene, x, y) {
-        super(scene, x, y, MercenaryClasses.WARRIOR);
+    constructor(scene, x, y, characterConfig = {}) {
+        const config = { ...MercenaryClasses.WARRIOR, ...characterConfig };
+        super(scene, x, y, config);
 
         // Input setup for manual control
         this.cursors = this.scene.input.keyboard.createCursorKeys();
@@ -21,16 +24,28 @@ export default class Warrior extends Mercenary {
             right: Phaser.Input.Keyboard.KeyCodes.D
         });
 
-        // Instantiate Skill
-        this.skill = new ChargeAttack({
-            cooldown: 8000,
-            damageMultiplier: 2.0,
-            aoeRadius: 100,
-            clusterRadius: 120, // look for goblins within 120px of each other
-            dashSpeedMultiplier: 8, // fast dash
-            ccDuration: 2000, // 2 second airborne
-            ccHeight: 120 // launch them high
-        });
+        // Instantiate Skill dynamically
+        if (config.skillName === 'ChargeAttack') {
+            this.skill = new ChargeAttack({
+                cooldown: 8000,
+                damageMultiplier: 2.0,
+                aoeRadius: 100,
+                clusterRadius: 120, // look for goblins within 120px of each other
+                dashSpeedMultiplier: 8, // fast dash
+                ccDuration: 2000, // 2 second airborne
+                ccHeight: 120 // launch them high
+            });
+        } else if (config.skillName === 'StoneSkin') {
+            this.skill = new StoneSkin(scene, {
+                cooldown: 10000,
+                duration: 5000,
+                damageReduction: 0.20
+            });
+        } else if (config.skillName === 'PlaceholderSkill') {
+            this.skill = new PlaceholderSkill();
+        }
+
+        console.log(`[Warrior] Initialized ${this.unitName} (${this.characterId}) with skill: ${this.skill ? this.skill.name || this.skill.constructor.name : 'NONE'}`);
 
         // Initialize Melee AI in Manual Mode by default
         this.initAI();

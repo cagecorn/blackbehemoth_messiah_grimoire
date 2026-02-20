@@ -29,9 +29,14 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
         this.def = config.def || 0;
         this.mDef = config.mDef || 0;
 
+        this.bonusDR = 0;
+
         this.speed = config.speed || 50;
         this.atkRange = config.atkRange || 40;
+        this.rangeMin = config.rangeMin || 0;
+        this.rangeMax = config.rangeMax || this.atkRange;
         this.atkSpd = config.atkSpd || 1500;
+        this.castSpd = config.castSpd || 1000;
 
         this.acc = config.acc || 100;
         this.eva = config.eva || 0;
@@ -78,11 +83,40 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
         }
     }
 
-    takeDamage(amount, attackerId = null) {
-        // Physical Damage is reduced by Def
-        const finalDamage = Math.max(1, amount - this.def);
-        this.hp -= finalDamage;
-        if (this.hp < 0) this.hp = 0;
+    takeDamage(amount, attacker = null) {
+        // --- 0. Accuracy vs Evasion Check ---
+        if (attacker && typeof attacker === 'object' && attacker.acc !== undefined && this.eva !== undefined) {
+            const hitChance = Math.max(0.05, Math.min(1.0, (attacker.acc - this.eva) / 100.0));
+            if (Math.random() > hitChance) {
+                // MISS!
+                if (this.scene.fxManager) {
+                    this.scene.fxManager.showDamageText(this, 'MISS!', '#ffffff');
+                }
+                console.info(`[Combat] ${attacker.unitName || 'Mercenary'} missed ${this.unitName}!`);
+                return;
+            }
+        }
+
+        const attackerId = (attacker && typeof attacker === 'object') ? (attacker.id || attacker.className) : attacker;
+
+        // 1. Physical Damage is reduced by Def
+        let finalDamage = Math.max(1, amount - this.def);
+
+        // 1.5 Damage Reduction Buff
+        if (this.bonusDR > 0) {
+            finalDamage = finalDamage * (1 - this.bonusDR);
+        }
+
+        // 2. Intercept with Shield
+        if (this.scene.shieldManager) {
+            finalDamage = this.scene.shieldManager.takeDamage(this, finalDamage);
+        }
+
+        if (finalDamage > 0) {
+            this.hp -= finalDamage;
+            if (this.hp < 0) this.hp = 0;
+        }
+
         this.updateHealthBar();
 
         if (this.scene.fxManager) {
@@ -104,11 +138,27 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
         }
     }
 
-    takeMagicDamage(amount, attackerId = null) {
-        // Magic Damage is reduced by mDef
-        const finalDamage = Math.max(1, amount - this.mDef);
-        this.hp -= finalDamage;
-        if (this.hp < 0) this.hp = 0;
+    takeMagicDamage(amount, attacker = null) {
+        const attackerId = (attacker && typeof attacker === 'object') ? (attacker.id || attacker.className) : attacker;
+
+        // 1. Magic Damage is reduced by mDef
+        let finalDamage = Math.max(1, amount - this.mDef);
+
+        // 1.5 Damage Reduction Buff
+        if (this.bonusDR > 0) {
+            finalDamage = finalDamage * (1 - this.bonusDR);
+        }
+
+        // 2. Intercept with Shield
+        if (this.scene.shieldManager) {
+            finalDamage = this.scene.shieldManager.takeDamage(this, finalDamage);
+        }
+
+        if (finalDamage > 0) {
+            this.hp -= finalDamage;
+            if (this.hp < 0) this.hp = 0;
+        }
+
         this.updateHealthBar();
 
         if (this.scene.fxManager) {
@@ -150,7 +200,15 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
 
     updateHealthBar() {
         if (this.healthBar) {
-            this.healthBar.setValue((this.hp / this.maxHp) * 100);
+            const hpPercent = (this.hp / this.maxHp) * 100;
+            let shieldPercent = 0;
+
+            if (this.scene && this.scene.shieldManager) {
+                const shieldAmount = this.scene.shieldManager.getShield(this);
+                shieldPercent = (shieldAmount / this.maxHp) * 100;
+            }
+
+            this.healthBar.setValue(hpPercent, shieldPercent);
         }
     }
 
@@ -248,7 +306,7 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
 
         if (dist <= this.atkRange && now - this.lastAttackTime > this.atkSpd) {
             this.lastAttackTime = now;
-            this.target.takeDamage(this.atk, this.id);
+            this.target.takeDamage(this.atk, this);
 
             // Visual attack nudge
             this.scene.tweens.add({
