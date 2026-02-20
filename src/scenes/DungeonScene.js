@@ -11,11 +11,13 @@ import ProjectileManager from '../modules/Combat/ProjectileManager.js';
 import ParticleManager from '../modules/Particles/ParticleManager.js';
 import FXManager from '../modules/Combat/FXManager.js';
 import AoeManager from '../modules/Combat/AoeManager.js';
+import CCManager from '../modules/Combat/CCManager.js';
 import LootManager from '../modules/Loot/LootManager.js';
 import { MercenaryClasses, MonsterClasses, StageConfigs } from '../modules/Core/EntityStats.js';
 import SeparationManager from '../modules/Core/SeparationManager.js';
 import BuffManager from '../modules/Core/BuffManager.js';
 import StageManager from '../modules/Environment/StageManager.js';
+import EventBus from '../modules/Events/EventBus.js';
 
 export default class DungeonScene extends Phaser.Scene {
     constructor() {
@@ -25,6 +27,8 @@ export default class DungeonScene extends Phaser.Scene {
         this.player = null; // Leader focus
         this.mercenaries = null;
         this.enemies = null;
+        this.currentRound = 1;
+        this.isResting = false;
     }
 
     create() {
@@ -51,6 +55,7 @@ export default class DungeonScene extends Phaser.Scene {
         this.projectileManager = new ProjectileManager(this);
         this.particleManager = new ParticleManager(this);
         this.buffManager = new BuffManager(this);
+        this.ccManager = new CCManager(this);
 
         // Physics Groups
         this.mercenaries = this.physics.add.group();
@@ -82,21 +87,8 @@ export default class DungeonScene extends Phaser.Scene {
         this.bard = new Bard(this, startPos.x - 160, startPos.y, this.player);
         this.mercenaries.add(this.bard);
 
-        // Spawn Goblins (12 units for longer testing)
-        const goblinConfig = MonsterClasses.GOBLIN;
-        for (let i = 0; i < 12; i++) {
-            const offsetX = (i % 4) * 60;
-            const offsetY = Math.floor(i / 4) * 60;
-            const goblin = new Goblin(this, startPos.x + 150 + offsetX, startPos.y + offsetY - 80, this.player);
-            this.enemies.add(goblin);
-        }
-
-        // Spawn 2 Shamans
-        const shamanConfig = MonsterClasses.SHAMAN;
-        for (let i = 0; i < 2; i++) {
-            const shaman = new MonsterHealer(this, startPos.x + 200 + (i * 80), startPos.y + 120, shamanConfig, this.player);
-            this.enemies.add(shaman);
-        }
+        // First wave of monsters
+        this.spawnWave();
 
         // Setup Camera to follow player
         this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
@@ -128,8 +120,22 @@ export default class DungeonScene extends Phaser.Scene {
     }
 
     update(time, delta) {
+        if (this.enemies && this.enemies.countActive(true) === 0 && !this.isResting) {
+            this.isResting = true;
+            EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, `[시스템] 라운드 ${this.currentRound} 클리어! 5초 뒤 다음 라운드가 시작됩니다. ⛺`);
+
+            this.time.delayedCall(5000, () => {
+                this.currentRound++;
+                this.isResting = false;
+                this.spawnWave();
+            });
+        }
+
         if (this.buffManager) {
             this.buffManager.update(time, delta);
+        }
+        if (this.ccManager) {
+            this.ccManager.update(time, delta);
         }
 
         if (this.mercenaries) {
@@ -146,6 +152,32 @@ export default class DungeonScene extends Phaser.Scene {
                 enemy.setDepth(enemy.y);
                 this.clampToCamera(enemy);
             });
+        }
+    }
+
+    spawnWave() {
+        const startPos = this.dungeonManager.getPlayerStartPosition();
+
+        // Spawn Goblins (Base 12 + 2 per round)
+        const goblinConfig = MonsterClasses.GOBLIN;
+        const goblinCount = 12 + (this.currentRound - 1) * 2;
+        for (let i = 0; i < goblinCount; i++) {
+            const offsetX = (i % 4) * 60;
+            const offsetY = Math.floor(i / 4) * 60;
+            const goblin = new Goblin(this, startPos.x + 150 + offsetX, startPos.y + offsetY - 80, this.player);
+            this.enemies.add(goblin);
+        }
+
+        // Spawn Shamans (Base 2 + 1 every 2 rounds)
+        const shamanConfig = MonsterClasses.SHAMAN;
+        const shamanCount = 2 + Math.floor((this.currentRound - 1) / 2);
+        for (let i = 0; i < shamanCount; i++) {
+            const shaman = new MonsterHealer(this, startPos.x + 200 + (i * 80), startPos.y + 120, shamanConfig, this.player);
+            this.enemies.add(shaman);
+        }
+
+        if (this.currentRound > 1) {
+            EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, `[시스템] 몬스터들이 증원되었습니다! (라운드 ${this.currentRound}) ⚔️`);
         }
     }
 

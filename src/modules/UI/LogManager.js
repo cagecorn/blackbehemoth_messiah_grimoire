@@ -55,9 +55,17 @@ class LogManager {
     }
 
     handleMonsterKilled(payload) {
-        const monsterId = payload.monsterId || payload;
+        const { monsterId, attackerId } = payload;
+        const targetChannel = attackerId || 'warrior';
         const monsterEmoji = (monsterId === 'goblin_sprite' || monsterId === 'monster') ? '👺' : '👾';
-        this.addLog(`Defeated a monster! ${monsterEmoji}`, '#ffbbbb');
+
+        let attackerName = 'Warrior';
+        if (targetChannel === 'archer') attackerName = 'Archer';
+        if (targetChannel === 'healer') attackerName = 'Healer';
+        if (targetChannel === 'wizard') attackerName = 'Wizard';
+        if (targetChannel === 'bard') attackerName = 'Bard';
+
+        this.addLog(`${attackerName} defeated a monster! ${monsterEmoji}`, '#ffbbbb');
     }
 
     handleUnitDied(unitName) {

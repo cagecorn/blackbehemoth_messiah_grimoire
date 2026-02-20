@@ -37,6 +37,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         this.speed = config.speed || 100;
         this.atkRange = config.atkRange || 40;
         this.atkSpd = config.atkSpd || 1000;
+        this.castSpd = config.castSpd || 1000;
 
         this.acc = config.acc || 100;
         this.eva = config.eva || 0;
@@ -215,7 +216,10 @@ export default class Mercenary extends Phaser.GameObjects.Container {
     }
 
     update() {
-        if (this.btManager) {
+        if (this.isAirborne || this.isStunned) {
+            // Can't act while CC'd. Keep velocity at 0 unless knocked back.
+            this.body.setVelocity(0, 0);
+        } else if (this.btManager) {
             this.btManager.step();
         }
         if (this.healthBar) {

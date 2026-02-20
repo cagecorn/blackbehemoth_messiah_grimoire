@@ -11,23 +11,40 @@ export default class UIManager {
         this.inventoryContainer = document.getElementById('inventory-list');
         this.chatContainer = document.getElementById('chat-container');
         this.channels = {};
-        this.updateInterval = null;
         this.resizeObserver = null;
+        this.inventoryDirty = true; // initially dirty to load first time
+        this.isRefreshing = false;
+
+        // Bind the RAF loop
+        this.rafLoop = this.rafLoop.bind(this);
     }
 
-    // Call this from main.js or a global bootloader
     init() {
         console.log('[UIManager] Initialized DOM Overlay');
-        this.refreshInventory();
 
         this.setupChatChannels();
-
-        // Simple polling for now
-        this.updateInterval = setInterval(() => this.refreshInventory(), 2000);
 
         // Listen for combat and loot events
         EventBus.on(EventBus.EVENTS.MONSTER_KILLED, this.handleMonsterKilled, this);
         EventBus.on(EventBus.EVENTS.ITEM_COLLECTED, this.handleItemCollected, this);
+        EventBus.on(EventBus.EVENTS.INVENTORY_UPDATED, () => {
+            this.inventoryDirty = true;
+        });
+
+        // Start render loop
+        requestAnimationFrame(this.rafLoop);
+    }
+
+    rafLoop() {
+        if (this.inventoryDirty && !this.isRefreshing) {
+            this.inventoryDirty = false;
+            this.refreshInventory();
+        }
+
+        // Only loop if not destroyed
+        if (!this.destroyed) {
+            requestAnimationFrame(this.rafLoop);
+        }
     }
 
     setupChatChannels() {
@@ -119,9 +136,16 @@ export default class UIManager {
     }
 
     async refreshInventory() {
+        this.isRefreshing = true;
         try {
             const items = await DBManager.getAllInventory();
             if (!items || items.length === 0) return;
+
+            // Ensure container exists
+            if (!this.inventoryContainer) {
+                this.inventoryContainer = document.getElementById('inventory-list');
+                if (!this.inventoryContainer) return;
+            }
 
             // Clear current list
             this.inventoryContainer.innerHTML = '';
@@ -145,6 +169,8 @@ export default class UIManager {
             });
         } catch (e) {
             console.error('[UIManager] Error refreshing inventory UI:', e);
+        } finally {
+            this.isRefreshing = false;
         }
     }
 
@@ -161,6 +187,6 @@ export default class UIManager {
     }
 
     destroy() {
-        if (this.updateInterval) clearInterval(this.updateInterval);
+        this.destroyed = true;
     }
 }

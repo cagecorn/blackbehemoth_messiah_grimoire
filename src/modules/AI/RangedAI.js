@@ -77,10 +77,12 @@ export default function applyRangedAI(unit, skillNode = null) {
     const approachSequence = new Sequence([moveToIdealRange], "Approach Logic");
 
     const combatBehaviors = [];
+    combatBehaviors.push(kitingSequence); // Survival first!
+
     if (skillNode) {
-        combatBehaviors.push(skillNode); // Highest priority: cast skills if ready
+        combatBehaviors.push(skillNode); // Then skills
     }
-    combatBehaviors.push(attackSequence, kitingSequence, approachSequence, stopAction);
+    combatBehaviors.push(attackSequence, approachSequence, stopAction); // Then base attacks
 
     const autoBehavior = new Selector(combatBehaviors, "Combat Selector");
 

@@ -42,15 +42,8 @@ export default class Healer extends Mercenary {
     update() {
         super.update();
 
-        // Share warrior's target
-        if (this.warrior && this.warrior.blackboard) {
-            const warriorTarget = this.warrior.blackboard.get('target');
-            if (warriorTarget && warriorTarget.active && warriorTarget.hp > 0) {
-                this.blackboard.set('target', warriorTarget);
-            } else {
-                this.findNearestEnemy();
-            }
-        }
+        // Always prioritize the nearest enemy to ensure proper kiting
+        this.findNearestEnemy();
     }
 
     findNearestEnemy() {

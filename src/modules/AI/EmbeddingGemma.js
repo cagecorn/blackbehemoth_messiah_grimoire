@@ -82,10 +82,17 @@ class EmbeddingGemmaManager {
     }
 
     handleMonsterKilled(payload) {
-        // payload can be an object now
-        const monsterId = payload.monsterId || payload;
+        const { monsterId, attackerId } = payload;
+        const targetChannel = attackerId || 'warrior';
         const monsterEmoji = (monsterId === 'goblin_sprite' || monsterId === 'monster') ? '👺' : '👾';
-        this.sendToAI(`영웅이 몬스터를 처치했습니다: ${monsterEmoji}`);
+
+        let attackerName = '전사';
+        if (targetChannel === 'archer') attackerName = '아처';
+        if (targetChannel === 'healer') attackerName = '힐러';
+        if (targetChannel === 'wizard') attackerName = '마법사';
+        if (targetChannel === 'bard') attackerName = '바드';
+
+        this.sendToAI(`${attackerName}(이)가 몬스터를 처치했습니다: ${monsterEmoji}`);
     }
 
     handleSystemMessage(msg) {

@@ -5,6 +5,14 @@ const DB_VERSION = 1;
 
 export default class DBManager {
     static async initDB() {
+        if (this.db) {
+            try {
+                this.db.close();
+            } catch (e) {
+                // ignore close errors
+            }
+            this.db = null;
+        }
         this.db = await openDB(DB_NAME, DB_VERSION, {
             upgrade(db) {
                 // Emojis mapping (ID -> Amount)
@@ -27,17 +35,33 @@ export default class DBManager {
     // --- Inventory Operations ---
     static async getInventoryItem(emojiId) {
         if (!this.db) await this.initDB();
-        return await this.db.get('inventory', emojiId);
+        try {
+            return await this.db.get('inventory', emojiId);
+        } catch (err) {
+            await this.initDB();
+            return await this.db.get('inventory', emojiId);
+        }
     }
 
     static async saveInventoryItem(emojiId, amount) {
         if (!this.db) await this.initDB();
-        await this.db.put('inventory', { id: emojiId, amount });
+        try {
+            await this.db.put('inventory', { id: emojiId, amount });
+        } catch (err) {
+            await this.initDB();
+            await this.db.put('inventory', { id: emojiId, amount });
+        }
     }
 
     static async getAllInventory() {
         if (!this.db) await this.initDB();
-        return await this.db.getAll('inventory');
+        try {
+            return await this.db.getAll('inventory');
+        } catch (err) {
+            console.warn('[DBManager] DB access error. Reconnecting...', err);
+            await this.initDB();
+            return await this.db.getAll('inventory');
+        }
     }
 
     // --- Generic Key/Value Operations (Settings/Party) ---

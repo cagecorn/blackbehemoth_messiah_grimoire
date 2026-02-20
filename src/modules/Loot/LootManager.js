@@ -106,6 +106,7 @@ export default class LootManager {
             const newAmount = existing ? existing.amount + 1 : 1;
             await DBManager.saveInventoryItem(emojiId, newAmount);
             console.log(`[DB] Saved ${emojiId}: ${newAmount}`);
+            globalEventBus.emit(globalEventBus.EVENTS.INVENTORY_UPDATED);
         } catch (e) {
             console.error('[DB] Failed to save loot:', e);
         }

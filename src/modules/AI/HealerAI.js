@@ -38,10 +38,6 @@ export default function applyHealerAI(unit, getAllyGroup, getEnemyGroup) {
     }, "Needs Heal?");
 
     const hasEnemyTarget = new Condition(() => {
-        const target = unit.blackboard.get('target');
-        if (target && target.active && target.hp > 0) return true;
-
-        // Find new target if current is dead/null
         const enemies = typeof getEnemyGroup === 'function' ? getEnemyGroup(unit) : getEnemyGroup;
         const children = enemies.getChildren ? enemies.getChildren() : enemies;
 
@@ -146,9 +142,9 @@ export default function applyHealerAI(unit, getAllyGroup, getEnemyGroup) {
     const approachSequence = new Sequence([hasEnemyTarget, moveToAttackRange], "Move Logic");
 
     const root = new Selector([
+        fleeSequence, // Survival first
         healSequence,
         attackSequence,
-        fleeSequence,
         approachSequence,
         stopAction
     ], "Healer Root");

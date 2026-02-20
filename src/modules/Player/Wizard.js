@@ -43,15 +43,8 @@ export default class Wizard extends Mercenary {
     update() {
         super.update();
 
-        // Target sharing logic: Target Warrior's target or nearest
-        if (this.warrior && this.warrior.blackboard) {
-            const warriorTarget = this.warrior.blackboard.get('target');
-            if (warriorTarget && warriorTarget.active && warriorTarget.hp > 0) {
-                this.blackboard.set('target', warriorTarget);
-            } else {
-                this.findNearestEnemy();
-            }
-        }
+        // Always find the nearest enemy to ensure proper kiting and survival
+        this.findNearestEnemy();
     }
 
     findNearestEnemy() {

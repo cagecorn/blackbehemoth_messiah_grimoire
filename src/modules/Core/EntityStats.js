@@ -21,6 +21,7 @@ export const MercenaryClasses = {
         mDef: 5,
         speed: 100,
         atkSpd: 1200,
+        castSpd: 1000,
         atkRange: 80,
         acc: 90,
         eva: 10,

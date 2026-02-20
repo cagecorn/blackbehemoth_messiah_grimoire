@@ -111,4 +111,27 @@ export default class FXManager {
         this.scene.events.on('postupdate', updateListener);
         return shadow;
     }
+
+    /**
+     * Create an afterimage effect trailing behind a fast moving unit.
+     */
+    createAfterimage(target, duration = 300, alphaStart = 0.5) {
+        if (!target || !target.sprite || !target.active) return;
+
+        const image = this.scene.add.image(target.x, target.y, target.sprite.texture.key);
+        image.setDisplaySize(target.sprite.displayWidth, target.sprite.displayHeight);
+        image.scaleX = target.sprite.scaleX; // inherit flip
+        image.scaleY = target.sprite.scaleY;
+        image.setDepth(target.depth - 2); // behind the character and shadow
+        image.setAlpha(alphaStart);
+        image.setTint(0x88ccff); // slight wind/blue tint
+
+        this.scene.tweens.add({
+            targets: image,
+            alpha: 0,
+            duration: duration,
+            ease: 'Linear',
+            onComplete: () => image.destroy()
+        });
+    }
 }

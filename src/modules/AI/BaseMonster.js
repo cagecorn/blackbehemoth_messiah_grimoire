@@ -191,7 +191,10 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
     }
 
     update() {
-        if (this.btManager) {
+        if (this.isAirborne || this.isStunned) {
+            // Can't act while CC'd. Keep velocity at 0 unless knocked back.
+            this.body.setVelocity(0, 0);
+        } else if (this.btManager) {
             this.btManager.step();
             this.handleAttack();
         }

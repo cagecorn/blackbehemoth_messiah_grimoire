@@ -37,8 +37,6 @@ export default function applyBardAI(unit, getAllyGroup, getEnemyGroup) {
     }, "Needs Buff?");
 
     const hasEnemyTarget = new Condition(() => {
-        const target = unit.blackboard.get('target');
-        if (target && target.active && target.hp > 0) return true;
 
         const enemies = typeof getEnemyGroup === 'function' ? getEnemyGroup(unit) : getEnemyGroup;
         const children = enemies.getChildren ? enemies.getChildren() : enemies;

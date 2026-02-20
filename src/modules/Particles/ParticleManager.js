@@ -53,4 +53,27 @@ export default class ParticleManager {
 
         return emitter; // Caller survives the lifecycle
     }
+
+    /**
+     * Creates a burst of wind/slash particles representing a powerful fast strike.
+     */
+    createWindSlash(x, y, angleRad, texture = 'emoji_sparkle') {
+        const emitter = this.scene.add.particles(x, y, texture, {
+            speed: { min: 200, max: 400 },
+            angle: { min: Phaser.Math.RadToDeg(angleRad) - 20, max: Phaser.Math.RadToDeg(angleRad) + 20 },
+            scale: { start: 0.5, end: 0 },
+            alpha: { start: 0.8, end: 0 },
+            lifespan: 300,
+            blendMode: 'ADD',
+            tint: 0xaaffff, // Cyan wind color
+            quantity: 15,
+            emitting: false
+        });
+
+        emitter.explode(15);
+
+        this.scene.time.delayedCall(400, () => {
+            emitter.destroy();
+        });
+    }
 }

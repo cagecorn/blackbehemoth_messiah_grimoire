@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import Mercenary from './Mercenary.js';
 import applyMeleeAI from '../AI/MeleeAI.js';
 import { MercenaryClasses } from '../Core/EntityStats.js';
+import ChargeAttack from '../Skills/ChargeAttack.js';
 
 /**
  * Warrior.js
@@ -20,8 +21,24 @@ export default class Warrior extends Mercenary {
             right: Phaser.Input.Keyboard.KeyCodes.D
         });
 
+        // Instantiate Skill
+        this.skill = new ChargeAttack({
+            cooldown: 8000,
+            damageMultiplier: 2.0,
+            aoeRadius: 100,
+            clusterRadius: 120, // look for goblins within 120px of each other
+            dashSpeedMultiplier: 8, // fast dash
+            ccDuration: 2000, // 2 second airborne
+            ccHeight: 120 // launch them high
+        });
+
         // Initialize Melee AI in Manual Mode by default
         this.initAI();
+    }
+
+    getSkillProgress() {
+        if (!this.skill) return 0;
+        return this.skill.getCooldownProgress(this.scene.time.now, this.castSpd);
     }
 
     initAI() {
@@ -64,6 +81,14 @@ export default class Warrior extends Mercenary {
         } else if (this.blackboard && this.blackboard.get('ai_state') !== 'AGGRESSIVE') {
             // Stop moving if purely manual and keys are released
             this.body.setVelocity(0);
+        }
+
+        // Auto-cast Skills when Aggressive (Not Manual)
+        if (!isMovingManually && this.blackboard && this.blackboard.get('ai_state') === 'AGGRESSIVE') {
+            // Only try if we can act and enemies exist
+            if (!this.isAirborne && !this.isStunned && this.scene && this.scene.enemies) {
+                this.skill.execute(this, this.scene.enemies.getChildren());
+            }
         }
 
         // Apply visual orientation after manual velocity has been calculated and applied
