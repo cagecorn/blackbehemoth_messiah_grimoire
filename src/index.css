@@ -100,18 +100,19 @@ body {
 }
 
 .chat-header {
+    display: flex;
+    align-items: center;
     font-weight: bold;
     color: #bb88ff;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    margin-bottom: 5px;
-    padding-bottom: 2px;
+    margin-bottom: 8px;
+    /* Slightly more spacing */
+    padding: 0 5px;
     font-size: 16px;
-    display: flex;
-    align-items: center;
     position: relative;
     z-index: 1000;
-    min-height: 36px;
-    padding: 0 10px;
+    height: 40px;
+    /* Fixed height for reliable alignment */
     box-sizing: border-box;
 }
 
@@ -119,6 +120,8 @@ body {
     display: flex;
     gap: 6px;
     margin-left: auto;
+    align-items: center;
+    /* Ensure vertical center */
 }
 
 
@@ -133,16 +136,75 @@ body {
     cursor: pointer;
     outline: none;
     appearance: none;
-    padding-right: 15px;
+    padding: 0 20px 0 0;
+    margin: 0;
     background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23bb88ff%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
     background-repeat: no-repeat;
-    background-position: right 2px top 50%;
-    background-size: 8px auto;
+    background-position: right 2px center;
+    background-size: 10px auto;
+    height: 40px;
+    /* Match header height */
+    line-height: 40px;
+    display: inline-block;
+    vertical-align: middle;
 }
 
 .chat-name-select option {
     background: #2a2a2a;
     color: #e0e0e0;
+}
+
+.lv-exp-line {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    padding-bottom: 4px;
+    margin-bottom: 4px;
+    color: #ffcc00;
+    /* Gold color for level */
+}
+
+/* Narrative View Styles */
+.narrative-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.narrative-block {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+    padding: 10px;
+    border-left: 3px solid #00ffcc;
+    transition: all 0.3s ease;
+}
+
+.narrative-block.is-locked {
+    border-left-color: #555;
+    background: rgba(255, 255, 255, 0.02);
+    opacity: 0.6;
+}
+
+.narrative-lv {
+    font-size: 10px;
+    color: #00ffcc;
+    text-transform: uppercase;
+    font-weight: bold;
+    margin-bottom: 4px;
+}
+
+.is-locked .narrative-lv {
+    color: #888;
+}
+
+.narrative-text {
+    font-size: 13px;
+    color: #eee;
+    line-height: 1.4;
+}
+
+.is-locked .narrative-text {
+    color: #666;
+    font-style: italic;
+    user-select: none;
 }
 
 .status-row-second {
@@ -216,7 +278,6 @@ body {
     z-index: 1;
 }
 
-<<<<<<< HEAD
 .chat-log::-webkit-scrollbar {
     width: 4px;
 }
@@ -226,7 +287,8 @@ body {
 .chat-gear-view,
 .chat-narrative-view {
     position: absolute;
-    top: 36px;
+    top: 50px;
+    /* 10px padding + 40px header */
     left: 8px;
     right: 8px;
     bottom: 42px;
@@ -242,64 +304,9 @@ body {
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.9);
 }
 
-.lv-exp-line {
-    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-    padding-bottom: 4px;
-    margin-bottom: 4px;
-    color: #ffcc00;
-    /* Gold color for level */
-}
-
-/* Narrative View Styles */
-.narrative-container {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.narrative-block {
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 6px;
-    padding: 10px;
-    border-left: 3px solid #00ffcc;
-    transition: all 0.3s ease;
-}
-
-.narrative-block.is-locked {
-    border-left-color: #555;
-    background: rgba(255, 255, 255, 0.02);
-    opacity: 0.6;
-}
-
-.narrative-lv {
-    font-size: 10px;
-    color: #00ffcc;
-    text-transform: uppercase;
-    font-weight: bold;
-    margin-bottom: 4px;
-}
-
-.is-locked .narrative-lv {
-    color: #888;
-}
-
-.narrative-text {
-    font-size: 13px;
-    color: #eee;
-    line-height: 1.4;
-}
-
-.is-locked .narrative-text {
-    color: #666;
-    font-style: italic;
-    user-select: none;
-}
-
 .chat-log::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, 0.1);
 }
-=======
->>>>>>> 95aab9a9d0c4ed32efca088ffd93e4b546bb9026
 
 .chat-form {
     margin: 0;
