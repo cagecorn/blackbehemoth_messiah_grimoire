@@ -55,6 +55,10 @@ export default class DungeonScene extends Phaser.Scene {
         this.cameras.main.setBounds(0, 0, worldSize, worldSize);
         this.physics.world.setBounds(0, 0, worldSize, worldSize);
 
+        // Physics Groups (Initialize early for Managers)
+        this.mercenaries = this.physics.add.group();
+        this.enemies = this.physics.add.group();
+
         this.fxManager = new FXManager(this);
         this.aoeManager = new AoeManager(this);
         this.lootManager = new LootManager(this);
@@ -74,10 +78,6 @@ export default class DungeonScene extends Phaser.Scene {
                 }
             });
         });
-
-        // Physics Groups
-        this.mercenaries = this.physics.add.group();
-        this.enemies = this.physics.add.group();
 
         // Spawn Warrior (Leader) -> Aren
         const startPos = this.dungeonManager.getPlayerStartPosition();
@@ -278,9 +278,53 @@ export default class DungeonScene extends Phaser.Scene {
             this.enemies.add(shaman);
         }
 
+        // Round 3+: Spawn Shadow Aren as a mini-boss!
+        if (this.currentRound >= 3) {
+            const shadowX = startPos.x + 400;
+            const shadowY = startPos.y;
+            this.spawnShadowMercenary('warrior', Characters.AREN, shadowX, shadowY);
+            EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, `[!] 그림자 전사 아렌이 나타났습니다! ⚔️`);
+        }
+
         if (this.currentRound > 1) {
             EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, `[시스템] 몬스터들이 증원되었습니다! (라운드 ${this.currentRound}) ⚔️`);
         }
+    }
+
+    /**
+     * Spawns a mercenary as an enemy.
+     * @param {string} classId 'warrior', 'archer', 'healer', 'wizard', 'bard'
+     * @param {Object} characterConfig Configuration from EntityStats.js
+     * @param {number} x X position
+     * @param {number} y Y position
+     */
+    spawnShadowMercenary(classId, characterConfig, x, y) {
+        // Create config with enemy team
+        const config = {
+            ...characterConfig,
+            id: characterConfig.id + '_shadow', // unique ID to avoid PartyManager conflicts
+            name: `그림자 ${characterConfig.name}`,
+            team: 'enemy'
+        };
+
+        let unit = null;
+        if (classId === 'warrior') {
+            unit = new Warrior(this, x, y, config);
+        } else if (classId === 'archer') {
+            unit = new Archer(this, x, y, this.player, config);
+        } else if (classId === 'healer') {
+            unit = new Healer(this, x, y, this.player, config);
+        } else if (classId === 'wizard') {
+            unit = new Wizard(this, x, y, this.player, config);
+        } else if (classId === 'bard') {
+            unit = new Bard(this, x, y, this.player, config);
+        }
+
+        if (unit) {
+            this.enemies.add(unit);
+            return unit;
+        }
+        return null;
     }
 
     clampToCamera(unit) {

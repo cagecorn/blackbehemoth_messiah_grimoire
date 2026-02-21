@@ -40,6 +40,18 @@ class PartyManager {
     getAllStates() {
         return this.mercenaryStates;
     }
+
+    /**
+     * Calculates the average level of all known mercenaries in the party.
+     * @returns {number}
+     */
+    getAveragePartyLevel() {
+        const states = Object.values(this.mercenaryStates);
+        if (states.length === 0) return 1;
+
+        const totalLevels = states.reduce((sum, state) => sum + (state.level || 1), 0);
+        return Math.floor(totalLevels / states.length);
+    }
 }
 
 const partyManager = new PartyManager();

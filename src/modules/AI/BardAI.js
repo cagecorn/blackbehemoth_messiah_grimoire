@@ -97,6 +97,9 @@ export default function applyBardAI(unit, getAllyGroup, getEnemyGroup) {
             return 1; // RUNNING
         } else {
             if (unit.body) unit.body.setVelocity(0, 0);
+
+            if (unit.isShocked) return 1; // Wait out shock
+
             const success = unit.castBuff(target);
             return success ? 0 : 2; // SUCCESS or FAILED
         }
@@ -136,6 +139,9 @@ export default function applyBardAI(unit, getAllyGroup, getEnemyGroup) {
         if (!target || !target.active) return 2;
 
         if (unit.body) unit.body.setVelocity(0, 0);
+
+        if (unit.isShocked) return 1; // Wait out shock
+
         const success = unit.fireProjectile(target);
         return success ? 0 : 2; // SUCCESS or FAILED
     }, "Casting Note");

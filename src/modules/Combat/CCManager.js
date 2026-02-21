@@ -117,10 +117,17 @@ export default class CCManager {
     applyShock(target, duration = 3000) {
         if (!target || !target.active || target.hp <= 0) return;
 
-        // If already shocked, just refresh the duration (simplistic)
+        console.log(`[CCManager] Attempting to apply Shock to ${target.unitName}...`);
+
+        // Handle existing shock status
         if (target.isShocked) {
-            target.shockDuration = duration;
-            return;
+            // If already shocked, we want to refresh it.
+            // Clear existing timers/tweens if they were stored (not currently stored, let's improve that)
+            if (target._shockCleanupTimer) target._shockCleanupTimer.remove();
+            if (target._shockShakeTween) target._shockShakeTween.stop();
+            if (target._shockEmitter) target._shockEmitter.destroy();
+
+            target.isShocked = false; // Reset briefly to re-apply everything fresh
         }
 
         target.isShocked = true;
@@ -128,10 +135,12 @@ export default class CCManager {
         if (target.syncStatusUI) target.syncStatusUI();
 
         // 1. Shake Visual
-        const originalX = target.sprite.x;
-        const shakeTween = this.scene.tweens.add({
+        // Reset X to 0 briefly if already shaking to get clean base
+        if (target.sprite.x !== 0) target.sprite.x = 0;
+
+        target._shockShakeTween = this.scene.tweens.add({
             targets: target.sprite,
-            x: originalX + 3,
+            x: 4,
             duration: 50,
             yoyo: true,
             repeat: -1
@@ -141,28 +150,37 @@ export default class CCManager {
         target.sprite.setTint(0xffff00);
 
         // 3. Particle Effect
-        const emitter = this.scene.add.particles(0, 0, 'emoji_lightning', {
-            speed: { min: 20, max: 50 },
-            scale: { start: 0.4, end: 0 },
+        target._shockEmitter = this.scene.add.particles(0, 0, 'emoji_lightning', {
+            speed: { min: 20, max: 80 },
+            scale: { start: 0.6, end: 0.2 },
             alpha: { start: 1, end: 0 },
             lifespan: 500,
-            frequency: 150,
+            frequency: 100,
             follow: target
         });
+        target._shockEmitter.setDepth(3000);
 
         // Timer to handle cleanup
-        this.scene.time.delayedCall(duration, () => {
+        target._shockCleanupTimer = this.scene.time.delayedCall(duration, () => {
             if (target && target.active) {
                 target.isShocked = false;
-                target.sprite.clearTint();
-                target.sprite.x = originalX;
+                if (target.sprite) {
+                    target.sprite.clearTint();
+                    target.sprite.x = 0; // Reset to local center
+                }
                 if (target.syncStatusUI) target.syncStatusUI();
             }
-            shakeTween.stop();
-            emitter.destroy();
+            if (target._shockShakeTween) target._shockShakeTween.stop();
+            if (target._shockEmitter) target._shockEmitter.destroy();
+
+            target._shockCleanupTimer = null;
+            target._shockShakeTween = null;
+            target._shockEmitter = null;
+
+            console.log(`[CCManager] Shock expired for ${target.unitName}`);
         });
 
-        console.log(`[CCManager] Applied Shock to ${target.unitName} for ${duration}ms!`);
+        console.log(`[CCManager] Shock applied successfully to ${target.unitName} for ${duration}ms!`);
     }
 
     update(time, delta) {

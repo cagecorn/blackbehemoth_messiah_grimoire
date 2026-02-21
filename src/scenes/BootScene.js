@@ -105,6 +105,7 @@ export default class BootScene extends Phaser.Scene {
 
         // Load Backgrounds
         this.load.image('bg_cursed_forest', 'assets/background/battle-stage-cursed-forest.png');
+        this.load.image('bg_arena', 'assets/background/battle-stage-arena.png');
     }
 
     create() {

@@ -41,7 +41,7 @@ export default class Wizard extends Mercenary {
         this.blackboard.set('target', null);
 
         // Apply base ranged AI, passing our skill node to be injected into the selector
-        const skillNode = this.skill.createBehaviorNode(this);
+        const skillNode = this.skill ? this.skill.createBehaviorNode(this) : null;
         applyRangedAI(this, skillNode);
     }
 
@@ -53,9 +53,10 @@ export default class Wizard extends Mercenary {
     }
 
     findNearestEnemy() {
-        if (!this.scene.enemies) return;
+        const targetGroup = this.targetGroup;
+        if (!targetGroup) return;
 
-        const enemies = this.scene.enemies.getChildren();
+        const enemies = targetGroup.getChildren();
         if (enemies.length === 0) {
             this.blackboard.set('target', null);
             return;
@@ -94,7 +95,7 @@ export default class Wizard extends Mercenary {
 
         this.scene.projectileManager.fire(
             this.x, this.y, target.x, target.y,
-            this.getTotalMAtk(), 'laser', true, null, this
+            this.getTotalMAtk(), 'laser', true, this.targetGroup, this
         );
         return true;
     }

@@ -12,31 +12,43 @@ export default class AoeManager {
     /**
      * Triggers AOE damage originating from (x, y) within a radius.
      */
-    triggerAoe(x, y, radius, damage, sourceId = null, targetGroup = null) {
+    triggerAoe(x, y, radius, damage, attacker = null, targetGroup = null, isMagic = true) {
+        // If scene is dead, stop immediately
+        if (!this.scene || !this.scene.scene || !this.scene.scene.isActive()) {
+            console.error(`[AoeManager] triggerAoe called in INACTIVE scene!`);
+            return [];
+        }
+
         const group = targetGroup || this.scene.enemies;
-        if (!group) return [];
+        if (!group || !group.getChildren) {
+            console.error(`[AoeManager] No valid target group!`);
+            return [];
+        }
 
-        // Iterate over entities and apply damage if within radius
-        const enemies = group.getChildren();
-        const affectedEnemies = [];
+        const units = group.getChildren().filter(u => u && u.active && u.hp > 0);
+        const affectedUnits = [];
 
-        enemies.forEach(enemy => {
-            if (enemy.hp <= 0) return;
+        console.log(`[AoeManager] AOE at (${Math.round(x)}, ${Math.round(y)}) with radius ${radius}. Targets alive: ${units.length}`);
 
-            const dist = Phaser.Math.Distance.Between(x, y, enemy.x, enemy.y);
+        units.forEach(unit => {
+
+            const dist = Phaser.Math.Distance.Between(x, y, unit.x, unit.y);
             if (dist <= radius) {
-                // Determine whether it's magic or physical. For now fireball is magic.
-                enemy.takeMagicDamage(damage, sourceId);
-                affectedEnemies.push(enemy);
+                console.log(`[AOE] HIT SUCCESS: ${unit.unitName} at dist ${Math.round(dist)}`);
+
+                // Use standard damage methods
+                if (isMagic && unit.takeMagicDamage) {
+                    unit.takeMagicDamage(damage, attacker);
+                } else if (unit.takeDamage) {
+                    unit.takeDamage(damage, attacker);
+                } else {
+                    console.error(`[AoeManager] Unit ${unit.unitName} lacks takeDamage/takeMagicDamage methods!`);
+                }
+                affectedUnits.push(unit);
             }
         });
 
-        // Debug visual (optional, flashes a circle in the real scene)
-        if (this.scene.physics && this.scene.physics.world.drawDebug) {
-            // Just for testing if needed
-        }
-
-        console.log(`[AoeManager] AOE at (${Math.round(x)}, ${Math.round(y)}) with radius ${radius} hit ${affectedEnemies.length} targets.`);
-        return affectedEnemies;
+        console.log(`[AoeManager] AOE complete. Hit ${affectedUnits.length} targets.`);
+        return affectedUnits;
     }
 }

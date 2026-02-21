@@ -42,12 +42,8 @@ export default class TacticalCommand {
         if (!this.isReady(now, caster.castSpd)) return false;
 
         // Determine allied group (Mercenary vs Monster)
-        let group = [];
-        if (caster.constructor.name === 'BaseMonster') {
-            if (this.scene.enemies) group = this.scene.enemies.getChildren();
-        } else {
-            if (this.scene.mercenaries) group = this.scene.mercenaries.getChildren();
-        }
+        const alliesGroup = caster.allyGroup;
+        const group = alliesGroup ? alliesGroup.getChildren() : [];
 
         // Filter valid living allies excluding the caster
         const validAllies = group.filter(ally => ally !== caster && ally.active && ally.hp > 0);

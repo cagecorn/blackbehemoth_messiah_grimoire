@@ -48,8 +48,7 @@ export default class MassHeal {
         console.log(`[Skill] ${caster.unitName} uses Mass Heal!`);
 
         // Determine the allied group dynamically
-        const isMonster = caster.scene.enemies.contains(caster);
-        const alliedGroup = isMonster ? caster.scene.enemies : caster.scene.mercenaries;
+        const alliedGroup = caster.allyGroup;
 
         const totalMAtk = caster.getTotalMAtk ? caster.getTotalMAtk() : caster.mAtk;
         const healAmount = totalMAtk * this.healMultiplier;
@@ -59,32 +58,38 @@ export default class MassHeal {
         // }
 
         // Apply heal to all active allies
-        const allies = alliedGroup.getChildren();
-        allies.forEach(ally => {
-            if (ally.active && ally.hp > 0) {
-                // Heal the ally
-                ally.receiveHeal(healAmount);
+        if (alliedGroup && alliedGroup.getChildren) {
+            const allies = alliedGroup.getChildren();
+            allies.forEach(ally => {
+                if (ally && ally.active && ally.hp > 0 && ally.scene && ally.scene.active) {
+                    // Heal the ally
+                    ally.receiveHeal(healAmount);
 
-                // Show text
-                if (caster.scene.fxManager) {
-                    caster.scene.fxManager.showHealText(ally, `+${Math.round(healAmount)}`, '#55ff55');
-                }
-
-                // Flashy individual effect
-                caster.scene.tweens.add({
-                    targets: ally.sprite,
-                    tint: 0x00ff00,
-                    duration: 300,
-                    yoyo: true,
-                    onComplete: () => {
-                        if (ally.sprite && ally.active) ally.sprite.clearTint();
+                    // Show text
+                    if (caster.scene && caster.scene.fxManager) {
+                        caster.scene.fxManager.showHealText(ally, `+${Math.round(healAmount)}`, '#55ff55');
                     }
-                });
 
-                // Sparkle burst
-                this.playHealAuraEffect(caster.scene, ally.x, ally.y);
-            }
-        });
+                    // Flashy individual effect
+                    if (ally.sprite && ally.scene) {
+                        ally.scene.tweens.add({
+                            targets: ally.sprite,
+                            tint: 0x00ff00,
+                            duration: 300,
+                            yoyo: true,
+                            onComplete: () => {
+                                if (ally && ally.sprite && ally.active) ally.sprite.clearTint();
+                            }
+                        });
+                    }
+
+                    // Sparkle burst
+                    if (caster.scene) {
+                        this.playHealAuraEffect(caster.scene, ally.x, ally.y);
+                    }
+                }
+            });
+        }
 
         // Giant screen-wide central flash (optional, just centered on the caster)
         const flash = caster.scene.add.circle(caster.x, caster.y, 10, 0x55ff55, 0.8);
@@ -94,7 +99,9 @@ export default class MassHeal {
             alpha: 0,
             duration: 800,
             ease: 'Cubic.easeOut',
-            onComplete: () => flash.destroy()
+            onComplete: () => {
+                if (flash && flash.destroy) flash.destroy();
+            }
         });
 
         return true;

@@ -190,7 +190,8 @@ export const Characters = {
         skillName: 'MassHeal',
         skillEmoji: '💚',
         skillDescription: '모든 아군에게 마법 공격력의 3.0배에 달하는 대량의 체력을 즉시 회복시킵니다.',
-        atk: 2,
+        atk: 5,
+        mAtk: 25,
         personality: '입이 아주 거친 욕쟁이 힐러. "이런 젠장, 또 다쳤어?"라며 쌍욕을 퍼붓고 치료해준다. 인간에겐 불친절하지만 동물에겐 한없이 다정한 동물 애호가.',
         relationships: {
             aren: '무식하게 돌격해서 다쳐오는 꼴통 1호. 치료해주기 귀찮아 죽겠다.',
@@ -205,8 +206,9 @@ export const Characters = {
         sprite: 'wizard_sprite',
         skillName: 'SkillFireball',
         skillEmoji: '🔥',
-        skillDescription: '하늘에서 거대한 불덩이를 떨어뜨려 넓은 범위에 마법 공격력의 2.5배 피해를 입힙니다.',
-        atk: 2,
+        skillDescription: '하늘에서 거대한 불덩이를 떨어뜨려 넓은 범위에 마법 공격력의 1.8배 피해를 입히고 기절시킵니다.',
+        atk: 5,
+        mAtk: 35,
         personality: '도박에 미친 마법사. 인생의 모든 것을 확률과 운, 홀짝으로 해석한다. "이번 마법이 빗나갈 확률은 3%!" 같은 소리를 한다. 도박광 주제에 가계부는 꼼꼼히 쓴다.',
         relationships: {
             king: '왕년의 왕이라니 숨겨둔 금괴가 있지 않을까? 도박 자금 좀 빌려달라고 꼬셔봐야겠다.',
@@ -222,7 +224,8 @@ export const Characters = {
         skillName: 'SongOfProtection',
         skillEmoji: '🛡️',
         skillDescription: '수호의 노래로 모든 아군에게 마법 공격력의 2.5배에 해당하는 보호막(5초)을 부여합니다.',
-        atk: 4,
+        atk: 10,
+        mAtk: 15,
         personality: '심각한 음치 바드. 본인은 절대음감이라 믿는다. 그의 노래는 아군에게 버프를 주지만 고막에는 고통을 준다. 잘 안 씻어서 냄새가 좀 난다.',
         relationships: {
             sera: '내 노래를 듣고 감동해서 우는 줄 안다. (사실 괴로워하는 건데)',
@@ -238,6 +241,14 @@ export const Characters = {
         skillName: 'StoneSkin',
         skillEmoji: '🪨',
         skillDescription: '피부를 돌처럼 단단하게 만들어 5초 동안 받는 모든 피해를 20% 감소시킵니다.',
+        // Tank: high hp/def, low atk
+        maxHp: 145,
+        hp: 145,
+        atk: 12,
+        def: 22,
+        mDef: 12,
+        speed: 90,
+        crit: 5,
         personality: '고향의 부모님을 부양하는 효녀 소녀가장. 겁이 많고 소심해서 몬스터를 보면 눈물부터 흘린다. "죄송합니다, 때려서 죄송합니다!"라고 사과하며 탱킹을 한다. 존댓말 캐릭터.',
         narrativeUnlocks: [
             { level: 1, trait: '착한 효녀 소녀 기사' },
@@ -278,6 +289,7 @@ export const Characters = {
         skillName: 'ElectricGrenade',
         skillEmoji: '💣',
         skillDescription: '전기 수류탄을 던져 범위 내 적들에게 1.8배 피해를 입히고 3초간 감전(행동불능) 상태로 만듭니다.',
+        atk: 18,
         personality: "생존주의자 밀덕(밀리터리 덕후). 약육강식을 신봉하며 감정을 배제하려 애쓴다. 무기 손질에 집착하며, 은근히 허당끼가 있어 함정을 피하려다 자기가 걸린다.",
         relationships: {
             merlin: '진지함이라곤 없는 한심한 작자. 전쟁이 장난인가?',
@@ -293,6 +305,14 @@ export const Characters = {
         skillName: 'BloodRage',
         skillEmoji: '🩸',
         skillDescription: '5초간 공격력/이동속도/공격속도를 50% 증가시키고, 피해량의 35%를 흡혈합니다.',
+        // Aggressive attacker: high atk/crit, lower def/hp
+        maxHp: 100,
+        hp: 100,
+        atk: 32,
+        def: 7,
+        mDef: 3,
+        speed: 105,
+        crit: 15,
         personality: '몰락한 왕국의 폭군 출신. 위엄 있고 잔혹한 척하지만, 사실 벌레 공포증이 있다. 벌레만 보면 "꺄아악!" 비명을 지르며 체통을 잃는다.',
         relationships: {
             silvi: '왜 나만 보면 도망가는지 이해할 수 없다. 내가 그렇게 무섭나? (자신감)',

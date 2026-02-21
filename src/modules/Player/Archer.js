@@ -32,19 +32,11 @@ export default class Archer extends Mercenary {
                 knockbackDuration: 250
             });
         } else if (config.skillName === 'ElectricGrenade') {
-            this.skill = new ElectricGrenade(scene, {
+            this.skill = new ElectricGrenade({
                 cooldown: 8000,
                 damageMultiplier: 1.8,
-                aoeRadius: 100,
+                aoeRadius: 140,
                 shockDuration: 3000
-            });
-        } else if (config.skillName === 'KnockbackShot') {
-            this.skill = new KnockbackShot({
-                cooldown: 6000,
-                damageMultiplier: 2.5, // Stronger than normal attack
-                projectileSpeed: 1200, // Very fast
-                knockbackDistance: 180,
-                knockbackDuration: 250
             });
         } else if (config.skillName === 'TacticalCommand') {
             this.skill = new TacticalCommand(scene, {
@@ -90,9 +82,10 @@ export default class Archer extends Mercenary {
     }
 
     findNearestEnemy() {
-        if (!this.scene.enemies) return;
+        const targetGroup = this.targetGroup;
+        if (!targetGroup) return;
 
-        const enemies = this.scene.enemies.getChildren();
+        const enemies = targetGroup.getChildren();
         if (enemies.length === 0) {
             this.blackboard.set('target', null);
             return;
@@ -120,7 +113,7 @@ export default class Archer extends Mercenary {
         if (!target) return false;
 
         this.lastFireTime = now;
-        this.scene.projectileManager.fire(this.x, this.y, target.x, target.y, this.atk, 'archer', false, null, this);
+        this.scene.projectileManager.fire(this.x, this.y, target.x, target.y, this.atk, 'archer', false, this.targetGroup, this);
         return true;
     }
 }

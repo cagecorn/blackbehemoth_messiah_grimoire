@@ -114,31 +114,55 @@ export default class KnockbackShot {
             duration: travelDuration,
             ease: 'Linear',
             onUpdate: () => {
-                const opposingGroup = projectile.scene.enemies.contains(caster) ? projectile.scene.mercenaries : projectile.scene.enemies;
-                if (!projectile || !projectile.active || !projectile.scene || !opposingGroup) return;
+                if (!projectile || !projectile.active || !projectile.scene || !projectile.scene.scene || !projectile.scene.scene.isActive()) {
+                    if (projectile && projectile.active && projectile.scene && projectile.scene.scene && !projectile.scene.scene.isActive()) {
+                        projectile.destroy();
+                    }
+                    return;
+                }
+
+                const opposingGroup = caster.targetGroup;
+                if (!opposingGroup) {
+                    if (!this._warnedTargetGroup) {
+                        console.error(`[KnockbackShot] CRITICAL: targetGroup is NULL for ${caster.unitName}`);
+                        this._warnedTargetGroup = true;
+                    }
+                    return;
+                }
+
+                if (!opposingGroup.getChildren) {
+                    console.error(`[KnockbackShot] CRITICAL: targetGroup is NOT a Phaser Group!`, opposingGroup);
+                    return;
+                }
 
                 // Continuous overlap check manually for piercing effect
-                opposingGroup.getChildren().forEach(enemy => {
-                    if (enemy.active && enemy.hp > 0 && !hitEnemies.has(enemy)) {
-                        const dist = Phaser.Math.Distance.Between(projectile.x, projectile.y, enemy.x, enemy.y);
-                        if (dist < 40) { // Collision radius
-                            hitEnemies.add(enemy);
+                opposingGroup.getChildren().forEach(unit => {
+                    if (unit && unit.active && unit.hp > 0 && !hitEnemies.has(unit)) {
+                        const dist = Phaser.Math.Distance.Between(projectile.x, projectile.y, unit.x, unit.y);
+                        if (dist < 80) { // Collision radius
+                            hitEnemies.add(unit);
+                            console.log(`[KnockbackShot] HIT SUCCESS: ${unit.unitName} (Team: ${unit.team})`);
 
                             // Deal damage
                             const totalAtk = caster.getTotalAtk ? caster.getTotalAtk() : caster.atk;
                             const totalDamage = totalAtk * this.damageMultiplier;
-                            enemy.takeDamage(totalDamage, caster);
+
+                            if (unit.takeDamage) {
+                                unit.takeDamage(totalDamage, caster);
+                            } else {
+                                console.error(`[KnockbackShot] Unit ${unit.unitName} lacks takeDamage method!`);
+                            }
 
                             // Apply Knockback
                             if (projectile.scene.ccManager) {
-                                projectile.scene.ccManager.applyKnockback(enemy, angle, this.knockbackDistance, this.knockbackDuration);
+                                projectile.scene.ccManager.applyKnockback(unit, angle, this.knockbackDistance, this.knockbackDuration);
                             }
                         }
                     }
                 });
             },
             onComplete: () => {
-                trailTimer.remove();
+                if (trailTimer) trailTimer.remove();
                 if (projectile && projectile.active) {
                     projectile.destroy();
                 }

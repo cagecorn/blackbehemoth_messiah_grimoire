@@ -45,8 +45,8 @@ export default class Bard extends Mercenary {
         this.blackboard.set('target', null);
         this.blackboard.set('buff_target', null);
 
-        // Provides getAllyGroup and getEnemyGroup
-        applyBardAI(this, () => this.scene.mercenaries, () => this.scene.enemies);
+        // Provides getAllyGroup and getEnemyGroup based on team
+        applyBardAI(this, (u) => u.allyGroup, (u) => u.targetGroup);
     }
 
     castBuff(target) {
@@ -89,7 +89,7 @@ export default class Bard extends Mercenary {
 
         this.scene.projectileManager.fire(
             this.x, this.y, target.x, target.y,
-            this.getTotalAtk(), 'emoji_note', false, null, this
+            this.getTotalAtk(), 'emoji_note', false, this.targetGroup, this
         );
 
         return true;

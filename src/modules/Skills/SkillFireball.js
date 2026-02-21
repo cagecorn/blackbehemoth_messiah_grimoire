@@ -53,7 +53,7 @@ export default class SkillFireball {
 
         // Scale damage using the caster's total magic attack
         const totalMAtk = caster.getTotalMAtk ? caster.getTotalMAtk() : caster.mAtk;
-        const damage = totalMAtk * 2.5; // Fireball multiplier!
+        const damage = totalMAtk * 1.8; // Reduced for balance (was 2.5)
 
         // Announce the cast
         // if (caster.showSpeechBubble) {
@@ -70,24 +70,54 @@ export default class SkillFireball {
         meteor.setDepth(target.depth + 1000); // render way above
         meteor.setTint(0xff5555); // glowing red overlay
 
+        const duration = 600;
+
         // 2. Tween it dropping down
         scene.tweens.add({
             targets: meteor,
             x: target.x,
             y: target.y,
-            duration: 600, // fast drop
+            duration: duration,
             ease: 'Sine.easeIn',
             onComplete: () => {
-                // The meteor hit the ground!
-                meteor.destroy();
+                if (meteor && meteor.destroy) meteor.destroy();
+            }
+        });
 
-                // 3. Trigger AOE Damage Manager
-                if (scene.aoeManager) {
-                    const opposingGroup = scene.enemies.contains(caster) ? scene.mercenaries : scene.enemies;
-                    scene.aoeManager.triggerAoe(target.x, target.y, this.aoeRadius, damage, caster.className || caster.id, opposingGroup);
+        // Use a delayedCall to ensure explosion triggers even if tween is interrupted
+        scene.time.delayedCall(duration, () => {
+            console.log(`[Fireball] DETONATING at (${Math.round(target.x)}, ${Math.round(target.y)})`);
+
+            // If the scene is shutting down, we still play visuals if possible, 
+            // but we DON'T apply logical damage to prevent "Ghost" hits in next round.
+            if (!scene || !scene.scene || !scene.scene.isActive()) {
+                console.warn(`[Fireball] Scene inactive during DETONATION. Skipping damage.`);
+            }
+
+            // 3. Trigger AOE Damage Manager
+            if (scene && scene.scene && scene.scene.isActive() && scene.aoeManager && caster && caster.active) {
+                const opposingGroup = caster.targetGroup;
+                console.log(`[Fireball] Group Check: ${opposingGroup ? 'FOUND (count: ' + opposingGroup.getChildren().length + ')' : 'NULL'}`);
+
+                if (opposingGroup) {
+                    scene.aoeManager.triggerAoe(target.x, target.y, this.aoeRadius, damage, caster, opposingGroup, true);
+                } else {
+                    console.error(`[Fireball] FAILED to trigger AOE: targetGroup is NULL! Team: ${caster.team}`);
                 }
+            } else {
+                if (!scene || !scene.active) {
+                    // Already warned above, but good to be explicit if this path is taken
+                } else if (!scene.aoeManager) {
+                    console.error(`[Fireball] FAILED to trigger AOE: scene.aoeManager is MISSING!`);
+                } else if (!caster || !caster.active) {
+                    console.warn(`[Fireball] Caster dead or inactive during damage application. Skipping damage.`);
+                }
+            }
 
-                // 4. Shatter Particle Effect
+            // 4. Shatter Particle Effect
+            // This should always play if the scene object itself exists, regardless of scene.active state
+            // as it's a visual effect.
+            if (scene) {
                 this.playShatterEffect(scene, target.x, target.y);
             }
         });

@@ -112,9 +112,9 @@ export default class ChargeAttack {
             duration: duration,
             ease: 'Cubic.easeIn',
             onComplete: () => {
-                afterimageTimer.remove();
+                if (afterimageTimer) afterimageTimer.remove();
 
-                if (!caster.active) return;
+                if (!caster || !caster.active || !caster.scene || !caster.scene.active) return;
 
                 // Arrived! Play strike effect
                 if (caster.scene.particleManager) {
@@ -125,13 +125,17 @@ export default class ChargeAttack {
                 if (caster.scene.aoeManager) {
                     const totalAtk = caster.getTotalAtk ? caster.getTotalAtk() : caster.atk;
                     const totalDamage = totalAtk * this.damageMultiplier;
-                    const opposingGroup = caster.scene.enemies.contains(caster) ? caster.scene.mercenaries : caster.scene.enemies;
-                    const hitEnemies = caster.scene.aoeManager.triggerAoe(caster.x, caster.y, this.aoeRadius, totalDamage, caster.className, opposingGroup);
+                    const opposingGroup = caster.targetGroup;
+                    if (opposingGroup) {
+                        const hitEnemies = caster.scene.aoeManager.triggerAoe(caster.x, caster.y, this.aoeRadius, totalDamage, caster, opposingGroup, false);
 
-                    if (caster.scene.ccManager) {
-                        hitEnemies.forEach(hitEnemy => {
-                            caster.scene.ccManager.applyAirborne(hitEnemy, this.ccDuration, this.ccHeight);
-                        });
+                        if (caster.scene.ccManager) {
+                            hitEnemies.forEach(hitEnemy => {
+                                if (hitEnemy && hitEnemy.active) {
+                                    caster.scene.ccManager.applyAirborne(hitEnemy, this.ccDuration, this.ccHeight);
+                                }
+                            });
+                        }
                     }
                 }
 

@@ -77,8 +77,8 @@ export default class Warrior extends Mercenary {
     }
 
     initAI() {
-        // Targets are entities in the scene.enemies group
-        applyMeleeAI(this, (agent) => agent.scene.enemies, 'AGGRESSIVE');
+        // Targets are entities in the dynamic targetGroup
+        applyMeleeAI(this, (agent) => agent.targetGroup, 'AGGRESSIVE');
     }
 
     update() {
@@ -120,9 +120,10 @@ export default class Warrior extends Mercenary {
 
         // Auto-cast Skills when Aggressive (Not Manual)
         if (!isMovingManually && this.blackboard && this.blackboard.get('ai_state') === 'AGGRESSIVE') {
-            // Only try if we can act and enemies exist
-            if (!this.isAirborne && !this.isStunned && this.scene && this.scene.enemies) {
-                this.skill.execute(this, this.scene.enemies.getChildren());
+            // Only try if we can act and targetGroup exist
+            const targets = this.targetGroup;
+            if (!this.isAirborne && !this.isStunned && targets && this.skill) {
+                this.skill.execute(this, targets.getChildren());
             }
         }
 

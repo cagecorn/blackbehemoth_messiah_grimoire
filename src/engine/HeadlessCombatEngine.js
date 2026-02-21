@@ -7,123 +7,94 @@
  */
 export default class HeadlessCombatEngine {
     constructor(config = {}) {
-        this.tickRate = config.tickRate || 100; // ms 단위 연산 주기
-
-        // Data arrays explicitly containing exported "state" objects, NOT Phaser classes.
-        this.mercenaries = [];
-        this.monsters = [];
-
+        this.tickRate = config.tickRate || 100;
+        this.units = []; // Unified unit storage with team property
         this.lastTime = Date.now();
+        this.logs = [];
     }
 
     /**
-     * @param {Array<Object>} mercStates Array of Mercenary.getState() objects
-     * @param {Array<Object>} monStates Array of BaseMonster.getState() objects
+     * @param {Array<Object>} playerStates Array of unit states for the player team
+     * @param {Array<Object>} enemyStates Array of unit states for the enemy team
      */
-    setState(mercStates, monStates) {
-        this.mercenaries = mercStates || [];
-        this.monsters = monStates || [];
+    setState(playerStates, enemyStates) {
+        this.units = [
+            ...(playerStates || []).map(s => ({ ...s, team: 'player' })),
+            ...(enemyStates || []).map(s => ({ ...s, team: 'enemy' }))
+        ];
     }
 
-    /**
-     * @returns {Object} { mercenaries: [...], monsters: [...] }
-     */
     getState() {
         return {
-            mercenaries: this.mercenaries,
-            monsters: this.monsters
+            player: this.units.filter(u => u.team === 'player'),
+            enemy: this.units.filter(u => u.team === 'enemy')
         };
     }
 
-    /**
-     * 1 틱(Tick)을 전진시킵니다.
-     * 웹 워커의 setInterval 루프 안에서 주기적으로 호출됩니다.
-     */
     update() {
         const now = Date.now();
         const delta = now - this.lastTime;
         this.lastTime = now;
 
-        // --- 1. Mercenary Logic ---
-        this.mercenaries.forEach(merc => {
-            if (merc.hp <= 0) return;
+        this.units.forEach(unit => {
+            if (unit.hp <= 0) return;
 
-            // Find closest monster
-            const target = this.findClosestTarget(merc, this.monsters);
-            if (!target) return; // No enemies
+            // Handle CC (Simplified)
+            if (unit.isStunned || unit.isShocked || unit.isAirborne) return;
 
-            const dist = this.getDistance(merc, target);
-
-            // If out of range, move towards
-            if (dist > merc.atkRange) {
-                this.moveTowards(merc, target, delta);
-            }
-            // If in range and attack delay passed, Attack!
-            else {
-                if (now - (merc._lastAttackTime || 0) > merc.atkSpd) {
-                    merc._lastAttackTime = now;
-                    this.performAttack(merc, target);
-                }
-            }
-        });
-
-        // --- 2. Monster Logic ---
-        this.monsters.forEach(mon => {
-            if (mon.hp <= 0) return;
-
-            const target = this.findClosestTarget(mon, this.mercenaries);
+            const targets = this.units.filter(u => u.team !== unit.team && u.hp > 0);
+            const target = this.findClosestTarget(unit, targets);
             if (!target) return;
 
-            const dist = this.getDistance(mon, target);
+            const dist = this.getDistance(unit, target);
 
-            if (dist > mon.atkRange) {
-                this.moveTowards(mon, target, delta);
+            // Skill Logic (Simplified)
+            if (unit.skillName && now - (unit._lastSkillTime || 0) > 8000) {
+                unit._lastSkillTime = now;
+                this.performSkill(unit, target);
+            }
+            // Move or Basic Attack
+            else if (dist > unit.atkRange) {
+                this.moveTowards(unit, target, delta);
             } else {
-                if (now - (mon._lastAttackTime || 0) > mon.atkSpd) {
-                    mon._lastAttackTime = now;
-                    this.performAttack(mon, target);
+                if (now - (unit._lastAttackTime || 0) > unit.atkSpd) {
+                    unit._lastAttackTime = now;
+                    this.performAttack(unit, target);
                 }
             }
         });
 
-        // --- 3. Remove Dead Units ---
-        this.mercenaries = this.mercenaries.filter(m => m.hp > 0);
-        this.monsters = this.monsters.filter(m => m.hp > 0);
+        // Cleanup dead
+        this.units = this.units.filter(u => u.hp > 0);
     }
 
-    /**
-     * 데미지 공식을 적용하여 타겟의 체력을 깎습니다.
-     * Phaser의 CombatManager와 동일한 공식을 사용해야 합니다.
-     */
     performAttack(attacker, target) {
-        // --- Accuracy vs Evasion Check ---
         const hitChance = Math.max(0.05, Math.min(1.0, (attacker.acc - target.eva) / 100.0));
         if (Math.random() > hitChance) {
-            // Miss - Do nothing mathematically
+            this.log(`[Attack] ${attacker.unitName} MISSED ${target.unitName}`);
             return;
         }
 
-        // --- Physical Damage Calculation ---
         let damage = Math.max(1, attacker.atk - target.def);
-
-        // Critical hit
         if (attacker.crit > 0 && Math.random() * 100 < attacker.crit) {
             damage *= 1.5;
         }
 
         target.hp -= damage;
-        if (target.hp < 0) target.hp = 0;
+        this.log(`[Attack] ${attacker.unitName} hit ${target.unitName} for ${damage.toFixed(1)}`);
     }
 
-    /**
-     * 이동 연산 (간단한 선형 보간 이동)
-     */
-    moveTowards(entity, target, deltaMs) {
-        // speed is typically pixels per second
-        const speedPerSec = entity.speed;
-        const speedPerMs = speedPerSec / 1000;
-        const moveDist = speedPerMs * deltaMs;
+    performSkill(attacker, target) {
+        this.log(`[Skill] ${attacker.unitName} uses ${attacker.skillName}!`);
+        // Simple hit for simulation purposes
+        let damage = (attacker.mAtk || attacker.atk) * 2;
+        target.hp -= damage;
+        this.log(`[Skill] ${attacker.skillName} hit ${target.unitName} for ${damage.toFixed(1)}`);
+    }
 
+    moveTowards(entity, target, deltaMs) {
+        const speedPerMs = entity.speed / 1000;
+        const moveDist = speedPerMs * deltaMs;
         const dx = target.x - entity.x;
         const dy = target.y - entity.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
@@ -135,9 +106,6 @@ export default class HeadlessCombatEngine {
         }
     }
 
-    /**
-     * 가장 가까운 타겟 계산
-     */
     getDistance(a, b) {
         const dx = a.x - b.x;
         const dy = a.y - b.y;
@@ -147,9 +115,7 @@ export default class HeadlessCombatEngine {
     findClosestTarget(entity, targetArray) {
         let minTarget = null;
         let minD = Infinity;
-
         for (const t of targetArray) {
-            if (t.hp <= 0) continue;
             const d = this.getDistance(entity, t);
             if (d < minD) {
                 minD = d;
@@ -157,5 +123,10 @@ export default class HeadlessCombatEngine {
             }
         }
         return minTarget;
+    }
+
+    log(msg) {
+        this.logs.push(`[${new Date().toLocaleTimeString()}] ${msg}`);
+        console.info(msg);
     }
 }

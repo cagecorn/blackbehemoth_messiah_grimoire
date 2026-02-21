@@ -49,8 +49,7 @@ export default class SongOfProtection {
         console.log(`[Skill] ${caster.unitName} uses Song of Protection!`);
 
         // Determine the allied group dynamically
-        const isMonster = caster.scene.enemies.contains(caster);
-        const alliedGroup = isMonster ? caster.scene.enemies : caster.scene.mercenaries;
+        const alliedGroup = caster.allyGroup;
 
         const totalMAtk = caster.getTotalMAtk ? caster.getTotalMAtk() : caster.mAtk;
         const shieldAmount = totalMAtk * this.shieldMultiplier;
@@ -60,34 +59,40 @@ export default class SongOfProtection {
         // }
 
         // Apply shield to all active allies
-        const allies = alliedGroup.getChildren();
-        allies.forEach(ally => {
-            if (ally.active && ally.hp > 0) {
-                // Apply shield via ShieldManager
-                if (caster.scene.shieldManager) {
-                    caster.scene.shieldManager.applyShield(ally, shieldAmount, this.shieldDuration);
-                }
-
-                // Show text
-                if (caster.scene.fxManager) {
-                    caster.scene.fxManager.showHealText(ally, `SHIELD`, '#ffff00');
-                }
-
-                // Flashy individual effect
-                caster.scene.tweens.add({
-                    targets: ally.sprite,
-                    tint: 0xffff00,
-                    duration: 200,
-                    yoyo: true,
-                    onComplete: () => {
-                        if (ally.sprite && ally.active) ally.sprite.clearTint();
+        if (alliedGroup && alliedGroup.getChildren) {
+            const allies = alliedGroup.getChildren();
+            allies.forEach(ally => {
+                if (ally && ally.active && ally.hp > 0 && ally.scene && ally.scene.active) {
+                    // Apply shield via ShieldManager
+                    if (caster.scene && caster.scene.shieldManager) {
+                        caster.scene.shieldManager.applyShield(ally, shieldAmount, this.shieldDuration);
                     }
-                });
 
-                // Music particle burst
-                this.playMusicAuraEffect(caster.scene, ally.x, ally.y);
-            }
-        });
+                    // Show text
+                    if (caster.scene && caster.scene.fxManager) {
+                        caster.scene.fxManager.showHealText(ally, `SHIELD`, '#ffff00');
+                    }
+
+                    // Flashy individual effect
+                    if (ally.sprite && ally.scene) {
+                        ally.scene.tweens.add({
+                            targets: ally.sprite,
+                            tint: 0xffff00,
+                            duration: 200,
+                            yoyo: true,
+                            onComplete: () => {
+                                if (ally && ally.sprite && ally.active) ally.sprite.clearTint();
+                            }
+                        });
+                    }
+
+                    // Music particle burst
+                    if (caster.scene) {
+                        this.playMusicAuraEffect(caster.scene, ally.x, ally.y);
+                    }
+                }
+            });
+        }
 
         // Giant screen-wide central flash (optional, just centered on the caster)
         const flash = caster.scene.add.circle(caster.x, caster.y, 10, 0xffff00, 0.6);
@@ -97,7 +102,9 @@ export default class SongOfProtection {
             alpha: 0,
             duration: 1000,
             ease: 'Cubic.easeOut',
-            onComplete: () => flash.destroy()
+            onComplete: () => {
+                if (flash && flash.destroy) flash.destroy();
+            }
         });
 
         return true;

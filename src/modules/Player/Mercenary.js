@@ -21,6 +21,9 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         this.characterId = config.id; // e.g., 'aren' or 'silvi'
         this.unitName = config.name;
 
+        // Team selection ('player' or 'enemy')
+        this.team = config.team || 'player';
+
         // Stats
         this.maxHp = config.maxHp;
         this.hp = config.hp || config.maxHp;
@@ -54,23 +57,26 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         this.rangeMax = config.rangeMax || this.atkRange;
         this.atkSpd = config.atkSpd || 1000;
         this.castSpd = config.castSpd || 1000;
+        this.skill = null; // To be initialized by subclasses
 
         this.acc = config.acc || 100;
         this.eva = config.eva || 0;
         this.crit = config.crit || 0;
 
-        // Check for existing state in PartyManager
-        const savedState = partyManager.getState(this.id);
-        if (savedState) {
-            console.log(`[Mercenary] Loading persistent state for ${this.unitName} (${this.id})`, savedState);
-            this.level = savedState.level || this.level;
-            this.exp = savedState.exp || this.exp;
-            this.hp = savedState.hp !== undefined ? savedState.hp : this.hp;
-            this.maxHp = savedState.maxHp || this.maxHp;
-            this.atk = savedState.atk || this.atk;
-            this.def = savedState.def || this.def;
-            this.equipment = savedState.equipment || this.equipment;
-            this.expToNextLevel = this.calculateExpToNextLevel(this.level);
+        // Check for existing state in PartyManager (Only for player team)
+        if (this.team === 'player') {
+            const savedState = partyManager.getState(this.id);
+            if (savedState) {
+                console.log(`[Mercenary] Loading persistent state for ${this.unitName} (${this.id})`, savedState);
+                this.level = savedState.level || this.level;
+                this.exp = savedState.exp || this.exp;
+                this.hp = savedState.hp !== undefined ? savedState.hp : this.hp;
+                this.maxHp = savedState.maxHp || this.maxHp;
+                this.atk = savedState.atk || this.atk;
+                this.def = savedState.def || this.def;
+                this.equipment = savedState.equipment || this.equipment;
+                this.expToNextLevel = this.calculateExpToNextLevel(this.level);
+            }
         }
 
         // Setup Physics & Rendering
@@ -182,6 +188,26 @@ export default class Mercenary extends Phaser.GameObjects.Container {
     getTotalMAtk() {
         const base = this.mAtk + this.bonusMAtk;
         return this.isTacticalCommandActive ? base * 1.5 : base;
+    }
+
+    /**
+     * Returns the Phaser group that contains potential targets for this unit.
+     */
+    get targetGroup() {
+        if (!this.scene || !this.scene.scene || !this.scene.scene.isActive()) {
+            console.warn(`[Mercenary] ${this.unitName} targetGroup access in invalid scene!`);
+            return null;
+        }
+        return (this.team === 'player') ? this.scene.enemies : this.scene.mercenaries;
+    }
+
+    /**
+     * Returns the Phaser group that contains allies for this unit.
+     */
+    get allyGroup() {
+        if (!this.scene) return null;
+        const group = (this.team === 'player') ? this.scene.mercenaries : this.scene.enemies;
+        return group;
     }
 
     equipItem(slot, itemData) {
@@ -302,7 +328,13 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             duration: 100,
             yoyo: true,
             onComplete: () => {
-                if (this.sprite) this.sprite.clearTint();
+                if (this.sprite) {
+                    if (this.isShocked) {
+                        this.sprite.setTint(0xffff00);
+                    } else {
+                        this.sprite.clearTint();
+                    }
+                }
             }
         });
     }
@@ -409,6 +441,12 @@ export default class Mercenary extends Phaser.GameObjects.Container {
     }
 
     update() {
+        if (!this.scene || !this.scene.scene || !this.scene.scene.isActive()) {
+            console.warn(`[ZombieKiller] Destroying ${this.unitName} (Scene inactive)`);
+            this.destroy();
+            return;
+        }
+
         if (this.isAirborne || this.isStunned) {
             // Can't act while CC'd. Keep velocity at 0 unless knocked back.
             this.body.setVelocity(0, 0);
@@ -596,11 +634,13 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             stats: stats
         });
 
-        // Save to PartyManager for persistent state linking
-        partyManager.saveState(this.id, {
-            ...this.getState(),
-            ...stats
-        });
+        // Save to PartyManager for persistent state linking (Only for player team)
+        if (this.team === 'player') {
+            partyManager.saveState(this.id, {
+                ...this.getState(),
+                ...stats
+            });
+        }
     }
 
     /**

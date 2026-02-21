@@ -9,8 +9,15 @@ export default class ProjectileManager {
         this.scene = scene;
         this.projectiles = this.scene.physics.add.group();
 
-        // Collision detection
-        this.scene.physics.add.overlap(this.projectiles, this.scene.enemies, this.handleHit, null, this);
+        // Collision detection for both groups
+        this.scene.physics.add.overlap(this.projectiles, this.scene.enemies, this.handlePhysicsHit, null, this);
+        this.scene.physics.add.overlap(this.projectiles, this.scene.mercenaries, this.handlePhysicsHit, null, this);
+    }
+
+    handlePhysicsHit(projectile, target) {
+        // Fallback for physics-based projectiles if any are added to this.projectiles group
+        this.handleHit(target, projectile.damage || 0, projectile.isMagic || false, projectile.shooter);
+        projectile.destroy();
     }
 
     /**
@@ -107,7 +114,9 @@ export default class ProjectileManager {
     }
 
     checkHitAtTarget(tx, ty, damage, targetGroup, isMagic, shooter) {
-        const threshold = 50;
+        if (!targetGroup) return;
+
+        const threshold = 80; // Increased for better feel in Arena
         const hitTarget = targetGroup.getChildren().find(e =>
             e.active && e.hp > 0 && Phaser.Math.Distance.Between(e.x, e.y, tx, ty) <= threshold
         );

@@ -42,56 +42,74 @@ export default class ElectricGrenade {
         this.lastCastTime = now;
 
         const scene = caster.scene;
-        console.log(`[Skill] ${caster.unitName} throws Electric Grenade!`);
+        console.log(`[Skill] ${caster.unitName} throws Electric Grenade at ${target.unitName}!`);
 
         const startX = caster.x;
         const startY = caster.y;
+
+        // Capture target position at start of throw
         const targetX = target.x;
         const targetY = target.y;
 
         // Create Grenade Sprite
         const grenade = scene.add.image(startX, startY, 'emoji_bomb');
-        grenade.setTint(0xffff00); // Yellowish tint for electric grenade
+        grenade.setTint(0xffff00);
         grenade.setDepth(2000);
         grenade.setDisplaySize(32, 32);
 
-        // Parabolic Flight (using a custom property and a tween)
+        // Parabolic Flight
         const curve = new Phaser.Curves.QuadraticBezier(
             new Phaser.Math.Vector2(startX, startY),
             new Phaser.Math.Vector2((startX + targetX) / 2, Math.min(startY, targetY) - 150),
             new Phaser.Math.Vector2(targetX, targetY)
         );
 
+        const duration = 600;
         const path = { t: 0 };
+
         scene.tweens.add({
             targets: path,
             t: 1,
-            duration: 800,
-            ease: 'Cubic.easeIn',
+            duration: duration,
+            ease: 'Cubic.easeOut',
             onUpdate: () => {
                 const p = curve.getPoint(path.t);
                 grenade.x = p.x;
                 grenade.y = p.y;
-                grenade.angle += 10; // Spin while flying
+                grenade.angle += 10;
             },
             onComplete: () => {
-                this.explode(scene, grenade.x, grenade.y, caster);
                 grenade.destroy();
             }
+        });
+
+        // Use a delayedCall to ensure explosion triggers even if tween is interrupted
+        scene.time.delayedCall(duration, () => {
+            console.log(`[Grenade] Timer triggered explosion for ${caster.unitName}'s grenade`);
+            this.explode(scene, targetX, targetY, caster);
         });
 
         return true;
     }
 
     explode(scene, x, y, caster) {
+        // Use correct Phaser 3 API to check scene activity
+        if (!scene || !scene.scene || !scene.scene.isActive()) return;
+        if (!caster || !caster.active) return;
+
+        console.log(`[Grenade] Exploding at (${Math.round(x)}, ${Math.round(y)}) from caster ${caster.unitName}`);
+
         // 1. Visual Effect (Explosion)
         const flash = scene.add.circle(x, y, this.aoeRadius, 0xffff00, 0.4);
+        flash.setDepth(3000);
         scene.tweens.add({
             targets: flash,
             alpha: 0,
             scale: 1.5,
             duration: 400,
-            onComplete: () => flash.destroy()
+            onComplete: () => {
+                if (flash && flash.destroy) flash.destroy();
+            }
         });
 
         // 2. Electric Particles
@@ -103,29 +121,39 @@ export default class ElectricGrenade {
             lifespan: 600,
             quantity: 20
         });
+        emitter.setDepth(3000);
         emitter.explode(20);
-        scene.time.delayedCall(1000, () => emitter.destroy());
+        scene.time.delayedCall(1000, () => {
+            if (emitter && emitter.destroy) emitter.destroy();
+        });
 
         // 3. AOE Damage & CC
         if (scene.aoeManager) {
-            const opposingGroup = scene.enemies.contains(caster) ? scene.mercenaries : scene.enemies;
-            const damage = (caster.getTotalAtk ? caster.getTotalAtk() : caster.atk) * this.damageMultiplier;
+            // Leona is an Archer: skill damage scales with physical attack (atk)
+            const totalAtk = caster.getTotalAtk ? caster.getTotalAtk() : caster.atk;
+            const damage = totalAtk * this.damageMultiplier;
+            const opposingGroup = caster.targetGroup;
 
-            // Manual AOE to apply Shock
-            opposingGroup.getChildren().forEach(enemy => {
-                if (enemy.active && enemy.hp > 0) {
-                    const dist = Phaser.Math.Distance.Between(x, y, enemy.x, enemy.y);
-                    if (dist <= this.aoeRadius) {
-                        // Damage
-                        enemy.takeDamage(damage, caster);
+            console.log(`[Grenade] AOE START: Caster=${caster.unitName}, Team=${caster.team}, targetGroup=${opposingGroup ? 'OK' : 'NULL'}`);
 
-                        // Apply Shock
-                        if (scene.ccManager) {
-                            scene.ccManager.applyShock(enemy, this.shockDuration);
-                        }
-                    }
+            if (opposingGroup) {
+                if (!scene || !scene.scene || !scene.scene.isActive()) {
+                    console.warn(`[Grenade] Scene inactive during detonation. Skipping damage.`);
+                    return;
                 }
-            });
+                const hitEnemies = scene.aoeManager.triggerAoe(x, y, this.aoeRadius, damage, caster, opposingGroup, false);
+
+                if (scene.ccManager) {
+                    hitEnemies.forEach(enemy => {
+                        console.log(`[Grenade] Applying Shock SUCCESS to ${enemy.unitName}`);
+                        scene.ccManager.applyShock(enemy, this.shockDuration);
+                    });
+                }
+            } else {
+                console.error(`[Grenade] FAILED to trigger AOE: targetGroup is NULL!`);
+            }
+        } else {
+            console.error(`[Grenade] FAILED to trigger AOE: scene.aoeManager is MISSING!`);
         }
     }
 }

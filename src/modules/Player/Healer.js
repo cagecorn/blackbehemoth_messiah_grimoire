@@ -48,11 +48,11 @@ export default class Healer extends Mercenary {
         this.blackboard.set('target', null);
         this.blackboard.set('heal_target', null);
 
-        // Player Healer: Allies = Party, Enemies = Monsters
+        // Provides ally and enemy groups based on team
         applyHealerAI(
             this,
-            () => this.scene.mercenaries,
-            () => this.scene.enemies
+            (u) => u.allyGroup,
+            (u) => u.targetGroup
         );
     }
 
@@ -73,8 +73,9 @@ export default class Healer extends Mercenary {
     findNearestEnemy() {
         // AI now handles initial targeting via conditions, 
         // but we keep this for manual/shared logic if needed
-        if (!this.scene.enemies) return;
-        const enemies = this.scene.enemies.getChildren();
+        const targetGroup = this.targetGroup;
+        if (!targetGroup) return;
+        const enemies = targetGroup.getChildren();
         let nearest = null;
         let minDist = Infinity;
         for (const enemy of enemies) {

@@ -109,12 +109,8 @@ export default class HolyAura {
                 }
 
                 // Determine allied group (Mercenary vs Monster)
-                let allies = [];
-                if (caster.constructor.name === 'BaseMonster') {
-                    if (this.scene.enemies) allies = this.scene.enemies.getChildren();
-                } else {
-                    if (this.scene.mercenaries) allies = this.scene.mercenaries.getChildren();
-                }
+                const alliesGroup = caster.allyGroup;
+                const allies = alliesGroup ? alliesGroup.getChildren() : [];
 
                 // Heal allies in range
                 for (const ally of allies) {
