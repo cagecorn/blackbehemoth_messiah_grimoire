@@ -70,8 +70,8 @@ export default class BarkManager {
         console.log(`[BarkManager] ${reactor.unitName} is reacting to ${prevSpeakerName}...`);
 
         try {
-            // Pass prevSpeakerId to generateReactionBark so it can look up relationships
-            const reactionText = await localLLM.generateReactionBark(charConfig, prevSpeakerName, prevText, prevSpeakerId);
+            // Pass level to generateReactionBark
+            const reactionText = await localLLM.generateReactionBark(charConfig, prevSpeakerName, prevText, prevSpeakerId, reactor.level || 1);
             if (reactionText) {
                 this.emitBarkEvent(reactor, reactionText);
 
@@ -132,9 +132,9 @@ export default class BarkManager {
         const charConfig = Object.values(Characters).find(c => c.id === target.characterId);
         if (!charConfig || !charConfig.personality) return null;
 
-        console.log(`[BarkManager] Primary bark: ${target.unitName}`);
+        console.log(`[BarkManager] Primary bark: ${target.unitName} (LV ${target.level})`);
         try {
-            const barkText = await localLLM.generateBark(charConfig);
+            const barkText = await localLLM.generateBark(charConfig, target.level || 1);
             if (barkText) {
                 this.emitBarkEvent(target, barkText);
                 return barkText;

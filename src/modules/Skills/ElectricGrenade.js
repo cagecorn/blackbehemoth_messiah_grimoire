@@ -41,6 +41,7 @@ export default class ElectricGrenade {
 
         this.lastCastTime = now;
 
+        const scene = caster.scene;
         console.log(`[Skill] ${caster.unitName} throws Electric Grenade!`);
 
         const startX = caster.x;
@@ -49,7 +50,7 @@ export default class ElectricGrenade {
         const targetY = target.y;
 
         // Create Grenade Sprite
-        const grenade = caster.scene.add.image(startX, startY, 'emoji_bomb');
+        const grenade = scene.add.image(startX, startY, 'emoji_bomb');
         grenade.setTint(0xffff00); // Yellowish tint for electric grenade
         grenade.setDepth(2000);
         grenade.setDisplaySize(32, 32);
@@ -62,7 +63,7 @@ export default class ElectricGrenade {
         );
 
         const path = { t: 0 };
-        caster.scene.tweens.add({
+        scene.tweens.add({
             targets: path,
             t: 1,
             duration: 800,
@@ -74,7 +75,7 @@ export default class ElectricGrenade {
                 grenade.angle += 10; // Spin while flying
             },
             onComplete: () => {
-                this.explode(caster.scene, grenade.x, grenade.y, caster);
+                this.explode(scene, grenade.x, grenade.y, caster);
                 grenade.destroy();
             }
         });

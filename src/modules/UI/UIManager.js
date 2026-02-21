@@ -39,22 +39,36 @@ export default class UIManager {
                 }
                 if (payload.stats) {
                     channel.updateStats(payload.stats);
+                    if (payload.stats.level !== undefined) {
+                        channel.lastLevel = payload.stats.level;
+                        // We need narrativeUnlocks here too, or fetch from config
+                        const charConfig = Object.values(Characters).find(c => c.id === channel.characterId);
+                        if (charConfig && charConfig.narrativeUnlocks) {
+                            channel.updateNarrative(charConfig.narrativeUnlocks, payload.stats.level);
+                        }
+                    }
                 }
             }
         });
         EventBus.on(EventBus.EVENTS.DEBUG_SWAP_CHARACTER, (payload) => {
             const { classId, characterId } = payload;
-            const newConfig = Object.values(Characters).find(c => c.id === characterId);
-            if (newConfig && this.channels[classId]) {
-                const spritePath = `assets/characters/party/${newConfig.sprite}.png`;
-                this.channels[classId].updateVisuals(newConfig.name, spritePath, characterId);
+            const charConfig = Characters[characterId.toUpperCase()];
+            if (!charConfig) return;
 
-                // Update Skill View
-                this.channels[classId].updateSkill({
-                    name: newConfig.skillName,
-                    emoji: newConfig.skillEmoji,
-                    description: newConfig.skillDescription
-                });
+            this.channels[classId].updateVisuals(
+                charConfig.name,
+                `assets/characters/party/${charConfig.sprite}.png`,
+                characterId
+            );
+
+            this.channels[classId].updateSkill({
+                name: charConfig.skillName,
+                emoji: charConfig.skillEmoji,
+                description: charConfig.skillDescription
+            });
+
+            if (charConfig.narrativeUnlocks) {
+                this.channels[classId].updateNarrative(charConfig.narrativeUnlocks, 1);
             }
         });
 
@@ -122,11 +136,21 @@ export default class UIManager {
             );
 
             // Set initial skill data
+            this.channels[classId].updateVisuals(
+                config.name,
+                `assets/characters/party/${config.sprite}.png`,
+                config.id
+            );
+
             this.channels[classId].updateSkill({
                 name: config.skillName,
                 emoji: config.skillEmoji,
                 description: config.skillDescription
             });
+
+            if (config.narrativeUnlocks) {
+                this.channels[classId].updateNarrative(config.narrativeUnlocks, 1);
+            }
         });
 
         this.addLog('warrior', 'Messiah Grimoire에 오신 것을 환영합니다!', '#00ffcc');

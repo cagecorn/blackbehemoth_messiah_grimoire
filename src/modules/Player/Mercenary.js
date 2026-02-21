@@ -26,6 +26,11 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         this.maxMp = config.maxMp || 0;
         this.mp = config.mp !== undefined ? config.mp : (config.maxMp || 0);
 
+        // Level & EXP
+        this.level = config.level || 1;
+        this.exp = config.exp || 0;
+        this.expToNextLevel = this.calculateExpToNextLevel(this.level);
+
         this.atk = config.atk || 0;
         this.mAtk = config.mAtk || 0;
         this.def = config.def || 0;
@@ -292,6 +297,44 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         });
     }
 
+    calculateExpToNextLevel(level) {
+        // Simple scaling: 100, 250, 450, 700... (Level^2 * 50 + 50)
+        return (level * level * 50) + 50;
+    }
+
+    addExp(amount) {
+        if (!this.active || this.hp <= 0) return;
+
+        this.exp += amount;
+        console.log(`[Level] ${this.unitName} gained ${amount} EXP. (${this.exp}/${this.expToNextLevel})`);
+
+        while (this.exp >= this.expToNextLevel && this.level < 40) {
+            this.levelUp();
+        }
+
+        this.syncStatusUI();
+    }
+
+    levelUp() {
+        this.exp -= this.expToNextLevel;
+        this.level++;
+        this.expToNextLevel = this.calculateExpToNextLevel(this.level);
+
+        // Stats increase on level up
+        this.maxHp += 10;
+        this.hp = this.maxHp;
+        this.atk += 2;
+        this.def += 1;
+
+        console.log(`[Level] ${this.unitName} LEVELED UP to ${this.level}!`);
+
+        if (this.scene.fxManager) {
+            this.scene.fxManager.showDamageText(this, 'LEVEL UP!', '#ffff00');
+        }
+
+        EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, `${this.unitName} 레벨 업! (LV ${this.level}) ✨`);
+    }
+
     receiveHeal(amount) {
         this.hp += amount;
         if (this.hp > this.maxHp) this.hp = this.maxHp;
@@ -503,6 +546,9 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             statuses: statuses,
             equipment: this.equipment,
             stats: {
+                level: this.level,
+                exp: this.exp,
+                expToNextLevel: this.expToNextLevel,
                 hp: this.hp,
                 maxHp: this.maxHp,
                 atk: this.getTotalAtk(),

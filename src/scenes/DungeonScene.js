@@ -31,6 +31,10 @@ export default class DungeonScene extends Phaser.Scene {
         this.enemies = null;
         this.currentRound = 1;
         this.isResting = false;
+
+        // Reward values
+        this.killExp = 25;
+        this.roundClearExp = 500;
     }
 
     create() {
@@ -60,6 +64,16 @@ export default class DungeonScene extends Phaser.Scene {
         this.ccManager = new CCManager(this);
         this.shieldManager = new ShieldManager(this);
         this.barkManager = new BarkManager(this);
+
+        // Global Combat Events for Rewards
+        EventBus.on(EventBus.EVENTS.MONSTER_KILLED, (payload) => {
+            // Distribute EXP to all active mercenaries
+            this.mercenaries.getChildren().forEach(merc => {
+                if (merc.active && merc.hp > 0) {
+                    merc.addExp(this.killExp);
+                }
+            });
+        });
 
         // Physics Groups
         this.mercenaries = this.physics.add.group();
@@ -200,6 +214,13 @@ export default class DungeonScene extends Phaser.Scene {
             EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, `[시스템] 라운드 ${this.currentRound} 클리어! 5초 뒤 다음 라운드가 시작됩니다. ⛺`);
 
             this.time.delayedCall(5000, () => {
+                // Grant Round Clear EXP
+                this.mercenaries.getChildren().forEach(merc => {
+                    if (merc.active && merc.hp > 0) {
+                        merc.addExp(this.roundClearExp);
+                    }
+                });
+
                 this.currentRound++;
                 this.isResting = false;
                 this.spawnWave();

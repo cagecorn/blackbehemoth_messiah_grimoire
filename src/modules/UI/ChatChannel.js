@@ -34,6 +34,7 @@ export default class ChatChannel {
                     <button class="chat-view-toggle gear-toggle" data-view="gear" title="장비 보기">⚔️</button>
                     <button class="chat-view-toggle skill-toggle" data-view="skill" title="스킬 정보">💫</button>
                     <button class="chat-view-toggle status-toggle" data-view="status" title="상세 능력치">📊</button>
+                    <button class="chat-view-toggle narrative-toggle" data-view="narrative" title="서사 보기">📚</button>
                 </div>
             </div>
             <div class="status-row-second">
@@ -49,6 +50,8 @@ export default class ChatChannel {
             </div>
             <div class="chat-status-view" id="stats-${id}" style="display: none;">
                 <div class="stat-grid">
+                    <div class="stat-item lv-exp-line"><span class="stat-label">LV</span><span class="stat-value" data-stat="level">1</span></div>
+                    <div class="stat-item lv-exp-line"><span class="stat-label">EXP</span><span class="stat-value" data-stat="exp_display">0/0</span></div>
                     <div class="stat-item"><span class="stat-label">HP</span><span class="stat-value" data-stat="hp">0/0</span></div>
                     <div class="stat-item"><span class="stat-label">ATK</span><span class="stat-value" data-stat="atk">0</span></div>
                     <div class="stat-item"><span class="stat-label">mATK</span><span class="stat-value" data-stat="mAtk">0</span></div>
@@ -76,6 +79,9 @@ export default class ChatChannel {
                     </div>
                 </div>
             </div>
+            <div class="chat-narrative-view" id="narrative-${id}" style="display: none;">
+                <!-- Narrative blocks will be injected here -->
+            </div>
             <form class="chat-form" id="form-${id}">
                 <input type="text" placeholder="${name}에게 지시... (e.g. 공격!)" />
             </form>
@@ -88,14 +94,17 @@ export default class ChatChannel {
         this.input = this.element.querySelector('input');
         this.buffContainer = this.element.querySelector('.status-container.buffs');
         this.statusContainer = this.element.querySelector('.status-container.status-effects');
+        this.statusRow = this.element.querySelector('.status-row-second');
         this.characterSelect = this.element.querySelector('.chat-name-select');
         this.gearToggleBtn = this.element.querySelector('.gear-toggle');
         this.skillToggleBtn = this.element.querySelector('.skill-toggle');
         this.statusToggleBtn = this.element.querySelector('.status-toggle');
+        this.narrativeToggleBtn = this.element.querySelector('.narrative-toggle');
         this.gearView = this.element.querySelector('.chat-gear-view');
         this.skillView = this.element.querySelector('.chat-skill-view');
         this.statusView = this.element.querySelector('.chat-status-view');
-        this.currentView = 'chat'; // 'chat', 'gear', 'skill', 'status'
+        this.narrativeView = this.element.querySelector('.chat-narrative-view');
+        this.currentView = 'chat'; // 'chat', 'gear', 'skill', 'status', 'narrative'
 
         this.gearToggleBtn.addEventListener('click', () => {
             this.toggleView('gear');
@@ -107,6 +116,10 @@ export default class ChatChannel {
 
         this.skillToggleBtn.addEventListener('click', () => {
             this.toggleView('skill');
+        });
+
+        this.narrativeToggleBtn.addEventListener('click', () => {
+            this.toggleView('narrative');
         });
 
         this.characterSelect.addEventListener('change', (e) => {
@@ -134,16 +147,21 @@ export default class ChatChannel {
         }
 
         // Sync Visuals
-        this.log.style.display = (this.currentView === 'chat') ? 'flex' : 'none';
-        this.form.style.display = (this.currentView === 'chat') ? 'block' : 'none';
+        const isChat = this.currentView === 'chat';
+        this.log.style.display = isChat ? 'flex' : 'none';
+        this.form.style.display = isChat ? 'block' : 'none';
+        this.statusRow.style.display = isChat ? 'flex' : 'none';
+
         this.gearView.style.display = (this.currentView === 'gear') ? 'flex' : 'none';
         this.skillView.style.display = (this.currentView === 'skill') ? 'flex' : 'none';
         this.statusView.style.display = (this.currentView === 'status') ? 'block' : 'none';
+        this.narrativeView.style.display = (this.currentView === 'narrative') ? 'block' : 'none';
 
         // Update Buttons
         this.gearToggleBtn.textContent = (this.currentView === 'gear') ? '💬' : '⚔️';
         this.skillToggleBtn.textContent = (this.currentView === 'skill') ? '💬' : '💫';
         this.statusToggleBtn.textContent = (this.currentView === 'status') ? '💬' : '📊';
+        this.narrativeToggleBtn.textContent = (this.currentView === 'narrative') ? '💬' : '📚';
 
         if (this.currentView !== 'chat') {
             this.element.classList.add('view-overlay');
@@ -236,6 +254,8 @@ export default class ChatChannel {
         if (!stats || !this.statusView) return;
 
         const statEntries = {
+            level: stats.level,
+            exp_display: `${Math.round(stats.exp)}/${Math.round(stats.expToNextLevel)}`,
             hp: `${Math.round(stats.hp)}/${Math.round(stats.maxHp)}`,
             atk: stats.atk.toFixed(1),
             mAtk: stats.mAtk.toFixed(1),
@@ -268,5 +288,26 @@ export default class ChatChannel {
         if (nameEl) nameEl.textContent = skillData.name || 'Unknown Skill';
         if (emojiEl) emojiEl.textContent = skillData.emoji || '💫';
         if (descEl) descEl.textContent = skillData.description || 'No description available.';
+    }
+
+    updateNarrative(unlocks, currentLevel) {
+        if (!unlocks || !this.narrativeView) return;
+
+        let html = '<div class="narrative-container">';
+        unlocks.forEach(unlock => {
+            const isUnlocked = currentLevel >= unlock.level;
+            const lockClass = isUnlocked ? '' : 'is-locked';
+            const icon = isUnlocked ? '🔓' : '🔒';
+            const content = isUnlocked ? unlock.trait : '이 내용은 아직 잠겨 있습니다. 레벨을 더 높여 서사를 해금하세요.';
+
+            html += `
+                <div class="narrative-block ${lockClass}">
+                    <div class="narrative-lv">Level ${unlock.level} ${icon}</div>
+                    <div class="narrative-text">${content}</div>
+                </div>
+            `;
+        });
+        html += '</div>';
+        this.narrativeView.innerHTML = html;
     }
 }

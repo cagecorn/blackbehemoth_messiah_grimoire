@@ -83,11 +83,13 @@ body {
     margin-bottom: 5px;
     padding-bottom: 2px;
     font-size: 16px;
-    position: relative;
-    z-index: 10;
+    display: flex;
     align-items: center;
-    min-height: 32px;
-    padding: 0 5px;
+    position: relative;
+    z-index: 1000;
+    min-height: 36px;
+    padding: 0 10px;
+    box-sizing: border-box;
 }
 
 .header-toggles {
@@ -129,7 +131,7 @@ body {
     padding: 4px;
     min-height: 24px;
     position: relative;
-    z-index: 11;
+    z-index: 50;
 }
 
 .status-container {
@@ -193,6 +195,80 @@ body {
 
 .chat-log::-webkit-scrollbar {
     width: 4px;
+}
+
+.chat-skill-view,
+.chat-status-view,
+.chat-gear-view,
+.chat-narrative-view {
+    position: absolute;
+    top: 36px;
+    left: 8px;
+    right: 8px;
+    bottom: 42px;
+    background: rgba(10, 10, 15, 0.99);
+    border: 1px solid rgba(187, 136, 255, 0.4);
+    border-radius: 8px;
+    z-index: 2000;
+    display: none;
+    flex-direction: column;
+    padding: 15px;
+    overflow-y: auto;
+    backdrop-filter: blur(15px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.9);
+}
+
+.lv-exp-line {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    padding-bottom: 4px;
+    margin-bottom: 4px;
+    color: #ffcc00;
+    /* Gold color for level */
+}
+
+/* Narrative View Styles */
+.narrative-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.narrative-block {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+    padding: 10px;
+    border-left: 3px solid #00ffcc;
+    transition: all 0.3s ease;
+}
+
+.narrative-block.is-locked {
+    border-left-color: #555;
+    background: rgba(255, 255, 255, 0.02);
+    opacity: 0.6;
+}
+
+.narrative-lv {
+    font-size: 10px;
+    color: #00ffcc;
+    text-transform: uppercase;
+    font-weight: bold;
+    margin-bottom: 4px;
+}
+
+.is-locked .narrative-lv {
+    color: #888;
+}
+
+.narrative-text {
+    font-size: 13px;
+    color: #eee;
+    line-height: 1.4;
+}
+
+.is-locked .narrative-text {
+    color: #666;
+    font-style: italic;
+    user-select: none;
 }
 
 .chat-log::-webkit-scrollbar-thumb {
