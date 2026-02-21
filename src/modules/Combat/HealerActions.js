@@ -14,6 +14,7 @@ export const HealerActions = {
 
         const mAtk = unit.getTotalMAtk ? unit.getTotalMAtk() : (unit.mAtk || 10);
         const healAmount = mAtk * 1.5;
+
         target.receiveHeal(healAmount);
 
         console.info(

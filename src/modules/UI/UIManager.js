@@ -47,7 +47,7 @@ export default class UIManager {
             const newConfig = Object.values(Characters).find(c => c.id === characterId);
             if (newConfig && this.channels[classId]) {
                 const spritePath = `assets/characters/party/${newConfig.sprite}.png`;
-                this.channels[classId].updateVisuals(newConfig.name, spritePath);
+                this.channels[classId].updateVisuals(newConfig.name, spritePath, characterId);
             }
         });
 

@@ -124,6 +124,15 @@ export default class DungeonScene extends Phaser.Scene {
 
         // Listen for Character Swap
         EventBus.on(EventBus.EVENTS.DEBUG_SWAP_CHARACTER, this.handleDebugSwap, this);
+
+        // Sync UI with initial character names after a short delay to ensure UI is ready
+        this.time.delayedCall(500, () => {
+            EventBus.emit(EventBus.EVENTS.DEBUG_SWAP_CHARACTER, { classId: 'warrior', characterId: 'aren' });
+            EventBus.emit(EventBus.EVENTS.DEBUG_SWAP_CHARACTER, { classId: 'archer', characterId: 'ella' });
+            EventBus.emit(EventBus.EVENTS.DEBUG_SWAP_CHARACTER, { classId: 'healer', characterId: 'sera' });
+            EventBus.emit(EventBus.EVENTS.DEBUG_SWAP_CHARACTER, { classId: 'wizard', characterId: 'merlin' });
+            EventBus.emit(EventBus.EVENTS.DEBUG_SWAP_CHARACTER, { classId: 'bard', characterId: 'lute' });
+        });
     }
 
     handleDebugSwap(payload) {
@@ -131,7 +140,17 @@ export default class DungeonScene extends Phaser.Scene {
 
         // Find existing unit
         const existingUnit = this.mercenaries.getChildren().find(m => m.className === classId);
-        if (!existingUnit) return;
+        if (!existingUnit) {
+            console.warn(`[DebugSwap] Could not find existing unit for class: ${classId}. Available:`, this.mercenaries.getChildren().map(m => m.className));
+            return;
+        }
+
+        if (existingUnit.characterId === characterId) {
+            console.log(`[DebugSwap] ${existingUnit.unitName} is already ${characterId}. Skipping re-spawn.`);
+            return;
+        }
+
+        console.log(`[DebugSwap] Swapping ${existingUnit.unitName} (${classId}) -> ${characterId}`);
 
         // Remember position
         const x = existingUnit.x;

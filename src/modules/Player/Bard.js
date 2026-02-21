@@ -58,6 +58,7 @@ export default class Bard extends Mercenary {
         // Buff formulas: e.g., 20% of Bard's mAtk
         const buffAtk = Math.max(1, Math.floor(this.getTotalMAtk() * 0.2));
         const buffMAtk = Math.max(1, Math.floor(this.getTotalMAtk() * 0.25));
+
         const duration = 15000; // 15 seconds so Bard can buff everybody without looping endlessly
 
         this.scene.buffManager.applyBuff(target, this, 'Motivation', duration, buffAtk, buffMAtk);

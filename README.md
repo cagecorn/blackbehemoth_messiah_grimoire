@@ -57,12 +57,15 @@
 | ID | 이름 | 직업 | 할당 스킬 | 성격 및 특징 |
 | :--- | :--- | :--- | :--- | :--- |
 | `aren` | 아렌 | `warrior` | `ChargeAttack` | 메시아를 향한 충직한 전사. 고기를 좋아하고 야채를 못 먹음. |
+| `king` | 킹 | `warrior` | `BloodRage` | 몰락한 왕국의 폭군. 벌레를 무서워함. |
+| `boon` | 분 | `warrior` | `HolyAura` | 성기사 출신 용병. 주변 아군을 치유하는 오라를 생성함. |
 | `silvi` | 실비 | `warrior` | `StoneSkin` | 가난한 부모님을 돕기 위해 싸우는 소녀 전사. 겁이 많음. |
-| `ella` | 엘라 | `archer` | `KnockbackShot` | 이름 때문에 고민이 많은 츤데레 남성 아처. 뜨개질을 좋아함. |
-| `leona` | 레오나 | `archer` | `ElectricGrenade` | 어린 나이에 군에 입대한 병사. 생존을 최우선으로 생각하며 '약육강식'의 신조를 가짐. |
-| `sera` | 세라 | `healer` | `MassHeal` | 아주 거친 입담을 가진 힐러. 유기동물을 돕는 반전 매력. |
-| `merlin` | 멀린 | `wizard` | `SkillFireball` | 인생은 도박이라고 믿는 마법사. 의외로 가계부를 잘 씀. |
-| `lute` | 루트 | `bard` | `SongOfProtection` | 음치 음유시인. 노래에 대한 열정으로 주변에 민폐를 끼침. |
+| `ella` | 엘라 | `archer` | `KnockbackShot` | 남자임에도 여자 이름을 지어주신 부모님을 원망하는 아처. 츤데레. 뜨개질 좋아함. |
+| `nickle` | 니클 | `archer` | `TacticalCommand` | 여우 수인 베테랑. 본인과 아군의 평타 위력을 50% 증폭함. |
+| `leona` | 레오나 | `archer` | `ElectricGrenade` | 냉혹한 생존주의자 병사. 전깃그물을 투척해 적을 감전시킴. |
+| `sera` | 세라 | `healer` | `MassHeal` | 입담이 거친 힐러. 유기동물을 사랑함. |
+| `merlin` | 멀린 | `wizard` | `SkillFireball` | 도박사 마법사. 가계부를 잘 씀. |
+| `lute` | 루트 | `bard` | `SongOfProtection` | 음치 음유시인. 열정적인 노래로 보호막을 생성함. |
 
 ## 시스템 용어 및 상태 이상 (Global Terms & Status)
 
@@ -71,6 +74,9 @@
 * **넉백 (Knockback):** 대상을 일정 거리 뒤로 밀쳐내는 물리적 반동 효과.
 * **실드 (Shield):** 체력 대신 데미지를 흡수하는 보호막. 노란색 게이지로 표시됨.
 * **피해 감소 (Damage Reduction, DR):** 최종 데미지를 퍼센트 단위로 경감시키는 방어 시스템.
+* **전술 지휘 (Tactical Command):** 니클의 전용 버프. 평타, 마법, 힐, 버프 등 모든 기본 행동의 수치를 50% 강화함. 📢 아이콘으로 표시.
+* **감전 (Shock):** 전술 그네이드 등으로 인한 행동 불능 및 공격 중단 상태.
+* **핏빛 분노 (Blood Rage):** 킹의 전용 버프. 공격 시 입힌 피해의 일정량을 체력으로 회복(흡혈).
 
 ## 기술 스택
 - **Engine:** Phaser 3

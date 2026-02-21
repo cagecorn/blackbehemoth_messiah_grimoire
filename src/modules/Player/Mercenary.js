@@ -35,6 +35,12 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         this.bonusAtk = 0;
         this.bonusMAtk = 0;
         this.bonusDR = 0;
+        this.isTacticalCommandActive = false;
+        this.isBloodRaging = false;
+        this.isStunned = false;
+        this.isAirborne = false;
+        this.isKnockedBack = false;
+        this.isShocked = false;
 
         this.speed = config.speed || 100;
         this.atkRange = config.atkRange || 40;
@@ -154,11 +160,13 @@ export default class Mercenary extends Phaser.GameObjects.Container {
     }
 
     getTotalAtk() {
-        return this.atk + this.bonusAtk;
+        const base = this.atk + this.bonusAtk;
+        return this.isTacticalCommandActive ? base * 1.5 : base;
     }
 
     getTotalMAtk() {
-        return this.mAtk + this.bonusMAtk;
+        const base = this.mAtk + this.bonusMAtk;
+        return this.isTacticalCommandActive ? base * 1.5 : base;
     }
 
     equipItem(slot, itemData) {
@@ -211,6 +219,11 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         if (finalDamage > 0) {
             this.hp -= finalDamage;
             if (this.hp < 0) this.hp = 0;
+
+            // Lifesteal for Blood Rage
+            if (attacker && typeof attacker === 'object' && attacker.isBloodRaging && attacker.heal) {
+                attacker.heal(finalDamage * 0.35);
+            }
         }
 
         this.updateHealthBar();
@@ -228,7 +241,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         }
     }
 
-    takeMagicDamage(amount, attackerId = null) {
+    takeMagicDamage(amount, attacker = null) {
         // 1. Magic Damage is reduced by mDef
         let finalDamage = Math.max(1, amount - this.mDef);
 
@@ -245,12 +258,17 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         if (finalDamage > 0) {
             this.hp -= finalDamage;
             if (this.hp < 0) this.hp = 0;
+
+            // Lifesteal for Blood Rage
+            if (attacker && typeof attacker === 'object' && attacker.isBloodRaging && attacker.heal) {
+                attacker.heal(finalDamage * 0.35);
+            }
         }
 
         this.updateHealthBar();
 
         if (this.scene.fxManager) {
-            this.scene.fxManager.showDamageText(this, finalDamage, '#ffaa00');
+            this.scene.fxManager.showDamageText(this, finalDamage, '#33ccff');
         }
 
         console.info(`[Combat] ${this.unitName} took ${finalDamage.toFixed(1)} magic damage.`);
@@ -292,6 +310,21 @@ export default class Mercenary extends Phaser.GameObjects.Container {
 
             this.healthBar.setValue(hpPercent, shieldPercent);
         }
+    }
+
+    heal(amount) {
+        if (!this.active || this.hp <= 0 || amount <= 0) return;
+
+        this.hp += amount;
+        if (this.hp > this.maxHp) this.hp = this.maxHp;
+
+        this.updateHealthBar();
+
+        if (this.scene.fxManager) {
+            this.scene.fxManager.showDamageText(this, '+' + amount.toFixed(0), '#00ff00');
+        }
+
+        if (this.syncStatusUI) this.syncStatusUI();
     }
 
     die() {
@@ -396,6 +429,30 @@ export default class Mercenary extends Phaser.GameObjects.Container {
                 description: '전기 충격으로 인해 기본 공격이 불가능합니다.',
                 emoji: '⚡',
                 category: 'status'
+            });
+        }
+        if (this.isBloodRaging) {
+            statuses.push({
+                name: '피의 갈망 (Blood Rage)',
+                description: '공격력/이속 상승, 피해량 흡혈.',
+                emoji: '🩸',
+                category: 'buff'
+            });
+        }
+        if (this.isHolyAuraActive) {
+            statuses.push({
+                name: '홀리 오라 (Holy Aura)',
+                description: '신성한 기운으로 주변 아군의 체력을 지속 회복시킵니다.',
+                emoji: '✨',
+                category: 'buff'
+            });
+        }
+        if (this.isTacticalCommandActive) {
+            statuses.push({
+                name: '전술 지휘 (Tactical Command)',
+                description: '기본 공격/마법/회복 위력이 50% 증가합니다.',
+                emoji: '📢',
+                category: 'buff'
             });
         }
 

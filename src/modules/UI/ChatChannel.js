@@ -132,11 +132,24 @@ export default class ChatChannel {
         }
     }
 
-    updateVisuals(name, spritePath) {
+    updateVisuals(name, spritePath, characterId) {
         this.name = name;
         this.input.placeholder = `${name}에게 지시... (e.g. 공격!)`;
         const img = this.element.querySelector('.chat-bg-sprite');
         if (img) img.src = spritePath;
+
+        // Sync dropdown selection
+        if (this.characterSelect && characterId) {
+            this.characterSelect.value = characterId;
+        } else if (this.characterSelect) {
+            // Fallback: match by name
+            for (let i = 0; i < this.characterSelect.options.length; i++) {
+                if (this.characterSelect.options[i].text.includes(name)) {
+                    this.characterSelect.selectedIndex = i;
+                    break;
+                }
+            }
+        }
     }
 
     addLog(text, color = '#e0e0e0') {

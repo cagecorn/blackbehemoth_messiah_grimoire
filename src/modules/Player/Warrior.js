@@ -5,6 +5,8 @@ import { MercenaryClasses } from '../Core/EntityStats.js';
 import ChargeAttack from '../Skills/ChargeAttack.js';
 import PlaceholderSkill from '../Skills/PlaceholderSkill.js';
 import StoneSkin from '../Skills/StoneSkin.js';
+import BloodRage from '../Skills/BloodRage.js';
+import HolyAura from '../Skills/HolyAura.js';
 
 /**
  * Warrior.js
@@ -40,6 +42,24 @@ export default class Warrior extends Mercenary {
                 cooldown: 10000,
                 duration: 5000,
                 damageReduction: 0.20
+            });
+        } else if (config.skillName === 'BloodRage') {
+            this.skill = new BloodRage(scene, {
+                cooldown: 12000,
+                duration: 5000,
+                atkBuffPercent: 0.5,
+                spdBuffPercent: 0.5,
+                atkSpdBuffPercent: 0.5
+            });
+        } else if (config.skillName === 'HolyAura') {
+            this.skill = new HolyAura(scene, {
+                cooldown: 15000,
+                duration: 5000,
+                tickRate: 1000,
+                baseRadius: 100,
+                radiusScale: 2.0,
+                baseHeal: 5,
+                healScale: 0.5
             });
         } else if (config.skillName === 'PlaceholderSkill') {
             this.skill = new PlaceholderSkill();

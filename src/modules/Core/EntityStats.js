@@ -142,19 +142,11 @@ export const MercenaryClasses = {
 export const Characters = {
     AREN: {
         id: 'aren',
-        classId: 'warrior', // References MercenaryClasses.WARRIOR
+        classId: 'warrior',
         name: 'Aren (아렌)',
         sprite: 'warrior_sprite',
         skillName: 'ChargeAttack',
         personality: '메시아를 향한 충성심에 불타오르는 충직한 전사. 가끔 그 충성심이 지나칠 때가 있음. 고기를 좋아하고 야채를 먹지 못함.'
-    },
-    SILVI: {
-        id: 'silvi',
-        classId: 'warrior',
-        name: 'Silvi (실비)',
-        sprite: 'silvi_sprite',
-        skillName: 'StoneSkin',
-        personality: '가정 형편이 어려우신 부모님을 돕기 위해 전쟁터에 나선 소녀 전사. 싸움을 무서워하지만 돈을 벌기 위해서라면 무슨 일이든 한다. 이따금씩 남몰래 눈물을 훔치는 듯 하다.'
     },
     ELLA: {
         id: 'ella',
@@ -163,14 +155,6 @@ export const Characters = {
         sprite: 'archer_sprite',
         skillName: 'KnockbackShot',
         personality: '남자임에도 여자 이름을 지어주신 자신의 부모님을 원망하는 아처. 까칠하고 시큰둥하지만, 이따금씩 동료들을 챙기는 츤데레. 뜨개질을 좋아한다.'
-    },
-    LEONA: {
-        id: 'leona',
-        classId: 'archer',
-        name: 'Leona (레오나)',
-        sprite: 'leona_sprite',
-        skillName: 'ElectricGrenade',
-        personality: "어린 나이에 군에 입대한 병사. 총기를 다루는 데 능숙하며, 생존을 최우선으로 생각한다. '약육강식'을 믿으며, 무력한 자는 살아남을 수 없다고 생각한다."
     },
     SERA: {
         id: 'sera',
@@ -195,6 +179,57 @@ export const Characters = {
         sprite: 'bard_sprite',
         skillName: 'SongOfProtection',
         personality: '음치라서 악기를 연주하는 쪽으로 빠진 음유시인. 아직 노래에 대한 열정을 포기하지 못해서 이따금씩 저질스러운 목소리로 노래를 불러 주위에 민폐를 끼친다. 자주 씻지 않는 편인듯 하다.'
+    },
+    SILVI: {
+        id: 'silvi',
+        classId: 'warrior',
+        name: 'Silvi (실비)',
+        sprite: 'silvi_sprite',
+        skillName: 'StoneSkin',
+        personality: '가난한 부모님을 돕기 위해 싸우는 소녀 전사. 겁이 많음.'
+    },
+    NICKLE: {
+        id: 'nickle',
+        classId: 'archer',
+        name: 'Nickle (니클)',
+        sprite: 'nickle_sprite',
+        skillName: 'TacticalCommand',
+        atk: 6,
+        mAtk: 1,
+        def: 5,
+        speed: 40,
+        atkRange: 250,
+        personality: '여우 수인족 출신의 늙은 베테랑 용병. 전술적이고 통찰력이 깊으나 꼰대 기질이 다분하다. 나이가 많아도 귀여운 수인의 외모를 가지고 있어 그 부분에 심각한 콤플렉스를 가지고 있다.'
+    },
+    LEONA: {
+        id: 'leona',
+        classId: 'archer',
+        name: 'Leona (레오나)',
+        sprite: 'leona_sprite',
+        skillName: 'ElectricGrenade',
+        personality: "어린 나이에 군에 입대한 병사. 총기를 다루는 데 능숙하며, 생존을 최우선으로 생각한다. '약육강식'을 믿으며, 무력한 자는 살아남을 수 없다고 생각한다."
+    },
+    KING: {
+        id: 'king',
+        classId: 'warrior',
+        name: 'King (킹)',
+        sprite: 'king_sprite',
+        skillName: 'BloodRage',
+        personality: '몰락한 왕국의 왕이었던 폭군. 지금은 자신의 나라를 재건하기 위해 메시아의 군대에 들어왔다. 무시무시하고 폭력적인 성향이지만, 벌레를 극도로 무서워한다.'
+    },
+    BOON: {
+        id: 'boon',
+        classId: 'warrior',
+        name: 'Boon (분)',
+        sprite: 'boon_sprite',
+        skillName: 'HolyAura',
+        maxHp: 120,
+        hp: 120,
+        atk: 8,
+        mAtk: 40,
+        def: 15,
+        castSpd: 1200,
+        personality: '구원을 쫓아 메시아의 군대에 들어온 성기사. 자신이 세상을 구원할 존재라 믿는 망상에 시달리고 있다. 평소 생활에선 친절한 맏형 느낌이지만, 악한 존재 앞에선 짐승(미친개)으로 돌변한다.'
     }
 };
 
