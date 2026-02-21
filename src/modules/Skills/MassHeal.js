@@ -60,10 +60,14 @@ export default class MassHeal {
         // Apply heal to all active allies
         if (alliedGroup && alliedGroup.getChildren) {
             const allies = alliedGroup.getChildren();
+            let healedCount = 0;
             allies.forEach(ally => {
-                if (ally && ally.active && ally.hp > 0 && ally.scene && ally.scene.active) {
+                // Phaser Container에서 씬 활성 체크: scene.scene.isActive() 사용
+                const sceneOk = ally.scene && ally.scene.scene && ally.scene.scene.isActive();
+                if (ally && ally.active && ally.hp > 0 && sceneOk) {
                     // Heal the ally
                     ally.receiveHeal(healAmount);
+                    healedCount++;
 
                     // Show text
                     if (caster.scene && caster.scene.fxManager) {
@@ -89,6 +93,7 @@ export default class MassHeal {
                     }
                 }
             });
+            console.log(`[MassHeal] ${caster.unitName} -> ${healedCount}명 힐 (각 ${Math.round(healAmount)} HP)`);
         }
 
         // Giant screen-wide central flash (optional, just centered on the caster)
@@ -108,23 +113,30 @@ export default class MassHeal {
     }
 
     playHealAuraEffect(scene, x, y) {
-        // Create an emitter that spatters green/yellow sparkles upward
-        const emitter = scene.add.particles(x, y, 'emoji_sparkle', {
-            speed: { min: 50, max: 150 },
-            angle: { min: 220, max: 320 }, // pointing upwards
-            scale: { start: 0.6, end: 0 },
-            alpha: { start: 1, end: 0 },
-            lifespan: 800,
-            blendMode: 'ADD',
-            tint: [0x55ff55, 0xaaffaa, 0x00ff00], // healing colors
-            quantity: 20
-        });
+        try {
+            // Phaser 3.60+ 파티클 에미터 API
+            const emitter = scene.add.particles(x, y, 'emoji_sparkle', {
+                speed: { min: 50, max: 150 },
+                angle: { min: 220, max: 320 }, // pointing upwards
+                scale: { start: 0.6, end: 0 },
+                alpha: { start: 1, end: 0 },
+                lifespan: 800,
+                blendMode: 'ADD',
+                tint: [0x55ff55, 0xaaffaa, 0x00ff00], // healing colors
+                quantity: 20,
+                emitting: false // explode 방식 사용
+            });
 
-        emitter.explode(20);
+            // 유닛 depth(= y좌표)보다 위에 렌더링되도록 높은 depth 부여
+            emitter.setDepth(y + 100);
+            emitter.explode(20);
 
-        // Auto cleanup
-        scene.time.delayedCall(1000, () => {
-            emitter.destroy();
-        });
+            // Auto cleanup
+            scene.time.delayedCall(1000, () => {
+                if (emitter && emitter.destroy) emitter.destroy();
+            });
+        } catch (e) {
+            console.warn('[MassHeal] playHealAuraEffect 파티클 생성 실패:', e.message);
+        }
     }
 }

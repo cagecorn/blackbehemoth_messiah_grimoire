@@ -39,10 +39,10 @@ export default function applyMeleeAI(agent, targetListGetter, initialState = 'AG
         let minDist = Infinity;
 
         for (let t of targets) {
-            // Ignore dead targets or targets currently in active combat (frozen)
+            // ★ 파괴/비활성 유닛은 반드시 먼저 스킵 (t.body 접근 전)
+            if (!t || !t.active || !t.body) continue;
+            // 체력이 0 이하인 유닛 스킵
             if (t.hp !== undefined && t.hp <= 0) continue;
-            // Hacky check for active combat (a cleaner way would be reading a state)
-            if (t.body.velocity.x === 0 && t.body.velocity.y === 0 && t.activeCombat) continue;
 
             const dist = Phaser.Math.Distance.Between(a.x, a.y, t.x, t.y);
 
@@ -64,17 +64,25 @@ export default function applyMeleeAI(agent, targetListGetter, initialState = 'AG
         const bestTarget = closestPriority || closest;
 
         if (bestTarget) {
+            // 타겟이 바뀔 때만 로그 출력 (매 프레임 폭발 방지)
+            const prevTarget = bb.get('target');
+            if (prevTarget !== bestTarget) {
+                console.log(`[MeleeAI] ${a.unitName} -> 새 타겟: ${bestTarget.unitName || bestTarget.id} (거리: ${Math.round(minDist)})`);
+            }
             bb.set('target', bestTarget);
             return 0; // SUCCESS (Proceed to chase)
         }
 
         return 2; // FAILED (No valid target)
     }, "Finding Target");
+
     // 3. Chase the target
     const chaseTarget = new Action((a, bb) => {
         const target = bb.get('target');
 
-        if (!target || !target.scene || (target.hp !== undefined && target.hp <= 0)) {
+        // ★ Phaser Container에서 scene 활성 체크는 scene.scene.isActive() 사용
+        if (!target || !target.active || (target.hp !== undefined && target.hp <= 0)) {
+            bb.set('target', null); // 죽은 타겟 클리어
             return 2; // Target dead or removed -> FAILED
         }
 

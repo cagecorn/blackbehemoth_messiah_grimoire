@@ -61,11 +61,15 @@ export default class SongOfProtection {
         // Apply shield to all active allies
         if (alliedGroup && alliedGroup.getChildren) {
             const allies = alliedGroup.getChildren();
+            let shieldedCount = 0;
             allies.forEach(ally => {
-                if (ally && ally.active && ally.hp > 0 && ally.scene && ally.scene.active) {
+                // Phaser Container에서 씬 활성 체크: scene.scene.isActive() 사용
+                const sceneOk = ally.scene && ally.scene.scene && ally.scene.scene.isActive();
+                if (ally && ally.active && ally.hp > 0 && sceneOk) {
                     // Apply shield via ShieldManager
                     if (caster.scene && caster.scene.shieldManager) {
                         caster.scene.shieldManager.applyShield(ally, shieldAmount, this.shieldDuration);
+                        shieldedCount++;
                     }
 
                     // Show text
@@ -92,6 +96,7 @@ export default class SongOfProtection {
                     }
                 }
             });
+            console.log(`[SongOfProtection] ${caster.unitName} -> ${shieldedCount}명에게 배리어 적용 (${Math.round(shieldAmount)})`);
         }
 
         // Giant screen-wide central flash (optional, just centered on the caster)
@@ -111,23 +116,30 @@ export default class SongOfProtection {
     }
 
     playMusicAuraEffect(scene, x, y) {
-        // Create an emitter that spatters music notes upward
-        const emitter = scene.add.particles(x, y, 'emoji_note', {
-            speed: { min: 40, max: 100 },
-            angle: { min: 200, max: 340 }, // pointing upwards
-            scale: { start: 0.6, end: 0.2 },
-            alpha: { start: 0.8, end: 0 },
-            lifespan: 1200,
-            gravityY: -40,
-            blendMode: 'NORMAL',
-            quantity: 6
-        });
+        try {
+            // Phaser 3.60+ 파티클 에미터 API
+            const emitter = scene.add.particles(x, y, 'emoji_note', {
+                speed: { min: 40, max: 100 },
+                angle: { min: 200, max: 340 }, // pointing upwards
+                scale: { start: 0.6, end: 0.2 },
+                alpha: { start: 0.8, end: 0 },
+                lifespan: 1200,
+                gravityY: -40,
+                blendMode: 'NORMAL',
+                quantity: 6,
+                emitting: false // explode 방식 사용
+            });
 
-        emitter.explode(6);
+            // 유닛 depth(= y좌표)보다 위에 렌더링되도록 높은 depth 부여
+            emitter.setDepth(y + 100);
+            emitter.explode(6);
 
-        // Auto cleanup
-        scene.time.delayedCall(1500, () => {
-            emitter.destroy();
-        });
+            // Auto cleanup
+            scene.time.delayedCall(1500, () => {
+                if (emitter && emitter.destroy) emitter.destroy();
+            });
+        } catch (e) {
+            console.warn('[SongOfProtection] playMusicAuraEffect 파티클 생성 실패:', e.message);
+        }
     }
 }

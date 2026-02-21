@@ -114,7 +114,17 @@ export default class ChargeAttack {
             onComplete: () => {
                 if (afterimageTimer) afterimageTimer.remove();
 
-                if (!caster || !caster.active || !caster.scene || !caster.scene.active) return;
+                // ★ Container에서 scene 활성 체크: scene.scene.isActive() 사용
+                const sceneOk = caster && caster.active && caster.scene && caster.scene.scene && caster.scene.scene.isActive();
+
+                // ★ ai_state 복구는 scene 상태 무관하게 항상 먼저 실행 (caster가 살아있으면)
+                if (caster && caster.blackboard) {
+                    const restoreState = previousState || 'AGGRESSIVE';
+                    caster.blackboard.set('ai_state', restoreState);
+                    console.log(`[ChargeAttack] ${caster.unitName} ai_state 복구: CASTING -> ${restoreState}`);
+                }
+
+                if (!sceneOk) return;
 
                 // Arrived! Play strike effect
                 if (caster.scene.particleManager) {
@@ -137,11 +147,6 @@ export default class ChargeAttack {
                             });
                         }
                     }
-                }
-
-                // Restore AI State
-                if (caster.blackboard && previousState) {
-                    caster.blackboard.set('ai_state', previousState);
                 }
             }
         });
