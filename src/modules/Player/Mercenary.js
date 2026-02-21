@@ -3,6 +3,7 @@ import HealthBar from '../UI/HealthBar.js';
 import CooldownBar from '../UI/CooldownBar.js';
 import EventBus from '../Events/EventBus.js';
 import SpeechBubble from '../UI/SpeechBubble.js';
+import partyManager from '../Core/PartyManager.js';
 
 /**
  * Mercenary.js
@@ -14,8 +15,8 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         this.scene = scene;
         this.config = config;
 
-        // Identity
-        this.id = config.id + '_' + Phaser.Math.Between(1000, 9999);
+        // Identity - Use stable ID from config for data linking
+        this.id = config.id || ('unit_' + Phaser.Math.Between(1000, 9999));
         this.className = config.classId || config.id; // e.g., 'warrior'
         this.characterId = config.id; // e.g., 'aren' or 'silvi'
         this.unitName = config.name;
@@ -58,13 +59,19 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         this.eva = config.eva || 0;
         this.crit = config.crit || 0;
 
-        // Equipment Slots
-        this.equipment = {
-            weapon: config.equipment?.weapon || null,
-            armor: config.equipment?.armor || null,
-            necklace: config.equipment?.necklace || null,
-            ring: config.equipment?.ring || null
-        };
+        // Check for existing state in PartyManager
+        const savedState = partyManager.getState(this.id);
+        if (savedState) {
+            console.log(`[Mercenary] Loading persistent state for ${this.unitName} (${this.id})`, savedState);
+            this.level = savedState.level || this.level;
+            this.exp = savedState.exp || this.exp;
+            this.hp = savedState.hp !== undefined ? savedState.hp : this.hp;
+            this.maxHp = savedState.maxHp || this.maxHp;
+            this.atk = savedState.atk || this.atk;
+            this.def = savedState.def || this.def;
+            this.equipment = savedState.equipment || this.equipment;
+            this.expToNextLevel = this.calculateExpToNextLevel(this.level);
+        }
 
         // Setup Physics & Rendering
         this.scene.add.existing(this);
@@ -144,6 +151,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
     }
 
     handleAIResponse(payload) {
+        if (!this.active || !this.scene) return;
         // payload should be { agentId: '...', text: '...' }
         if (payload && typeof payload === 'object') {
             if (payload.agentId === this.className) {
@@ -153,6 +161,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
     }
 
     handleUnitBark(payload) {
+        if (!this.active || !this.scene) return;
         // payload: { agentId, characterId, unitName, text }
         if (payload && payload.characterId === this.characterId) {
             this.showSpeechBubble(payload.text);
@@ -160,6 +169,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
     }
 
     showSpeechBubble(text) {
+        if (!this.active || !this.scene) return;
         if (this.currentBubble) this.currentBubble.destroy();
         this.currentBubble = new SpeechBubble(this.scene, this, text);
     }
@@ -381,6 +391,23 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         this.destroy();
     }
 
+    destroy(fromScene) {
+        // Remove global event listeners to prevent memory leaks and zombie calls
+        const commandEvent = (this.className === 'archer')
+            ? EventBus.EVENTS.AI_COMMAND_ARCHER
+            : (this.className === 'healer')
+                ? EventBus.EVENTS.AI_COMMAND_HEALER
+                : EventBus.EVENTS.AI_COMMAND;
+
+        EventBus.off(commandEvent, this.handleAICommand, this);
+        EventBus.off(EventBus.EVENTS.AI_RESPONSE, this.handleAIResponse, this);
+        EventBus.off(EventBus.EVENTS.UNIT_BARK, this.handleUnitBark, this);
+
+        console.log(`[Mercenary] Cleaned up listeners for ${this.unitName} (${this.characterId})`);
+
+        super.destroy(fromScene);
+    }
+
     update() {
         if (this.isAirborne || this.isStunned) {
             // Can't act while CC'd. Keep velocity at 0 unless knocked back.
@@ -541,30 +568,38 @@ export default class Mercenary extends Phaser.GameObjects.Container {
 
         const icon_atk_spd = (this.atkSpd / 1000).toFixed(1) + 's';
 
+        const stats = {
+            level: this.level,
+            exp: this.exp,
+            expToNextLevel: this.expToNextLevel,
+            hp: this.hp,
+            maxHp: this.maxHp,
+            atk: this.getTotalAtk(),
+            mAtk: this.getTotalMAtk(),
+            def: this.def,
+            mDef: this.mDef,
+            speed: this.speed,
+            atkSpd: icon_atk_spd,
+            atkRange: this.atkRange,
+            rangeMin: this.rangeMin,
+            rangeMax: this.rangeMax,
+            castSpd: this.castSpd,
+            acc: this.acc,
+            eva: this.eva,
+            crit: this.crit
+        };
+
         EventBus.emit(EventBus.EVENTS.STATUS_UPDATED, {
             agentId: this.className,
             statuses: statuses,
             equipment: this.equipment,
-            stats: {
-                level: this.level,
-                exp: this.exp,
-                expToNextLevel: this.expToNextLevel,
-                hp: this.hp,
-                maxHp: this.maxHp,
-                atk: this.getTotalAtk(),
-                mAtk: this.getTotalMAtk(),
-                def: this.def,
-                mDef: this.mDef,
-                speed: this.speed,
-                atkSpd: icon_atk_spd,
-                atkRange: this.atkRange,
-                rangeMin: this.rangeMin,
-                rangeMax: this.rangeMax,
-                castSpd: this.castSpd,
-                acc: this.acc,
-                eva: this.eva,
-                crit: this.crit
-            }
+            stats: stats
+        });
+
+        // Save to PartyManager for persistent state linking
+        partyManager.saveState(this.id, {
+            ...this.getState(),
+            ...stats
         });
     }
 

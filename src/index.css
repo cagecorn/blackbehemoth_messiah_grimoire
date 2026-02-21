@@ -93,7 +93,9 @@ body {
     opacity: 0.10;
     pointer-events: none;
     z-index: 0;
-    max-height: 80%;
+    width: 65%;
+    height: 65%;
+    object-fit: contain;
     image-rendering: pixelated;
     clip-path: inset(0 round 8px);
     /* Ensures background sprite doesn't spill over corners */
