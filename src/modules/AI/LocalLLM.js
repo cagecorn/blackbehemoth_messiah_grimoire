@@ -106,7 +106,7 @@ ${contextString}`
 
 [지침]
 1. 전투 중이거나 던전을 탐험하는 긴박한 상황입니다.
-2. 위 성격에 맞춰 짧고 강렬한 한마디를 하십시오.
+2. 위 성격(특히 콤플렉스나 특이한 습관)을 잘 드러내는 짧고 강렬한 한마디를 하십시오.
 3. 생각이나 독백, 지문(괄호)은 절대 출력하지 마십시오. 오직 입 밖으로 내는 대사만 출력하십시오.`
         };
 
@@ -144,21 +144,27 @@ ${contextString}`
     /**
      * Generate a reaction to a previous bark (Tsukkomi).
      */
-    async generateReactionBark(characterConfig, previousSpeakerName, previousText) {
+    async generateReactionBark(characterConfig, previousSpeakerName, previousText, previousSpeakerId = null) {
         console.log(`[LocalLLM] Generating reaction for ${characterConfig.name} to ${previousSpeakerName}`);
+
+        let relationshipContext = "";
+        if (previousSpeakerId && characterConfig.relationships && characterConfig.relationships[previousSpeakerId]) {
+            relationshipContext = `\n[관계]\n대상(${previousSpeakerName})에 대한 생각: "${characterConfig.relationships[previousSpeakerId]}"`;
+        }
 
         const systemMessage = {
             role: "system",
             content: `[캐릭터 설정]
 이름: ${characterConfig.name}
-성격: "${characterConfig.personality}"
+성격: "${characterConfig.personality}"${relationshipContext}
 
 [상황]
 동료 '${previousSpeakerName}'의 말: "${previousText}"
 
 [지침]
 1. 동료의 말에 대해 성격에 맞는 반응을 짧게(1문장) 하십시오.
-2. 지문이나 생각은 출력하지 마십시오.`
+2. 위 [관계]에 서술된 감정이 있다면 이를 바탕으로 대답하십시오. (싫어하면 비꼬고, 좋아하면 맞장구치기 등)
+3. 지문이나 생각은 출력하지 마십시오.`
         };
 
         const userMessage = {
