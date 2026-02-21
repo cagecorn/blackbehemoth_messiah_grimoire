@@ -32,6 +32,7 @@ export default class ChatChannel {
                 </select>
                 <div class="header-toggles">
                     <button class="chat-view-toggle gear-toggle" data-view="gear" title="장비 보기">⚔️</button>
+                    <button class="chat-view-toggle skill-toggle" data-view="skill" title="스킬 정보">💫</button>
                     <button class="chat-view-toggle status-toggle" data-view="status" title="상세 능력치">📊</button>
                 </div>
             </div>
@@ -64,6 +65,17 @@ export default class ChatChannel {
                     <div class="stat-item"><span class="stat-label">CRIT</span><span class="stat-value" data-stat="crit">0</span></div>
                 </div>
             </div>
+            <div class="chat-skill-view" id="skill-${id}" style="display: none;">
+                <div class="skill-info-container">
+                    <div class="skill-header">
+                        <span class="skill-emoji">✨</span>
+                        <span class="skill-name">Skill Name</span>
+                    </div>
+                    <div class="skill-description">
+                        Skill description goes here...
+                    </div>
+                </div>
+            </div>
             <form class="chat-form" id="form-${id}">
                 <input type="text" placeholder="${name}에게 지시... (e.g. 공격!)" />
             </form>
@@ -78,10 +90,12 @@ export default class ChatChannel {
         this.statusContainer = this.element.querySelector('.status-container.status-effects');
         this.characterSelect = this.element.querySelector('.chat-name-select');
         this.gearToggleBtn = this.element.querySelector('.gear-toggle');
+        this.skillToggleBtn = this.element.querySelector('.skill-toggle');
         this.statusToggleBtn = this.element.querySelector('.status-toggle');
         this.gearView = this.element.querySelector('.chat-gear-view');
+        this.skillView = this.element.querySelector('.chat-skill-view');
         this.statusView = this.element.querySelector('.chat-status-view');
-        this.currentView = 'chat'; // 'chat', 'gear', 'status'
+        this.currentView = 'chat'; // 'chat', 'gear', 'skill', 'status'
 
         this.gearToggleBtn.addEventListener('click', () => {
             this.toggleView('gear');
@@ -89,6 +103,10 @@ export default class ChatChannel {
 
         this.statusToggleBtn.addEventListener('click', () => {
             this.toggleView('status');
+        });
+
+        this.skillToggleBtn.addEventListener('click', () => {
+            this.toggleView('skill');
         });
 
         this.characterSelect.addEventListener('change', (e) => {
@@ -119,10 +137,12 @@ export default class ChatChannel {
         this.log.style.display = (this.currentView === 'chat') ? 'flex' : 'none';
         this.form.style.display = (this.currentView === 'chat') ? 'block' : 'none';
         this.gearView.style.display = (this.currentView === 'gear') ? 'flex' : 'none';
+        this.skillView.style.display = (this.currentView === 'skill') ? 'flex' : 'none';
         this.statusView.style.display = (this.currentView === 'status') ? 'block' : 'none';
 
         // Update Buttons
         this.gearToggleBtn.textContent = (this.currentView === 'gear') ? '💬' : '⚔️';
+        this.skillToggleBtn.textContent = (this.currentView === 'skill') ? '💬' : '💫';
         this.statusToggleBtn.textContent = (this.currentView === 'status') ? '💬' : '📊';
 
         if (this.currentView !== 'chat') {
@@ -236,5 +256,17 @@ export default class ChatChannel {
             const el = this.statusView.querySelector(`[data-stat="${key}"]`);
             if (el) el.textContent = val;
         });
+    }
+
+    updateSkill(skillData) {
+        if (!skillData || !this.skillView) return;
+
+        const nameEl = this.skillView.querySelector('.skill-name');
+        const emojiEl = this.skillView.querySelector('.skill-emoji');
+        const descEl = this.skillView.querySelector('.skill-description');
+
+        if (nameEl) nameEl.textContent = skillData.name || 'Unknown Skill';
+        if (emojiEl) emojiEl.textContent = skillData.emoji || '💫';
+        if (descEl) descEl.textContent = skillData.description || 'No description available.';
     }
 }

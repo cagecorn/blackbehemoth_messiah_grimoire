@@ -48,6 +48,13 @@ export default class UIManager {
             if (newConfig && this.channels[classId]) {
                 const spritePath = `assets/characters/party/${newConfig.sprite}.png`;
                 this.channels[classId].updateVisuals(newConfig.name, spritePath, characterId);
+
+                // Update Skill View
+                this.channels[classId].updateSkill({
+                    name: newConfig.skillName,
+                    emoji: newConfig.skillEmoji,
+                    description: newConfig.skillDescription
+                });
             }
         });
 
@@ -113,6 +120,13 @@ export default class UIManager {
                     });
                 }
             );
+
+            // Set initial skill data
+            this.channels[classId].updateSkill({
+                name: config.skillName,
+                emoji: config.skillEmoji,
+                description: config.skillDescription
+            });
         });
 
         this.addLog('warrior', 'Messiah Grimoire에 오신 것을 환영합니다!', '#00ffcc');

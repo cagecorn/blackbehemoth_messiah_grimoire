@@ -244,7 +244,52 @@ body {
     font-family: 'Consolas', monospace;
 }
 
-/* Gear View Specifics */
+/* Skill View Specifics */
+.chat-skill-view {
+    flex: 1;
+    display: none;
+    flex-direction: column;
+    padding: 15px 10px;
+    background: rgba(0, 0, 0, 0.25);
+    border-radius: 6px;
+    z-index: 5;
+    overflow-y: auto;
+}
+
+.skill-info-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.skill-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 1px solid rgba(187, 136, 255, 0.3);
+    padding-bottom: 8px;
+}
+
+.skill-emoji {
+    font-size: 24px;
+}
+
+.skill-name {
+    font-size: 18px;
+    font-weight: bold;
+    color: #bb88ff;
+    text-shadow: 0 0 8px rgba(187, 136, 255, 0.4);
+}
+
+.skill-description {
+    font-size: 13.5px;
+    line-height: 1.6;
+    color: #e0e0e0;
+    font-family: 'Segoe UI', sans-serif;
+    word-break: keep-all;
+    white-space: pre-wrap;
+}
+
 .chat-gear-view {
     flex: 1;
     display: none;
