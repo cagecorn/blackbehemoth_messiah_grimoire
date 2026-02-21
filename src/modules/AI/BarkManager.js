@@ -46,17 +46,22 @@ export default class BarkManager {
         if (!firstBarkText) return;
 
         // 2. Roll for Reaction (Baton Pass)
-        const reactionChance = 0.45; // 45% chance for a reaction
+        const reactionChance = 0.60; // Increased chance for chemistry check
         if (Math.random() < reactionChance) {
             // Wait 1.5 - 2.5 seconds before the reaction
             this.scene.time.delayedCall(Phaser.Math.Between(1500, 2500), async () => {
-                await this.triggerReaction(firstSpeaker.unitName, firstBarkText, [firstSpeaker.characterId]);
+                await this.triggerReaction(firstSpeaker.unitName, firstBarkText, [firstSpeaker.characterId], firstSpeaker.characterId);
             });
         }
     }
 
-    async triggerReaction(prevSpeakerName, prevText, excludedIds = []) {
-        const reactor = this.getRandomActiveMercenary(excludedIds);
+    /**
+     * Triggers a reaction bark from another mercenary.
+     * Prioritizes mercenaries who have a relationship with the previous speaker.
+     */
+    async triggerReaction(prevSpeakerName, prevText, excludedIds = [], prevSpeakerId = null) {
+        // Try to find a reactor who knows the previous speaker
+        const reactor = this.getBestReactor(excludedIds, prevSpeakerId);
         if (!reactor) return;
 
         const charConfig = Object.values(Characters).find(c => c.id === reactor.characterId);
@@ -65,16 +70,18 @@ export default class BarkManager {
         console.log(`[BarkManager] ${reactor.unitName} is reacting to ${prevSpeakerName}...`);
 
         try {
-            const reactionText = await localLLM.generateReactionBark(charConfig, prevSpeakerName, prevText);
+            // Pass prevSpeakerId to generateReactionBark so it can look up relationships
+            const reactionText = await localLLM.generateReactionBark(charConfig, prevSpeakerName, prevText, prevSpeakerId);
             if (reactionText) {
                 this.emitBarkEvent(reactor, reactionText);
 
                 // Option for 3rd string chain (Chain reaction)
-                const chainChance = 0.25; // 25% chance for a 3rd person to join
+                const chainChance = 0.30; // 30% chance for a 3rd person to join
                 if (Math.random() < chainChance) {
                     excludedIds.push(reactor.characterId);
                     this.scene.time.delayedCall(Phaser.Math.Between(2000, 3000), async () => {
-                        await this.triggerReaction(reactor.unitName, reactionText, excludedIds);
+                        // The current reactor becomes the previous speaker for the next link in the chain
+                        await this.triggerReaction(reactor.unitName, reactionText, excludedIds, reactor.characterId);
                     });
                 }
             }
@@ -83,11 +90,41 @@ export default class BarkManager {
         }
     }
 
+    /**
+     * Selects a random active mercenary.
+     */
     getRandomActiveMercenary(excludedIds = []) {
         const activeMercs = this.scene.mercenaries.getChildren().filter(m =>
             m.active && m.hp > 0 && !excludedIds.includes(m.characterId)
         );
         if (activeMercs.length === 0) return null;
+        return Phaser.Utils.Array.GetRandom(activeMercs);
+    }
+
+    /**
+     * Selects a reactor, prioritizing those with a relationship to the previous speaker.
+     */
+    getBestReactor(excludedIds, previousSpeakerId) {
+        const activeMercs = this.scene.mercenaries.getChildren().filter(m =>
+            m.active && m.hp > 0 && !excludedIds.includes(m.characterId)
+        );
+
+        if (activeMercs.length === 0) return null;
+
+        // If we know who spoke last, look for someone who has a relationship with them
+        if (previousSpeakerId) {
+            const relatedMercs = activeMercs.filter(m => {
+                const config = Object.values(Characters).find(c => c.id === m.characterId);
+                return config && config.relationships && config.relationships[previousSpeakerId];
+            });
+
+            if (relatedMercs.length > 0) {
+                console.log(`[BarkManager] Found ${relatedMercs.length} related mercenaries for ${previousSpeakerId}. Picking one.`);
+                return Phaser.Utils.Array.GetRandom(relatedMercs);
+            }
+        }
+
+        // Fallback to random
         return Phaser.Utils.Array.GetRandom(activeMercs);
     }
 
