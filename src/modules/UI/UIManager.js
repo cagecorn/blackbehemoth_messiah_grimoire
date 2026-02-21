@@ -135,7 +135,10 @@ export default class UIManager {
                 args: result.action.arguments
             });
 
-            this.addLog(agentId, `[AI] 전술 행동: ${JSON.stringify(result.action)}`, '#bb88ff');
+            const actionDesc = result.action.name === 'attack_priority'
+                ? `${result.action.arguments.role} 우선 공격`
+                : `${result.action.name}(${Object.entries(result.action.arguments).map(([key, value]) => `${key}: ${value}`).join(', ')})`;
+            this.addLog(agentId, `[AI] 전술 행동: ${actionDesc}`, '#bb88ff');
         } else {
             this.addLog(agentId, `[System] 대화 모드 (기억 분석 중...)`, '#aaaaaa');
 

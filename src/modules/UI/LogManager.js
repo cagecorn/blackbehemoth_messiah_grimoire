@@ -100,7 +100,10 @@ class LogManager {
                         args: result.action.arguments
                     });
 
-                    this.addLog(`[AI] Executing: ${JSON.stringify(result.action)}`, '#bb88ff');
+                    const actionDesc = result.action.name === 'attack_priority'
+                        ? `${result.action.arguments.role} 우선 공격`
+                        : `${result.action.name}(${Object.entries(result.action.arguments).map(([key, value]) => `${key}: ${value}`).join(', ')})`;
+                    this.addLog(`[AI] 실행: ${actionDesc}`, '#bb88ff');
                 } else {
                     // FALLBACK TO CHAT (RAG + LOCAL LLM)
                     this.addLog(`[System] Conversational intent detected. Consulting memory...`, '#aaaaaa');

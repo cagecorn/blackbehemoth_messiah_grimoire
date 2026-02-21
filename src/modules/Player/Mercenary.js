@@ -464,4 +464,69 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             }
         });
     }
+
+    /**
+     * @returns {Object} JSON-serializable snapshot of logical combat state
+     */
+    getState() {
+        return {
+            id: this.id,
+            className: this.className,
+            characterId: this.characterId,
+            unitName: this.unitName,
+            x: this.x,
+            y: this.y,
+            hp: this.hp,
+            maxHp: this.maxHp,
+            mp: this.mp,
+            maxMp: this.maxMp,
+            atk: this.atk,
+            mAtk: this.mAtk,
+            def: this.def,
+            mDef: this.mDef,
+            speed: this.speed,
+            atkSpd: this.atkSpd,
+            castSpd: this.castSpd,
+            atkRange: this.atkRange,
+            rangeMin: this.rangeMin,
+            rangeMax: this.rangeMax,
+            acc: this.acc,
+            eva: this.eva,
+            crit: this.crit,
+            equipment: this.equipment,
+            // Logic flags
+            isAirborne: !!this.isAirborne,
+            isStunned: !!this.isStunned,
+            isKnockedBack: !!this.isKnockedBack,
+            isShocked: !!this.isShocked
+        };
+    }
+
+    /**
+     * @param {Object} stateData - The snapshot from Headless Worker to apply
+     */
+    applyState(stateData) {
+        if (!stateData) return;
+
+        // Visual position update
+        if (stateData.x !== undefined && stateData.y !== undefined) {
+            this.setPosition(stateData.x, stateData.y);
+            if (this.body) {
+                this.body.reset(stateData.x, stateData.y);
+            }
+        }
+
+        // Logical state update
+        if (stateData.hp !== undefined) this.hp = stateData.hp;
+        if (stateData.mp !== undefined) this.mp = stateData.mp;
+
+        // Usually buffs/flags fade out or remain, depending on implementation
+        if (stateData.isAirborne !== undefined) this.isAirborne = stateData.isAirborne;
+        if (stateData.isStunned !== undefined) this.isStunned = stateData.isStunned;
+        if (stateData.isKnockedBack !== undefined) this.isKnockedBack = stateData.isKnockedBack;
+        if (stateData.isShocked !== undefined) this.isShocked = stateData.isShocked;
+
+        this.updateHealthBar();
+        this.syncStatusUI();
+    }
 }

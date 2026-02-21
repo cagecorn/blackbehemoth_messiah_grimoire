@@ -59,6 +59,7 @@
 | `aren` | 아렌 | `warrior` | `ChargeAttack` | 메시아를 향한 충직한 전사. 고기를 좋아하고 야채를 못 먹음. |
 | `silvi` | 실비 | `warrior` | `StoneSkin` | 가난한 부모님을 돕기 위해 싸우는 소녀 전사. 겁이 많음. |
 | `ella` | 엘라 | `archer` | `KnockbackShot` | 이름 때문에 고민이 많은 츤데레 남성 아처. 뜨개질을 좋아함. |
+| `leona` | 레오나 | `archer` | `ElectricGrenade` | 어린 나이에 군에 입대한 병사. 생존을 최우선으로 생각하며 '약육강식'의 신조를 가짐. |
 | `sera` | 세라 | `healer` | `MassHeal` | 아주 거친 입담을 가진 힐러. 유기동물을 돕는 반전 매력. |
 | `merlin` | 멀린 | `wizard` | `SkillFireball` | 인생은 도박이라고 믿는 마법사. 의외로 가계부를 잘 씀. |
 | `lute` | 루트 | `bard` | `SongOfProtection` | 음치 음유시인. 노래에 대한 열정으로 주변에 민폐를 끼침. |
