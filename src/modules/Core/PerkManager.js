@@ -29,7 +29,15 @@ export const PerkDefinitions = {
     ],
     warrior: [],
     healer: [],
-    wizard: [],
+    wizard: [
+        {
+            id: 'teleport',
+            name: '텔레포트',
+            description: '적에게 포위당하면 안전한 위치로 순식간에 이동합니다.',
+            emoji: '✨',
+            requiredLevel: 1
+        }
+    ],
     bard: []
 };
 
