@@ -71,10 +71,13 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
         this.body.setOffset(-radius, -radius);
         this.body.setCollideWorldBounds(true);
 
-        this.healthBar = new HealthBar(scene, x, y - 48, 48, 6);
+        const displayHeight = spriteSize * scale;
+        this.barYOffset = displayHeight / 2 + 20;
+
+        this.healthBar = new HealthBar(scene, x, y - this.barYOffset, 48, 6);
 
         // AI Debug Text
-        this.aiDebugText = this.scene.add.text(0, -60, '', {
+        this.aiDebugText = this.scene.add.text(0, -(this.barYOffset + 12), '', {
             fontSize: '11px',
             fill: '#ffcccc',
             backgroundColor: '#000000aa',
@@ -96,7 +99,7 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
         }
     }
 
-    takeDamage(amount, attacker = null) {
+    takeDamage(amount, attacker = null, isUltimate = false) {
         // --- 0. Accuracy vs Evasion Check ---
         if (attacker && typeof attacker === 'object' && attacker.acc !== undefined && this.eva !== undefined) {
             const hitChance = Math.max(0.05, Math.min(1.0, (attacker.acc - this.eva) / 100.0));
@@ -134,8 +137,8 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
                 attacker.heal(finalDamage * 0.35);
             }
 
-            // Attacker gains gauge when hitting monster
-            if (attacker && typeof attacker.gainUltGauge === 'function') {
+            // Attacker gains gauge when hitting monster (unless it's an ultimate)
+            if (attacker && typeof attacker.gainUltGauge === 'function' && !isUltimate) {
                 attacker.gainUltGauge(2);
             }
         }
@@ -161,7 +164,7 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
         }
     }
 
-    takeMagicDamage(amount, attacker = null) {
+    takeMagicDamage(amount, attacker = null, isUltimate = false) {
         const attackerId = (attacker && typeof attacker === 'object') ? (attacker.id || attacker.className) : attacker;
 
         // 1. Magic Damage is reduced by mDef
@@ -186,8 +189,8 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
                 attacker.heal(finalDamage * 0.35);
             }
 
-            // Attacker gains gauge when hitting monster with magic
-            if (attacker && typeof attacker.gainUltGauge === 'function') {
+            // Attacker gains gauge when hitting monster with magic (unless it's an ultimate)
+            if (attacker && typeof attacker.gainUltGauge === 'function' && !isUltimate) {
                 attacker.gainUltGauge(2);
             }
         }
@@ -285,11 +288,12 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
         if (this.isAirborne || this.isStunned) {
             // Can't act while CC'd. Keep velocity at 0 unless knocked back.
             this.body.setVelocity(0, 0);
+            return; // Early return to block BT and orientation
         } else if (this.btManager) {
             this.btManager.step();
             this.handleAttack();
         }
-        this.healthBar.setPos(this.x, this.y - 48);
+        this.healthBar.setPos(this.x, this.y - this.barYOffset);
         if (this.btManager && this.aiDebugText) {
             this.aiDebugText.setText(this.btManager.lastActiveNodeName || 'No Name');
         } else if (this.aiDebugText) {

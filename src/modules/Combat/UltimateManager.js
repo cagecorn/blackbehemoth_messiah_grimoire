@@ -35,25 +35,56 @@ export default class UltimateManager {
         this.isCinematicActive = true;
         const { unit, skillName, resolve } = this.queue[0];
 
-        // 1. Pause Logic
+        // 1. Selective Pause Logic
         if (this.scene.physics && this.scene.physics.world) {
             this.scene.physics.world.pause();
         }
+
+        // Capture currently active tweens and pause them
+        const capturedTweens = this.scene.tweens.getTweens().filter(t => t.active && !t.paused);
+        capturedTweens.forEach(t => t.pause());
+
+        // Capture currently active timers and pause them
+        const capturedTimers = [];
+        if (this.scene.time && this.scene.time._active) {
+            this.scene.time._active.forEach(event => {
+                if (!event.paused) {
+                    event.paused = true;
+                    capturedTimers.push(event);
+                }
+            });
+        }
+
         this.scene.isUltimateActive = true;
 
-        // 2. Execute Animation
-        await this._executeCutscene(unit, skillName);
+        try {
+            // 2. Execute Animation
+            await this._executeCutscene(unit, skillName);
+        } catch (err) {
+            console.error("[UltimateManager] Error during cutscene:", err);
+        } finally {
+            // 3. Resume Logic
+            if (this.scene.physics && this.scene.physics.world) {
+                this.scene.physics.world.resume();
+            }
 
-        // 3. Resume Logic
-        if (this.scene.physics && this.scene.physics.world) {
-            this.scene.physics.world.resume();
+            // Resume captured tweens
+            capturedTweens.forEach(t => {
+                if (t && t.active) t.resume();
+            });
+
+            // Resume captured timers
+            capturedTimers.forEach(event => {
+                if (event) event.paused = false;
+            });
+
+            this.scene.isUltimateActive = false;
+
+            // 4. Resolve current and continue
+            resolve();
+            this.queue.shift();
+            this.processQueue();
         }
-        this.scene.isUltimateActive = false;
-
-        // 4. Resolve current and continue
-        resolve();
-        this.queue.shift();
-        this.processQueue();
     }
 
     /**
@@ -76,11 +107,25 @@ export default class UltimateManager {
         });
 
         // Mercenary Sprite Close-up
-        const spriteKey = unit.config.sprite;
-        const closeUp = this.scene.add.image(-200, height - 150, spriteKey)
+        let spriteKey = unit.config.sprite;
+        let scale = 4;
+        let yOffset = height - 150;
+
+        // Special case: high-res cutscene for Merlin
+        if (unit.characterId === 'merlin') {
+            spriteKey = 'merlin_cutscene';
+            scale = 1.0;
+            yOffset = height - 200; // Adjust slightly higher for large image
+        } else if (unit.characterId === 'aren') {
+            spriteKey = 'aren_cutscene';
+            scale = 1.0;
+            yOffset = height - 200;
+        }
+
+        const closeUp = this.scene.add.image(-200, yOffset, spriteKey)
             .setScrollFactor(0)
             .setDepth(30001)
-            .setScale(4)
+            .setScale(scale)
             .setTint(0xffffff);
 
         // Skill Name Text

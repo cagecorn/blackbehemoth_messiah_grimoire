@@ -400,7 +400,7 @@ export const MonsterClasses = {
     BOSS_GOBLIN: {
         id: 'boss_goblin',
         name: 'Great Goblin (대왕 고블린)',
-        sprite: 'goblin_sprite',
+        sprite: 'goblin_boss_sprite',
         maxHp: 5000,
         hp: 5000,
         mp: 100,

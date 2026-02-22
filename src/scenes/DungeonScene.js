@@ -71,14 +71,28 @@ export default class DungeonScene extends Phaser.Scene {
         this.shieldManager = new ShieldManager(this);
         this.barkManager = new BarkManager(this);
 
-        // Global Combat Events for Rewards
-        EventBus.on(EventBus.EVENTS.MONSTER_KILLED, (payload) => {
+        // Listen for Character Swap
+        this.handleDebugSwapListener = this.handleDebugSwap.bind(this);
+        EventBus.on(EventBus.EVENTS.DEBUG_SWAP_CHARACTER, this.handleDebugSwapListener);
+
+        // Global Combat Events for Rewards - Store as reference for cleanup
+        this.handleMonsterKilledListener = (payload) => {
             // Distribute EXP to all active mercenaries
-            this.mercenaries.getChildren().forEach(merc => {
-                if (merc.active && merc.hp > 0) {
-                    merc.addExp(this.killExp);
-                }
-            });
+            if (this.mercenaries && this.mercenaries.active) {
+                this.mercenaries.getChildren().forEach(merc => {
+                    if (merc.active && merc.hp > 0) {
+                        merc.addExp(this.killExp);
+                    }
+                });
+            }
+        };
+        EventBus.on(EventBus.EVENTS.MONSTER_KILLED, this.handleMonsterKilledListener);
+
+        // Cleanup on scene shutdown
+        this.events.once('shutdown', () => {
+            EventBus.off(EventBus.EVENTS.DEBUG_SWAP_CHARACTER, this.handleDebugSwapListener);
+            EventBus.off(EventBus.EVENTS.MONSTER_KILLED, this.handleMonsterKilledListener);
+            console.log('[DungeonScene] Cleaned up EventBus listeners');
         });
 
         // Spawn Warrior (Leader) -> Aren
@@ -137,9 +151,6 @@ export default class DungeonScene extends Phaser.Scene {
         this.physics.add.overlap(this.mercenaries, this.enemies, (u1, u2) => {
             SeparationManager.applyRepulsion(u1, u2, 60); // Stronger repulsion for enemies
         });
-
-        // Listen for Character Swap
-        EventBus.on(EventBus.EVENTS.DEBUG_SWAP_CHARACTER, this.handleDebugSwap, this);
 
         // Sync UI with initial character names after a short delay to ensure UI is ready
         this.time.delayedCall(500, () => {
@@ -284,8 +295,8 @@ export default class DungeonScene extends Phaser.Scene {
 
         // Round 3+: Spawn Shadow Aren as a mini-boss!
         if (this.currentRound >= 3) {
-            const shadowX = startPos.x + 400;
-            const shadowY = startPos.y;
+            const shadowX = startPos.x + 150; // Reduced from 400
+            const shadowY = startPos.y - 120; // Slightly offset
             this.spawnShadowMercenary('warrior', Characters.AREN, shadowX, shadowY);
             EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, `[!] 그림자 전사 아렌이 나타났습니다! ⚔️`);
         }
@@ -326,6 +337,12 @@ export default class DungeonScene extends Phaser.Scene {
 
         if (unit) {
             this.enemies.add(unit);
+
+            // Re-initialize AI targets to be sure it targets the player party
+            if (unit.initAI) {
+                unit.initAI();
+            }
+
             return unit;
         }
         return null;

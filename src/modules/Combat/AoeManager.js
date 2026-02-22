@@ -12,7 +12,7 @@ export default class AoeManager {
     /**
      * Triggers AOE damage originating from (x, y) within a radius.
      */
-    triggerAoe(x, y, radius, damage, attacker = null, targetGroup = null, isMagic = true) {
+    triggerAoe(x, y, radius, damage, attacker = null, targetGroup = null, isMagic = true, isUltimate = false) {
         // If scene is dead, stop immediately
         if (!this.scene || !this.scene.scene || !this.scene.scene.isActive()) {
             console.error(`[AoeManager] triggerAoe called in INACTIVE scene!`);
@@ -28,7 +28,7 @@ export default class AoeManager {
         const units = group.getChildren().filter(u => u && u.active && u.hp > 0);
         const affectedUnits = [];
 
-        console.log(`[AoeManager] AOE at (${Math.round(x)}, ${Math.round(y)}) with radius ${radius}. Targets alive: ${units.length}`);
+        console.log(`[AoeManager] AOE at (${Math.round(x)}, ${Math.round(y)}) with radius ${radius}. Targets alive: ${units.length}, isUltimate: ${isUltimate}`);
 
         units.forEach(unit => {
 
@@ -38,9 +38,9 @@ export default class AoeManager {
 
                 // Use standard damage methods
                 if (isMagic && unit.takeMagicDamage) {
-                    unit.takeMagicDamage(damage, attacker);
+                    unit.takeMagicDamage(damage, attacker, isUltimate);
                 } else if (unit.takeDamage) {
-                    unit.takeDamage(damage, attacker);
+                    unit.takeDamage(damage, attacker, isUltimate);
                 } else {
                     console.error(`[AoeManager] Unit ${unit.unitName} lacks takeDamage/takeMagicDamage methods!`);
                 }

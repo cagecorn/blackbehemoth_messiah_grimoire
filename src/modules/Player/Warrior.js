@@ -7,6 +7,7 @@ import PlaceholderSkill from '../Skills/PlaceholderSkill.js';
 import StoneSkin from '../Skills/StoneSkin.js';
 import BloodRage from '../Skills/BloodRage.js';
 import HolyAura from '../Skills/HolyAura.js';
+import SkillMessiah from '../Skills/SkillMessiah.js';
 
 /**
  * Warrior.js
@@ -65,6 +66,11 @@ export default class Warrior extends Mercenary {
             this.skill = new PlaceholderSkill();
         }
 
+        // Initialize Ultimate Skill
+        if (this.characterId === 'aren') {
+            this.ultimateSkill = new SkillMessiah();
+        }
+
         console.log(`[Warrior] Initialized ${this.unitName} (${this.characterId}) with skill: ${this.skill ? this.skill.name || this.skill.constructor.name : 'NONE'}`);
 
         // Initialize Melee AI in Manual Mode by default
@@ -79,6 +85,12 @@ export default class Warrior extends Mercenary {
     initAI() {
         // Targets are entities in the dynamic targetGroup
         applyMeleeAI(this, (agent) => agent.targetGroup, 'AGGRESSIVE');
+    }
+
+    executeUltimate() {
+        if (this.ultimateSkill) {
+            this.ultimateSkill.execute(this.scene, this);
+        }
     }
 
     update() {

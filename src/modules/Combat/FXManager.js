@@ -187,4 +187,82 @@ export default class FXManager {
             if (emitter) emitter.destroy();
         });
     }
+
+    /**
+     * Create a stun effect (spinning stars) above the target.
+     * @param {Phaser.GameObjects.GameObject} target 
+     * @param {number} duration 
+     */
+    createStunEffect(target, duration) {
+        if (!target || !target.active) return;
+
+        const stars = [];
+        const starCount = 3;
+        const radius = 25;
+
+        for (let i = 0; i < starCount; i++) {
+            const star = this.scene.add.image(target.x, target.y - 40, 'emoji_star');
+            star.setDisplaySize(16, 16);
+            star.setDepth(target.depth + 1);
+            stars.push(star);
+
+            // Orbit and spin animation
+            this.scene.tweens.add({
+                targets: star,
+                interpolation: 'bezier',
+                props: {
+                    x: {
+                        value: {
+                            getEnd: (target, key, value) => target.x,
+                            getStart: (target, key, value) => target.x,
+                        },
+                        duration: 1000,
+                        repeat: -1,
+                        ease: (t) => Math.cos(t * Math.PI * 2 + (i / starCount) * Math.PI * 2) * radius
+                    },
+                    y: {
+                        value: {
+                            getEnd: (target, key, value) => target.y - 40,
+                            getStart: (target, key, value) => target.y - 40,
+                        },
+                        duration: 1000,
+                        repeat: -1,
+                        ease: (t) => Math.sin(t * Math.PI * 2 + (i / starCount) * Math.PI * 2) * (radius / 3)
+                    }
+                }
+            });
+
+            // Self rotation
+            this.scene.tweens.add({
+                targets: star,
+                angle: 360,
+                duration: 800,
+                repeat: -1
+            });
+        }
+
+        // Cleanup listener to keep stars following the target
+        const followListener = () => {
+            if (!target.active || !target.isStunned) {
+                this.scene.events.off('update', followListener);
+                stars.forEach(s => s.destroy());
+                return;
+            }
+            stars.forEach((star, idx) => {
+                const time = this.scene.time.now / 1000;
+                const angle = time * Math.PI * 2 + (idx / starCount) * Math.PI * 2;
+                star.x = target.x + Math.cos(angle) * radius;
+                star.y = target.y - 45 + Math.sin(angle) * (radius / 3);
+                star.setDepth(target.depth + (Math.sin(angle) > 0 ? 1 : -1));
+            });
+        };
+        this.scene.events.on('update', followListener);
+
+        // Auto-disable stun after duration
+        this.scene.time.delayedCall(duration, () => {
+            if (target.active) {
+                target.isStunned = false;
+            }
+        });
+    }
 }

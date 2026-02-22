@@ -89,7 +89,9 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         this.scene.physics.add.existing(this);
 
         this.sprite = this.scene.add.image(0, 0, config.sprite);
-        this.sprite.setDisplaySize(config.spriteSize || 64, config.spriteSize || 64);
+        const spriteSize = config.spriteSize || 64;
+        const scale = config.scale || 1;
+        this.sprite.setDisplaySize(spriteSize * scale, spriteSize * scale);
         this.add(this.sprite);
 
         const radius = config.physicsRadius || 20;
@@ -97,11 +99,14 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         this.body.setOffset(-radius, -radius);
         this.body.setCollideWorldBounds(true);
 
-        this.healthBar = new HealthBar(scene, x, y - 56, 64, 8); // Moved up slightly
-        this.cooldownBar = new CooldownBar(scene, x, y - 46, 64, 4); // Placed just below HP
+        const displayHeight = spriteSize * scale;
+        this.barYOffset = displayHeight / 2 + 24;
+
+        this.healthBar = new HealthBar(scene, x, y - this.barYOffset, 64, 8);
+        this.cooldownBar = new CooldownBar(scene, x, y - (this.barYOffset - 10), 64, 4); // Placed just below HP
 
         // AI Debug Text (only visible if we want, but keeping it simple for now)
-        this.aiDebugText = this.scene.add.text(0, -60, '', {
+        this.aiDebugText = this.scene.add.text(0, -(this.barYOffset + 14), '', {
             fontSize: '12px',
             fill: '#ffffff',
             backgroundColor: '#000000aa',
@@ -137,18 +142,20 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         EventBus.on(EventBus.EVENTS.UNIT_BARK, this.handleUnitBark, this);
 
         // Listen for UI toggle commands
-        EventBus.on(EventBus.EVENTS.ULT_TOGGLE_AUTO, (payload) => {
+        this.handleUltToggleAuto = (payload) => {
             if (payload.agentId === this.className) {
                 this.autoUlt = payload.auto;
                 console.log(`[Ultimate] ${this.unitName} auto-ult set to: ${this.autoUlt}`);
             }
-        });
+        };
+        EventBus.on(EventBus.EVENTS.ULT_TOGGLE_AUTO, this.handleUltToggleAuto);
 
-        EventBus.on(EventBus.EVENTS.ULT_TRIGGER, (payload) => {
+        this.handleUltTrigger = (payload) => {
             if (payload.agentId === this.className) {
                 this.useUltimate();
             }
-        });
+        };
+        EventBus.on(EventBus.EVENTS.ULT_TRIGGER, this.handleUltTrigger);
     }
 
     handleAICommand(cmd) {
@@ -247,7 +254,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         return false;
     }
 
-    takeDamage(amount, attacker = null) {
+    takeDamage(amount, attacker = null, isUltimate = false) {
         // --- 0. Accuracy vs Evasion Check ---
         if (attacker && typeof attacker === 'object' && attacker.acc !== undefined && this.eva !== undefined) {
             const hitChance = Math.max(0.05, Math.min(1.0, (attacker.acc - this.eva) / 100.0));
@@ -261,8 +268,10 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             }
         }
 
-        // Gain gauge when hit
-        this.gainUltGauge(5);
+        // Gain gauge when hit (unless it's an ultimate)
+        if (!isUltimate) {
+            this.gainUltGauge(5);
+        }
 
         const attackerId = (attacker && typeof attacker === 'object') ? (attacker.id || attacker.className) : attacker;
 
@@ -304,7 +313,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         }
     }
 
-    takeMagicDamage(amount, attacker = null) {
+    takeMagicDamage(amount, attacker = null, isUltimate = false) {
         // 1. Magic Damage is reduced by mDef
         let finalDamage = Math.max(1, amount - this.mDef);
 
@@ -328,8 +337,10 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             }
         }
 
-        // Gain gauge when hit by magic
-        this.gainUltGauge(5);
+        // Gain gauge when hit by magic (unless it's an ultimate)
+        if (!isUltimate) {
+            this.gainUltGauge(5);
+        }
 
         this.updateHealthBar();
 
@@ -500,6 +511,8 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         EventBus.off(commandEvent, this.handleAICommand, this);
         EventBus.off(EventBus.EVENTS.AI_RESPONSE, this.handleAIResponse, this);
         EventBus.off(EventBus.EVENTS.UNIT_BARK, this.handleUnitBark, this);
+        EventBus.off(EventBus.EVENTS.ULT_TOGGLE_AUTO, this.handleUltToggleAuto);
+        EventBus.off(EventBus.EVENTS.ULT_TRIGGER, this.handleUltTrigger);
 
         console.log(`[Mercenary] Cleaned up listeners for ${this.unitName} (${this.characterId})`);
 
@@ -514,16 +527,17 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         }
 
         if (this.isAirborne || this.isStunned) {
-            // Can't act while CC'd. Keep velocity at 0 unless knocked back.
+            // Can't act while CC'd. Keep velocity at 0 unless knocked back (if applicable)
             this.body.setVelocity(0, 0);
+            return; // Early return to block BT and orientation
         } else if (this.btManager) {
             this.btManager.step();
         }
         if (this.healthBar) {
-            this.healthBar.setPos(this.x, this.y - 56);
+            this.healthBar.setPos(this.x, this.y - this.barYOffset);
         }
         if (this.cooldownBar) {
-            this.cooldownBar.setPos(this.x, this.y - 46);
+            this.cooldownBar.setPos(this.x, this.y - (this.barYOffset - 10));
             if (this.getSkillProgress) {
                 this.cooldownBar.setValue(this.getSkillProgress());
             } else {
