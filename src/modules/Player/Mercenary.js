@@ -59,6 +59,11 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         this.castSpd = config.castSpd || 1000;
         this.skill = null; // To be initialized by subclasses
 
+        // Ultimate System
+        this.ultGauge = 0;
+        this.maxUltGauge = 100;
+        this.autoUlt = true; // Auto-use by default
+
         this.acc = config.acc || 100;
         this.eva = config.eva || 0;
         this.crit = config.crit || 0;
@@ -130,6 +135,20 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         EventBus.on(commandEvent, this.handleAICommand, this);
         EventBus.on(EventBus.EVENTS.AI_RESPONSE, this.handleAIResponse, this);
         EventBus.on(EventBus.EVENTS.UNIT_BARK, this.handleUnitBark, this);
+
+        // Listen for UI toggle commands
+        EventBus.on(EventBus.EVENTS.ULT_TOGGLE_AUTO, (payload) => {
+            if (payload.agentId === this.className) {
+                this.autoUlt = payload.auto;
+                console.log(`[Ultimate] ${this.unitName} auto-ult set to: ${this.autoUlt}`);
+            }
+        });
+
+        EventBus.on(EventBus.EVENTS.ULT_TRIGGER, (payload) => {
+            if (payload.agentId === this.className) {
+                this.useUltimate();
+            }
+        });
     }
 
     handleAICommand(cmd) {
@@ -242,6 +261,9 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             }
         }
 
+        // Gain gauge when hit
+        this.gainUltGauge(5);
+
         const attackerId = (attacker && typeof attacker === 'object') ? (attacker.id || attacker.className) : attacker;
 
         // 1. Physical Damage is reduced by Def
@@ -305,6 +327,9 @@ export default class Mercenary extends Phaser.GameObjects.Container {
                 attacker.heal(finalDamage * 0.35);
             }
         }
+
+        // Gain gauge when hit by magic
+        this.gainUltGauge(5);
 
         this.updateHealthBar();
 
@@ -410,6 +435,47 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         }
 
         if (this.syncStatusUI) this.syncStatusUI();
+    }
+
+    gainUltGauge(amount) {
+        if (!this.active || this.hp <= 0) return;
+
+        this.ultGauge = Math.min(this.maxUltGauge, this.ultGauge + amount);
+
+        EventBus.emit(EventBus.EVENTS.STATUS_UPDATED, {
+            agentId: this.className,
+            stats: { ultGauge: this.ultGauge }
+        });
+
+        if (this.ultGauge >= this.maxUltGauge) {
+            this.onUltimateReady();
+        }
+    }
+
+    onUltimateReady() {
+        console.log(`[Ultimate] ${this.unitName} is READY! (Auto: ${this.autoUlt})`);
+        if (this.autoUlt) {
+            this.useUltimate();
+        }
+    }
+
+    useUltimate() {
+        if (this.ultGauge < this.maxUltGauge) return;
+
+        // Reset gauge first to avoid double calls
+        this.ultGauge = 0;
+
+        EventBus.emit(EventBus.EVENTS.STATUS_UPDATED, {
+            agentId: this.className,
+            stats: { ultGauge: this.ultGauge }
+        });
+
+        // Trigger the skill logic
+        if (this.executeUltimate) {
+            this.executeUltimate();
+        } else {
+            console.warn(`[Ultimate] ${this.unitName} has no ultimate implementation!`);
+        }
     }
 
     die() {

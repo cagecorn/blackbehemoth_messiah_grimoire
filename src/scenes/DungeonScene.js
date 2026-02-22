@@ -10,6 +10,7 @@ import Bard from '../modules/Player/Bard.js';
 import ProjectileManager from '../modules/Combat/ProjectileManager.js';
 import ParticleManager from '../modules/Particles/ParticleManager.js';
 import FXManager from '../modules/Combat/FXManager.js';
+import UltimateManager from '../modules/Combat/UltimateManager.js';
 import AoeManager from '../modules/Combat/AoeManager.js';
 import CCManager from '../modules/Combat/CCManager.js';
 import ShieldManager from '../modules/Combat/ShieldManager.js';
@@ -60,6 +61,7 @@ export default class DungeonScene extends Phaser.Scene {
         this.enemies = this.physics.add.group();
 
         this.fxManager = new FXManager(this);
+        this.ultimateManager = new UltimateManager(this);
         this.aoeManager = new AoeManager(this);
         this.lootManager = new LootManager(this);
         this.projectileManager = new ProjectileManager(this);
@@ -209,6 +211,8 @@ export default class DungeonScene extends Phaser.Scene {
     }
 
     update(time, delta) {
+        if (this.isUltimateActive) return;
+
         if (this.enemies && this.enemies.countActive(true) === 0 && !this.isResting) {
             this.isResting = true;
             EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, `[시스템] 라운드 ${this.currentRound} 클리어! 5초 뒤 다음 라운드가 시작됩니다. ⛺`);

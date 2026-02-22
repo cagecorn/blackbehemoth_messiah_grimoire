@@ -20,8 +20,12 @@ export default class FXManager {
 
         let displayAmount = typeof amount === 'number' ? `-${amount.toFixed(1)}` : amount;
 
+        // Dynamic offset based on unit scale
+        const scale = (target.config && target.config.scale) || 1;
+        const yOffset = 40 * scale;
+
         // High-Resolution crisp text rendering technique:
-        const text = this.scene.add.text(target.x, target.y - 20, displayAmount, {
+        const text = this.scene.add.text(target.x, target.y - yOffset, displayAmount, {
             fontSize: '32px',
             fill: color,
             fontStyle: 'bold',
@@ -30,9 +34,12 @@ export default class FXManager {
             resolution: 2
         }).setOrigin(0.5).setScale(0.5);
 
+        // Ensure damage numbers are always on top of sprites
+        text.setDepth(20000);
+
         this.scene.tweens.add({
             targets: text,
-            y: target.y - 60,
+            y: target.y - yOffset - 40,
             alpha: 0,
             duration: 800,
             ease: 'Power2',
@@ -49,7 +56,10 @@ export default class FXManager {
     showHealText(target, message, color = '#00ff00') {
         if (!target || !target.active) return;
 
-        const text = this.scene.add.text(target.x, target.y - 40, message, {
+        const scale = (target.config && target.config.scale) || 1;
+        const yOffset = 60 * scale;
+
+        const text = this.scene.add.text(target.x, target.y - yOffset, message, {
             fontSize: '24px',
             fill: color,
             fontStyle: 'bold',
@@ -58,9 +68,11 @@ export default class FXManager {
             resolution: 2
         }).setOrigin(0.5).setScale(0.5);
 
+        text.setDepth(20001);
+
         this.scene.tweens.add({
             targets: text,
-            y: target.y - 80,
+            y: target.y - yOffset - 40,
             alpha: 0,
             duration: 1000,
             onComplete: () => text.destroy()

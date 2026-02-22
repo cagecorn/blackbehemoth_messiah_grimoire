@@ -25,11 +25,13 @@ export default class ChatChannel {
         }
 
         this.element.innerHTML = `
+            <div class="ult-gauge-overlay" id="ult-gauge-${id}"></div>
             <img class="chat-bg-sprite" src="${spritePath}" alt="bg" draggable="false">
             <div class="chat-header">
                 <select class="chat-name-select" id="select-${id}">
                     ${optionsHtml}
                 </select>
+                <button class="ult-toggle-btn auto" id="ult-toggle-${id}" title="궁극기 사용 모드">AUTO</button>
                 <div class="header-toggles">
                     <button class="chat-view-toggle gear-toggle" data-view="gear" title="장비 보기">⚔️</button>
                     <button class="chat-view-toggle skill-toggle" data-view="skill" title="스킬 정보">💫</button>
@@ -137,6 +139,53 @@ export default class ChatChannel {
                 this.input.value = '';
             }
         });
+
+        // Manual Ultimate Trigger (Clicking the channel itself)
+        this.element.addEventListener('click', (e) => {
+            // Avoid triggering if clicking on UI buttons or inputs
+            if (e.target.closest('.chat-header') || e.target.closest('.header-toggles') ||
+                e.target.closest('.chat-form') || e.target.closest('.chat-view-toggle')) return;
+
+            if (this.element.classList.contains('ult-ready-glow')) {
+                import('../Events/EventBus.js').then(eb => {
+                    eb.default.emit('ULT_TRIGGER', {
+                        agentId: this.classId
+                    });
+                });
+            }
+        });
+
+        // Ultimate Toggle
+        this.ultToggleBtn = this.element.querySelector('.ult-toggle-btn');
+        this.ultGaugeOverlay = this.element.querySelector('.ult-gauge-overlay');
+        this.isAutoUlt = true;
+
+        this.ultToggleBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this.isAutoUlt = !this.isAutoUlt;
+            this.updateUltToggleUI();
+
+            // Emit event so Mercenary can sync
+            import('../Events/EventBus.js').then(eb => {
+                eb.default.emit('ULT_TOGGLE_AUTO', {
+                    agentId: this.classId,
+                    auto: this.isAutoUlt
+                });
+            });
+        });
+    }
+
+    updateUltToggleUI() {
+        if (this.isAutoUlt) {
+            this.ultToggleBtn.textContent = 'AUTO';
+            this.ultToggleBtn.classList.remove('manual');
+            this.ultToggleBtn.classList.add('auto');
+        } else {
+            this.ultToggleBtn.textContent = 'MANUAL';
+            this.ultToggleBtn.classList.remove('auto');
+            this.ultToggleBtn.classList.add('manual');
+        }
     }
 
     toggleView(target) {
@@ -253,28 +302,30 @@ export default class ChatChannel {
     updateStats(stats) {
         if (!stats || !this.statusView) return;
 
-        const statEntries = {
-            level: stats.level,
-            exp_display: `${Math.round(stats.exp)}/${Math.round(stats.expToNextLevel)}`,
-            hp: `${Math.round(stats.hp)}/${Math.round(stats.maxHp)}`,
-            atk: stats.atk.toFixed(1),
-            mAtk: stats.mAtk.toFixed(1),
-            def: stats.def.toFixed(1),
-            mDef: stats.mDef.toFixed(1),
-            speed: stats.speed,
-            atkSpd: stats.atkSpd,
-            atkRange: stats.atkRange,
-            rangeMin: stats.rangeMin,
-            rangeMax: stats.rangeMax,
-            castSpd: stats.castSpd,
-            acc: stats.acc,
-            eva: stats.eva,
-            crit: `${stats.crit}%`
-        };
+        const statMappings = [
+            { key: 'level', val: stats.level },
+            { key: 'exp_display', val: (stats.exp !== undefined && stats.expToNextLevel !== undefined) ? `${Math.round(stats.exp)}/${Math.round(stats.expToNextLevel)}` : undefined },
+            { key: 'hp', val: (stats.hp !== undefined && stats.maxHp !== undefined) ? `${Math.round(stats.hp)}/${Math.round(stats.maxHp)}` : undefined },
+            { key: 'atk', val: stats.atk !== undefined ? stats.atk.toFixed(1) : undefined },
+            { key: 'mAtk', val: stats.mAtk !== undefined ? stats.mAtk.toFixed(1) : undefined },
+            { key: 'def', val: stats.def !== undefined ? stats.def.toFixed(1) : undefined },
+            { key: 'mDef', val: stats.mDef !== undefined ? stats.mDef.toFixed(1) : undefined },
+            { key: 'speed', val: stats.speed },
+            { key: 'atkSpd', val: stats.atkSpd },
+            { key: 'atkRange', val: stats.atkRange },
+            { key: 'rangeMin', val: stats.rangeMin },
+            { key: 'rangeMax', val: stats.rangeMax },
+            { key: 'castSpd', val: stats.castSpd },
+            { key: 'acc', val: stats.acc },
+            { key: 'eva', val: stats.eva },
+            { key: 'crit', val: stats.crit !== undefined ? `${stats.crit}%` : undefined }
+        ];
 
-        Object.entries(statEntries).forEach(([key, val]) => {
-            const el = this.statusView.querySelector(`[data-stat="${key}"]`);
-            if (el) el.textContent = val;
+        statMappings.forEach(entry => {
+            if (entry.val !== undefined) {
+                const el = this.statusView.querySelector(`[data-stat="${entry.key}"]`);
+                if (el) el.textContent = entry.val;
+            }
         });
     }
 
@@ -309,5 +360,18 @@ export default class ChatChannel {
         });
         html += '</div>';
         this.narrativeView.innerHTML = html;
+    }
+
+    updateUltGauge(progress) {
+        if (!this.ultGaugeOverlay) return;
+
+        // progress is 0 to 100
+        this.ultGaugeOverlay.style.height = `${progress}%`;
+
+        if (progress >= 100) {
+            this.element.classList.add('ult-ready-glow');
+        } else {
+            this.element.classList.remove('ult-ready-glow');
+        }
     }
 }

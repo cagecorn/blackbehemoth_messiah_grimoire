@@ -1,4 +1,11 @@
-# Isac-like RPG (Project Name TBD)
+# Isac-like RPG
+
+## 🌍 글로벌 용어 (Global Terminology)
+- **Territory (영지)**: 메인 메뉴 및 기지
+- **Dungeon (던전)**: 일반적인 몬스터 사냥 테마
+- **Arena (아레나)**: 영웅 vs 영웅 대결 테마
+- **Raid (레이드)**: 거대 보스(대왕 고블린) 처치 테마
+(Project Name TBD)
 
 이 프로젝트는 기존에 진행하던 게임의 아이디어를 일부 계승하여 새롭게 시작하는 2D RPG 게임 프로젝트입니다.
 

@@ -396,6 +396,32 @@ export const MonsterClasses = {
         spriteSize: 64,
         aiType: 'SUPPORT',
         scale: 1.2
+    },
+    BOSS_GOBLIN: {
+        id: 'boss_goblin',
+        name: 'Great Goblin (대왕 고블린)',
+        sprite: 'goblin_sprite',
+        maxHp: 5000,
+        hp: 5000,
+        mp: 100,
+        maxMp: 100,
+        atk: 50,
+        mAtk: 10,
+        def: 25,
+        mDef: 20,
+        speed: 40,
+        atkSpd: 2000,
+        castSpd: 1500,
+        atkRange: 250,
+        rangeMin: 0,
+        rangeMax: 250,
+        acc: 90,
+        eva: 0,
+        crit: 20,
+        physicsRadius: 30,
+        spriteSize: 64,
+        aiType: 'MELEE',
+        scale: 4.0
     }
     // New monsters like SLIME or ORC can be added here easily
 };

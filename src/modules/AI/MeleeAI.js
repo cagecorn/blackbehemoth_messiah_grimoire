@@ -90,7 +90,12 @@ export default function applyMeleeAI(agent, targetListGetter, initialState = 'AG
         const dist = Phaser.Math.Distance.Between(a.x, a.y, target.x, target.y);
         const atkRange = a.config.atkRange || 50;
 
-        if (dist > atkRange) {
+        // Account for collision radii for better combat depth/reach
+        const r1 = a.body ? a.body.radius : 0;
+        const r2 = target.body ? target.body.radius : 0;
+        const reachDist = dist - r1 - r2;
+
+        if (reachDist > atkRange) {
             a.scene.physics.moveToObject(a, target, a.speed);
             return 1; // RUNNING
         } else {

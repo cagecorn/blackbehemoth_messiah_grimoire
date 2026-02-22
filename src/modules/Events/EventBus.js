@@ -19,7 +19,10 @@ class EventBus extends Phaser.Events.EventEmitter {
             INVENTORY_UPDATED: 'INVENTORY_UPDATED',
             STATUS_UPDATED: 'STATUS_UPDATED',
             DEBUG_SWAP_CHARACTER: 'DEBUG_SWAP_CHARACTER',
-            UNIT_BARK: 'UNIT_BARK'
+            UNIT_BARK: 'UNIT_BARK',
+            ULT_GAUGE_UPDATED: 'ULT_GAUGE_UPDATED',
+            ULT_TOGGLE_AUTO: 'ULT_TOGGLE_AUTO',
+            ULT_TRIGGER: 'ULT_TRIGGER'
         };
     }
 }

@@ -4,6 +4,7 @@ import applyRangedAI from '../AI/RangedAI.js';
 import Blackboard from '../AI/Blackboard.js';
 import { MercenaryClasses } from '../Core/EntityStats.js';
 import SkillFireball from '../Skills/SkillFireball.js';
+import SkillMeteorStrike from '../Skills/SkillMeteorStrike.js';
 import PlaceholderSkill from '../Skills/PlaceholderSkill.js';
 
 /**
@@ -24,6 +25,11 @@ export default class Wizard extends Mercenary {
             this.skill = new SkillFireball();
         } else if (config.skillName === 'PlaceholderSkill') {
             this.skill = new PlaceholderSkill();
+        }
+
+        // Initialize Ultimate Skill
+        if (this.characterId === 'merlin') {
+            this.ultimateSkill = new SkillMeteorStrike();
         }
 
         this.initAI();
@@ -98,5 +104,11 @@ export default class Wizard extends Mercenary {
             this.getTotalMAtk(), 'laser', true, this.targetGroup, this
         );
         return true;
+    }
+
+    executeUltimate() {
+        if (this.ultimateSkill) {
+            this.ultimateSkill.execute(this.scene, this);
+        }
     }
 }

@@ -133,6 +133,11 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
             if (attacker && typeof attacker === 'object' && attacker.isBloodRaging && attacker.heal) {
                 attacker.heal(finalDamage * 0.35);
             }
+
+            // Attacker gains gauge when hitting monster
+            if (attacker && typeof attacker.gainUltGauge === 'function') {
+                attacker.gainUltGauge(2);
+            }
         }
 
         this.updateHealthBar();
@@ -179,6 +184,11 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
             // Lifesteal for Blood Rage
             if (attacker && typeof attacker === 'object' && attacker.isBloodRaging && attacker.heal) {
                 attacker.heal(finalDamage * 0.35);
+            }
+
+            // Attacker gains gauge when hitting monster with magic
+            if (attacker && typeof attacker.gainUltGauge === 'function') {
+                attacker.gainUltGauge(2);
             }
         }
 
@@ -325,9 +335,13 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
         if (!this.target || !this.target.active || this.hp <= 0) return;
 
         const dist = Phaser.Math.Distance.Between(this.x, this.y, this.target.x, this.target.y);
+        const r1 = this.body ? this.body.radius : 0;
+        const r2 = this.target.body ? this.target.body.radius : 0;
+        const reachDist = dist - r1 - r2;
+
         const now = this.scene.time.now;
 
-        if (dist <= this.atkRange && now - this.lastAttackTime > this.atkSpd) {
+        if (reachDist <= this.atkRange && now - this.lastAttackTime > this.atkSpd) {
             // Prevent attack if shocked
             if (this.isShocked) return;
 

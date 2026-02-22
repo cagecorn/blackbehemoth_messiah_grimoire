@@ -33,7 +33,9 @@ export default class UIManager {
         EventBus.on(EventBus.EVENTS.STATUS_UPDATED, (payload) => {
             const channel = this.channels[payload.agentId];
             if (channel) {
-                channel.updateStatuses(payload.statuses);
+                if (payload.statuses) {
+                    channel.updateStatuses(payload.statuses);
+                }
                 if (payload.equipment) {
                     channel.updateEquipment(payload.equipment);
                 }
@@ -46,6 +48,9 @@ export default class UIManager {
                         if (charConfig && charConfig.narrativeUnlocks) {
                             channel.updateNarrative(charConfig.narrativeUnlocks, payload.stats.level);
                         }
+                    }
+                    if (payload.stats.ultGauge !== undefined) {
+                        channel.updateUltGauge(payload.stats.ultGauge);
                     }
                 }
             }

@@ -31,13 +31,18 @@ export default class TerritoryScene extends Phaser.Scene {
         const buttonSpacing = 220;
 
         // [Dungeon Button]
-        this.createMenuButton(width / 2 - 120, height / 2, '🏰 던전 입장', '#3b82f6', () => {
+        this.createMenuButton(width / 2 - 240, height / 2, '🏰 던전 입장', '#3b82f6', () => {
             this.scene.start('DungeonScene');
         });
 
         // [Arena Button]
-        this.createMenuButton(width / 2 + 120, height / 2, '⚔️ 아레나 입장', '#ef4444', () => {
+        this.createMenuButton(width / 2, height / 2, '⚔️ 아레나 입장', '#ef4444', () => {
             this.scene.start('ArenaScene');
+        });
+
+        // [Raid Button]
+        this.createMenuButton(width / 2 + 240, height / 2, '👺 레이드 입장', '#9333ea', () => {
+            this.scene.start('RaidScene');
         });
     }
 

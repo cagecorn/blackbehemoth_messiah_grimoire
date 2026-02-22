@@ -46,8 +46,12 @@ export default function applyHealerAI(unit, getAllyGroup, getEnemyGroup) {
         for (const enemy of children) {
             if (!enemy.active || enemy.hp <= 0) continue;
             const dist = Phaser.Math.Distance.Between(unit.x, unit.y, enemy.x, enemy.y);
-            if (dist < minDist) {
-                minDist = dist;
+            const r1 = unit.body ? unit.body.radius : 0;
+            const r2 = enemy.body ? enemy.body.radius : 0;
+            const reachDist = dist - r1 - r2;
+
+            if (reachDist < minDist) {
+                minDist = reachDist;
                 nearest = enemy;
             }
         }
@@ -63,15 +67,23 @@ export default function applyHealerAI(unit, getAllyGroup, getEnemyGroup) {
         const targetObj = unit.blackboard.get('target');
         if (!targetObj || !targetObj.active) return false;
         const dist = Phaser.Math.Distance.Between(unit.x, unit.y, targetObj.x, targetObj.y);
+        const r1 = unit.body ? unit.body.radius : 0;
+        const r2 = targetObj.body ? targetObj.body.radius : 0;
+        const reachDist = dist - r1 - r2;
+
         const rangeMin = unit.config.rangeMin || 180;
-        return dist < rangeMin;
+        return reachDist < rangeMin;
     }, "Enemy Too Close?");
 
     const isAtIdealAttackRange = new Condition(() => {
         const targetObj = unit.blackboard.get('target');
         if (!targetObj || !targetObj.active) return false;
         const dist = Phaser.Math.Distance.Between(unit.x, unit.y, targetObj.x, targetObj.y);
-        return dist <= (unit.config.atkRange || 200);
+        const r1 = unit.body ? unit.body.radius : 0;
+        const r2 = targetObj.body ? targetObj.body.radius : 0;
+        const reachDist = dist - r1 - r2;
+
+        return reachDist <= (unit.config.atkRange || 200);
     }, "In Attack Range?");
 
     // 2. Actions
@@ -81,9 +93,12 @@ export default function applyHealerAI(unit, getAllyGroup, getEnemyGroup) {
         if (!target || !target.active || target.hp <= 0) return 2; // FAILED
 
         const dist = Phaser.Math.Distance.Between(unit.x, unit.y, target.x, target.y);
+        const r1 = unit.body ? unit.body.radius : 0;
+        const r2 = target.body ? target.body.radius : 0;
+        const reachDist = dist - r1 - r2;
 
         // Move to heal range if too far
-        if (dist > (unit.config.atkRange || 200)) {
+        if (reachDist > (unit.config.atkRange || 200)) {
             unit.scene.physics.moveToObject(unit, target, unit.speed);
             return 1; // RUNNING
         } else {
@@ -113,8 +128,12 @@ export default function applyHealerAI(unit, getAllyGroup, getEnemyGroup) {
         if (!targetObj || !targetObj.active) return 2; // FAILED
 
         const dist = Phaser.Math.Distance.Between(unit.x, unit.y, targetObj.x, targetObj.y);
+        const r1 = unit.body ? unit.body.radius : 0;
+        const r2 = targetObj.body ? targetObj.body.radius : 0;
+        const reachDist = dist - r1 - r2;
+
         const atkRange = unit.config.atkRange || 200;
-        if (dist > atkRange) {
+        if (reachDist > atkRange) {
             unit.scene.physics.moveToObject(unit, targetObj, unit.speed);
             return 1; // RUNNING
         }

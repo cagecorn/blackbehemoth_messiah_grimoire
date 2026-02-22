@@ -63,11 +63,30 @@ export default class ProjectileManager {
             return; // Skip standard projectile logic
         }
 
-        if (type === 'emoji_sparkle' || type === 'emoji_note') {
+        // Map 'fireball' to existing 'emoji_fire' asset if not explicitly provided
+        if (type === 'fireball' && !this.scene.textures.exists('fireball')) {
+            type = 'emoji_fire';
+        }
+
+        const imageTypes = ['emoji_sparkle', 'emoji_note', 'emoji_fire', 'fireball', 'laser_ball'];
+        const emojiMap = {
+            'archer': '🏹',
+            'meteor': '☄️',
+            'fire': '🔥',
+            'fireball': '🔥',
+            'emoji_fire': '🔥'
+        };
+
+        // Check if image/texture actually exists in the scene
+        if (imageTypes.includes(type) && this.scene.textures.exists(type)) {
             projectile = this.scene.add.image(x, y, type);
-            projectile.setDisplaySize(24, 24);
+            const size = (type === 'fireball' || type === 'emoji_fire') ? 48 : 24;
+            projectile.setDisplaySize(size, size);
+            if (type === 'emoji_fire') projectile.setTint(0xffaa00);
         } else {
-            projectile = this.scene.add.text(x, y, '🏹', { fontSize: '24px' });
+            const emoji = emojiMap[type] || (type.includes('fire') ? '🔥' : '🏹');
+            projectile = this.scene.add.text(x, y, emoji, { fontSize: '24px' });
+            projectile.setOrigin(0.5); // Center text for better rotation behavior
         }
 
         if (type === 'emoji_sparkle' || type === 'emoji_note' || isMagic) {
