@@ -612,6 +612,14 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         }
     }
 
+    /**
+     * Hook called after a skill is executed.
+     * @param {Object} skill The skill instance that was executed
+     */
+    onSkillExecuted(skill) {
+        // To be overridden by subclasses (e.g. Wizard for Arcane Surge)
+    }
+
     syncStatusUI() {
         if (!this.active || this.hp <= 0) return;
 

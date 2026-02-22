@@ -71,7 +71,7 @@ export default class UIManager {
                     channel.bindUnit(
                         merc.id,
                         merc.unitName || merc.name,
-                        `assets/characters/party/${merc.sprite}.png`,
+                        `assets/characters/party/${charConfig.sprite}.png`,
                         {
                             name: charConfig.skillName,
                             emoji: charConfig.skillEmoji,

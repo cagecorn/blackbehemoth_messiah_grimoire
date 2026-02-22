@@ -187,7 +187,43 @@ export default class Archer extends Mercenary {
         if (!target) return false;
 
         this.lastFireTime = now;
-        this.scene.projectileManager.fire(this.x, this.y, target.x, target.y, this.atk, 'archer', false, this.targetGroup, this);
+
+        // Calculate Damage
+        let finalDmg = this.atk;
+        if (this.activatedPerks.includes('weakness_exploitation')) {
+            if (target.hp / target.maxHp <= 0.3) {
+                finalDmg *= 1.2; // 20% bonus vs low HP
+                console.log(`[Perk] ${this.unitName}: 약자 멸시 발동! 피해량 20% 증가 (대상 HP: ${Math.round(target.hp / target.maxHp * 100)}%)`);
+            }
+        }
+
+        this.scene.projectileManager.fire(this.x, this.y, target.x, target.y, finalDmg, 'archer', false, this.targetGroup, this);
+
+        // Perk: Hit and Run
+        if (this.activatedPerks.includes('hit_and_run')) {
+            this.applyHitAndRun();
+        }
+
         return true;
+    }
+
+    applyHitAndRun() {
+        if (this.isHitAndRunActive) return;
+        this.isHitAndRunActive = true;
+
+        console.log(`[Perk] ${this.unitName}: 히트 앤 런 발동! 이동 속도 30% 증가`);
+        if (this.scene.fxManager) {
+            this.scene.fxManager.showDamageText(this, 'HIT & RUN! 👞', '#ffff00');
+        }
+
+        const originalSpeed = this.speed;
+        this.speed *= 1.3; // 30% speed boost
+
+        // Short speed boost (2s)
+        this.scene.time.delayedCall(2000, () => {
+            this.speed = originalSpeed;
+            this.isHitAndRunActive = false;
+            console.log(`[Perk] ${this.unitName}: 히트 앤 런 효과 종료`);
+        });
     }
 }

@@ -13,9 +13,42 @@ export const HealerActions = {
         unit.lastActionTime = now;
 
         const mAtk = unit.getTotalMAtk ? unit.getTotalMAtk() : (unit.mAtk || 10);
-        const healAmount = mAtk * 1.5;
+        let healAmount = mAtk * 1.5;
+
+        // Perk: 구원의 손길 (Salvation) — +30% heal on targets at ≤25% HP
+        if (unit.activatedPerks && unit.activatedPerks.includes('salvation')) {
+            if (target.hp / target.maxHp <= 0.25) {
+                healAmount *= 1.3;
+                console.log(`[Perk] ${unit.unitName}: 구원의 손길 발동! 회복량 30% 증가 (대상 HP: ${Math.round(target.hp / target.maxHp * 100)}%) → ${healAmount.toFixed(1)}`);
+                if (unit.scene && unit.scene.fxManager) {
+                    unit.scene.fxManager.showDamageText(target, 'SALVATION! 💊', '#ffccff');
+                }
+            }
+        }
 
         target.receiveHeal(healAmount);
+
+        // Perk: 정화 (Purify) — 5% chance to cleanse 1 debuff on basic heal
+        if (unit.activatedPerks && unit.activatedPerks.includes('purify')) {
+            const roll = Math.random();
+            console.log(`[Perk] ${unit.unitName}: 정화 확률 체크... (Roll: ${roll.toFixed(2)} / Threshold: 0.05)`);
+            if (roll < 0.05) {
+                // Attempt to cleanse — looks for statusEffects or debuffs array on the target
+                // (디버프 시스템 미구현 — 코드 스텁 준비)
+                let cleansed = false;
+                if (target.statusEffects && target.statusEffects.length > 0) {
+                    const removed = target.statusEffects.shift(); // remove oldest debuff
+                    cleansed = true;
+                    console.log(`[Perk] ${unit.unitName}: 정화 발동! ${target.unitName}의 '${removed.name || removed}' 해제`);
+                } else {
+                    console.log(`[Perk] ${unit.unitName}: 정화 발동! (해제할 디버프 없음)`);
+                    cleansed = true; // proc'd, but nothing to remove
+                }
+                if (cleansed && unit.scene && unit.scene.fxManager) {
+                    unit.scene.fxManager.showDamageText(target, '정화! ✨', '#aaffff');
+                }
+            }
+        }
 
         console.info(
             `%c[Support] %c${unit.unitName}%c healed %c${target.unitName}%c for %c${healAmount.toFixed(1)}%c HP.`,

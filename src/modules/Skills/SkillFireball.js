@@ -120,6 +120,11 @@ export default class SkillFireball {
             if (scene) {
                 this.playShatterEffect(scene, target.x, target.y);
             }
+
+            // Perk Hook
+            if (caster.onSkillExecuted) {
+                caster.onSkillExecuted(this);
+            }
         });
 
         return true;

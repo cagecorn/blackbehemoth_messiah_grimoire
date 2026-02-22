@@ -73,6 +73,12 @@ export default class Warrior extends Mercenary {
 
         console.log(`[Warrior] Initialized ${this.unitName} (${this.characterId}) with skill: ${this.skill ? this.skill.name || this.skill.constructor.name : 'NONE'}`);
 
+        // Perk state
+        this.isFortitudeActive = false;  // 강건함: def bonus active?
+        this.isLoneWolfActive = false;   // 론 울프: stat bonus active?
+        this._baseDef = null;            // cached base def for fortitude
+        this._loneWolfBaseStats = null;  // cached base stats for lone wolf
+
         // Initialize Melee AI in Manual Mode by default
         this.initAI();
     }
@@ -139,7 +145,92 @@ export default class Warrior extends Mercenary {
             }
         }
 
+        // Perk: 강건함 (Fortitude)
+        if (this.activatedPerks.includes('fortitude')) {
+            this.checkFortitude();
+        }
+
+        // Perk: 론 울프 (Lone Wolf)
+        if (this.activatedPerks.includes('lone_wolf')) {
+            this.checkLoneWolf();
+        }
+
         // Apply visual orientation after manual velocity has been calculated and applied
         this.updateVisualOrientation();
+    }
+
+    /**
+     * 강건함 (Fortitude): +10% def when 3+ enemies are within 120px.
+     */
+    checkFortitude() {
+        if (!this.scene.enemies) return;
+
+        const SURROUND_RADIUS = 120;
+        const SURROUND_COUNT = 3;
+
+        const nearbyEnemies = this.scene.enemies.getChildren().filter(e =>
+            e.active && e.hp > 0 &&
+            Phaser.Math.Distance.Between(this.x, this.y, e.x, e.y) <= SURROUND_RADIUS
+        );
+
+        const isSurrounded = nearbyEnemies.length >= SURROUND_COUNT;
+
+        if (isSurrounded && !this.isFortitudeActive) {
+            this.isFortitudeActive = true;
+            this._baseDef = this.def;
+            this.def = Math.round(this.def * 1.10);
+            console.log(`[Perk] ${this.unitName}: 강건함 발동! 방어력 10% 상승 (${this._baseDef} → ${this.def})`);
+        } else if (!isSurrounded && this.isFortitudeActive) {
+            this.isFortitudeActive = false;
+            if (this._baseDef !== null) {
+                this.def = this._baseDef;
+                console.log(`[Perk] ${this.unitName}: 강건함 해제. 방어력 복구 (→ ${this.def})`);
+                this._baseDef = null;
+            }
+        }
+    }
+
+    /**
+     * 론 울프 (Lone Wolf): +5% all stats when no allies are within 200px.
+     */
+    checkLoneWolf() {
+        if (!this.scene.mercenaries) return;
+
+        const ALLY_RADIUS = 200;
+
+        const nearbyAllies = this.scene.mercenaries.getChildren().filter(m =>
+            m !== this && m.active && m.hp > 0 &&
+            Phaser.Math.Distance.Between(this.x, this.y, m.x, m.y) <= ALLY_RADIUS
+        );
+
+        const isAlone = nearbyAllies.length === 0;
+
+        if (isAlone && !this.isLoneWolfActive) {
+            this.isLoneWolfActive = true;
+            this._loneWolfBaseStats = {
+                atk: this.atk, def: this.def, mAtk: this.mAtk,
+                mDef: this.mDef, speed: this.speed, maxHp: this.maxHp
+            };
+            this.atk = Math.round(this.atk * 1.05);
+            this.def = Math.round(this.def * 1.05);
+            this.mAtk = Math.round(this.mAtk * 1.05);
+            this.mDef = Math.round(this.mDef * 1.05);
+            this.speed = Math.round(this.speed * 1.05);
+            this.maxHp = Math.round(this.maxHp * 1.05);
+            console.log(`[Perk] ${this.unitName}: 론 울프 발동! 모든 스탯 5% 상승`);
+        } else if (!isAlone && this.isLoneWolfActive) {
+            this.isLoneWolfActive = false;
+            if (this._loneWolfBaseStats) {
+                const s = this._loneWolfBaseStats;
+                this.atk = s.atk;
+                this.def = s.def;
+                this.mAtk = s.mAtk;
+                this.mDef = s.mDef;
+                this.speed = s.speed;
+                this.maxHp = s.maxHp;
+                console.log(`[Perk] ${this.unitName}: 론 울프 해제. 스탯 복구`);
+                this._loneWolfBaseStats = null;
+            }
+        }
     }
 }

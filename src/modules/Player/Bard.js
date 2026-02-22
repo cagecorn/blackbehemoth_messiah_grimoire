@@ -63,6 +63,24 @@ export default class Bard extends Mercenary {
 
         this.scene.buffManager.applyBuff(target, this, 'Motivation', duration, buffAtk, buffMAtk);
 
+        // Perk: 고양 (Inspiration) — 5% chance to advance target's skill cooldown by 15%
+        if (this.activatedPerks.includes('inspiration') && target.skill) {
+            const roll = Math.random();
+            console.log(`[Perk] ${this.unitName}: 고양 확률 체크... (Roll: ${roll.toFixed(2)} / Threshold: 0.05)`);
+            if (roll < 0.05) {
+                const cd = target.skill.getActualCooldown
+                    ? target.skill.getActualCooldown(target.castSpd)
+                    : (target.skill.cooldown || 5000);
+                // Push lastCastTime back by 15% of the cooldown
+                const advance = cd * 0.15;
+                target.skill.lastCastTime = (target.skill.lastCastTime || 0) - advance;
+                console.log(`[Perk] ${this.unitName}: 고양 발동! ${target.unitName}의 스킬 쿨타임 15% 앞당김 (-${(advance / 1000).toFixed(1)}s)`);
+                if (this.scene.fxManager) {
+                    this.scene.fxManager.showDamageText(target, '고양! 🎶', '#ffff88');
+                }
+            }
+        }
+
         // Visual cast bump
         this.scene.tweens.add({
             targets: this.sprite,

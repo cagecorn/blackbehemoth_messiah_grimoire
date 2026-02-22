@@ -211,4 +211,26 @@ export default class Wizard extends Mercenary {
             });
         }
     }
+
+
+    onSkillExecuted(skill) {
+        if (this.activatedPerks.includes('arcane_surge')) {
+            const roll = Math.random();
+            console.log(`[Perk] ${this.unitName}: 비전 분출 확률 체크... (Roll: ${roll.toFixed(2)} / Threshold: 0.20)`);
+
+            // 20% chance to reduce cooldown by 50%
+            if (roll < 0.2) {
+                const now = this.scene.time.now;
+                const cd = skill.getActualCooldown ? skill.getActualCooldown(this.castSpd) : 5000;
+
+                // Set lastCastTime back by half the cooldown
+                skill.lastCastTime = now - (cd * 0.5);
+
+                console.log(`[Perk] ${this.unitName}: 비전 분출 발동! 다음 스킬 재사용 대기시간 50% 감소`);
+                if (this.scene.fxManager) {
+                    this.scene.fxManager.showDamageText(this, 'ARCANE SURGE! 🌀', '#33ccff');
+                }
+            }
+        }
+    }
 }

@@ -27,8 +27,38 @@ export const PerkDefinitions = {
             requiredLevel: 1
         }
     ],
-    warrior: [],
-    healer: [],
+    warrior: [
+        {
+            id: 'fortitude',
+            name: '강건함',
+            description: '주위에 다수의 적에게 포위당할 경우, 방어력이 10% 상승합니다.',
+            emoji: '🛡️',
+            requiredLevel: 1
+        },
+        {
+            id: 'lone_wolf',
+            name: '론 울프',
+            description: '주위에 아군이 없을 경우, 모든 스탯이 5% 상승합니다.',
+            emoji: '🐺',
+            requiredLevel: 1
+        }
+    ],
+    healer: [
+        {
+            id: 'salvation',
+            name: '구원의 손길',
+            description: '체력이 25% 이하인 아군을 회복시킬 때 회복량이 30% 증가합니다.',
+            emoji: '💊',
+            requiredLevel: 1
+        },
+        {
+            id: 'purify',
+            name: '정화',
+            description: '평타 회복이 5%의 확률로 대상에 걸린 해로운 효과 1개를 해제합니다.',
+            emoji: '✨',
+            requiredLevel: 1
+        }
+    ],
     wizard: [
         {
             id: 'teleport',
@@ -36,9 +66,24 @@ export const PerkDefinitions = {
             description: '적에게 포위당하면 안전한 위치로 순식간에 이동합니다.',
             emoji: '✨',
             requiredLevel: 1
+        },
+        {
+            id: 'arcane_surge',
+            name: '비전 분출',
+            description: '스킬 사용 시 20% 확률로 다음 재사용 대기시간이 50% 감소합니다.',
+            emoji: '🌀',
+            requiredLevel: 1
         }
     ],
-    bard: []
+    bard: [
+        {
+            id: 'inspiration',
+            name: '고양',
+            description: '평타 버프가 5% 확률로 대상의 스킬 재사용 대기시간을 15% 앞당깁니다.',
+            emoji: '🎶',
+            requiredLevel: 1
+        }
+    ]
 };
 
 export default class PerkManager {
