@@ -10,7 +10,8 @@ export default class UIManager {
     constructor() {
         this.inventoryContainer = document.getElementById('inventory-list');
         this.chatContainer = document.getElementById('chat-container');
-        this.channels = {};
+        this.channels = []; // Fixed array of 5 channels
+        this.unitToChannel = {}; // unitId -> ChatChannel instance
         this.resizeObserver = null;
         this.inventoryDirty = true; // initially dirty to load first time
         this.isRefreshing = false;
@@ -31,7 +32,7 @@ export default class UIManager {
             this.inventoryDirty = true;
         });
         EventBus.on(EventBus.EVENTS.STATUS_UPDATED, (payload) => {
-            const channel = this.channels[payload.agentId];
+            const channel = this.unitToChannel[payload.agentId];
             if (channel) {
                 if (payload.statuses) {
                     channel.updateStatuses(payload.statuses);
@@ -43,7 +44,6 @@ export default class UIManager {
                     channel.updateStats(payload.stats);
                     if (payload.stats.level !== undefined) {
                         channel.lastLevel = payload.stats.level;
-                        // We need narrativeUnlocks here too, or fetch from config
                         const charConfig = Object.values(Characters).find(c => c.id === channel.characterId);
                         if (charConfig && charConfig.narrativeUnlocks) {
                             channel.updateNarrative(charConfig.narrativeUnlocks, payload.stats.level);
@@ -55,37 +55,107 @@ export default class UIManager {
                 }
             }
         });
+
+        EventBus.on(EventBus.EVENTS.PARTY_DEPLOYED, (payload) => {
+            // payload: { mercenaries: [{ id, name, sprite, classId, ... }] }
+            this.unitToChannel = {}; // Reset mapping
+
+            payload.mercenaries.forEach((merc, i) => {
+                if (i < this.channels.length) {
+                    const channel = this.channels[i];
+                    const charConfig = Object.values(Characters).find(c => c.id === merc.characterId) || merc;
+
+                    // Store classId on the channel for dropdown population and swaps
+                    channel.classId = merc.classId || charConfig.classId;
+
+                    channel.bindUnit(
+                        merc.id,
+                        merc.unitName || merc.name,
+                        `assets/characters/party/${merc.sprite}.png`,
+                        {
+                            name: charConfig.skillName,
+                            emoji: charConfig.skillEmoji,
+                            description: charConfig.skillDescription
+                        },
+                        charConfig.narrativeUnlocks,
+                        merc.characterId
+                    );
+
+                    this.unitToChannel[merc.id] = channel;
+                }
+            });
+        });
         EventBus.on(EventBus.EVENTS.DEBUG_SWAP_CHARACTER, (payload) => {
-            const { classId, characterId } = payload;
+            const { classId, characterId, unitId } = payload;
             const charConfig = Characters[characterId.toUpperCase()];
             if (!charConfig) return;
 
-            this.channels[classId].updateVisuals(
+            const channel = unitId ? this.unitToChannel[unitId] : this.channels.find(c => c.classId === classId);
+            if (!channel) return;
+
+            channel.updateVisuals(
                 charConfig.name,
                 `assets/characters/party/${charConfig.sprite}.png`,
                 characterId
             );
 
-            this.channels[classId].updateSkill({
+            channel.updateSkill({
                 name: charConfig.skillName,
                 emoji: charConfig.skillEmoji,
                 description: charConfig.skillDescription
             });
 
             if (charConfig.narrativeUnlocks) {
-                this.channels[classId].updateNarrative(charConfig.narrativeUnlocks, 1);
+                channel.updateNarrative(charConfig.narrativeUnlocks, 1);
             }
         });
 
         EventBus.on(EventBus.EVENTS.UNIT_BARK, (payload) => {
             const { agentId, text, unitName } = payload;
-            if (this.channels[agentId]) {
-                this.channels[agentId].addLog(`[${unitName}] ${text}`, '#00ffcc');
+            const channel = this.unitToChannel[agentId];
+            if (channel) {
+                channel.addLog(`[${unitName}] ${text}`, '#00ffcc');
             }
         });
 
         // Start render loop
         requestAnimationFrame(this.rafLoop);
+
+        // Listen for Drag & Drop UI Assignment
+        EventBus.on('UI_SLOT_ASSIGNED', (payload) => {
+            this.handleSlotAssigned(payload.slotId, payload.characterId);
+        });
+    }
+
+    handleSlotAssigned(slotId, characterId) {
+        const charConfig = Characters[characterId.toUpperCase()];
+        if (!charConfig) return;
+
+        const slotIndex = parseInt(slotId.replace('slot', ''));
+        const channel = this.channels[slotIndex];
+
+        // Save to PartyManager
+        import('../Core/PartyManager.js').then(module => {
+            const partyManager = module.default;
+            partyManager.setPartySlot(slotIndex, characterId);
+
+            // Bind the UI slot immediately for feedback
+            channel.classId = charConfig.classId;
+            channel.bindUnit(
+                `preview-${characterId}`, // Temporary ID for preview
+                charConfig.name,
+                `assets/characters/party/${charConfig.sprite}.png`,
+                {
+                    name: charConfig.skillName,
+                    emoji: charConfig.skillEmoji,
+                    description: charConfig.skillDescription
+                },
+                charConfig.narrativeUnlocks,
+                characterId
+            );
+            channel.element.classList.add('has-unit');
+            channel.element.classList.remove('empty');
+        });
     }
 
     rafLoop() {
@@ -103,62 +173,32 @@ export default class UIManager {
     setupChatChannels() {
         if (!this.chatContainer) return;
 
-        // Group Characters by classId
-        const charactersByClass = {};
-        Object.values(Characters).forEach(char => {
-            if (!charactersByClass[char.classId]) {
-                charactersByClass[char.classId] = [];
-            }
-            charactersByClass[char.classId].push(char);
-        });
-
-        // Dynamically create a chat channel for each configured Mercenary Class
-        Object.values(MercenaryClasses).forEach(config => {
-            const classId = config.id;
-            const channelName = config.name;
-            const classChars = charactersByClass[classId] || [];
-
-            // We default to the class sprite, but DungeonScene will update it on spawn 
-            // if we want, or ChatChannel gets updated when swapped.
-            const spritePath = `assets/characters/party/${config.sprite}.png`;
-
-            this.channels[classId] = new ChatChannel(
-                classId,
-                classId,
-                classChars,
-                channelName,
-                spritePath,
+        // Create 5 fixed chat channels
+        for (let i = 0; i < 5; i++) {
+            const id = `slot${i}`;
+            const channel = new ChatChannel(
+                id,
+                null, // classId
+                [],   // characters
+                `용병 ${i + 1}`,
+                '',   // No sprite initially
                 this.chatContainer,
                 (text) => {
-                    this.handlePlayerCommand(classId, text);
+                    this.handlePlayerCommand(channel.linkedUnitId || id, text);
                 },
                 (swapClassId, newCharacterId) => {
                     EventBus.emit(EventBus.EVENTS.DEBUG_SWAP_CHARACTER, {
-                        classId: swapClassId,
+                        classId: channel.classId,
+                        unitId: channel.linkedUnitId,
                         characterId: newCharacterId
                     });
                 }
             );
+            channel.clear(); // Ensure it starts empty
+            this.channels.push(channel);
+        }
 
-            // Set initial skill data
-            this.channels[classId].updateVisuals(
-                config.name,
-                `assets/characters/party/${config.sprite}.png`,
-                config.id
-            );
-
-            this.channels[classId].updateSkill({
-                name: config.skillName,
-                emoji: config.skillEmoji,
-                description: config.skillDescription
-            });
-
-            if (config.narrativeUnlocks) {
-                this.channels[classId].updateNarrative(config.narrativeUnlocks, 1);
-            }
-        });
-
-        this.addLog('warrior', 'Messiah Grimoire에 오신 것을 환영합니다!', '#00ffcc');
+        this.addLog('slot0', 'Messiah Grimoire에 오신 것을 환영합니다!', '#00ffcc');
     }
 
     async handlePlayerCommand(agentId, text) {
@@ -174,6 +214,7 @@ export default class UIManager {
 
             // Emit the command event
             EventBus.emit(EventBus.EVENTS.AI_COMMAND, {
+                agentId: agentId,
                 command: result.action.name,
                 args: result.action.arguments
             });
@@ -227,8 +268,9 @@ export default class UIManager {
     }
 
     addLog(agentId, text, color) {
-        if (this.channels[agentId]) {
-            this.channels[agentId].addLog(text, color);
+        const channel = this.unitToChannel[agentId] || (this.channels.find(c => c.id === agentId));
+        if (channel) {
+            channel.addLog(text, color);
         }
     }
 

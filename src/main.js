@@ -11,6 +11,7 @@ import globalBlackboard from './modules/Events/GlobalBlackboard.js';
 import embeddingGemma from './modules/AI/EmbeddingGemma.js';
 import intentRouter from './modules/AI/IntentRouter.js';
 import partyManager from './modules/Core/PartyManager.js';
+import { Characters } from './modules/Core/EntityStats.js';
 
 const config = {
     type: Phaser.AUTO,
@@ -43,7 +44,7 @@ logManager.init();
 globalBlackboard.init();
 embeddingGemma.init();
 intentRouter.init();
-partyManager.init();
+partyManager.init(Object.values(Characters));
 
 function preload() {
     // Load assets here

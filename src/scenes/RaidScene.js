@@ -17,6 +17,7 @@ import SeparationManager from '../modules/Core/SeparationManager.js';
 import BarkManager from '../modules/AI/BarkManager.js';
 import { Characters } from '../modules/Core/EntityStats.js';
 import EventBus from '../modules/Events/EventBus.js';
+import partyManager from '../modules/Core/PartyManager.js';
 
 export default class RaidScene extends Phaser.Scene {
     constructor() {
@@ -88,37 +89,40 @@ export default class RaidScene extends Phaser.Scene {
     }
 
     spawnPlayers() {
-        const centerX = this.cameras.main.width / 2;
+        this.isStarting = true; // Block update until players are spawned
         const centerY = this.cameras.main.height / 2;
-
-        const playerConfigs = [
-            Characters.AREN,
-            Characters.ELLA,
-            Characters.SERA,
-            Characters.MERLIN,
-            Characters.LUTE
-        ];
+        const activeParty = partyManager.getActiveParty();
 
         let playerLeader = null;
-        playerConfigs.forEach((config, i) => {
+        activeParty.forEach((charId, i) => {
+            if (!charId) return;
+
+            const charConfig = Object.values(Characters).find(c => c.id === charId);
+            if (!charConfig) return;
+
             const x = 150;
             const y = centerY - 150 + (i * 75);
             let unit;
 
-            if (config.id === 'aren') {
-                unit = new Warrior(this, x, y, config);
-                playerLeader = unit;
-            } else if (config.id === 'ella') {
-                unit = new Archer(this, x, y, playerLeader, config);
-            } else if (config.id === 'sera') {
-                unit = new Healer(this, x, y, playerLeader, config);
-            } else if (config.id === 'merlin') {
-                unit = new Wizard(this, x, y, playerLeader, config);
-            } else if (config.id === 'lute') {
-                unit = new Bard(this, x, y, playerLeader, config);
+            if (charConfig.classId === 'warrior') {
+                unit = new Warrior(this, x, y, charConfig);
+                if (!playerLeader) playerLeader = unit;
+            } else if (charConfig.classId === 'archer') {
+                unit = new Archer(this, x, y, playerLeader, charConfig);
+            } else if (charConfig.classId === 'healer') {
+                unit = new Healer(this, x, y, playerLeader, charConfig);
+            } else if (charConfig.classId === 'wizard') {
+                unit = new Wizard(this, x, y, playerLeader, charConfig);
+            } else if (charConfig.classId === 'bard') {
+                unit = new Bard(this, x, y, playerLeader, charConfig);
             }
 
             if (unit) this.mercenaries.add(unit);
+        });
+
+        // Trigger UI binding
+        EventBus.emit(EventBus.EVENTS.PARTY_DEPLOYED, {
+            mercenaries: this.mercenaries.getChildren().map(m => m.getState())
         });
     }
 
@@ -136,11 +140,17 @@ export default class RaidScene extends Phaser.Scene {
 
         console.log(`[Raid] Boss spawned at stage ${this.raidCount}. HP: ${this.boss.hp}`);
         this.isRespawning = false;
+        this.isStarting = false; // Flag to indicate spawning is done
         EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, `[레이드] 대왕 고블린이 나타났습니다! 👺`);
+
+        // Trigger UI binding
+        EventBus.emit(EventBus.EVENTS.PARTY_DEPLOYED, {
+            mercenaries: this.mercenaries.getChildren().map(m => m.getState())
+        });
     }
 
     update(time, delta) {
-        if (this.isUltimateActive) return;
+        if (this.isUltimateActive || this.isStarting) return;
 
         if (this.buffManager) this.buffManager.update(time, delta);
         if (this.ccManager) this.ccManager.update(time, delta);

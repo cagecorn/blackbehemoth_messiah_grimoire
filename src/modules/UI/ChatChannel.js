@@ -4,14 +4,21 @@
  */
 export default class ChatChannel {
     constructor(id, classId, characters, name, spritePath, parentElement, onCommand, onSwap) {
-        this.id = id;
-        this.classId = classId;
-        this.name = name;
         this.onCommand = onCommand;
         this.onSwap = onSwap;
+        this.name = name;
 
+        this.charactersByClass = {}; // Store characters grouped by class
+        Object.values(import.meta.glob('../Core/EntityStats.js', { eager: true, import: 'Characters' })).forEach(chars => {
+            // This is a bit complex in standard ESM, better to pass it in or fetch it.
+        });
+
+        // Let's assume we can access Characters from the global or imported context
+        this.id = id;
         this.element = document.createElement('div');
-        this.element.className = 'chat-channel';
+        this.element.className = 'chat-channel empty'; // Start as empty
+        this.linkedUnitId = null;
+        this.classId = null;
 
         // Generate character options for the dropdown
         let optionsHtml = '';
@@ -33,10 +40,7 @@ export default class ChatChannel {
                 </select>
                 <button class="ult-toggle-btn auto" id="ult-toggle-${id}" title="궁극기 사용 모드">AUTO</button>
                 <div class="header-toggles">
-                    <button class="chat-view-toggle gear-toggle" data-view="gear" title="장비 보기">⚔️</button>
-                    <button class="chat-view-toggle skill-toggle" data-view="skill" title="스킬 정보">💫</button>
-                    <button class="chat-view-toggle status-toggle" data-view="status" title="상세 능력치">📊</button>
-                    <button class="chat-view-toggle narrative-toggle" data-view="narrative" title="서사 보기">📚</button>
+                    <button class="chat-dashboard-btn" id="dash-btn-${id}" title="메뉴 열기">⚙️</button>
                 </div>
             </div>
             <div class="status-row-second">
@@ -44,6 +48,47 @@ export default class ChatChannel {
                 <div class="status-container status-effects" id="status-${id}"></div>
             </div>
             <div class="chat-log" id="log-${id}"></div>
+
+            <!-- Dashboard Menu View -->
+            <div class="chat-dashboard-view" id="dashboard-${id}" style="display: none;">
+                <div class="dashboard-grid">
+                    <button class="dash-item" data-view="gear">
+                        <span class="dash-icon">⚔️</span>
+                        <span class="dash-label">장비</span>
+                    </button>
+                    <button class="dash-item" data-view="skill">
+                        <span class="dash-icon">💫</span>
+                        <span class="dash-label">스킬</span>
+                    </button>
+                    <button class="dash-item" data-view="status">
+                        <span class="dash-icon">📊</span>
+                        <span class="dash-label">능력치</span>
+                    </button>
+                    <button class="dash-item" data-view="narrative">
+                        <span class="dash-icon">📚</span>
+                        <span class="dash-label">서사</span>
+                    </button>
+                    <button class="dash-item highlight" data-view="perk">
+                        <span class="dash-icon">🌟</span>
+                        <span class="dash-label">퍽 [PERK]</span>
+                    </button>
+                </div>
+                <button class="dash-back-btn">돌아가기</button>
+            </div>
+
+            <!-- Perk View (Placeholder) -->
+            <div class="chat-perk-view" id="perk-${id}" style="display: none;">
+                <div class="perk-container">
+                    <div class="perk-header">
+                        <span class="perk-title">특수 능력 [PERK]</span>
+                        <span class="perk-points">Available: 0</span>
+                    </div>
+                    <div class="perk-empty-msg">
+                        아직 획득한 퍽이 없습니다.<br/>레벨업과 업적을 통해 퍽 포인트를 획득하세요.
+                    </div>
+                </div>
+                <button class="dash-back-btn">돌아가기</button>
+            </div>
             <div class="chat-gear-view" id="gear-${id}" style="display: none;">
                 <div class="gear-slot" data-slot="weapon"><span class="slot-label">[무기]</span> <span class="slot-value">Empty</span></div>
                 <div class="gear-slot" data-slot="armor"><span class="slot-label">[방어구]</span> <span class="slot-value">Empty</span></div>
@@ -95,33 +140,41 @@ export default class ChatChannel {
         this.form = this.element.querySelector('.chat-form');
         this.input = this.element.querySelector('input');
         this.buffContainer = this.element.querySelector('.status-container.buffs');
+        this.setupDragDrop();
         this.statusContainer = this.element.querySelector('.status-container.status-effects');
         this.statusRow = this.element.querySelector('.status-row-second');
         this.characterSelect = this.element.querySelector('.chat-name-select');
-        this.gearToggleBtn = this.element.querySelector('.gear-toggle');
-        this.skillToggleBtn = this.element.querySelector('.skill-toggle');
-        this.statusToggleBtn = this.element.querySelector('.status-toggle');
-        this.narrativeToggleBtn = this.element.querySelector('.narrative-toggle');
+        this.dashboardBtn = this.element.querySelector('.chat-dashboard-btn');
+        this.dashboardView = this.element.querySelector('.chat-dashboard-view');
+        this.perkView = this.element.querySelector('.chat-perk-view');
         this.gearView = this.element.querySelector('.chat-gear-view');
         this.skillView = this.element.querySelector('.chat-skill-view');
         this.statusView = this.element.querySelector('.chat-status-view');
         this.narrativeView = this.element.querySelector('.chat-narrative-view');
-        this.currentView = 'chat'; // 'chat', 'gear', 'skill', 'status', 'narrative'
+        this.currentView = 'chat'; // 'chat', 'dashboard', 'gear', 'skill', 'status', 'narrative', 'perk'
 
-        this.gearToggleBtn.addEventListener('click', () => {
-            this.toggleView('gear');
+        // Bind dashboard button
+        this.dashboardBtn.addEventListener('click', () => {
+            this.toggleView('dashboard');
         });
 
-        this.statusToggleBtn.addEventListener('click', () => {
-            this.toggleView('status');
+        // Bind dashboard grid items
+        this.dashboardView.querySelectorAll('.dash-item').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const target = btn.getAttribute('data-view');
+                this.toggleView(target);
+            });
         });
 
-        this.skillToggleBtn.addEventListener('click', () => {
-            this.toggleView('skill');
-        });
-
-        this.narrativeToggleBtn.addEventListener('click', () => {
-            this.toggleView('narrative');
+        // Bind back buttons
+        this.element.querySelectorAll('.dash-back-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (this.currentView === 'dashboard') {
+                    this.toggleView('chat');
+                } else {
+                    this.toggleView('dashboard');
+                }
+            });
         });
 
         this.characterSelect.addEventListener('change', (e) => {
@@ -149,7 +202,7 @@ export default class ChatChannel {
             if (this.element.classList.contains('ult-ready-glow')) {
                 import('../Events/EventBus.js').then(eb => {
                     eb.default.emit('ULT_TRIGGER', {
-                        agentId: this.classId
+                        agentId: this.linkedUnitId || this.classId
                     });
                 });
             }
@@ -169,7 +222,7 @@ export default class ChatChannel {
             // Emit event so Mercenary can sync
             import('../Events/EventBus.js').then(eb => {
                 eb.default.emit('ULT_TOGGLE_AUTO', {
-                    agentId: this.classId,
+                    agentId: this.linkedUnitId || this.classId,
                     auto: this.isAutoUlt
                 });
             });
@@ -201,16 +254,16 @@ export default class ChatChannel {
         this.form.style.display = isChat ? 'block' : 'none';
         this.statusRow.style.display = isChat ? 'flex' : 'none';
 
+        this.dashboardView.style.display = (this.currentView === 'dashboard') ? 'flex' : 'none';
         this.gearView.style.display = (this.currentView === 'gear') ? 'flex' : 'none';
         this.skillView.style.display = (this.currentView === 'skill') ? 'flex' : 'none';
         this.statusView.style.display = (this.currentView === 'status') ? 'block' : 'none';
         this.narrativeView.style.display = (this.currentView === 'narrative') ? 'block' : 'none';
+        this.perkView.style.display = (this.currentView === 'perk') ? 'flex' : 'none';
 
-        // Update Buttons
-        this.gearToggleBtn.textContent = (this.currentView === 'gear') ? '💬' : '⚔️';
-        this.skillToggleBtn.textContent = (this.currentView === 'skill') ? '💬' : '💫';
-        this.statusToggleBtn.textContent = (this.currentView === 'status') ? '💬' : '📊';
-        this.narrativeToggleBtn.textContent = (this.currentView === 'narrative') ? '💬' : '📚';
+        // Update Dashboard Button Icon
+        this.dashboardBtn.textContent = (this.currentView !== 'chat') ? '💬' : '⚙️';
+        this.dashboardBtn.title = (this.currentView !== 'chat') ? '채팅 보러가기' : '메뉴 열기';
 
         if (this.currentView !== 'chat') {
             this.element.classList.add('view-overlay');
@@ -221,21 +274,26 @@ export default class ChatChannel {
 
     updateVisuals(name, spritePath, characterId) {
         this.name = name;
-        this.input.placeholder = `${name}에게 지시... (e.g. 공격!)`;
-        const img = this.element.querySelector('.chat-bg-sprite');
-        if (img) img.src = spritePath;
+        this.characterId = characterId;
 
-        // Sync dropdown selection
-        if (this.characterSelect && characterId) {
-            this.characterSelect.value = characterId;
-        } else if (this.characterSelect) {
-            // Fallback: match by name
-            for (let i = 0; i < this.characterSelect.options.length; i++) {
-                if (this.characterSelect.options[i].text.includes(name)) {
-                    this.characterSelect.selectedIndex = i;
-                    break;
-                }
+        // Update name dropdown or text
+        if (this.characterSelect) {
+            // Find option and select it
+            const option = Array.from(this.characterSelect.options).find(opt => opt.value === characterId);
+            if (option) {
+                option.selected = true;
             }
+        }
+
+        // Update background sprite (the faint mercenary image)
+        const bgSprite = this.element.querySelector('.chat-bg-sprite');
+        if (bgSprite) {
+            bgSprite.src = spritePath;
+        }
+
+        // Update placeholder
+        if (this.input) {
+            this.input.placeholder = `${name}에게 지시... (e.g. 공격!)`;
         }
     }
 
@@ -327,6 +385,11 @@ export default class ChatChannel {
                 if (el) el.textContent = entry.val;
             }
         });
+
+        // Update Perks if present in stats
+        if (stats.perkPoints !== undefined) {
+            this.updatePerks(stats.perkPoints, stats.activatedPerks || []);
+        }
     }
 
     updateSkill(skillData) {
@@ -339,6 +402,65 @@ export default class ChatChannel {
         if (nameEl) nameEl.textContent = skillData.name || 'Unknown Skill';
         if (emojiEl) emojiEl.textContent = skillData.emoji || '💫';
         if (descEl) descEl.textContent = skillData.description || 'No description available.';
+    }
+
+    updatePerks(perkPoints, activatedPerks) {
+        if (!this.perkView) return;
+
+        const ptsEl = this.perkView.querySelector('.perk-points');
+        if (ptsEl) ptsEl.textContent = `Available: ${perkPoints}`;
+
+        const container = this.perkView.querySelector('.perk-container');
+        // Find or create perk list
+        let list = container.querySelector('.perk-list');
+        if (!list) {
+            list = document.createElement('div');
+            list.className = 'perk-list';
+            container.appendChild(list);
+
+            // Remove empty msg if list is added
+            const emptyMsg = container.querySelector('.perk-empty-msg');
+            if (emptyMsg) emptyMsg.style.display = 'none';
+        }
+
+        import('../Core/PerkManager.js').then(module => {
+            const PerkDefinitions = module.PerkDefinitions;
+            const perks = PerkDefinitions[this.classId] || [];
+
+            list.innerHTML = '';
+            perks.forEach(perk => {
+                const isLearned = activatedPerks.includes(perk.id);
+                const canLearn = !isLearned && perkPoints > 0;
+                const row = document.createElement('div');
+                row.className = `perk-row ${isLearned ? 'learned' : ''}`;
+                row.innerHTML = `
+                    <div class="perk-info">
+                        <span class="perk-icon">${perk.emoji}</span>
+                        <div class="perk-details">
+                            <span class="perk-name">${perk.name}</span>
+                            <span class="perk-desc">${perk.description}</span>
+                        </div>
+                    </div>
+                    ${isLearned ? '<span class="perk-status">LEARNED</span>' :
+                        canLearn ? `<button class="perk-learn-btn" data-perk="${perk.id}">ALLOCATE</button>` :
+                            '<span class="perk-status locked">LOCKED</span>'}
+                `;
+
+                const btn = row.querySelector('.perk-learn-btn');
+                if (btn) {
+                    btn.addEventListener('click', () => {
+                        import('../Events/EventBus.js').then(eb => {
+                            eb.default.emit('PERK_LEARN', {
+                                agentId: this.linkedUnitId || this.id,
+                                perkId: perk.id
+                            });
+                        });
+                    });
+                }
+
+                list.appendChild(row);
+            });
+        });
     }
 
     updateNarrative(unlocks, currentLevel) {
@@ -373,5 +495,85 @@ export default class ChatChannel {
         } else {
             this.element.classList.remove('ult-ready-glow');
         }
+    }
+
+    bindUnit(unitId, unitName, spritePath, skillData, narrativeUnlocks, characterId) {
+        this.linkedUnitId = unitId;
+        this.characterId = characterId || this.characterId;
+
+        // Re-populate dropdown based on this class
+        this.populateDropdown();
+
+        this.updateVisuals(unitName, spritePath, this.characterId);
+        if (skillData) this.updateSkill(skillData);
+        if (narrativeUnlocks) this.updateNarrative(narrativeUnlocks, 1);
+
+        this.log.innerHTML = '';
+        this.addLog(`[System] ${unitName} 가 연결되었습니다.`, '#ffff00');
+    }
+
+    populateDropdown() {
+        if (!this.characterSelect) return;
+
+        // Dynamic import or global access to Characters
+        import('../Core/EntityStats.js').then(module => {
+            const Characters = module.Characters;
+            const classChars = Object.values(Characters).filter(c => c.classId === this.classId);
+
+            let optionsHtml = '';
+            classChars.forEach(char => {
+                const selected = char.id === this.characterId ? 'selected' : '';
+                optionsHtml += `<option value="${char.id}" ${selected}>${char.name}</option>`;
+            });
+            this.characterSelect.innerHTML = optionsHtml;
+
+            // Re-verify selection after innerHTML change
+            if (this.characterId) {
+                this.characterSelect.value = this.characterId;
+            }
+        });
+    }
+
+    setupDragDrop() {
+        this.element.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            this.element.classList.add('drag-over');
+        });
+
+        this.element.addEventListener('dragleave', () => {
+            this.element.classList.remove('drag-over');
+        });
+
+        this.element.addEventListener('drop', (e) => {
+            e.preventDefault();
+            this.element.classList.remove('drag-over');
+            const characterId = e.dataTransfer.getData('characterId');
+            if (characterId) {
+                import('../Events/EventBus.js').then(module => {
+                    const EventBus = module.default;
+                    EventBus.emit('UI_SLOT_ASSIGNED', {
+                        slotId: this.id,
+                        characterId: characterId
+                    });
+                });
+            }
+        });
+    }
+
+    clear() {
+        this.linkedUnitId = null;
+        this.characterId = null;
+        this.classId = null;
+        this.element.classList.remove('has-unit');
+        this.element.classList.add('empty');
+
+        const bgSprite = this.element.querySelector('.chat-bg-sprite');
+        if (bgSprite) bgSprite.src = '';
+
+        const select = this.element.querySelector('.chat-name-select');
+        if (select) select.innerHTML = '<option value="none">Empty Slot (배치 전)</option>';
+
+        if (this.input) this.input.placeholder = '배치 전';
+        this.log.innerHTML = '';
     }
 }

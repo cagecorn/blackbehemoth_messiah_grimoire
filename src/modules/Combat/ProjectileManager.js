@@ -10,6 +10,7 @@ export default class ProjectileManager {
         this.projectiles = this.scene.physics.add.group();
 
         // Collision detection for both groups
+        // In Arena, projectiles from both teams can hit either group depending on targetGroup
         this.scene.physics.add.overlap(this.projectiles, this.scene.enemies, this.handlePhysicsHit, null, this);
         this.scene.physics.add.overlap(this.projectiles, this.scene.mercenaries, this.handlePhysicsHit, null, this);
     }

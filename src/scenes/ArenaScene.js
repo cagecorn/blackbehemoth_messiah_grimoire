@@ -24,6 +24,17 @@ export default class ArenaScene extends Phaser.Scene {
         this.enemies = null;
         this.isResetting = false;
         this.battleCount = 1;
+
+        // Selection State
+        this.gameState = 'SELECTING'; // 'SELECTING' or 'BATTLE'
+        this.selectedMercs = new Set();
+        this.selectionUI = null;
+    }
+
+    init() {
+        // Reset state on every restart
+        this.gameState = 'BATTLE';
+        this.isResetting = false;
     }
 
     create() {
@@ -40,7 +51,6 @@ export default class ArenaScene extends Phaser.Scene {
         this.mercenaries = this.physics.add.group();
         this.enemies = this.physics.add.group();
 
-        // 맵 화면 밖으로 나가지 못하게 월드 경계 설정 (현재 카메라 크기 기준)
         this.physics.world.setBounds(0, 0, this.cameras.main.width, this.cameras.main.height);
 
         // Initialize Managers
@@ -53,19 +63,16 @@ export default class ArenaScene extends Phaser.Scene {
         this.shieldManager = new ShieldManager(this);
         this.barkManager = new BarkManager(this);
 
-        // UI (Create statusText before startNewBattle so it can be updated safely)
-        this.statusText = this.add.text(this.cameras.main.width / 2, 50, `아레나 배틀 #${this.battleCount}`, {
+        // UI
+        this.statusText = this.add.text(this.cameras.main.width / 2, 50, '아레나 배틀 준비...', {
             fontSize: '32px',
             fill: '#fff',
             fontStyle: 'bold',
             stroke: '#000',
             strokeThickness: 6
-        }).setOrigin(0.5).setScrollFactor(0).setDepth(1000);
+        }).setOrigin(0.5).setScrollFactor(0).setDepth(2000);
 
         this.add.text(10, 10, 'ESC to Return to Territory', { fontSize: '16px', fill: '#fff' }).setScrollFactor(0).setDepth(1000);
-
-        // Spawn Players and initial Enemies
-        this.startNewBattle();
 
         // ESC to return
         this.input.keyboard.on('keydown-ESC', () => {
@@ -82,6 +89,11 @@ export default class ArenaScene extends Phaser.Scene {
         this.physics.add.overlap(this.mercenaries, this.enemies, (u1, u2) => {
             SeparationManager.applyRepulsion(u1, u2, 60);
         });
+
+        EventBus.on(EventBus.EVENTS.DEBUG_SWAP_CHARACTER, this.handleDebugSwap, this);
+
+        // Start battle immediately with PartyManager data
+        this.startNewBattle();
     }
 
     startNewBattle() {
@@ -89,85 +101,119 @@ export default class ArenaScene extends Phaser.Scene {
         this.mercenaries.clear(true, true);
         this.enemies.clear(true, true);
 
+        // Final projectile cleanup to be safe
+        if (this.projectileManager && this.projectileManager.projectiles) {
+            this.projectileManager.projectiles.clear(true, true);
+        }
+
         const centerX = this.cameras.main.width / 2;
         const centerY = this.cameras.main.height / 2;
 
-        // 1. Spawn Player Party (5 members)
-        const playerConfigs = [
-            Characters.AREN,
-            Characters.ELLA,
-            Characters.SERA,
-            Characters.MERLIN,
-            Characters.LUTE
-        ];
+        // 1. Spawn Selected Player Party from PartyManager
+        const activeParty = partyManager.getActiveParty();
 
-        let playerLeader = null;
-        playerConfigs.forEach((config, i) => {
-            const x = centerX - 200;
+        activeParty.forEach((charId, i) => {
+            if (!charId) return;
+            const config = Object.values(Characters).find(c => c.id === charId);
+            if (!config) return;
+
+            const x = centerX - 250;
             const y = centerY - 150 + (i * 75);
-            let unit;
-
-            if (config.id === 'aren') {
-                unit = new Warrior(this, x, y, config);
-                playerLeader = unit;
-            } else if (config.id === 'ella') {
-                unit = new Archer(this, x, y, playerLeader, config);
-            } else if (config.id === 'sera') {
-                unit = new Healer(this, x, y, playerLeader, config);
-            } else if (config.id === 'merlin') {
-                unit = new Wizard(this, x, y, playerLeader, config);
-            } else if (config.id === 'lute') {
-                unit = new Bard(this, x, y, playerLeader, config);
+            const unit = this.spawnUnit(config, x, y, 'player', null);
+            if (unit) {
+                this.mercenaries.add(unit);
+                unit.autoUlt = true; // Auto-ult in Arena
             }
-
-            if (unit) this.mercenaries.add(unit);
         });
 
-        // 2. Spawn Unique Random Enemy Party (5 members)
+        // 2. Spawn Random Enemy Party
         const avgLevel = partyManager.getAveragePartyLevel();
         const availableCharacters = [...Object.values(Characters)];
         Phaser.Utils.Array.Shuffle(availableCharacters);
 
-        let enemyLeader = null;
         for (let i = 0; i < 5; i++) {
             const randomChar = availableCharacters[i % availableCharacters.length];
-            const x = centerX + 200;
+            const x = centerX + 250;
             const y = centerY - 150 + (i * 75);
 
             const enemyConfig = {
                 ...randomChar,
-                id: randomChar.id + '_enemy_' + i,
+                id: randomChar.id + '_enemy_' + this.battleCount + '_' + i,
                 name: `적 ${randomChar.name}`,
                 level: avgLevel,
                 team: 'enemy'
             };
 
-            let unit;
-            const classId = randomChar.classId || 'warrior';
-
-            if (classId === 'warrior') {
-                unit = new Warrior(this, x, y, enemyConfig);
-                if (!enemyLeader) enemyLeader = unit;
-            } else if (classId === 'archer') {
-                unit = new Archer(this, x, y, enemyLeader, enemyConfig);
-            } else if (classId === 'healer') {
-                unit = new Healer(this, x, y, enemyLeader, enemyConfig);
-            } else if (classId === 'wizard') {
-                unit = new Wizard(this, x, y, enemyLeader, enemyConfig);
-            } else if (classId === 'bard') {
-                unit = new Bard(this, x, y, enemyLeader, enemyConfig);
+            const unit = this.spawnUnit(enemyConfig, x, y, 'enemy', null);
+            if (unit) {
+                this.enemies.add(unit);
+                unit.autoUlt = true; // Auto-ult even for enemies
             }
-
-            if (unit) this.enemies.add(unit);
         }
 
         if (this.statusText) {
             this.statusText.setText(`아레나 배틀 #${this.battleCount}`);
         }
+
+        // Trigger UI binding for the deployed mercenaries
+        EventBus.emit(EventBus.EVENTS.PARTY_DEPLOYED, {
+            mercenaries: this.mercenaries.getChildren().map(m => m.getState())
+        });
+    }
+
+    spawnUnit(config, x, y, team, leader) {
+        const classId = config.classId || 'warrior';
+        let unit;
+
+        const finalConfig = { ...config, team };
+
+        if (classId === 'warrior') {
+            unit = new Warrior(this, x, y, finalConfig);
+        } else if (classId === 'archer') {
+            unit = new Archer(this, x, y, leader, finalConfig);
+        } else if (classId === 'healer') {
+            unit = new Healer(this, x, y, leader, finalConfig);
+        } else if (classId === 'wizard') {
+            unit = new Wizard(this, x, y, leader, finalConfig);
+        } else if (classId === 'bard') {
+            unit = new Bard(this, x, y, leader, finalConfig);
+        }
+
+        if (unit && unit.initAI) {
+            unit.initAI();
+        }
+
+        return unit;
+    }
+
+    handleDebugSwap(payload) {
+        if (this.gameState !== 'BATTLE') return;
+
+        const { classId, characterId, unitId } = payload;
+        let unitToSwap = this.mercenaries.getChildren().find(u => u.id === unitId);
+
+        if (unitToSwap) {
+            const x = unitToSwap.x;
+            const y = unitToSwap.y;
+            const config = { ...Characters[characterId.toUpperCase()], team: 'player' };
+
+            unitToSwap.destroy();
+
+            const newUnit = this.spawnUnit(config, x, y, 'player', null);
+            if (newUnit) {
+                this.mercenaries.add(newUnit);
+                newUnit.autoUlt = true;
+
+                // Re-emit PARTY_DEPLOYED
+                EventBus.emit(EventBus.EVENTS.PARTY_DEPLOYED, {
+                    mercenaries: this.mercenaries.getChildren().map(m => m.getState())
+                });
+            }
+        }
     }
 
     update(time, delta) {
-        if (this.isResetting) return;
+        if (this.gameState !== 'BATTLE' || this.isResetting) return;
 
         if (this.buffManager) this.buffManager.update(time, delta);
         if (this.ccManager) this.ccManager.update(time, delta);

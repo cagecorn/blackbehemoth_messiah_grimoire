@@ -21,6 +21,7 @@ import BuffManager from '../modules/Core/BuffManager.js';
 import StageManager from '../modules/Environment/StageManager.js';
 import EventBus from '../modules/Events/EventBus.js';
 import BarkManager from '../modules/AI/BarkManager.js';
+import partyManager from '../modules/Core/PartyManager.js';
 
 export default class DungeonScene extends Phaser.Scene {
     constructor() {
@@ -95,37 +96,59 @@ export default class DungeonScene extends Phaser.Scene {
             console.log('[DungeonScene] Cleaned up EventBus listeners');
         });
 
-        // Spawn Warrior (Leader) -> Aren
+        // Spawn Party from PartyManager
+        const activeParty = partyManager.getActiveParty();
         const startPos = this.dungeonManager.getPlayerStartPosition();
-        const warriorConfig = Characters.AREN;
-        this.player = new Warrior(this, startPos.x, startPos.y, warriorConfig);
-        this.mercenaries.add(this.player);
 
-        // Spawn Archer -> Ella
-        const archerConfig = Characters.ELLA;
-        this.archer = new Archer(this, startPos.x - 40, startPos.y, this.player, archerConfig);
-        this.mercenaries.add(this.archer);
+        let playerLeader = null;
+        activeParty.forEach((charId, i) => {
+            if (!charId) return;
 
-        // Spawn Healer -> Sera
-        const healerConfig = Characters.SERA;
-        this.healer = new Healer(this, startPos.x - 80, startPos.y, this.player, healerConfig);
-        this.mercenaries.add(this.healer);
+            const charConfig = Object.values(Characters).find(c => c.id === charId);
+            if (!charConfig) return;
 
-        // Spawn Wizard -> Merlin
-        const wizardConfig = Characters.MERLIN;
-        this.wizard = new Wizard(this, startPos.x - 120, startPos.y, this.player, wizardConfig);
-        this.mercenaries.add(this.wizard);
+            const x = startPos.x - (i * 40);
+            const y = startPos.y;
+            let unit = null;
 
-        // Spawn Bard -> Lute
-        const bardConfig = Characters.LUTE;
-        this.bard = new Bard(this, startPos.x - 160, startPos.y, this.player, bardConfig);
-        this.mercenaries.add(this.bard);
+            if (charConfig.classId === 'warrior') {
+                unit = new Warrior(this, x, y, charConfig);
+                if (!playerLeader) {
+                    playerLeader = unit;
+                    this.player = unit;
+                    this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
+                }
+            } else if (charConfig.classId === 'archer') {
+                unit = new Archer(this, x, y, playerLeader, charConfig);
+            } else if (charConfig.classId === 'healer') {
+                unit = new Healer(this, x, y, playerLeader, charConfig);
+            } else if (charConfig.classId === 'wizard') {
+                unit = new Wizard(this, x, y, playerLeader, charConfig);
+            } else if (charConfig.classId === 'bard') {
+                unit = new Bard(this, x, y, playerLeader, charConfig);
+            }
 
-        // First wave of monsters
+            if (unit) {
+                this.mercenaries.add(unit);
+            }
+        });
+
+        // If no leader was found (e.g. no warrior selected), just pick the first one
+        if (!this.player && this.mercenaries.countActive(true) > 0) {
+            this.player = this.mercenaries.getChildren()[0];
+            this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
+        }
+
+        // First wave of monsters (Now that player is spawned)
         this.spawnWave();
 
-        // Setup Camera to follow player
-        this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
+        // Sync UI after spawn
+        this.time.delayedCall(500, () => {
+            EventBus.emit(EventBus.EVENTS.PARTY_DEPLOYED, {
+                mercenaries: this.mercenaries.getChildren().map(m => m.getState())
+            });
+        });
+
 
         // Return to Territory
         this.input.keyboard.on('keydown-ESC', () => {
@@ -154,70 +177,63 @@ export default class DungeonScene extends Phaser.Scene {
 
         // Sync UI with initial character names after a short delay to ensure UI is ready
         this.time.delayedCall(500, () => {
-            EventBus.emit(EventBus.EVENTS.DEBUG_SWAP_CHARACTER, { classId: 'warrior', characterId: 'aren' });
-            EventBus.emit(EventBus.EVENTS.DEBUG_SWAP_CHARACTER, { classId: 'archer', characterId: 'ella' });
-            EventBus.emit(EventBus.EVENTS.DEBUG_SWAP_CHARACTER, { classId: 'healer', characterId: 'sera' });
-            EventBus.emit(EventBus.EVENTS.DEBUG_SWAP_CHARACTER, { classId: 'wizard', characterId: 'merlin' });
-            EventBus.emit(EventBus.EVENTS.DEBUG_SWAP_CHARACTER, { classId: 'bard', characterId: 'lute' });
+            // We no longer trigger hardcoded debug swaps here
         });
+
+        EventBus.on(EventBus.EVENTS.DEBUG_SWAP_CHARACTER, this.handleDebugSwap, this);
     }
 
     handleDebugSwap(payload) {
-        const { classId, characterId } = payload;
+        const { classId, characterId, unitId } = payload;
 
         // Find existing unit
-        const existingUnit = this.mercenaries.getChildren().find(m => m.className === classId);
+        let existingUnit = null;
+        if (unitId) {
+            existingUnit = this.mercenaries.getChildren().find(u => u.id === unitId);
+        } else {
+            existingUnit = this.mercenaries.getChildren().find(u => u.className === classId);
+        }
+
         if (!existingUnit) {
-            console.warn(`[DebugSwap] Could not find existing unit for class: ${classId}. Available:`, this.mercenaries.getChildren().map(m => m.className));
+            console.warn(`[DebugSwap] Could not find existing unit for class: ${classId} or ID: ${unitId}`);
             return;
         }
 
-        if (existingUnit.characterId === characterId) {
-            console.log(`[DebugSwap] ${existingUnit.unitName} is already ${characterId}. Skipping re-spawn.`);
-            return;
-        }
-
-        console.log(`[DebugSwap] Swapping ${existingUnit.unitName} (${classId}) -> ${characterId}`);
-
-        // Remember position
         const x = existingUnit.x;
         const y = existingUnit.y;
+        const leader = existingUnit.leader;
+        const config = { ...Characters[characterId.toUpperCase()], team: 'player' };
 
-        // Get new config
-        const newConfig = Object.values(Characters).find(c => c.id === characterId);
-        if (!newConfig) return;
-
-        // Destroy old
         existingUnit.destroy();
 
-        // Spawn new
         let newUnit = null;
         if (classId === 'warrior') {
-            newUnit = new Warrior(this, x, y, newConfig);
+            newUnit = new Warrior(this, x, y, config);
             this.player = newUnit; // update leader ref
             this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
-
-            // Update all others' warrior ref
             this.mercenaries.getChildren().forEach(m => {
                 if (m !== newUnit) m.warrior = newUnit;
             });
         } else if (classId === 'archer') {
-            newUnit = new Archer(this, x, y, this.player, newConfig);
-            this.archer = newUnit;
+            newUnit = new Archer(this, x, y, this.player, config);
         } else if (classId === 'healer') {
-            newUnit = new Healer(this, x, y, this.player, newConfig);
-            this.healer = newUnit;
+            newUnit = new Healer(this, x, y, this.player, config);
         } else if (classId === 'wizard') {
-            newUnit = new Wizard(this, x, y, this.player, newConfig);
-            this.wizard = newUnit;
+            newUnit = new Wizard(this, x, y, this.player, config);
         } else if (classId === 'bard') {
-            newUnit = new Bard(this, x, y, this.player, newConfig);
-            this.bard = newUnit;
+            newUnit = new Bard(this, x, y, this.player, config);
         }
 
         if (newUnit) {
             this.mercenaries.add(newUnit);
-            EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, `[디버그] ${classId} 역할이 [${newConfig.name}](으)로 교체되었습니다. 🔄`);
+            if (newUnit.initAI) newUnit.initAI();
+
+            // Re-emit PARTY_DEPLOYED
+            EventBus.emit(EventBus.EVENTS.PARTY_DEPLOYED, {
+                mercenaries: this.mercenaries.getChildren().map(m => m.getState())
+            });
+
+            EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, `[디버그] ${classId} 역할이 [${config.name}](으)로 교체되었습니다. 🔄`);
         }
     }
 

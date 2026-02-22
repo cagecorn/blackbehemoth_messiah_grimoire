@@ -147,7 +147,7 @@ export default class BarkManager {
 
     emitBarkEvent(target, text) {
         EventBus.emit(EventBus.EVENTS.UNIT_BARK, {
-            agentId: target.className,
+            agentId: target.id,
             characterId: target.characterId,
             unitName: target.unitName,
             text: text

@@ -11,6 +11,8 @@ export default function applyRangedAI(unit, skillNode = null) {
 
     const hasTarget = new Condition(() => unit.blackboard.get('target') != null, "Has Target?");
 
+    const isEvasiveActive = new Condition(() => unit.isEvasiveManeuversActive, "Evasive Active?");
+
     const isTooClose = new Condition(() => {
         const targetObj = unit.blackboard.get('target');
         if (!targetObj) return false;
@@ -47,6 +49,45 @@ export default function applyRangedAI(unit, skillNode = null) {
         );
         return 1; // RUNNING
     }, "Kiting (Flee)");
+
+    const evasiveEscapeAction = new Action(() => {
+        // Find all enemies within 120px
+        const targetGroup = unit.targetGroup;
+        if (!targetGroup) return 2;
+
+        const enemies = targetGroup.getChildren();
+        let avgX = 0;
+        let avgY = 0;
+        let count = 0;
+
+        for (const enemy of enemies) {
+            if (!enemy.active || enemy.hp <= 0) continue;
+            const dist = Phaser.Math.Distance.Between(unit.x, unit.y, enemy.x, enemy.y);
+            if (dist < 120) {
+                avgX += enemy.x;
+                avgY += enemy.y;
+                count++;
+            }
+        }
+
+        if (count > 0) {
+            avgX /= count;
+            avgY /= count;
+            const angle = Phaser.Math.Angle.Between(avgX, avgY, unit.x, unit.y);
+            unit.body.setVelocity(
+                Math.cos(angle) * unit.speed,
+                Math.sin(angle) * unit.speed
+            );
+        } else {
+            // If no one is near, just move away from current target or leader
+            const targetObj = unit.blackboard.get('target');
+            if (targetObj) {
+                const angle = Phaser.Math.Angle.Between(targetObj.x, targetObj.y, unit.x, unit.y);
+                unit.body.setVelocity(Math.cos(angle) * unit.speed, Math.sin(angle) * unit.speed);
+            }
+        }
+        return 1; // RUNNING
+    }, "Evasive Roll");
 
     const moveToIdealRange = new Action(() => {
         const targetObj = unit.blackboard.get('target');
@@ -92,9 +133,11 @@ export default function applyRangedAI(unit, skillNode = null) {
     // 2. Build the Tree
     const attackSequence = new Sequence([isAtIdealRange, attackAction], "Sniping Logic");
     const kitingSequence = new Sequence([isTooClose, fleeFromTarget], "Kite Logic");
+    const evasiveSequence = new Sequence([isEvasiveActive, evasiveEscapeAction], "Evasive Logic");
     const approachSequence = new Sequence([moveToIdealRange], "Approach Logic");
 
     const combatBehaviors = [];
+    combatBehaviors.push(evasiveSequence); // Absolute priority!
     combatBehaviors.push(kitingSequence); // Survival first!
 
     if (skillNode) {

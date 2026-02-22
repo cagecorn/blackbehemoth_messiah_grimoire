@@ -74,15 +74,27 @@ body {
 .chat-channel {
     flex: 1;
     min-width: 200px;
-    /* ensure they don't squish too much */
     background: rgba(30, 30, 30, 0.95);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 2px dashed rgba(255, 255, 255, 0.1);
+    /* Dashing for empty slots */
     border-radius: 12px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
     display: flex;
     flex-direction: column;
     padding: 10px;
     position: relative;
+    transition: all 0.3s ease;
+}
+
+.chat-channel.drag-over {
+    border-color: #bb88ff;
+    background: rgba(187, 136, 255, 0.1);
+    transform: scale(1.02);
+}
+
+.chat-channel.has-unit {
+    border-style: solid;
+    border-color: rgba(255, 255, 255, 0.08);
 }
 
 .chat-bg-sprite {
@@ -90,7 +102,8 @@ body {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    opacity: 0.10;
+    opacity: 0.15;
+    /* Increased visibility */
     pointer-events: none;
     z-index: 0;
     width: 65%;
@@ -236,10 +249,9 @@ body {
     margin-left: 0;
 }
 
-.chat-view-toggle {
-    margin-left: auto;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+.chat-dashboard-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     color: #fff;
     border-radius: 4px;
     width: 28px;
@@ -249,12 +261,212 @@ body {
     align-items: center;
     justify-content: center;
     font-size: 14px;
-    transition: background 0.2s;
-    z-index: 20;
+    transition: all 0.2s;
+    z-index: 2005;
 }
 
-.chat-view-toggle:hover {
-    background: rgba(255, 255, 255, 0.3);
+.chat-dashboard-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: #bb88ff;
+    transform: rotate(45deg);
+}
+
+.chat-dashboard-view,
+.chat-perk-view {
+    position: absolute;
+    top: 50px;
+    left: 8px;
+    right: 8px;
+    bottom: 42px;
+    background: rgba(10, 10, 15, 0.98);
+    border: 1px solid rgba(187, 136, 255, 0.3);
+    border-radius: 8px;
+    z-index: 2000;
+    display: none;
+    flex-direction: column;
+    padding: 15px;
+    overflow-y: auto;
+    backdrop-filter: blur(15px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.9);
+}
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.dash-item {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 15px 5px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.dash-item:hover {
+    background: rgba(187, 136, 255, 0.1);
+    border-color: #bb88ff;
+    transform: translateY(-2px);
+}
+
+.dash-item.highlight {
+    background: rgba(255, 204, 0, 0.05);
+    border-color: rgba(255, 204, 0, 0.3);
+}
+
+.dash-item.highlight:hover {
+    background: rgba(255, 204, 0, 0.15);
+    border-color: #ffcc00;
+}
+
+.dash-icon {
+    font-size: 24px;
+}
+
+.dash-label {
+    font-size: 11px;
+    font-weight: bold;
+    color: #ddd;
+    text-transform: uppercase;
+}
+
+.dash-back-btn {
+    margin-top: auto;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #ccc;
+    padding: 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.2s;
+}
+
+.dash-back-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
+}
+
+/* Perk View Specifics */
+.perk-container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.perk-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 204, 0, 0.3);
+    padding-bottom: 10px;
+}
+
+.perk-title {
+    color: #ffcc00;
+    font-weight: bold;
+    font-size: 16px;
+}
+
+.perk-points {
+    font-size: 12px;
+    color: #fff;
+    background: rgba(255, 204, 0, 0.2);
+    padding: 2px 8px;
+    border-radius: 10px;
+}
+
+.perk-empty-msg {
+    padding: 30px 10px;
+    text-align: center;
+    color: #888;
+    font-size: 13px;
+    line-height: 1.6;
+    border: 1px dashed rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    margin-top: 10px;
+}
+
+.perk-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.perk-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 10px;
+}
+
+.perk-row.learned {
+    border-color: rgba(255, 204, 0, 0.4);
+    background: rgba(255, 204, 0, 0.05);
+}
+
+.perk-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.perk-icon {
+    font-size: 20px;
+}
+
+.perk-details {
+    display: flex;
+    flex-direction: column;
+}
+
+.perk-name {
+    font-size: 14px;
+    font-weight: bold;
+    color: #fff;
+}
+
+.perk-desc {
+    font-size: 11px;
+    color: #aaa;
+}
+
+.perk-learn-btn {
+    background: #ffcc00;
+    color: #000;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: transform 0.1s;
+}
+
+.perk-learn-btn:hover {
+    transform: scale(1.05);
+}
+
+.perk-status {
+    font-size: 10px;
+    font-weight: bold;
+    color: #ffcc00;
+}
+
+.perk-status.locked {
+    color: #555;
 }
 
 .status-icon {
@@ -791,7 +1003,86 @@ body {
     opacity: 1;
 }
 
-/* Ultimate Gauge Overlay */
+/* Party Selection UI (DOM Overlay for Territory) */
+.party-selection-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 800px;
+    background: rgba(20, 20, 30, 0.95);
+    border: 2px solid #333;
+    border-radius: 16px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    z-index: 10000;
+    box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
+}
+
+.party-selection-title {
+    font-size: 28px;
+    text-align: center;
+    color: #e2e8f0;
+    margin-bottom: 10px;
+}
+
+.mercenary-candidates {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+}
+
+.mercenary-card {
+    width: 80px;
+    height: 100px;
+    background: #1e293b;
+    border: 1px solid #475569;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: grab;
+    transition: all 0.2s;
+}
+
+.mercenary-card:hover {
+    border-color: #bb88ff;
+    transform: translateY(-4px);
+}
+
+.mercenary-card img {
+    width: 60px;
+    height: 60px;
+    object-fit: contain;
+    pointer-events: none;
+}
+
+.mercenary-card .merc-name {
+    font-size: 11px;
+    margin-top: 4px;
+}
+
+.party-confirm-btn {
+    align-self: center;
+    padding: 12px 40px;
+    background: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 18px;
+    transition: background 0.2s;
+}
+
+.party-confirm-btn:hover {
+    background: #2563eb;
+}
+
 .ult-gauge-overlay {
     position: absolute;
     bottom: 0;

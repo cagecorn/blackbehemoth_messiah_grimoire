@@ -269,7 +269,7 @@ export const Characters = {
         skillName: 'TacticalCommand',
         skillEmoji: '📢',
         skillDescription: '자신과 무작위 아군 1명의 모든 기본 행동(공격, 힐, 버프) 수치를 10초간 50% 강화합니다.',
-        atk: 6,
+        atk: 14,
         mAtk: 1,
         def: 5,
         speed: 40,

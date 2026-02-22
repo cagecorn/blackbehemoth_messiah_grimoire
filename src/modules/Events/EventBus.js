@@ -22,7 +22,8 @@ class EventBus extends Phaser.Events.EventEmitter {
             UNIT_BARK: 'UNIT_BARK',
             ULT_GAUGE_UPDATED: 'ULT_GAUGE_UPDATED',
             ULT_TOGGLE_AUTO: 'ULT_TOGGLE_AUTO',
-            ULT_TRIGGER: 'ULT_TRIGGER'
+            ULT_TRIGGER: 'ULT_TRIGGER',
+            PARTY_DEPLOYED: 'PARTY_DEPLOYED'
         };
     }
 }

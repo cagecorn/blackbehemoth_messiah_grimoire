@@ -5,11 +5,29 @@
  */
 class PartyManager {
     constructor() {
-        this.mercenaryStates = {}; // Map of characterId -> state object
+        this.mercenaryStates = {}; // Map of characterId -> state object (runtime stats)
+        this.activeParty = [null, null, null, null, null]; // 5 slots for mercenary IDs
+        this.roster = []; // 10 candidates
     }
 
-    init() {
+    init(allCharacters) {
         console.log('[PartyManager] Initialized');
+        // Roster starts with the 10 available characters
+        this.roster = allCharacters || [];
+    }
+
+    setPartySlot(index, characterId) {
+        if (index >= 0 && index < 5) {
+            this.activeParty[index] = characterId;
+        }
+    }
+
+    getActiveParty() {
+        return this.activeParty;
+    }
+
+    getRoster() {
+        return this.roster;
     }
 
     /**

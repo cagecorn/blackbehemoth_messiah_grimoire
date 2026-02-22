@@ -59,6 +59,10 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         this.castSpd = config.castSpd || 1000;
         this.skill = null; // To be initialized by subclasses
 
+        // Perk System
+        this.perkPoints = config.perkPoints !== undefined ? config.perkPoints : 1;
+        this.activatedPerks = config.activatedPerks || []; // List of perk IDs
+
         // Ultimate System
         this.ultGauge = 0;
         this.maxUltGauge = 100;
@@ -77,8 +81,9 @@ export default class Mercenary extends Phaser.GameObjects.Container {
                 this.exp = savedState.exp || this.exp;
                 this.hp = savedState.hp !== undefined ? savedState.hp : this.hp;
                 this.maxHp = savedState.maxHp || this.maxHp;
-                this.atk = savedState.atk || this.atk;
                 this.def = savedState.def || this.def;
+                this.perkPoints = savedState.perkPoints !== undefined ? savedState.perkPoints : (this.perkPoints || 1);
+                this.activatedPerks = savedState.activatedPerks || this.activatedPerks || [];
                 this.equipment = savedState.equipment || this.equipment;
                 this.expToNextLevel = this.calculateExpToNextLevel(this.level);
             }
@@ -131,19 +136,13 @@ export default class Mercenary extends Phaser.GameObjects.Container {
 
     setupBaseEventListeners() {
         // AI Commands are routed by class ID or globally
-        const commandEvent = (this.className === 'archer')
-            ? EventBus.EVENTS.AI_COMMAND_ARCHER
-            : (this.className === 'healer')
-                ? EventBus.EVENTS.AI_COMMAND_HEALER
-                : EventBus.EVENTS.AI_COMMAND;
-
-        EventBus.on(commandEvent, this.handleAICommand, this);
+        EventBus.on(EventBus.EVENTS.AI_COMMAND, this.handleAICommand, this);
         EventBus.on(EventBus.EVENTS.AI_RESPONSE, this.handleAIResponse, this);
         EventBus.on(EventBus.EVENTS.UNIT_BARK, this.handleUnitBark, this);
 
         // Listen for UI toggle commands
         this.handleUltToggleAuto = (payload) => {
-            if (payload.agentId === this.className) {
+            if (payload.agentId === this.id) {
                 this.autoUlt = payload.auto;
                 console.log(`[Ultimate] ${this.unitName} auto-ult set to: ${this.autoUlt}`);
             }
@@ -151,14 +150,24 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         EventBus.on(EventBus.EVENTS.ULT_TOGGLE_AUTO, this.handleUltToggleAuto);
 
         this.handleUltTrigger = (payload) => {
-            if (payload.agentId === this.className) {
+            if (payload.agentId === this.id) {
                 this.useUltimate();
             }
         };
         EventBus.on(EventBus.EVENTS.ULT_TRIGGER, this.handleUltTrigger);
+
+        this.handlePerkLearn = (payload) => {
+            if (payload.agentId === this.id) {
+                this.learnPerk(payload.perkId);
+            }
+        };
+        EventBus.on('PERK_LEARN', this.handlePerkLearn);
     }
 
     handleAICommand(cmd) {
+        // If cmd has agentId, only process if it matches mine
+        if (cmd.agentId && cmd.agentId !== this.id) return;
+
         const funcName = cmd.command || cmd.function || cmd.name;
 
         if (funcName === 'set_ai_state' || funcName === 'change_mercenary_stance') {
@@ -186,7 +195,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         if (!this.active || !this.scene) return;
         // payload should be { agentId: '...', text: '...' }
         if (payload && typeof payload === 'object') {
-            if (payload.agentId === this.className) {
+            if (payload.agentId === this.id) {
                 this.showSpeechBubble(payload.text);
             }
         }
@@ -404,6 +413,12 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         this.atk += 2;
         this.def += 1;
 
+        // Perk points every 5 levels
+        if (this.level % 5 === 0) {
+            this.perkPoints += 1;
+            console.log(`[Level] ${this.unitName} gained a Perk Point! Total: ${this.perkPoints}`);
+        }
+
         console.log(`[Level] ${this.unitName} LEVELED UP to ${this.level}!`);
 
         if (this.scene.fxManager) {
@@ -454,7 +469,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         this.ultGauge = Math.min(this.maxUltGauge, this.ultGauge + amount);
 
         EventBus.emit(EventBus.EVENTS.STATUS_UPDATED, {
-            agentId: this.className,
+            agentId: this.id,
             stats: { ultGauge: this.ultGauge }
         });
 
@@ -464,7 +479,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
     }
 
     onUltimateReady() {
-        console.log(`[Ultimate] ${this.unitName} is READY! (Auto: ${this.autoUlt})`);
+        console.log(`[Ultimate] ${this.unitName} is READY! (Auto: ${this.autoUlt}, Team: ${this.team})`);
         if (this.autoUlt) {
             this.useUltimate();
         }
@@ -477,7 +492,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         this.ultGauge = 0;
 
         EventBus.emit(EventBus.EVENTS.STATUS_UPDATED, {
-            agentId: this.className,
+            agentId: this.id,
             stats: { ultGauge: this.ultGauge }
         });
 
@@ -487,6 +502,21 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         } else {
             console.warn(`[Ultimate] ${this.unitName} has no ultimate implementation!`);
         }
+    }
+
+    learnPerk(perkId) {
+        if (this.perkPoints <= 0) return;
+        if (this.activatedPerks.includes(perkId)) return;
+
+        this.perkPoints -= 1;
+        this.activatedPerks.push(perkId);
+        console.log(`[Perk] ${this.unitName} learned perk: ${perkId}. Remaining points: ${this.perkPoints}`);
+
+        if (this.scene.fxManager) {
+            this.scene.fxManager.showDamageText(this, 'PERK ACTIVATED!', '#ffcc00');
+        }
+
+        this.syncStatusUI();
     }
 
     die() {
@@ -513,6 +543,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         EventBus.off(EventBus.EVENTS.UNIT_BARK, this.handleUnitBark, this);
         EventBus.off(EventBus.EVENTS.ULT_TOGGLE_AUTO, this.handleUltToggleAuto);
         EventBus.off(EventBus.EVENTS.ULT_TRIGGER, this.handleUltTrigger);
+        EventBus.off('PERK_LEARN', this.handlePerkLearn);
 
         console.log(`[Mercenary] Cleaned up listeners for ${this.unitName} (${this.characterId})`);
 
@@ -704,11 +735,13 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             castSpd: this.castSpd,
             acc: this.acc,
             eva: this.eva,
-            crit: this.crit
+            crit: this.crit,
+            perkPoints: this.perkPoints,
+            activatedPerks: this.activatedPerks
         };
 
         EventBus.emit(EventBus.EVENTS.STATUS_UPDATED, {
-            agentId: this.className,
+            agentId: this.id,
             statuses: statuses,
             equipment: this.equipment,
             stats: stats
@@ -730,6 +763,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         return {
             id: this.id,
             className: this.className,
+            classId: this.className, // Add classId for UI compatibility
             characterId: this.characterId,
             unitName: this.unitName,
             x: this.x,
@@ -751,6 +785,8 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             acc: this.acc,
             eva: this.eva,
             crit: this.crit,
+            perkPoints: this.perkPoints,
+            activatedPerks: this.activatedPerks,
             equipment: this.equipment,
             // Logic flags
             isAirborne: !!this.isAirborne,

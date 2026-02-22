@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import Mercenary from './Mercenary.js';
 import applyRangedAI from '../AI/RangedAI.js';
 import Blackboard from '../AI/Blackboard.js';
+import EventBus from '../Events/EventBus.js';
 import { MercenaryClasses } from '../Core/EntityStats.js';
 import KnockbackShot from '../Skills/KnockbackShot.js';
 import TacticalCommand from '../Skills/TacticalCommand.js';
@@ -21,6 +22,8 @@ export default class Archer extends Mercenary {
         // Ranged specific stats
         this.atkSpd = this.config.atkSpd || 1000;
         this.lastFireTime = 0;
+        this.isEvasiveManeuversActive = false;
+        this.evasiveCooldown = 0;
 
         // Instantiate Skill dynamically
         if (config.skillName === 'KnockbackShot') {
@@ -79,6 +82,77 @@ export default class Archer extends Mercenary {
 
         // Always find the nearest enemy to ensure proper kiting and survival
         this.findNearestEnemy();
+
+        // Check for Evasive Maneuvers Perk
+        if (this.activatedPerks.includes('evasive_maneuvers')) {
+            this.checkEvasiveManeuversTrigger();
+        }
+    }
+
+    checkEvasiveManeuversTrigger() {
+        if (this.isEvasiveManeuversActive || this.scene.time.now < this.evasiveCooldown) return;
+
+        // Condition: surrounded by 2+ enemies within 80px or hp < 20%
+        const enemies = this.targetGroup.getChildren();
+        let nearCount = 0;
+        for (const enemy of enemies) {
+            if (!enemy.active || enemy.hp <= 0) continue;
+            const dist = Phaser.Math.Distance.Between(this.x, this.y, enemy.x, enemy.y);
+            if (dist < 80) nearCount++;
+        }
+
+        if (nearCount >= 2 || (this.hp / this.maxHp < 0.2)) {
+            this.triggerEvasiveManeuvers();
+        }
+    }
+
+    triggerEvasiveManeuvers() {
+        this.isEvasiveManeuversActive = true;
+        this.evasiveCooldown = this.scene.time.now + 10000; // 10s cooldown
+
+        console.log(`[Perk] ${this.unitName} triggered Evasive Maneuvers!`);
+        EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, `${this.unitName}: 회피 기동! 🏃💨`);
+
+        // 1. Phasing & Speed Buff
+        const originalSpeed = this.speed;
+        this.speed *= 2.5;
+
+        // Disable collisions with other units (Phasing)
+        // We use checkCollision.none or just rely on them not slowing down
+        // For actual phasing, we can stop the separation manager or set a flag
+        this.isPhasing = true;
+
+        // 2. Rolling Animation
+        this.scene.tweens.add({
+            targets: this.sprite,
+            angle: 360,
+            duration: 600,
+            onComplete: () => {
+                this.sprite.angle = 0;
+            }
+        });
+
+        // 3. Forced Movement (Flee from nearest enemies)
+        // This will be handled by the AI's "Flee" behavior if we set a high priority, 
+        // or we can manually push here for a split second.
+
+        // 4. Trail Effect (After-images)
+        const trailTimer = this.scene.time.addEvent({
+            delay: 50,
+            callback: () => {
+                if (this.scene.fxManager) {
+                    this.scene.fxManager.createAfterimage(this, 400, 0.4);
+                }
+            },
+            repeat: 12 // 0.6s total
+        });
+
+        // 5. Cleanup after duration
+        this.scene.time.delayedCall(700, () => {
+            this.speed = originalSpeed;
+            this.isEvasiveManeuversActive = false;
+            this.isPhasing = false;
+        });
     }
 
     findNearestEnemy() {

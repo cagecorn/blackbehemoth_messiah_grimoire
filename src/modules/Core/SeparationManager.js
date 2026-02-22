@@ -15,6 +15,9 @@ export default class SeparationManager {
     static applyRepulsion(unitA, unitB, strength = 50) {
         if (!unitA.body || !unitB.body || !unitA.active || !unitB.active) return;
 
+        // If either unit is phasing, they can pass through each other
+        if (unitA.isPhasing || unitB.isPhasing) return;
+
         const dist = Phaser.Math.Distance.Between(unitA.x, unitA.y, unitB.x, unitB.y);
 
         // Use physics body radii if available, else fallback to a default

@@ -63,28 +63,30 @@ export default function applyBardAI(unit, getAllyGroup, getEnemyGroup) {
         return false;
     }, "Has Enemy?");
 
-    const isAtIdealRange = new Condition(() => {
-        // Can be either an ally for buff or an enemy for attack
+    const isAtIdealBuffRange = new Condition(() => {
         const buffTarget = unit.blackboard.get('buff_target');
-        if (buffTarget) {
-            const dist = Phaser.Math.Distance.Between(unit.x, unit.y, buffTarget.x, buffTarget.y);
-            const r1 = unit.body ? unit.body.radius : 0;
-            const r2 = buffTarget.body ? buffTarget.body.radius : 0;
-            const reachDist = dist - r1 - r2;
-            return reachDist <= (unit.config.atkRange || 200);
-        }
+        if (!buffTarget) return false;
 
+        const dist = Phaser.Math.Distance.Between(unit.x, unit.y, buffTarget.x, buffTarget.y);
+        const r1 = unit.body ? unit.body.radius : 0;
+        const r2 = buffTarget.body ? buffTarget.body.radius : 0;
+        const reachDist = dist - r1 - r2;
+
+        return reachDist <= (unit.config.atkRange || 200);
+    }, "In Buff Range?");
+
+    const isAtIdealAttackRange = new Condition(() => {
         const enemyTarget = unit.blackboard.get('target');
-        if (enemyTarget) {
-            const dist = Phaser.Math.Distance.Between(unit.x, unit.y, enemyTarget.x, enemyTarget.y);
-            const r1 = unit.body ? unit.body.radius : 0;
-            const r2 = enemyTarget.body ? enemyTarget.body.radius : 0;
-            const reachDist = dist - r1 - r2;
-            return reachDist <= (unit.config.atkRange || 200);
-        }
+        if (!enemyTarget) return false;
 
-        return false;
-    }, "In Range?");
+        const dist = Phaser.Math.Distance.Between(unit.x, unit.y, enemyTarget.x, enemyTarget.y);
+        const r1 = unit.body ? unit.body.radius : 0;
+        const r2 = enemyTarget.body ? enemyTarget.body.radius : 0;
+        const reachDist = dist - r1 - r2;
+        const atkRange = unit.config.atkRange || 200;
+
+        return reachDist <= atkRange;
+    }, "In Attack Range?");
 
     const isEnemyTooClose = new Condition(() => {
         const targetObj = unit.blackboard.get('target');
@@ -175,7 +177,7 @@ export default function applyBardAI(unit, getAllyGroup, getEnemyGroup) {
     // 3. Tree Construction
     const fleeSequence = new Sequence([isEnemyTooClose, fleeFromTarget], "Kite Logic");
     const buffSequence = new Sequence([needsBuff, buffAction], "Buff Logic");
-    const attackSequence = new Sequence([hasEnemyTarget, isAtIdealRange, attackAction], "Attack Logic");
+    const attackSequence = new Sequence([hasEnemyTarget, isAtIdealAttackRange, attackAction], "Attack Logic");
     const approachSequence = new Sequence([moveToRange], "Move Logic"); // Relies on buff/enemy targets being set
 
     const root = new Selector([
