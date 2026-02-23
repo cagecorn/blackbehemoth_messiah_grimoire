@@ -43,7 +43,7 @@ class LocalLLM {
         return false;
     }
 
-    async generateResponse(characterConfig, prompt, memories = [], currentLevel = 1) {
+    async generateResponse(characterConfig, prompt, memories = [], chatHistory = [], currentLevel = 1) {
         console.log(`[LocalLLM] Requesting response for ${characterConfig.name} (LV ${currentLevel}) with memories:`, memories);
 
         const unlockedNarrative = (characterConfig.narrativeUnlocks || [])
@@ -52,7 +52,15 @@ class LocalLLM {
             .join('\n');
 
         const contextString = memories.length > 0
-            ? "최근 기억:\n" + memories.map(m => `- ${m.text}`).join('\n')
+            ? "최근 사건 기록:\n" + memories.map(m => `- ${m.text}`).join('\n')
+            : "";
+
+        const historyString = chatHistory.length > 0
+            ? "이전 대화 내역:\n" + chatHistory.map(h => `${h.role === 'user' ? '전략가' : characterConfig.name}: ${h.text}`).join('\n')
+            : "";
+
+        const examplesString = (characterConfig.dialogueExamples || []).length > 0
+            ? "대사 예시:\n" + characterConfig.dialogueExamples.map(ex => `- "${ex}"`).join('\n')
             : "";
 
         const systemMessage = {
@@ -62,11 +70,15 @@ class LocalLLM {
 성격: "${characterConfig.personality}"
 ${unlockedNarrative ? `[해금된 서사]\n${unlockedNarrative}\n` : ''}
 ${characterConfig.relationships ? `[인물 관계]\n${Object.entries(characterConfig.relationships).map(([id, desc]) => `- ${id}: ${desc}`).join('\n')}\n` : ''}
+${examplesString ? `\n[말투 및 대사 예시]\n${examplesString}\n` : ''}
 [지침]
-1. 위 성격과 해금된 서사에 맞춰 대답하십시오.
-2. 1~2문장으로 짧고 간결하게 말하십시오.
+1. 위 성격, 해금된 서사, 말투 예시에 맞춰 대답하십시오.
+2. 1~2문장으로 짧고 간결하게 말하되, 캐릭터의 개성을 깊이 있게 드러내십시오.
 3. 상황이나 행동 지문(괄호 등)을 출력하지 말고 오직 '대사'만 출력하십시오.
-${contextString}`
+4. 아래 제공된 [최근 사건 기록]과 [이전 대화 내역]을 참고하여 문맥에 맞는 대화를 하십시오.
+
+${contextString}
+${historyString}`
         };
 
         const userMessage = {

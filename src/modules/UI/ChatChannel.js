@@ -204,6 +204,11 @@ export default class ChatChannel {
             }
         });
 
+        // Prevent Phaser from capturing keyboard input while typing
+        this.input.addEventListener('keydown', (e) => {
+            e.stopPropagation();
+        });
+
         // Manual Ultimate Trigger (Clicking the channel itself)
         this.element.addEventListener('click', (e) => {
             // Avoid triggering if clicking on UI buttons or inputs

@@ -232,20 +232,32 @@ export default class UIManager {
                 : `${result.action.name}(${Object.entries(result.action.arguments).map(([key, value]) => `${key}: ${value}`).join(', ')})`;
             this.addLog(agentId, `[AI] 전술 행동: ${actionDesc}`, '#bb88ff');
         } else {
-            this.addLog(agentId, `[System] 대화 모드 (기억 분석 중...)`, '#aaaaaa');
-
+            this.addLog(agentId, `[System] 대화 모드 (맥락 분석 중...)`, '#aaaaaa');
 
             try {
-                // Find character config based on the agentId (classId)
-                const channel = this.channels[agentId];
-                const charName = channel ? channel.name : agentId;
+                // Find character config based on the agentId
+                const channel = this.unitToChannel[agentId] || this.channels.find(c => c.id === agentId);
+                const charName = channel ? (channel.name || agentId) : agentId;
+                const charId = channel ? channel.characterId : agentId;
+
                 // Find character config by name or id
-                const charConfig = Object.values(Characters).find(c => c.name.includes(charName) || c.id === charName.toLowerCase());
+                const charConfig = Object.values(Characters).find(c =>
+                    (charId && c.id === charId.toLowerCase()) ||
+                    c.name.includes(charName) ||
+                    c.id === charName.toLowerCase()
+                );
+
+                if (!channel.chatHistory) channel.chatHistory = [];
 
                 const memories = await embeddingGemma.searchMemory(text);
-                const response = await localLLM.generateResponse(charConfig, text, memories);
+                const response = await localLLM.generateResponse(charConfig, text, memories, channel.chatHistory, channel.lastLevel || 1);
 
                 this.addLog(agentId, `[${charName}] ${response}`, '#00ffcc');
+
+                // Update history (max 3 pairs)
+                channel.chatHistory.push({ role: 'user', text: text });
+                channel.chatHistory.push({ role: 'assistant', text: response });
+                if (channel.chatHistory.length > 6) channel.chatHistory.splice(0, 2);
 
                 // Let the specific mercenary "say" it in a speech bubble if needed
                 EventBus.emit(EventBus.EVENTS.AI_RESPONSE, {
