@@ -271,9 +271,11 @@ export const Characters = {
         skillDescription: '자신과 무작위 아군 1명의 모든 기본 행동(공격, 힐, 버프) 수치를 10초간 50% 강화합니다.',
         atk: 14,
         mAtk: 1,
-        def: 5,
-        speed: 40,
-        atkRange: 250,
+        def: 8,
+        speed: 80,
+        atkRange: 350,
+        rangeMin: 100, // Enable moderate kiting (others are 150)
+        rangeMax: 350,
         personality: '여우 수인족 출신의 늙은 베테랑. "나 때는 말이야~"를 입에 달고 사는 꼰대. 늙은이 취급 당하는 걸 싫어하지만, 귀여운 외모 때문에 아무도 그를 어르신으로 안 본다.',
         relationships: {
             ella: '버르장머리 없는 녀석. 하지만 뜨개질 실력 하나는 인정한다.',

@@ -183,6 +183,75 @@ export default class CCManager {
         console.log(`[CCManager] Shock applied successfully to ${target.unitName} for ${duration}ms!`);
     }
 
+    /**
+     * Applies a Sleep effect to the target.
+     * Target is incapacitated until the duration ends or they take damage.
+     * @param {Phaser.GameObjects.Container} target - The entity to be affected
+     * @param {number} duration - How long the effect lasts in ms
+     */
+    applySleep(target, duration = 5000) {
+        if (!target || !target.active || target.hp <= 0) return;
+
+        console.log(`[CCManager] Applying Sleep to ${target.unitName}...`);
+
+        // Handle existing sleep status
+        if (target.isAsleep) {
+            if (target._sleepCleanupTimer) target._sleepCleanupTimer.remove();
+            if (target._sleepEmitter) target._sleepEmitter.destroy();
+            target.isAsleep = false;
+        }
+
+        target.isAsleep = true;
+        if (target.syncStatusUI) target.syncStatusUI();
+
+        // 1. Darker "Sleepy" Tint
+        target.sprite.setTint(0x8888ff);
+
+        // 2. Headless/AI Interrupt
+        if (target.body) {
+            target.body.setVelocity(0, 0);
+        }
+
+        // 3. ZZZ Particle Effect
+        target._sleepEmitter = this.scene.add.particles(0, 0, 'emoji_sleep', {
+            x: 0,
+            y: -40,
+            speed: { min: 10, max: 30 },
+            angle: { min: -100, max: -80 },
+            scale: { start: 0.4, end: 0.8 },
+            alpha: { start: 1, end: 0 },
+            lifespan: 2000,
+            frequency: 800,
+            follow: target
+        });
+        target._sleepEmitter.setDepth(3000);
+
+        // 4. Wake up helper function
+        target.wakeUp = () => {
+            if (!target.isAsleep) return;
+
+            console.log(`[CCManager] ${target.unitName} woke up!`);
+
+            if (target._sleepCleanupTimer) target._sleepCleanupTimer.remove();
+            if (target._sleepEmitter) target._sleepEmitter.destroy();
+
+            target.isAsleep = false;
+            target.sprite.clearTint();
+            if (target.syncStatusUI) target.syncStatusUI();
+
+            target.wakeUp = null;
+            target._sleepCleanupTimer = null;
+            target._sleepEmitter = null;
+        };
+
+        // Timer to handle natural wake up
+        target._sleepCleanupTimer = this.scene.time.delayedCall(duration, () => {
+            if (target && target.active && target.isAsleep) {
+                target.wakeUp();
+            }
+        });
+    }
+
     update(time, delta) {
         // Future expansion: we can track buffs/debuffs tick-by-tick here if needed
     }

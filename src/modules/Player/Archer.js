@@ -112,6 +112,7 @@ export default class Archer extends Mercenary {
 
         console.log(`[Perk] ${this.unitName} triggered Evasive Maneuvers!`);
         EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, `${this.unitName}: 회피 기동! 🏃💨`);
+        this.syncStatusUI();
 
         // 1. Phasing & Speed Buff
         const originalSpeed = this.speed;
@@ -152,6 +153,7 @@ export default class Archer extends Mercenary {
             this.speed = originalSpeed;
             this.isEvasiveManeuversActive = false;
             this.isPhasing = false;
+            this.syncStatusUI();
         });
     }
 
@@ -215,6 +217,7 @@ export default class Archer extends Mercenary {
         if (this.scene.fxManager) {
             this.scene.fxManager.showDamageText(this, 'HIT & RUN! 👞', '#ffff00');
         }
+        this.syncStatusUI();
 
         const originalSpeed = this.speed;
         this.speed *= 1.3; // 30% speed boost
@@ -224,6 +227,41 @@ export default class Archer extends Mercenary {
             this.speed = originalSpeed;
             this.isHitAndRunActive = false;
             console.log(`[Perk] ${this.unitName}: 히트 앤 런 효과 종료`);
+            this.syncStatusUI();
         });
+    }
+
+    getCustomStatuses() {
+        const statuses = super.getCustomStatuses();
+
+        if (this.isHitAndRunActive) {
+            statuses.push({
+                name: '히트 앤 런',
+                description: '공격 후 이동 속도가 30% 상승했습니다.',
+                emoji: '👞',
+                category: 'buff'
+            });
+        }
+
+        if (this.isEvasiveManeuversActive) {
+            statuses.push({
+                name: '회피 기동',
+                description: '위기 상황에서 이동 속도가 대폭 상승하고 유닛을 통과합니다.',
+                emoji: '🏃',
+                category: 'buff'
+            });
+        }
+
+        const target = this.blackboard ? this.blackboard.get('target') : null;
+        if (this.activatedPerks.includes('weakness_exploitation') && target && target.active && target.hp / target.maxHp <= 0.3) {
+            statuses.push({
+                name: '약자 멸시',
+                description: '생명력이 30% 이하인 적에게 주는 피해가 20% 증가합니다.',
+                emoji: '🎯',
+                category: 'buff'
+            });
+        }
+
+        return statuses;
     }
 }

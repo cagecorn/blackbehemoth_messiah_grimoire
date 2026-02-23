@@ -52,6 +52,7 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
         this.isShocked = false; // Electric grenade shock CC
         this.isBloodRaging = false; // Blood rage lifesteal buff
         this.isTacticalCommandActive = false; // 50% basic attack boost
+        this.isAsleep = false; // Sleep CC
 
         // Combat Timers
         this.lastAttackTime = 0;
@@ -97,6 +98,28 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
             const shadowScale = (this.config && this.config.scale) ? this.config.scale : 1;
             this.shadow = this.scene.fxManager.createShadow(this, shadowScale);
         }
+
+        // Set team for monsters (defaults to 'enemy')
+        this.team = config.team || 'enemy';
+    }
+
+    get targetGroup() {
+        if (!this.scene || !this.scene.scene || !this.scene.scene.isActive()) return null;
+        return (this.team === 'player') ? this.scene.enemies : this.scene.mercenaries;
+    }
+
+    get allyGroup() {
+        if (!this.scene) return null;
+        return (this.team === 'player') ? this.scene.mercenaries : this.scene.enemies;
+    }
+
+    spawnSummon(SummonClass, x, y, options = {}) {
+        const summon = new SummonClass(this.scene, x, y, this, options);
+        const group = this.allyGroup;
+        if (group) {
+            group.add(summon);
+        }
+        return summon;
     }
 
     takeDamage(amount, attacker = null, isUltimate = false) {
@@ -140,6 +163,11 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
             // Attacker gains gauge when hitting monster (unless it's an ultimate)
             if (attacker && typeof attacker.gainUltGauge === 'function' && !isUltimate) {
                 attacker.gainUltGauge(2);
+            }
+
+            // Wake up from sleep on damage
+            if (this.isAsleep && this.wakeUp) {
+                this.wakeUp();
             }
         }
 
@@ -192,6 +220,11 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
             // Attacker gains gauge when hitting monster with magic (unless it's an ultimate)
             if (attacker && typeof attacker.gainUltGauge === 'function' && !isUltimate) {
                 attacker.gainUltGauge(2);
+            }
+
+            // Wake up from sleep on damage
+            if (this.isAsleep && this.wakeUp) {
+                this.wakeUp();
             }
         }
 
@@ -285,7 +318,7 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
     }
 
     update() {
-        if (this.isAirborne || this.isStunned) {
+        if (this.isAirborne || this.isStunned || this.isAsleep) {
             // Can't act while CC'd. Keep velocity at 0 unless knocked back.
             this.body.setVelocity(0, 0);
             return; // Early return to block BT and orientation
@@ -404,7 +437,8 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
             isAirborne: !!this.isAirborne,
             isStunned: !!this.isStunned,
             isKnockedBack: !!this.isKnockedBack,
-            isShocked: !!this.isShocked
+            isShocked: !!this.isShocked,
+            isAsleep: !!this.isAsleep
         };
     }
 
@@ -430,6 +464,7 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
         if (stateData.isStunned !== undefined) this.isStunned = stateData.isStunned;
         if (stateData.isKnockedBack !== undefined) this.isKnockedBack = stateData.isKnockedBack;
         if (stateData.isShocked !== undefined) this.isShocked = stateData.isShocked;
+        if (stateData.isAsleep !== undefined) this.isAsleep = stateData.isAsleep;
 
         this.updateHealthBar();
     }

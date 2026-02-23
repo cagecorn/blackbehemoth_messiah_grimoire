@@ -2,6 +2,8 @@ import Phaser from 'phaser';
 import Mercenary from './Mercenary.js';
 import applyBardAI from '../AI/BardAI.js';
 import Blackboard from '../AI/Blackboard.js';
+import Siren from './Siren.js';
+import EventBus from '../Events/EventBus.js';
 import { MercenaryClasses } from '../Core/EntityStats.js';
 import SongOfProtection from '../Skills/SongOfProtection.js';
 import PlaceholderSkill from '../Skills/PlaceholderSkill.js';
@@ -29,6 +31,10 @@ export default class Bard extends Mercenary {
         } else if (config.skillName === 'PlaceholderSkill') {
             this.skill = new PlaceholderSkill();
         }
+
+        // Ultimate State
+        this.summonInstance = null;
+        this.ultStage = 0; // 0: None, 1: Summoned, 2: Sleep Low, 3: Sleep High
 
         this.initAI();
     }
@@ -120,5 +126,99 @@ export default class Bard extends Mercenary {
         if (!this.isAirborne && !this.isStunned && !this.isKnockedBack && this.skill) {
             this.skill.execute(this);
         }
+    }
+
+    /**
+     * Lute's Ultimate: "Summon: Siren"
+     */
+    async executeUltimate() {
+        if (this.characterId !== 'lute') return;
+
+        const scene = this.scene;
+        const skillName = "소환 : 사이렌";
+
+        if (this.ultStage === 0) {
+            // First time: Summon
+            await scene.ultimateManager.playCutscene(this, skillName);
+            this.summonSiren();
+            this.ultStage = 1;
+        } else if (this.ultStage === 1) {
+            // Second time: Buff 1 (20% Sleep)
+            await scene.ultimateManager.playCutscene(this, skillName + " (수면 선율 1단계)");
+            if (this.summonInstance && this.summonInstance.active) {
+                this.summonInstance.sleepChance = 0.2;
+                this.summonInstance.sprite.setTint(0xaaaaff);
+                if (this.scene.fxManager) {
+                    this.scene.fxManager.showDamageText(this.summonInstance, 'SLEEP CHANCE ON!', '#33ccff');
+                }
+            }
+            this.ultStage = 2;
+        } else if (this.ultStage === 2) {
+            // Third time: Buff 2 (50% Sleep)
+            await scene.ultimateManager.playCutscene(this, skillName + " (수면 선율 2단계)");
+            if (this.summonInstance && this.summonInstance.active) {
+                this.summonInstance.sleepChance = 0.5;
+                this.summonInstance.sprite.setTint(0x8888ff);
+                if (this.scene.fxManager) {
+                    this.scene.fxManager.showDamageText(this.summonInstance, 'MAX SLEEP CHANCE!', '#0000ff');
+                }
+            }
+            this.ultStage = 3;
+        }
+    }
+
+    summonSiren() {
+        // Spawn near Lute
+        const x = this.x;
+        const y = this.y - 100;
+
+        // Visual effect
+        this.createSummonEffect(x, y);
+
+        // Delayed spawn
+        this.scene.time.delayedCall(500, () => {
+            if (!this.active) return;
+
+            const siren = this.spawnSummon(Siren, x, y, { sleepChance: 0 });
+            this.summonInstance = siren;
+
+            console.log(`[Ultimate] Siren summoned for Lute!`);
+            EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, `${this.unitName}가 사이렌을 소환했습니다! 🧜‍♀️`);
+        });
+    }
+
+    createSummonEffect(x, y) {
+        // Cyan Ripple/Column
+        const ripple = this.scene.add.circle(x, y, 10, 0x00ffff, 0.4);
+        ripple.setDepth(25000);
+
+        this.scene.tweens.add({
+            targets: ripple,
+            radius: 120,
+            alpha: 0,
+            duration: 1000,
+            onComplete: () => ripple.destroy()
+        });
+
+        if (this.scene.fxManager) {
+            this.scene.fxManager.createSparkleEffect({ x, y, active: true });
+        }
+    }
+
+    onSummonDied(summon) {
+        if (this.summonInstance === summon) {
+            console.log(`[Ultimate] Lute's summon died. Resetting stage.`);
+            this.summonInstance = null;
+            this.ultStage = 0;
+            this.ultGauge = 0;
+        }
+    }
+
+    // Override gainUltGauge to clamp if max buffed
+    gainUltGauge(amount) {
+        if (this.characterId === 'lute' && this.ultStage >= 3) {
+            return;
+        }
+        super.gainUltGauge(amount);
     }
 }

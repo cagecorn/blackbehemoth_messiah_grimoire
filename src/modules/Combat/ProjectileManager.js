@@ -32,8 +32,9 @@ export default class ProjectileManager {
      * @param {Boolean} isMagic Whether this is a magic attack
      * @param {Phaser.GameObjects.Group} targetGroup The group to hit (mercenaries or enemies)
      * @param {Object} shooter The shooter object for Miss/Kill attribution
+     * @param {Function} onHitCallback Optional callback when a hit is confirmed (target, damage)
      */
-    fire(x, y, targetX, targetY, damage, type = 'archer', isMagic = false, targetGroup = null, shooter = null) {
+    fire(x, y, targetX, targetY, damage, type = 'archer', isMagic = false, targetGroup = null, shooter = null, onHitCallback = null) {
         let projectile;
         const groupToHit = targetGroup || this.scene.enemies;
 
@@ -60,7 +61,7 @@ export default class ProjectileManager {
             });
 
             // Instant hit calculation
-            this.checkHitAtTarget(targetX, targetY, damage, groupToHit, isMagic, shooter);
+            this.checkHitAtTarget(targetX, targetY, damage, groupToHit, isMagic, shooter, onHitCallback);
             return; // Skip standard projectile logic
         }
 
@@ -99,7 +100,7 @@ export default class ProjectileManager {
                 duration: 400,
                 ease: 'Linear',
                 onComplete: () => {
-                    this.checkHitAtTarget(targetX, targetY, damage, groupToHit, isMagic, shooter);
+                    this.checkHitAtTarget(targetX, targetY, damage, groupToHit, isMagic, shooter, onHitCallback);
                     projectile.destroy();
                 }
             });
@@ -126,32 +127,48 @@ export default class ProjectileManager {
                     }
                 },
                 onComplete: () => {
-                    this.checkHitAtTarget(targetX, targetY, damage, groupToHit, false, shooter);
+                    this.checkHitAtTarget(targetX, targetY, damage, groupToHit, false, shooter, onHitCallback);
                     projectile.destroy();
                 }
             });
         }
     }
 
-    checkHitAtTarget(tx, ty, damage, targetGroup, isMagic, shooter) {
+    checkHitAtTarget(tx, ty, damage, targetGroup, isMagic, shooter, onHitCallback = null) {
         if (!targetGroup) return;
 
         const threshold = 80; // Increased for better feel in Arena
-        const hitTarget = targetGroup.getChildren().find(e =>
-            e.active && e.hp > 0 && Phaser.Math.Distance.Between(e.x, e.y, tx, ty) <= threshold
-        );
+        const hitTarget = targetGroup.getChildren().find(e => {
+            if (!e.active || e.hp <= 0) return false;
+            const dist = Phaser.Math.Distance.Between(e.x, e.y, tx, ty);
+
+            // Account for target size:
+            // 1. Minimum logical threshold (80)
+            // 2. Add extra buffer for large units (scale > 1)
+            let dynamicThreshold = threshold;
+            if (e.scale > 1.2) {
+                dynamicThreshold += (e.scale - 1) * 30; // Bosses get a much larger hit area
+            }
+
+            return dist <= dynamicThreshold;
+        });
 
         if (hitTarget) {
-            this.handleHit(hitTarget, damage, isMagic, shooter);
+            this.handleHit(hitTarget, damage, isMagic, shooter, onHitCallback);
         }
     }
 
-    handleHit(target, damage, isMagic, shooter) {
+    handleHit(target, damage, isMagic, shooter, onHitCallback = null) {
         if (target) {
             if (isMagic && target.takeMagicDamage) {
                 target.takeMagicDamage(damage, shooter);
             } else if (target.takeDamage) {
                 target.takeDamage(damage, shooter);
+            }
+
+            // Execute additional hit effects
+            if (onHitCallback) {
+                onHitCallback(target, damage);
             }
         }
     }

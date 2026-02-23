@@ -7,6 +7,7 @@ import Archer from '../modules/Player/Archer.js';
 import Healer from '../modules/Player/Healer.js';
 import Wizard from '../modules/Player/Wizard.js';
 import Bard from '../modules/Player/Bard.js';
+import Nickle from '../modules/Player/Nickle.js';
 import ProjectileManager from '../modules/Combat/ProjectileManager.js';
 import ParticleManager from '../modules/Particles/ParticleManager.js';
 import FXManager from '../modules/Combat/FXManager.js';
@@ -118,6 +119,8 @@ export default class DungeonScene extends Phaser.Scene {
                     this.player = unit;
                     this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
                 }
+            } else if (charId === 'nickle') {
+                unit = new Nickle(this, x, y, playerLeader, charConfig);
             } else if (charConfig.classId === 'archer') {
                 unit = new Archer(this, x, y, playerLeader, charConfig);
             } else if (charConfig.classId === 'healer') {
@@ -149,8 +152,7 @@ export default class DungeonScene extends Phaser.Scene {
             });
         });
 
-
-        // Return to Territory
+        // ESC to return
         this.input.keyboard.on('keydown-ESC', () => {
             this.scene.start('TerritoryScene');
         });
@@ -214,6 +216,8 @@ export default class DungeonScene extends Phaser.Scene {
             this.mercenaries.getChildren().forEach(m => {
                 if (m !== newUnit) m.warrior = newUnit;
             });
+        } else if (characterId === 'nickle') {
+            newUnit = new Nickle(this, x, y, this.player, config);
         } else if (classId === 'archer') {
             newUnit = new Archer(this, x, y, this.player, config);
         } else if (classId === 'healer') {
@@ -341,6 +345,8 @@ export default class DungeonScene extends Phaser.Scene {
         let unit = null;
         if (classId === 'warrior') {
             unit = new Warrior(this, x, y, config);
+        } else if (characterConfig.id === 'nickle' || characterConfig.characterId === 'nickle') {
+            unit = new Nickle(this, x, y, this.player, config);
         } else if (classId === 'archer') {
             unit = new Archer(this, x, y, this.player, config);
         } else if (classId === 'healer') {

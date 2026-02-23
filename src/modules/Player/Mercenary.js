@@ -110,7 +110,6 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         this.healthBar = new HealthBar(scene, x, y - this.barYOffset, 64, 8);
         this.cooldownBar = new CooldownBar(scene, x, y - (this.barYOffset - 10), 64, 4); // Placed just below HP
 
-        // AI Debug Text (only visible if we want, but keeping it simple for now)
         this.aiDebugText = this.scene.add.text(0, -(this.barYOffset + 14), '', {
             fontSize: '12px',
             fill: '#ffffff',
@@ -126,7 +125,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         this.lastFlipTime = 0;
         this.flipCooldown = 150; // ms
 
-        // Add shadow via FXManager
+        // Shadow & Groups
         if (this.scene.fxManager) {
             this.shadow = this.scene.fxManager.createShadow(this);
         }
@@ -230,7 +229,6 @@ export default class Mercenary extends Phaser.GameObjects.Container {
      */
     get targetGroup() {
         if (!this.scene || !this.scene.scene || !this.scene.scene.isActive()) {
-            console.warn(`[Mercenary] ${this.unitName} targetGroup access in invalid scene!`);
             return null;
         }
         return (this.team === 'player') ? this.scene.enemies : this.scene.mercenaries;
@@ -241,8 +239,24 @@ export default class Mercenary extends Phaser.GameObjects.Container {
      */
     get allyGroup() {
         if (!this.scene) return null;
-        const group = (this.team === 'player') ? this.scene.mercenaries : this.scene.enemies;
-        return group;
+        return (this.team === 'player') ? this.scene.mercenaries : this.scene.enemies;
+    }
+
+    /**
+     * Generic summoning method.
+     * @param {Class} SummonClass - The class to instantiate
+     * @param {number} x - Spawn X
+     * @param {number} y - Spawn Y
+     * @param {Object} options - Additional config for the summon
+     * @returns {Object} The spawned unit
+     */
+    spawnSummon(SummonClass, x, y, options = {}) {
+        const summon = new SummonClass(this.scene, x, y, this, options);
+        const group = this.allyGroup;
+        if (group) {
+            group.add(summon);
+        }
+        return summon;
     }
 
     equipItem(slot, itemData) {
@@ -305,6 +319,11 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             if (attacker && typeof attacker === 'object' && attacker.isBloodRaging && attacker.heal) {
                 attacker.heal(finalDamage * 0.35);
             }
+
+            // Wake up from sleep on damage
+            if (this.isAsleep && this.wakeUp) {
+                this.wakeUp();
+            }
         }
 
         this.updateHealthBar();
@@ -343,6 +362,11 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             // Lifesteal for Blood Rage
             if (attacker && typeof attacker === 'object' && attacker.isBloodRaging && attacker.heal) {
                 attacker.heal(finalDamage * 0.35);
+            }
+
+            // Wake up from sleep on damage
+            if (this.isAsleep && this.wakeUp) {
+                this.wakeUp();
             }
         }
 
@@ -557,7 +581,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             return;
         }
 
-        if (this.isAirborne || this.isStunned) {
+        if (this.isAirborne || this.isStunned || this.isAsleep) {
             // Can't act while CC'd. Keep velocity at 0 unless knocked back (if applicable)
             this.body.setVelocity(0, 0);
             return; // Early return to block BT and orientation
@@ -580,6 +604,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         } else if (this.aiDebugText) {
             this.aiDebugText.setText('NO BT');
         }
+
         this.updateVisualOrientation();
     }
 
@@ -658,6 +683,14 @@ export default class Mercenary extends Phaser.GameObjects.Container {
                 category: 'status'
             });
         }
+        if (this.isAsleep) {
+            statuses.push({
+                name: '수면 (Sleep)',
+                description: '잠들어서 행동할 수 없습니다. 피해를 입으면 깨어납니다.',
+                emoji: '💤',
+                category: 'status'
+            });
+        }
         if (this.isBloodRaging) {
             statuses.push({
                 name: '피의 갈망 (Blood Rage)',
@@ -681,6 +714,12 @@ export default class Mercenary extends Phaser.GameObjects.Container {
                 emoji: '📢',
                 category: 'buff'
             });
+        }
+
+        // 1.1 Custom Character Statuses (like Perks or Transformation)
+        const customStatuses = this.getCustomStatuses();
+        if (customStatuses && customStatuses.length > 0) {
+            statuses.push(...customStatuses);
         }
 
         // 2. Check Shields
@@ -800,7 +839,8 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             isAirborne: !!this.isAirborne,
             isStunned: !!this.isStunned,
             isKnockedBack: !!this.isKnockedBack,
-            isShocked: !!this.isShocked
+            isShocked: !!this.isShocked,
+            isAsleep: !!this.isAsleep
         };
     }
 
@@ -827,8 +867,17 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         if (stateData.isStunned !== undefined) this.isStunned = stateData.isStunned;
         if (stateData.isKnockedBack !== undefined) this.isKnockedBack = stateData.isKnockedBack;
         if (stateData.isShocked !== undefined) this.isShocked = stateData.isShocked;
+        if (stateData.isAsleep !== undefined) this.isAsleep = stateData.isAsleep;
 
         this.updateHealthBar();
         this.syncStatusUI();
+    }
+
+    /**
+     * Hook for subclasses to return custom status objects for the Chat UI.
+     * @returns {Array} Array of status objects { name, description, emoji, category }
+     */
+    getCustomStatuses() {
+        return [];
     }
 }

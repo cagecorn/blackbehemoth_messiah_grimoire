@@ -131,6 +131,7 @@ export default class FXManager {
      */
     createAfterimage(target, duration = 300, alphaStart = 0.5) {
         if (!target || !target.sprite || !target.active) return;
+        if (this.scene && this.scene.isUltimateActive) return;
 
         const image = this.scene.add.image(target.x, target.y, target.sprite.texture.key);
         image.setDisplaySize(target.sprite.displayWidth, target.sprite.displayHeight);

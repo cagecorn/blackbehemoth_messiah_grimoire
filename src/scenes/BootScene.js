@@ -91,14 +91,18 @@ export default class BootScene extends Phaser.Scene {
         this.load.svg('emoji_megaphone', 'assets/emojis/1f4e3.svg', { width: 32, height: 32 });
         this.load.svg('emoji_star', 'assets/emojis/2b50.svg', { width: 32, height: 32 });
         this.load.svg('emoji_wind', 'assets/emojis/1f4a8.svg', { width: 32, height: 32 });
+        this.load.svg('emoji_sleep', 'assets/emojis/1f4a4.svg', { width: 32, height: 32 });
 
         // Load Character Sprites
         this.load.image('warrior_sprite', 'assets/characters/party/warrior_sprite.png');
         this.load.image('archer_sprite', 'assets/characters/party/archer_sprite.png');
         this.load.image('healer_sprite', 'assets/characters/party/healer_sprite.png');
         this.load.image('wizard_sprite', 'assets/characters/party/wizard_sprite.png');
+        this.load.image('nickle_cutscene', 'assets/characters/party/nickle_cutscene.png');
+        this.load.image('nickle_ultimate_sprite', 'assets/characters/party/nickle_ultimate_sprite.png');
         this.load.image('merlin_cutscene', 'assets/characters/party/merlin_cutscene.png');
         this.load.image('aren_cutscene', 'assets/characters/party/aren_cutscene.png');
+        this.load.image('sera_cutscene', 'assets/characters/party/sera_cutscene.png');
         this.load.image('bard_sprite', 'assets/characters/party/bard_sprite.png');
         this.load.image('silvi_sprite', 'assets/characters/party/silvi_sprite.png');
         this.load.image('nickle_sprite', 'assets/characters/party/nickle_sprite.png');
@@ -107,6 +111,9 @@ export default class BootScene extends Phaser.Scene {
         this.load.image('boon_sprite', 'assets/characters/party/boon_sprite.png');
         this.load.image('goblin_boss_sprite', 'assets/characters/enemies/goblin_cutscene.png');
         this.load.image('goblin_sprite', 'assets/characters/enemies/goblin_sprite.png');
+        this.load.image('guadian_angel_sprite', 'assets/characters/party/guadian_angel_sprite.png');
+        this.load.image('siren_sprite', 'assets/characters/party/siren_sprite.png');
+        this.load.image('lute_cutscene', 'assets/characters/party/lute_cutscene.png');
 
         // Load Backgrounds
         this.load.image('bg_cursed_forest', 'assets/background/battle-stage-cursed-forest.png');

@@ -4,6 +4,7 @@ import Archer from '../modules/Player/Archer.js';
 import Healer from '../modules/Player/Healer.js';
 import Wizard from '../modules/Player/Wizard.js';
 import Bard from '../modules/Player/Bard.js';
+import Nickle from '../modules/Player/Nickle.js';
 import BossGoblin from '../modules/AI/BossGoblin.js';
 import ProjectileManager from '../modules/Combat/ProjectileManager.js';
 import ParticleManager from '../modules/Particles/ParticleManager.js';
@@ -107,6 +108,8 @@ export default class RaidScene extends Phaser.Scene {
             if (charConfig.classId === 'warrior') {
                 unit = new Warrior(this, x, y, charConfig);
                 if (!playerLeader) playerLeader = unit;
+            } else if (charId === 'nickle') {
+                unit = new Nickle(this, x, y, playerLeader, charConfig);
             } else if (charConfig.classId === 'archer') {
                 unit = new Archer(this, x, y, playerLeader, charConfig);
             } else if (charConfig.classId === 'healer') {

@@ -4,6 +4,7 @@ import Archer from '../modules/Player/Archer.js';
 import Healer from '../modules/Player/Healer.js';
 import Wizard from '../modules/Player/Wizard.js';
 import Bard from '../modules/Player/Bard.js';
+import Nickle from '../modules/Player/Nickle.js';
 import ProjectileManager from '../modules/Combat/ProjectileManager.js';
 import ParticleManager from '../modules/Particles/ParticleManager.js';
 import FXManager from '../modules/Combat/FXManager.js';
@@ -169,6 +170,8 @@ export default class ArenaScene extends Phaser.Scene {
 
         if (classId === 'warrior') {
             unit = new Warrior(this, x, y, finalConfig);
+        } else if (config.id === 'nickle' || config.characterId === 'nickle') {
+            unit = new Nickle(this, x, y, leader, finalConfig);
         } else if (classId === 'archer') {
             unit = new Archer(this, x, y, leader, finalConfig);
         } else if (classId === 'healer') {

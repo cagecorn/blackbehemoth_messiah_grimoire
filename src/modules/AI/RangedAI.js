@@ -21,7 +21,7 @@ export default function applyRangedAI(unit, skillNode = null) {
         const r2 = targetObj.body ? targetObj.body.radius : 0;
         const reachDist = dist - r1 - r2;
 
-        const rangeMin = unit.config.rangeMin || 150;
+        const rangeMin = (unit.config.rangeMin !== undefined) ? unit.config.rangeMin : 150;
         return reachDist < rangeMin;
     }, "Enemy Too Close?");
 
@@ -33,8 +33,8 @@ export default function applyRangedAI(unit, skillNode = null) {
         const r2 = targetObj.body ? targetObj.body.radius : 0;
         const reachDist = dist - r1 - r2;
 
-        const rangeMin = unit.config.rangeMin || 150;
-        const rangeMax = unit.config.rangeMax || 300;
+        const rangeMin = (unit.config.rangeMin !== undefined) ? unit.config.rangeMin : 150;
+        const rangeMax = (unit.config.rangeMax !== undefined) ? unit.config.rangeMax : 300;
         return reachDist >= rangeMin && reachDist <= rangeMax;
     }, "In Ideal Range?");
 
@@ -98,7 +98,7 @@ export default function applyRangedAI(unit, skillNode = null) {
         const r2 = targetObj.body ? targetObj.body.radius : 0;
         const reachDist = dist - r1 - r2;
 
-        const rangeMax = unit.config.rangeMax || 300;
+        const rangeMax = (unit.config.rangeMax !== undefined) ? unit.config.rangeMax : 300;
         if (reachDist > rangeMax) {
             const angle = Phaser.Math.Angle.Between(unit.x, unit.y, targetObj.x, targetObj.y);
             unit.body.setVelocity(

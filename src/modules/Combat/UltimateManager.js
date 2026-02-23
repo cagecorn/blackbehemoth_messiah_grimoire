@@ -120,6 +120,18 @@ export default class UltimateManager {
             spriteKey = 'aren_cutscene';
             scale = 1.0;
             yOffset = height - 200;
+        } else if (unit.characterId === 'sera') {
+            spriteKey = 'sera_cutscene';
+            scale = 1.0;
+            yOffset = height - 200;
+        } else if (unit.characterId === 'lute') {
+            spriteKey = 'lute_cutscene';
+            scale = 1.0;
+            yOffset = height - 200;
+        } else if (unit.characterId === 'nickle') {
+            spriteKey = 'nickle_cutscene';
+            scale = 1.0;
+            yOffset = height - 200;
         }
 
         const closeUp = this.scene.add.image(-200, yOffset, spriteKey)

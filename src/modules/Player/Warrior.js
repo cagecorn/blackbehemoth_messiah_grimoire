@@ -180,12 +180,14 @@ export default class Warrior extends Mercenary {
             this._baseDef = this.def;
             this.def = Math.round(this.def * 1.10);
             console.log(`[Perk] ${this.unitName}: 강건함 발동! 방어력 10% 상승 (${this._baseDef} → ${this.def})`);
+            this.syncStatusUI();
         } else if (!isSurrounded && this.isFortitudeActive) {
             this.isFortitudeActive = false;
             if (this._baseDef !== null) {
                 this.def = this._baseDef;
                 console.log(`[Perk] ${this.unitName}: 강건함 해제. 방어력 복구 (→ ${this.def})`);
                 this._baseDef = null;
+                this.syncStatusUI();
             }
         }
     }
@@ -218,6 +220,7 @@ export default class Warrior extends Mercenary {
             this.speed = Math.round(this.speed * 1.05);
             this.maxHp = Math.round(this.maxHp * 1.05);
             console.log(`[Perk] ${this.unitName}: 론 울프 발동! 모든 스탯 5% 상승`);
+            this.syncStatusUI();
         } else if (!isAlone && this.isLoneWolfActive) {
             this.isLoneWolfActive = false;
             if (this._loneWolfBaseStats) {
@@ -230,7 +233,29 @@ export default class Warrior extends Mercenary {
                 this.maxHp = s.maxHp;
                 console.log(`[Perk] ${this.unitName}: 론 울프 해제. 스탯 복구`);
                 this._loneWolfBaseStats = null;
+                this.syncStatusUI();
             }
         }
+    }
+
+    getCustomStatuses() {
+        const statuses = super.getCustomStatuses();
+        if (this.isFortitudeActive) {
+            statuses.push({
+                name: '강건함',
+                description: '주변에 다수의 적이 있어 방어력이 10% 상승했습니다.',
+                emoji: '🪨',
+                category: 'buff'
+            });
+        }
+        if (this.isLoneWolfActive) {
+            statuses.push({
+                name: '론 울프',
+                description: '주변에 아군이 없어 모든 스탯이 5% 상승했습니다.',
+                emoji: '🐺',
+                category: 'buff'
+            });
+        }
+        return statuses;
     }
 }
