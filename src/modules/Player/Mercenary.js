@@ -27,8 +27,6 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         // Stats
         this.maxHp = config.maxHp;
         this.hp = config.hp || config.maxHp;
-        this.maxMp = config.maxMp || 0;
-        this.mp = config.mp !== undefined ? config.mp : (config.maxMp || 0);
 
         // Level & EXP
         this.level = config.level || 1;
@@ -817,8 +815,6 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             y: this.y,
             hp: this.hp,
             maxHp: this.maxHp,
-            mp: this.mp,
-            maxMp: this.maxMp,
             atk: this.atk,
             mAtk: this.mAtk,
             def: this.def,
@@ -860,7 +856,6 @@ export default class Mercenary extends Phaser.GameObjects.Container {
 
         // Logical state update
         if (stateData.hp !== undefined) this.hp = stateData.hp;
-        if (stateData.mp !== undefined) this.mp = stateData.mp;
 
         // Usually buffs/flags fade out or remain, depending on implementation
         if (stateData.isAirborne !== undefined) this.isAirborne = stateData.isAirborne;

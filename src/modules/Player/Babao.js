@@ -1,0 +1,114 @@
+import Phaser from 'phaser';
+import Mercenary from './Mercenary.js';
+import applyMeleeAI from '../AI/MeleeAI.js';
+import { SummonStats } from '../Core/EntityStats.js';
+
+/**
+ * Babao.js
+ * Bao's companion brother. 
+ * Melee AI, stats scale withmaster's mAtk.
+ * Special: 20% chance to knock targets airborne on basic attack.
+ */
+export default class Babao extends Mercenary {
+    constructor(scene, x, y, master, options = {}) {
+        const stats = SummonStats.BABAO;
+
+        // Base config scaled by master (Bao)
+        const config = {
+            id: 'babao_' + Date.now(),
+            name: stats.name,
+            sprite: stats.sprite,
+            maxHp: master.mAtk * stats.hpMult,
+            hp: master.mAtk * stats.hpMult,
+            atk: master.mAtk * stats.atkMult,
+            def: master.mDef * stats.defMult,
+            mDef: master.mDef * stats.defMult,
+            speed: stats.speed,
+            atkSpd: 1000,
+            atkRange: stats.atkRange,
+            physicsRadius: stats.physicsRadius,
+            spriteSize: 64,
+            team: master.team,
+            aiType: stats.aiType,
+            hideInUI: true // Prevent appearing in Chat/Party UI
+        };
+
+        super(scene, x, y, config);
+        this.master = master;
+        this.isSpinning = false; // For ultimate state
+
+        this.initAI();
+
+        // Custom scale for "little brother" feel
+        this.setScale(0.85);
+    }
+
+    initAI() {
+        applyMeleeAI(
+            this,
+            (agent) => agent.targetGroup,
+            'AGGRESSIVE'
+        );
+    }
+
+    /**
+     * Hook from MeleeAI (modified) called when a hit lands.
+     */
+    onHitDealt(target, damage) {
+        if (!target || !target.active || target.hp <= 0) return;
+
+        // Special Ability: 20% Precise Airborne chance
+        if (Math.random() < 0.2) {
+            console.log(`[Babao] AIRBORNE TRIGGERED on ${target.unitName}!`);
+            if (this.scene.ccManager) {
+                this.scene.ccManager.applyAirborne(target, 800, 40);
+                if (this.scene.fxManager) {
+                    this.scene.fxManager.showDamageText(target, 'AIRBORNE! ☁️', '#ffffff');
+                }
+            }
+        }
+    }
+
+    /**
+     * Babao is a companion and does not have his own ultimate.
+     */
+    gainUltGauge(amount) {
+        // Do nothing. Babao doesn't accumulate gauge.
+        return;
+    }
+
+    /**
+     * Babao's stats scale with master's mAtk. 
+     * Summoned companions do not gain independent EXP.
+     */
+    addExp(amount) {
+        // Do nothing. Scaling is handled via master's stats.
+        return;
+    }
+
+    /**
+     * Babao has a long respawn cooldown on death.
+     */
+    die() {
+        console.log(`[Babao] Deafeated. Beginning long respawn...`);
+        if (this.master && this.master.onBabaoDied) {
+            this.master.onBabaoDied();
+        }
+
+        // Visual "poof" instead of just vanishing
+        if (this.scene.fxManager) {
+            this.scene.fxManager.createSparkleEffect({ x: this.x, y: this.y });
+        }
+
+        super.die();
+    }
+
+    update() {
+        if (this.isSpinning) {
+            // Ultimate logic handles movement/spin visuals
+            // but we might want to block regular AI here
+            return;
+        }
+        super.update();
+    }
+}

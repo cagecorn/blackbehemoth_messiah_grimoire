@@ -4,6 +4,7 @@ import applyRangedAI from '../AI/RangedAI.js';
 import Blackboard from '../AI/Blackboard.js';
 import { MercenaryClasses } from '../Core/EntityStats.js';
 import SkillFireball from '../Skills/SkillFireball.js';
+import SkillStoneBlast from '../Skills/SkillStoneBlast.js';
 import SkillMeteorStrike from '../Skills/SkillMeteorStrike.js';
 import PlaceholderSkill from '../Skills/PlaceholderSkill.js';
 import EventBus from '../Events/EventBus.js';
@@ -25,6 +26,8 @@ export default class Wizard extends Mercenary {
         // Instantiate Skill dynamically
         if (config.skillName === 'SkillFireball') {
             this.skill = new SkillFireball();
+        } else if (config.skillName === 'SkillStoneBlast') {
+            this.skill = new SkillStoneBlast();
         } else if (config.skillName === 'PlaceholderSkill') {
             this.skill = new PlaceholderSkill();
         }

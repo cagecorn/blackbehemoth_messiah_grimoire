@@ -3,7 +3,7 @@
  * Centralized configuration for all mercenaries and monsters.
  * 
  * IMPORTANT: Strictly follow the naming convention defined in README.md:
- * - hp, maxHp, mp, maxMp, atk, mAtk, def, mDef, speed, atkSpd, castSpd, acc, eva, crit, id
+ * - hp, maxHp, atk, mAtk, def, mDef, speed, atkSpd, castSpd, acc, eva, crit, id
  */
 
 export const MercenaryClasses = {
@@ -13,8 +13,6 @@ export const MercenaryClasses = {
         sprite: 'warrior_sprite',
         maxHp: 120,
         hp: 120,
-        mp: 20,
-        maxMp: 20,
         atk: 25,
         mAtk: 5,
         def: 10,
@@ -39,8 +37,6 @@ export const MercenaryClasses = {
         sprite: 'archer_sprite',
         maxHp: 80,
         hp: 80,
-        mp: 30,
-        maxMp: 30,
         atk: 20,
         mAtk: 5,
         def: 5,
@@ -65,8 +61,6 @@ export const MercenaryClasses = {
         sprite: 'healer_sprite',
         maxHp: 70,
         hp: 70,
-        mp: 100,
-        maxMp: 100,
         atk: 5,
         mAtk: 25,
         def: 5,
@@ -91,8 +85,6 @@ export const MercenaryClasses = {
         sprite: 'wizard_sprite',
         maxHp: 65,
         hp: 65,
-        mp: 150,
-        maxMp: 150,
         atk: 5,
         mAtk: 35,
         def: 5,
@@ -117,8 +109,6 @@ export const MercenaryClasses = {
         sprite: 'bard_sprite',
         maxHp: 75,
         hp: 75,
-        mp: 120,
-        maxMp: 120,
         atk: 10,
         mAtk: 15, // Used for buff scaling
         def: 5,
@@ -142,6 +132,7 @@ export const MercenaryClasses = {
 export const Characters = {
     AREN: {
         id: 'aren',
+        characterId: 'aren',
         classId: 'warrior',
         name: 'Aren (아렌)',
         sprite: 'warrior_sprite',
@@ -163,6 +154,7 @@ export const Characters = {
     },
     ELLA: {
         id: 'ella',
+        characterId: 'ella',
         classId: 'archer',
         name: 'Ella (엘라)',
         sprite: 'archer_sprite',
@@ -184,6 +176,7 @@ export const Characters = {
     },
     SERA: {
         id: 'sera',
+        characterId: 'sera',
         classId: 'healer',
         name: 'Sera (세라)',
         sprite: 'healer_sprite',
@@ -201,6 +194,7 @@ export const Characters = {
     },
     MERLIN: {
         id: 'merlin',
+        characterId: 'merlin',
         classId: 'wizard',
         name: 'Merlin (멀린)',
         sprite: 'wizard_sprite',
@@ -218,6 +212,7 @@ export const Characters = {
     },
     LUTE: {
         id: 'lute',
+        characterId: 'lute',
         classId: 'bard',
         name: 'Lute (루트)',
         sprite: 'bard_sprite',
@@ -235,6 +230,7 @@ export const Characters = {
     },
     SILVI: {
         id: 'silvi',
+        characterId: 'silvi',
         classId: 'warrior',
         name: 'Silvi (실비)',
         sprite: 'silvi_sprite',
@@ -263,6 +259,7 @@ export const Characters = {
     },
     NICKLE: {
         id: 'nickle',
+        characterId: 'nickle',
         classId: 'archer',
         name: 'Nickle (니클)',
         sprite: 'nickle_sprite',
@@ -285,6 +282,7 @@ export const Characters = {
     },
     LEONA: {
         id: 'leona',
+        characterId: 'leona',
         classId: 'archer',
         name: 'Leona (레오나)',
         sprite: 'leona_sprite',
@@ -301,6 +299,7 @@ export const Characters = {
     },
     KING: {
         id: 'king',
+        characterId: 'king',
         classId: 'warrior',
         name: 'King (킹)',
         sprite: 'king_sprite',
@@ -324,6 +323,7 @@ export const Characters = {
     },
     BOON: {
         id: 'boon',
+        characterId: 'boon',
         classId: 'warrior',
         name: 'Boon (분)',
         sprite: 'boon_sprite',
@@ -343,6 +343,44 @@ export const Characters = {
             silvi: '지켜줘야 할 가련한 백성. 겁먹지 말거라, 이 몸이 있다!'
         }
     },
+    BAO: {
+        id: 'bao',
+        characterId: 'bao',
+        classId: 'wizard',
+        name: 'Bao (바오)',
+        sprite: 'bao_sprite',
+        skillName: 'SkillStoneBlast',
+        skillEmoji: '🪨',
+        skillDescription: '염력으로 바위를 땅에서 뿜어내어 던집니다. 광역 피해와 충격파를 유발합니다.',
+        maxHp: 100,
+        hp: 100,
+        atk: 5,
+        mAtk: 28,
+        def: 12,
+        mDef: 18,
+        speed: 95,
+        personality: '곰 수인족 출신의 마법사. 인간들의 무분별한 개발 때문에 숲이 파괴된 것을 목격한 뒤로 인간을 혐오하게 되었습니다. 하지만 동생 바바오에게만큼은 세상 누구보다 다정한 브라콤입니다. 꿀을 좋아할 것 같지만 사실은 심각한 꿀 알레르기가 있습니다.',
+        relationships: {
+            nickle: '같은 수인 동료라 그런지 편안하다. 조언이 가끔 길지만 들을 만하다.',
+            sera: '동물에게 다정하다는 소문을 들었다. 나쁘지 않은 인간 같다.',
+            babao: '세상에서 제일 소중한 동생. 내가 없으면 누가 챙겨주겠어?'
+        }
+    },
+};
+
+export const SummonStats = {
+    BABAO: {
+        id: 'babao',
+        name: '바바오',
+        sprite: 'babao_sprite',
+        hpMult: 8,
+        atkMult: 1.2,
+        defMult: 0.8,
+        speed: 130,
+        atkRange: 60,
+        physicsRadius: 24,
+        aiType: 'MELEE'
+    }
 };
 
 export const MonsterClasses = {
@@ -352,8 +390,6 @@ export const MonsterClasses = {
         sprite: 'goblin_sprite',
         maxHp: 60,
         hp: 60,
-        mp: 10,
-        maxMp: 10,
         atk: 12,
         mAtk: 2,
         def: 2,
@@ -379,8 +415,6 @@ export const MonsterClasses = {
         sprite: 'goblin_sprite',
         maxHp: 90,
         hp: 90,
-        mp: 80,
-        maxMp: 80,
         atk: 5,
         mAtk: 18,
         def: 4,
@@ -405,8 +439,6 @@ export const MonsterClasses = {
         sprite: 'goblin_boss_sprite',
         maxHp: 5000,
         hp: 5000,
-        mp: 100,
-        maxMp: 100,
         atk: 50,
         mAtk: 10,
         def: 25,

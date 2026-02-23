@@ -6,6 +6,7 @@ import MonsterHealer from '../modules/AI/MonsterHealer.js';
 import Archer from '../modules/Player/Archer.js';
 import Healer from '../modules/Player/Healer.js';
 import Wizard from '../modules/Player/Wizard.js';
+import Bao from '../modules/Player/Bao.js';
 import Bard from '../modules/Player/Bard.js';
 import Nickle from '../modules/Player/Nickle.js';
 import ProjectileManager from '../modules/Combat/ProjectileManager.js';
@@ -126,7 +127,11 @@ export default class DungeonScene extends Phaser.Scene {
             } else if (charConfig.classId === 'healer') {
                 unit = new Healer(this, x, y, playerLeader, charConfig);
             } else if (charConfig.classId === 'wizard') {
-                unit = new Wizard(this, x, y, playerLeader, charConfig);
+                if (charId === 'bao') {
+                    unit = new Bao(this, x, y, playerLeader, charConfig);
+                } else {
+                    unit = new Wizard(this, x, y, playerLeader, charConfig);
+                }
             } else if (charConfig.classId === 'bard') {
                 unit = new Bard(this, x, y, playerLeader, charConfig);
             }
@@ -148,7 +153,9 @@ export default class DungeonScene extends Phaser.Scene {
         // Sync UI after spawn
         this.time.delayedCall(500, () => {
             EventBus.emit(EventBus.EVENTS.PARTY_DEPLOYED, {
-                mercenaries: this.mercenaries.getChildren().map(m => m.getState())
+                mercenaries: this.mercenaries.getChildren()
+                    .filter(m => !m.config.hideInUI)
+                    .map(m => m.getState())
             });
         });
 
@@ -223,7 +230,11 @@ export default class DungeonScene extends Phaser.Scene {
         } else if (classId === 'healer') {
             newUnit = new Healer(this, x, y, this.player, config);
         } else if (classId === 'wizard') {
-            newUnit = new Wizard(this, x, y, this.player, config);
+            if (characterId === 'bao') {
+                newUnit = new Bao(this, x, y, this.player, config);
+            } else {
+                newUnit = new Wizard(this, x, y, this.player, config);
+            }
         } else if (classId === 'bard') {
             newUnit = new Bard(this, x, y, this.player, config);
         }
@@ -234,7 +245,9 @@ export default class DungeonScene extends Phaser.Scene {
 
             // Re-emit PARTY_DEPLOYED
             EventBus.emit(EventBus.EVENTS.PARTY_DEPLOYED, {
-                mercenaries: this.mercenaries.getChildren().map(m => m.getState())
+                mercenaries: this.mercenaries.getChildren()
+                    .filter(m => !m.config.hideInUI)
+                    .map(m => m.getState())
             });
 
             EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, `[디버그] ${classId} 역할이 [${config.name}](으)로 교체되었습니다. 🔄`);
@@ -352,7 +365,11 @@ export default class DungeonScene extends Phaser.Scene {
         } else if (classId === 'healer') {
             unit = new Healer(this, x, y, this.player, config);
         } else if (classId === 'wizard') {
-            unit = new Wizard(this, x, y, this.player, config);
+            if (characterConfig.id === 'bao' || characterConfig.characterId === 'bao') {
+                unit = new Bao(this, x, y, this.player, config);
+            } else {
+                unit = new Wizard(this, x, y, this.player, config);
+            }
         } else if (classId === 'bard') {
             unit = new Bard(this, x, y, this.player, config);
         }

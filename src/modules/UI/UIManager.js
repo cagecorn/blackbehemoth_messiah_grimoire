@@ -60,7 +60,9 @@ export default class UIManager {
             // payload: { mercenaries: [{ id, name, sprite, classId, ... }] }
             this.unitToChannel = {}; // Reset mapping
 
-            payload.mercenaries.forEach((merc, i) => {
+            const visibleMercs = payload.mercenaries.filter(m => !m.hideInUI);
+
+            visibleMercs.forEach((merc, i) => {
                 if (i < this.channels.length) {
                     const channel = this.channels[i];
                     const charConfig = Object.values(Characters).find(c => c.id === merc.characterId) || merc;

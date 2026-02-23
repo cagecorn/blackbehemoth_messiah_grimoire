@@ -3,6 +3,7 @@ import Warrior from '../modules/Player/Warrior.js';
 import Archer from '../modules/Player/Archer.js';
 import Healer from '../modules/Player/Healer.js';
 import Wizard from '../modules/Player/Wizard.js';
+import Bao from '../modules/Player/Bao.js';
 import Bard from '../modules/Player/Bard.js';
 import Nickle from '../modules/Player/Nickle.js';
 import BossGoblin from '../modules/AI/BossGoblin.js';
@@ -108,14 +109,18 @@ export default class RaidScene extends Phaser.Scene {
             if (charConfig.classId === 'warrior') {
                 unit = new Warrior(this, x, y, charConfig);
                 if (!playerLeader) playerLeader = unit;
-            } else if (charId === 'nickle') {
+            } else if (charId === 'nickle' || charConfig.characterId === 'nickle') {
                 unit = new Nickle(this, x, y, playerLeader, charConfig);
             } else if (charConfig.classId === 'archer') {
                 unit = new Archer(this, x, y, playerLeader, charConfig);
             } else if (charConfig.classId === 'healer') {
                 unit = new Healer(this, x, y, playerLeader, charConfig);
             } else if (charConfig.classId === 'wizard') {
-                unit = new Wizard(this, x, y, playerLeader, charConfig);
+                if (charId === 'bao') {
+                    unit = new Bao(this, x, y, playerLeader, charConfig);
+                } else {
+                    unit = new Wizard(this, x, y, playerLeader, charConfig);
+                }
             } else if (charConfig.classId === 'bard') {
                 unit = new Bard(this, x, y, playerLeader, charConfig);
             }

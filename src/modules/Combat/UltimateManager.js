@@ -132,6 +132,10 @@ export default class UltimateManager {
             spriteKey = 'nickle_cutscene';
             scale = 1.0;
             yOffset = height - 200;
+        } else if (unit.characterId === 'bao') {
+            spriteKey = 'bao_cutscene';
+            scale = 1.0;
+            yOffset = height - 200;
         }
 
         const closeUp = this.scene.add.image(-200, yOffset, spriteKey)

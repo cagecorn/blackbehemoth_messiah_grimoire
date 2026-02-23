@@ -3,6 +3,7 @@ import Warrior from '../modules/Player/Warrior.js';
 import Archer from '../modules/Player/Archer.js';
 import Healer from '../modules/Player/Healer.js';
 import Wizard from '../modules/Player/Wizard.js';
+import Bao from '../modules/Player/Bao.js';
 import Bard from '../modules/Player/Bard.js';
 import Nickle from '../modules/Player/Nickle.js';
 import ProjectileManager from '../modules/Combat/ProjectileManager.js';
@@ -140,6 +141,7 @@ export default class ArenaScene extends Phaser.Scene {
             const enemyConfig = {
                 ...randomChar,
                 id: randomChar.id + '_enemy_' + this.battleCount + '_' + i,
+                characterId: randomChar.id, // Ensure characterId is preserved
                 name: `적 ${randomChar.name}`,
                 level: avgLevel,
                 team: 'enemy'
@@ -158,7 +160,9 @@ export default class ArenaScene extends Phaser.Scene {
 
         // Trigger UI binding for the deployed mercenaries
         EventBus.emit(EventBus.EVENTS.PARTY_DEPLOYED, {
-            mercenaries: this.mercenaries.getChildren().map(m => m.getState())
+            mercenaries: this.mercenaries.getChildren()
+                .filter(m => !m.config.hideInUI)
+                .map(m => m.getState())
         });
     }
 
@@ -177,7 +181,11 @@ export default class ArenaScene extends Phaser.Scene {
         } else if (classId === 'healer') {
             unit = new Healer(this, x, y, leader, finalConfig);
         } else if (classId === 'wizard') {
-            unit = new Wizard(this, x, y, leader, finalConfig);
+            if (config.id === 'bao' || config.characterId === 'bao') {
+                unit = new Bao(this, x, y, leader, finalConfig);
+            } else {
+                unit = new Wizard(this, x, y, leader, finalConfig);
+            }
         } else if (classId === 'bard') {
             unit = new Bard(this, x, y, leader, finalConfig);
         }

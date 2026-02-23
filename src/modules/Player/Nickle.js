@@ -44,6 +44,8 @@ export default class Nickle extends Archer {
             def: this.def,
             mDef: this.mDef,
             atkSpd: this.atkSpd,
+            rangeMin: this.rangeMin,
+            rangeMax: this.rangeMax,
             spriteTexture: this.sprite.texture.key
         };
 
@@ -57,6 +59,13 @@ export default class Nickle extends Archer {
         this.def *= 1.5;
         this.mDef *= 1.5;
         this.atkSpd *= 0.5; // Double attack speed
+
+        // 2.1 Raid Specific Logic: Move closer to the boss for multi-hit arrows
+        if (this.scene.constructor.name === 'RaidScene') {
+            this.rangeMin = 50;
+            this.rangeMax = 120;
+            console.log(`[Nickle] Raid Mode: Ranges adjusted to ${this.rangeMin}-${this.rangeMax} for multi-hit.`);
+        }
 
         // 3. Visual Effects
         if (this.scene.fxManager) {
@@ -103,13 +112,24 @@ export default class Nickle extends Archer {
             this.def = this.originalStats.def;
             this.mDef = this.originalStats.mDef;
             this.atkSpd = this.originalStats.atkSpd;
+            this.rangeMin = this.originalStats.rangeMin;
+            this.rangeMax = this.originalStats.rangeMax;
             this.sprite.setTexture(this.originalStats.spriteTexture);
         }
 
         this.ultGauge = 0; // Reset gauge
         this.syncStatusUI();
 
-        console.log(`[Nickle] Prime mode ended.`);
+        // Safe Retreat: Give a temporary speed boost and force AI to re-evaluate
+        const originalSpeed = this.speed;
+        this.speed *= 2.0;
+        this.scene.time.delayedCall(1500, () => {
+            if (this.active) {
+                this.speed = originalSpeed;
+            }
+        });
+
+        console.log(`[Nickle] Prime mode ended. Retreating...`);
     }
 
     destroy() {
@@ -135,22 +155,30 @@ export default class Nickle extends Archer {
         this.lastFireTime = now;
 
         const arrowCount = 5;
-        const dist = Phaser.Math.Distance.Between(this.x, this.y, target.x, target.y);
         const spreadAngle = Phaser.Math.DegToRad(30); // 30 degrees total spread
 
         for (let i = 0; i < arrowCount; i++) {
-            const angleOffset = (i - (arrowCount - 1) / 2) * (spreadAngle / (arrowCount - 1));
-            const baseAngle = Phaser.Math.Angle.Between(this.x, this.y, target.x, target.y);
-            const finalAngle = baseAngle + angleOffset;
+            // Stagger each arrow by 50ms for sequential "dadadada" damage text
+            this.scene.time.delayedCall(i * 50, () => {
+                if (!this.active || !this.isPrimeMode) return;
 
-            // Fire to the point at the target's distance with spread angle
-            const tX = this.x + Math.cos(finalAngle) * dist;
-            const tY = this.y + Math.sin(finalAngle) * dist;
+                const target = this.blackboard.get('target');
+                if (!target || !target.active || target.hp <= 0) return;
 
-            this.scene.projectileManager.fire(
-                this.x, this.y, tX, tY,
-                this.atk, 'archer', false, this.targetGroup, this
-            );
+                const dist = Phaser.Math.Distance.Between(this.x, this.y, target.x, target.y);
+                const angleOffset = (i - (arrowCount - 1) / 2) * (spreadAngle / (arrowCount - 1));
+                const baseAngle = Phaser.Math.Angle.Between(this.x, this.y, target.x, target.y);
+                const finalAngle = baseAngle + angleOffset;
+
+                // Fire to the point at the target's distance with spread angle
+                const tX = this.x + Math.cos(finalAngle) * dist;
+                const tY = this.y + Math.sin(finalAngle) * dist;
+
+                this.scene.projectileManager.fire(
+                    this.x, this.y, tX, tY,
+                    this.atk, 'archer', false, this.targetGroup, this
+                );
+            });
         }
 
         return true;

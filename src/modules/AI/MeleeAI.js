@@ -143,6 +143,7 @@ export default function applyMeleeAI(agent, targetListGetter, initialState = 'AG
             if (target.takeDamage) {
                 // Pass a so the kill is attributed correctly and Miss works
                 target.takeDamage(damage, a);
+                if (a.onHitDealt) a.onHitDealt(target, damage);
             }
         }
 
