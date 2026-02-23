@@ -144,6 +144,14 @@ export default class UltimateManager {
             spriteKey = 'leona_cutscene';
             scale = 1.0;
             yOffset = height - 200;
+        } else if (unit.characterId === 'silvi') {
+            spriteKey = 'silvi_cutscene';
+            scale = 1.0;
+            yOffset = height - 200;
+        } else if (unit.characterId === 'ella') {
+            spriteKey = 'ella_cutscene';
+            scale = 1.0;
+            yOffset = height - 200;
         } else if (unit.characterId === 'boon') {
             spriteKey = 'boon_cutscene';
             scale = 1.0;

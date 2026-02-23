@@ -9,6 +9,7 @@ import TacticalCommand from '../Skills/TacticalCommand.js';
 import ElectricGrenade from '../Skills/ElectricGrenade.js';
 import PlaceholderSkill from '../Skills/PlaceholderSkill.js';
 import CarpetBombing from '../Skills/CarpetBombing.js';
+import FatesString from '../Skills/FatesString.js';
 
 /**
  * Archer.js
@@ -54,6 +55,8 @@ export default class Archer extends Mercenary {
         // Initialize Ultimate Skill
         if (this.characterId === 'leona') {
             this.ultimateSkill = new CarpetBombing(this);
+        } else if (this.characterId === 'ella') {
+            this.ultimateSkill = new FatesString(this);
         }
 
         this.initAI();

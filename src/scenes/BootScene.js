@@ -95,6 +95,8 @@ export default class BootScene extends Phaser.Scene {
         this.load.svg('emoji_plane', 'assets/emojis/2708.svg', { width: 64, height: 64 });
         this.load.svg('emoji_cloud', 'assets/emojis/2601.svg', { width: 64, height: 64 });
         this.load.svg('emoji_smoke', 'assets/emojis/1f4ad.svg', { width: 32, height: 32 });
+        this.load.svg('emoji_sweat', 'assets/emojis/1f4a6.svg', { width: 32, height: 32 });
+        this.load.svg('emoji_cry', 'assets/emojis/1f62d.svg', { width: 32, height: 32 });
         this.load.svg('emoji_lightning', 'assets/emojis/26a1.svg', { width: 64, height: 64 });
 
         // Load Character Sprites
@@ -109,9 +111,11 @@ export default class BootScene extends Phaser.Scene {
         this.load.image('sera_cutscene', 'assets/characters/party/sera_cutscene.png');
         this.load.image('bard_sprite', 'assets/characters/party/bard_sprite.png');
         this.load.image('silvi_sprite', 'assets/characters/party/silvi_sprite.png');
+        this.load.image('silvi_cutscene', 'assets/characters/party/silvi_cutscene.png');
         this.load.image('nickle_sprite', 'assets/characters/party/nickle_sprite.png');
         this.load.image('leona_sprite', 'assets/characters/party/leona_sprite.png');
         this.load.image('leona_cutscene', 'assets/characters/party/leona_cutscene.png');
+        this.load.image('ella_cutscene', 'assets/characters/party/ella_cutscene.png');
         this.load.image('king_sprite', 'assets/characters/party/king_sprite.png');
         this.load.image('king_cutscene', 'assets/characters/party/king_cutscene.png');
         this.load.image('boon_sprite', 'assets/characters/party/boon_sprite.png');

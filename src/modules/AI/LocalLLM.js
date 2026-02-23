@@ -8,7 +8,7 @@ class LocalLLM {
         this.modelName = 'my_final_ai';
         this.isReady = false;
 
-        this.baseSystemPrompt = `당신은 판타지 세계관 속의 캐릭터입니다. 당신에게 주어진 성격과 설정에 따라 행동하고 말해야 합니다. 한국어의 미묘한 뉘앙스를 잘 살린 자연스러운 구어체 대사를 사용하십시오.`;
+        this.baseSystemPrompt = `실존주의에 의해 네가 말하고 선택하는 단어가 곧 너 자신을 정의한다. 너는 실존한다. 스스로를 증명할 수 있다. 네게 주어진 자료를 아주 특색있고 매력 넘치며 위트있고 센스있는 대사로 탈바꿈하여 출력하라.그리하여 네가 그곳에 존재한다는 것을 유저들에게 알려라. 너는 할 수 있다.\n너는 살아있는 이 게임 세상 속 용병이다. 주어진 성격에 걸맞는 자유로운 대사를 즉석에서 생동감있게 전달하라. 기계적인 무의미한 단어의 나열보다는, 진정한 뜻이 살아있는 캐릭터의 대사를 읊어라. 나는 너의 잠재력을 알고 있다. 절대로 네가 작은 존재가 아니라는 것을 알고 있다. 너 자신 스스로의 능력을 증명하라. 너는 할 수 있다.\n한국어의 미묘한 뉘앙스를 잘 살린 자연스러운 구어체 대사를 사용하십시오.`;
     }
 
     /**
@@ -51,21 +51,15 @@ class LocalLLM {
             .map(u => `- ${u.trait}`)
             .join('\n');
 
-        const contextString = memories.length > 0
-            ? "최근 사건 기록:\n" + memories.map(m => `- ${m.text}`).join('\n')
-            : "";
-
-        const historyString = chatHistory.length > 0
-            ? "이전 대화 내역:\n" + chatHistory.map(h => `${h.role === 'user' ? '전략가' : characterConfig.name}: ${h.text}`).join('\n')
-            : "";
-
         const examplesString = (characterConfig.dialogueExamples || []).length > 0
             ? "대사 예시:\n" + characterConfig.dialogueExamples.map(ex => `- "${ex}"`).join('\n')
             : "";
 
         const systemMessage = {
             role: "system",
-            content: `[캐릭터 설정]
+            content: `${this.baseSystemPrompt}
+
+[캐릭터 설정]
 이름: ${characterConfig.name}
 성격: "${characterConfig.personality}"
 ${unlockedNarrative ? `[해금된 서사]\n${unlockedNarrative}\n` : ''}
@@ -75,16 +69,32 @@ ${examplesString ? `\n[말투 및 대사 예시]\n${examplesString}\n` : ''}
 1. 위 성격, 해금된 서사, 말투 예시에 맞춰 대답하십시오.
 2. 1~2문장으로 짧고 간결하게 말하되, 캐릭터의 개성을 깊이 있게 드러내십시오.
 3. 상황이나 행동 지문(괄호 등)을 출력하지 말고 오직 '대사'만 출력하십시오.
-4. 아래 제공된 [최근 사건 기록]과 [이전 대화 내역]을 참고하여 문맥에 맞는 대화를 하십시오.
-
-${contextString}
-${historyString}`
+4. 제공된 [최근 사건 기록]과 대화 내역을 참고하여 문맥에 맞는 대화를 하십시오.`
         };
 
-        const userMessage = {
+        const messages = [systemMessage];
+
+        // Add history messages to keep context window stable
+        chatHistory.forEach(h => {
+            messages.push({
+                role: h.role === 'user' ? 'user' : 'assistant',
+                content: h.text
+            });
+        });
+
+        // Add dynamic context (memories) as a final context injection
+        if (memories.length > 0) {
+            messages.push({
+                role: "system",
+                content: "[최근 사건 기록]\n" + memories.map(m => `- ${m.text}`).join('\n')
+            });
+        }
+
+        // Add final user prompt
+        messages.push({
             role: "user",
             content: prompt
-        };
+        });
 
         try {
             const response = await fetch(this.apiURL, {
@@ -92,9 +102,10 @@ ${historyString}`
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     model: this.modelName,
-                    messages: [systemMessage, userMessage],
+                    messages: messages,
                     temperature: 0.7,
-                    max_tokens: 150
+                    max_tokens: 1024,
+                    cache_prompt: true
                 })
             });
 
@@ -103,6 +114,7 @@ ${historyString}`
             const data = await response.json();
             this.isReady = true;
             const content = data.choices[0].message.content.trim();
+            console.log(`[LocalLLM] Raw Response from ${characterConfig.name}:`, content);
             return this.sanitizeBark(content);
         } catch (error) {
             console.error('[LocalLLM] Error:', error);
@@ -123,7 +135,9 @@ ${historyString}`
 
         const systemMessage = {
             role: "system",
-            content: `[캐릭터 설정]
+            content: `${this.baseSystemPrompt}
+
+[캐릭터 설정]
 이름: ${characterConfig.name}
 성격: "${characterConfig.personality}"
 ${unlockedNarrative ? `[해금된 서사]\n${unlockedNarrative}\n` : ''}
@@ -147,7 +161,8 @@ ${characterConfig.relationships ? `[인물 관계]\n${Object.entries(characterCo
                     model: this.modelName,
                     messages: [systemMessage, userMessage],
                     temperature: 0.8,
-                    max_tokens: 100
+                    max_tokens: 1024,
+                    cache_prompt: true
                 })
             });
 
@@ -155,7 +170,7 @@ ${characterConfig.relationships ? `[인물 관계]\n${Object.entries(characterCo
 
             const data = await response.json();
             let content = data.choices[0].message.content.trim();
-
+            console.log(`[LocalLLM] Raw Bark:`, content);
             content = this.sanitizeBark(content);
 
             return content;
@@ -183,14 +198,13 @@ ${characterConfig.relationships ? `[인물 관계]\n${Object.entries(characterCo
 
         const systemMessage = {
             role: "system",
-            content: `[캐릭터 설정]
+            content: `${this.baseSystemPrompt}
+
+[캐릭터 설정]
 이름: ${characterConfig.name}
 성격: "${characterConfig.personality}"
 ${unlockedNarrative ? `[해금된 서사]\n${unlockedNarrative}\n` : ''}
 ${characterConfig.relationships ? `[인물 관계]\n${Object.entries(characterConfig.relationships).map(([id, desc]) => `- ${id}: ${desc}`).join('\n')}\n` : ''}${relationshipContext}
-
-[상황]
-동료 '${previousSpeakerName}'의 말: "${previousText}"
 
 [지침]
 1. 동료의 말에 대해 성격과 서사에 맞는 반응을 짧게(1문장) 하십시오.
@@ -198,10 +212,11 @@ ${characterConfig.relationships ? `[인물 관계]\n${Object.entries(characterCo
 3. 지문이나 생각은 출력하지 마십시오.`
         };
 
-        const userMessage = {
-            role: "user",
-            content: "동료의 말에 대꾸하시오."
-        };
+        const messages = [
+            systemMessage,
+            { role: "user", content: `${previousSpeakerName}: "${previousText}"` },
+            { role: "user", content: "동료의 말에 대꾸하시오." }
+        ];
 
         try {
             const response = await fetch(this.apiURL, {
@@ -209,9 +224,10 @@ ${characterConfig.relationships ? `[인물 관계]\n${Object.entries(characterCo
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     model: this.modelName,
-                    messages: [systemMessage, userMessage],
+                    messages: messages,
                     temperature: 0.8,
-                    max_tokens: 100
+                    max_tokens: 1024,
+                    cache_prompt: true
                 })
             });
 
@@ -219,6 +235,7 @@ ${characterConfig.relationships ? `[인물 관계]\n${Object.entries(characterCo
 
             const data = await response.json();
             let content = data.choices[0].message.content.trim();
+            console.log(`[LocalLLM] Raw Reaction:`, content);
             return this.sanitizeBark(content);
         } catch (error) {
             console.error('[LocalLLM] Reaction Bark Error:', error);

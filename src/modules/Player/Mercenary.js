@@ -292,7 +292,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
 
         // Gain gauge when hit (unless it's an ultimate)
         if (!isUltimate) {
-            this.gainUltGauge(5);
+            this.gainUltGauge(1);
         }
 
         const attackerId = (attacker && typeof attacker === 'object') ? (attacker.id || attacker.className) : attacker;
@@ -371,7 +371,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
 
         // Gain gauge when hit by magic (unless it's an ultimate)
         if (!isUltimate) {
-            this.gainUltGauge(5);
+            this.gainUltGauge(1);
         }
 
         this.updateHealthBar();

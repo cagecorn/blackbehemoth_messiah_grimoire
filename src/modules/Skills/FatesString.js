@@ -1,0 +1,200 @@
+import Phaser from 'phaser';
+
+/**
+ * FatesString.js
+ * Ella's Ultimate: "Fate's String" (운명의 끈)
+ * 1. Gather energy (visual particles)
+ * 2. Fire an initial horizontal red trajectory.
+ * 3. Generate crisscrossing red trajectories that damage enemies.
+ */
+export default class FatesString {
+    constructor(caster) {
+        this.caster = caster;
+        this.scene = caster.scene;
+        this.name = '운명의 끈';
+        this.nameEng = "Fate's String";
+        this.damageMultiplier = 3.0; // Total damage multiplier per strike
+    }
+
+    async execute(scene, caster) {
+        if (!caster || !caster.active) return;
+        if (!scene.ultimateManager) return;
+
+        console.log(`[FatesString] Executing ultimate for ${caster.unitName}`);
+
+        // 1. Play dramatic cutscene
+        await scene.ultimateManager.playCutscene(caster, this.name);
+
+        caster.isStunned = true; // Block actions during sequence
+
+        // 2. Energy Gathering Phase
+        await this.gatherEnergy(scene, caster);
+
+        // 3. Initial Shot
+        await this.fireInitialShot(scene, caster);
+
+        // 4. Fate's Crisscross Phase
+        await this.executeCrisscross(scene, caster);
+
+        caster.isStunned = false;
+    }
+
+    async gatherEnergy(scene, caster) {
+        // Create red/magenta particles around Ella
+        const particles = scene.add.particles(caster.x, caster.y, 'emoji_sparkle', {
+            speed: { min: -100, max: 100 },
+            scale: { start: 1, end: 0 },
+            alpha: { start: 1, end: 0 },
+            lifespan: 800,
+            gravityY: 0,
+            quantity: 2,
+            tint: 0xff0055,
+            blendMode: 'ADD'
+        });
+
+        // Pull them towards the center (simple simulation)
+        scene.tweens.add({
+            targets: particles,
+            x: caster.x,
+            y: caster.y,
+            duration: 1000
+        });
+
+        // Scale Ella up slightly
+        scene.tweens.add({
+            targets: caster.sprite,
+            scaleX: caster.sprite.scaleX * 1.2,
+            scaleY: caster.sprite.scaleY * 1.2,
+            duration: 500,
+            yoyo: true,
+            ease: 'Back.easeIn'
+        });
+
+        await new Promise(resolve => scene.time.delayedCall(1000, () => {
+            particles.destroy();
+            resolve();
+        }));
+    }
+
+    async fireInitialShot(scene, caster) {
+        const startX = caster.x;
+        const startY = caster.y;
+
+        // Initial shot goes horizontally across the screen
+        const direction = (caster.sprite.scaleX > 0) ? -1 : 1;
+        const endX = direction === -1 ? -100 : scene.cameras.main.width + 100;
+        const endY = startY;
+
+        this.createTrajectoryLine(scene, startX, startY, endX, endY, 600);
+        this.applyLineDamage(scene, caster, startX, startY, endX, endY);
+
+        await new Promise(resolve => scene.time.delayedCall(300, resolve));
+    }
+
+    async executeCrisscross(scene, caster) {
+        const width = scene.cameras.main.width;
+        const height = scene.cameras.main.height;
+
+        // Number of lines
+        const lineCount = 8;
+
+        for (let i = 0; i < lineCount; i++) {
+            // Pick random start and end points on edges
+            let startX, startY, endX, endY;
+
+            const side = Phaser.Math.Between(0, 3); // 0:Left, 1:Right, 2:Top, 3:Bottom
+            if (side === 0) { startX = -50; startY = Phaser.Math.Between(0, height); }
+            else if (side === 1) { startX = width + 50; startY = Phaser.Math.Between(0, height); }
+            else if (side === 2) { startX = Phaser.Math.Between(0, width); startY = -50; }
+            else { startX = Phaser.Math.Between(0, width); startY = height + 50; }
+
+            const oppositeSide = (side + 2) % 4; // Roughly opposite
+            if (oppositeSide === 0) { endX = -50; endY = Phaser.Math.Between(0, height); }
+            else if (oppositeSide === 1) { endX = width + 50; endY = Phaser.Math.Between(0, height); }
+            else if (oppositeSide === 2) { endX = Phaser.Math.Between(0, width); endY = -50; }
+            else { endX = Phaser.Math.Between(0, width); endY = height + 50; }
+
+            // Stagger the lines
+            scene.time.delayedCall(i * 150, () => {
+                this.createTrajectoryLine(scene, startX, startY, endX, endY, 400);
+                this.applyLineDamage(scene, caster, startX, startY, endX, endY);
+                scene.cameras.main.shake(100, 0.005);
+            });
+        }
+
+        await new Promise(resolve => scene.time.delayedCall(lineCount * 150 + 500, resolve));
+    }
+
+    createTrajectoryLine(scene, x1, y1, x2, y2, duration) {
+        const graphics = scene.add.graphics().setDepth(100);
+
+        // Core line
+        graphics.lineStyle(2, 0xffffff, 1);
+        graphics.beginPath();
+        graphics.moveTo(x1, y1);
+        graphics.lineTo(x2, y2);
+        graphics.strokePath();
+
+        // Glow line
+        graphics.lineStyle(8, 0xff0000, 0.6);
+        graphics.beginPath();
+        graphics.moveTo(x1, y1);
+        graphics.lineTo(x2, y2);
+        graphics.strokePath();
+
+        scene.tweens.add({
+            targets: graphics,
+            alpha: 0,
+            duration: duration,
+            ease: 'Expo.easeOut',
+            onComplete: () => graphics.destroy()
+        });
+
+        // Add some "string" particles along the way if possible
+    }
+
+    applyLineDamage(scene, caster, x1, y1, x2, y2) {
+        const targets = caster.targetGroup.getChildren().filter(e => e.active && e.hp > 0);
+        const damage = caster.getTotalAtk() * this.damageMultiplier;
+
+        targets.forEach(target => {
+            // Simple distance from point to line segment check
+            const dist = this.getPointLineDistance(target.x, target.y, x1, y1, x2, y2);
+            if (dist < 40) { // Hitbox width
+                target.takeDamage(damage, caster, true);
+                if (scene.fxManager && scene.fxManager.createImpactEffect) {
+                    scene.fxManager.createImpactEffect(target.x, target.y);
+                }
+            }
+        });
+    }
+
+    getPointLineDistance(px, py, x1, y1, x2, y2) {
+        const A = px - x1;
+        const B = py - y1;
+        const C = x2 - x1;
+        const D = y2 - y1;
+
+        const dot = A * C + B * D;
+        const len_sq = C * C + D * D;
+        let param = -1;
+        if (len_sq !== 0) param = dot / len_sq;
+
+        let xx, yy;
+
+        if (param < 0) {
+            xx = x1;
+            yy = y1;
+        } else if (param > 1) {
+            xx = x2;
+            yy = y2;
+        } else {
+            xx = x1 + param * C;
+            yy = y1 + param * D;
+        }
+
+        const dx = px - xx;
+        const dy = py - yy;
+        return Math.sqrt(dx * dx + dy * dy);
+    }
+}
