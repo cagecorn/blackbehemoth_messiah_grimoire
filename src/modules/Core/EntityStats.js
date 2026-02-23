@@ -316,6 +316,8 @@ export const Characters = {
         skillName: 'BloodRage',
         skillEmoji: '🩸',
         skillDescription: '5초간 공격력/이동속도/공격속도를 50% 증가시키고, 피해량의 35%를 체력으로 흡수합니다. (재사용 대기시간 12초)',
+        ultimateName: '헬 다이브',
+        ultimateDescription: '공중 도약 후 지면을 강타하며 미끄러집니다. 공격력의 3.0배 피해 + 잃은 체력 비례 추가 피해(계수 0.3)를 입히고 블러드 레이지를 즉시 재시전합니다. (CC 없음)',
         // Aggressive attacker: high atk/crit, lower def/hp
         maxHp: 100,
         hp: 100,
