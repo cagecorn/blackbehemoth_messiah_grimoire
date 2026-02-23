@@ -316,6 +316,8 @@ export const Characters = {
         skillName: 'BloodRage',
         skillEmoji: '🩸',
         skillDescription: '5초간 공격력/이동속도/공격속도를 50% 증가시키고, 피해량의 35%를 체력으로 흡수합니다. (재사용 대기시간 12초)',
+        ultimateName: '마젠타 드라이브',
+        ultimateDescription: '전방으로 돌진하며 적들을 베고, 잃은 체력 비례 피해를 입힙니다. 사용 후 [블러드 레이지] 쿨타임을 초기화하고 즉시 시전합니다.',
         // Aggressive attacker: high atk/crit, lower def/hp
         maxHp: 100,
         hp: 100,
