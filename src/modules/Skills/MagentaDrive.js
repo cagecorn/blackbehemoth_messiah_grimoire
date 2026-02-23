@@ -23,27 +23,54 @@ export default class MagentaDrive {
         const startX = caster.x;
         const startY = caster.y;
 
-        // Direction:
-        // Mercenary.js logic: scaleX > 0 (1) is LEFT (-X), scaleX < 0 (-1) is RIGHT (+X).
         const directionX = (caster.sprite.scaleX > 0) ? -1 : 1;
-        const dashDistance = 800; // Screen width-ish coverage
+
+        // Dash distance covers the entire screen width roughly mapped locally
+        const dashDistance = scene.cameras.main.width + 200;
         const targetX = startX + (directionX * dashDistance);
 
-        // Ensure targetX is within world bounds (optional, but good for camera/physics)
-        // const clampedTargetX = Phaser.Math.Clamp(targetX, 0, scene.physics.world.bounds.width);
-        // Actually, for an ultimate, going off-screen is fine visually, usually snaps back or handles itself.
+        // Darken screen for dramatic wind-up
+        const darkenRect = scene.add.rectangle(0, 0, scene.cameras.main.width, scene.cameras.main.height, 0x000000, 0.7);
+        darkenRect.setOrigin(0, 0).setDepth(99);
+        darkenRect.setScrollFactor(0);
 
-        const dashDuration = 200; // Fast dash
+        // Dramatic pause (Wind-up): scale down slightly as if charging
+        const originalScaleX = caster.sprite.scaleX;
+        const originalScaleY = caster.sprite.scaleY;
+        caster.sprite.setTint(0xff0000);
 
-        // 3. Dash Phase
+        scene.tweens.add({
+            targets: caster.sprite,
+            scaleY: originalScaleY * 0.8,
+            duration: 300,
+            ease: 'Sine.easeOut'
+        });
+
+        await new Promise(resolve => scene.time.delayedCall(300, resolve));
+
+        // Remove darkness
+        darkenRect.destroy();
+
+        // 3. Dash Phase - King rushing horizontally
+        const dashDuration = 120; // VERY Fast dash
+
+        // Add wind lines or stretch the sprite for motion blur
+        caster.sprite.scaleX = originalScaleX * 1.5; // Stretch horizontally
+        caster.sprite.scaleY = originalScaleY * 0.6; // Squish vertically
+
+        const slashY = startY - 40; // Adjust closer to center body
+
+        // 4. Visuals: Red Beam Splitting the Screen & Blood
+        // Run AT THE SAME TIME as the dash
+        this.createVisuals(scene, startX, slashY, targetX, slashY, directionX);
+
         await new Promise(resolve => {
-            // Afterimages for speed effect
             const timer = scene.time.addEvent({
-                delay: 20,
-                repeat: 8,
+                delay: 10,
+                repeat: 12,
                 callback: () => {
                     if (scene.fxManager && scene.fxManager.createAfterimage) {
-                        scene.fxManager.createAfterimage(caster, 300, 0.6);
+                        scene.fxManager.createAfterimage(caster, 400, 0.8, 0xff0000); // Red tinted afterimage
                     }
                 }
             });
@@ -52,32 +79,24 @@ export default class MagentaDrive {
                 targets: caster,
                 x: targetX,
                 duration: dashDuration,
-                ease: 'Quad.easeOut',
+                ease: 'Cubic.easeIn',
                 onComplete: () => {
                     timer.remove();
+                    caster.sprite.scaleX = originalScaleX; // Restore scale
+                    caster.sprite.scaleY = originalScaleY;
+                    caster.sprite.clearTint();
                     resolve();
                 }
             });
         });
 
-        // 4. Visuals: Red Slash Line & Blood
-        this.createVisuals(scene, startX, startY, targetX, caster.y);
-
         // 5. Mechanics: Deal Damage
-        this.applyDamage(scene, caster, startX, startY, targetX, caster.y);
+        this.applyDamage(scene, caster, startX, slashY, targetX, slashY);
 
         // 6. Blood Rage Refresh & Cast
-        // Check if caster has BloodRage skill
-        // Accessing the skill instance. We assume caster.skill is the assigned skill.
         if (caster.skill && (caster.skill.id === 'blood_rage' || caster.skill.name === '블러드 레이지')) {
-            console.log(`[MagentaDrive] Refreshing Blood Rage for ${caster.unitName}`);
-
-            // Reset Cooldown
             caster.skill.lastCastTime = 0;
-
-            // Execute Immediately
             caster.skill.execute(caster);
-
             if (scene.fxManager) {
                 scene.fxManager.showDamageText(caster, 'BLOOD RAGE!', '#ff0000');
             }
@@ -86,91 +105,126 @@ export default class MagentaDrive {
         caster.isStunned = false;
     }
 
-    createVisuals(scene, x1, y1, x2, y2) {
-        // A. Red Slash Line (Graphics)
+    createVisuals(scene, x1, y1, x2, y2, directionX) {
+        // A. Red Slash Line (Screen Splitting Red Beam)
+        // We want a very thick red line + a bright white core
         const graphics = scene.add.graphics();
-        graphics.lineStyle(40, 0xff0000, 1);
+
+        // Use exact dash trajectory instead of extending infinitely
+        const startExt = x1;
+        const endExt = x2;
+
+        // Outer Glow (Thick Red)
+        graphics.lineStyle(60, 0xaa0000, 0.6);
         graphics.beginPath();
-        graphics.moveTo(x1, y1 - 30); // Offset slightly to center on body
-        graphics.lineTo(x2, y2 - 30);
+        graphics.moveTo(startExt, y1);
+        graphics.lineTo(endExt, y2);
         graphics.strokePath();
+
+        // Inner Beam (Bright Red/Magenta)
+        graphics.lineStyle(20, 0xff0055, 1);
+        graphics.beginPath();
+        graphics.moveTo(startExt, y1);
+        graphics.lineTo(endExt, y2);
+        graphics.strokePath();
+
+        // Core Beam (White)
+        graphics.lineStyle(6, 0xffffff, 1);
+        graphics.beginPath();
+        graphics.moveTo(startExt, y1);
+        graphics.lineTo(endExt, y2);
+        graphics.strokePath();
+
         graphics.setDepth(100);
 
-        // Fade out the line
+        // Screen Flash (White)
+        const flash = scene.add.rectangle(0, 0, scene.cameras.main.width, scene.cameras.main.height, 0xffffff, 1);
+        flash.setOrigin(0, 0).setDepth(200);
+        flash.setScrollFactor(0);
+
+        scene.tweens.add({
+            targets: flash,
+            alpha: 0,
+            duration: 150,
+            onComplete: () => flash.destroy()
+        });
+
+        // Fade out the slash line dramatically
         scene.tweens.add({
             targets: graphics,
             alpha: 0,
-            scaleY: 0.1,
-            duration: 600,
-            ease: 'Quad.easeOut',
+            scaleY: 3, // Expand vertically as it fades
+            y: y1 - (y1 * 3 - y1), // Keep centered
+            duration: 500,
+            ease: 'Expo.easeOut',
             onComplete: () => graphics.destroy()
         });
 
         // B. Blood Particle Explosion along the path
+        // Violent bursting blood drop emojis jumping from the aura
         const dist = Phaser.Math.Distance.Between(x1, y1, x2, y2);
-        const steps = Math.ceil(dist / 40); // One burst every 40px
+        const steps = Math.ceil(dist / 30);
         const dx = (x2 - x1) / steps;
 
         for (let i = 0; i <= steps; i++) {
             const px = x1 + dx * i;
-            const py = y1 - 30;
+            const py = y1;
 
-            // Create a burst of blood drops
             const emitter = scene.add.particles(px, py, 'emoji_blood_drop', {
-                speed: { min: 50, max: 250 },
-                angle: { min: 0, max: 360 },
-                scale: { start: 0.5, end: 0 },
+                speed: { min: 300, max: 900 }, // Super fast
+                angle: { min: -150, max: -30 }, // Burst violently upwards
+                scale: { start: 0.8, end: 0.1 },
                 alpha: { start: 1, end: 0 },
-                lifespan: 800,
-                gravityY: 400,
-                quantity: 2, // 2 particles per step
-                emitting: false
+                lifespan: { min: 400, max: 800 },
+                gravityY: 1800, // Heavy gravity so they arc back down hard
+                quantity: 4,
+                rotate: { min: 0, max: 360 }, // Spin the emojis
+                emitting: false,
+                blendMode: 'NORMAL'
             });
-            emitter.explode(2);
+            emitter.explode(4);
 
-            // Cleanup emitter
             scene.time.delayedCall(1000, () => emitter.destroy());
         }
     }
 
     applyDamage(scene, caster, x1, y1, x2, y2) {
         // Hitbox: Rectangle covering the dash path
-        const minX = Math.min(x1, x2);
-        const maxX = Math.max(x1, x2);
-        const minY = y1 - 60;
-        const maxY = y1 + 60;
+        const minX = Math.min(x1, x2) - 1000; // expanded hitbox to catch everything in the slice
+        const maxX = Math.max(x1, x2) + 1000;
+        const minY = y1 - 100;
+        const maxY = y1 + 100;
 
         const targets = caster.targetGroup.getChildren().filter(e => e.active && e.hp > 0);
         let hitCount = 0;
 
         targets.forEach(target => {
-            // Check intersection (Simple AABB)
             if (target.x >= minX && target.x <= maxX &&
                 target.y >= minY && target.y <= maxY) {
 
-                // Damage Logic
-                // 1. Base Damage: 3.5x Total Attack
                 const baseDmg = caster.getTotalAtk() * 3.5;
-
-                // 2. Execution Damage: 20% of Missing HP
                 const missingHp = target.maxHp - target.hp;
                 const executeDmg = missingHp * 0.20;
-
                 const totalDmg = baseDmg + executeDmg;
 
-                // Apply Damage (isUltimate = true)
                 target.takeDamage(totalDmg, caster, true);
                 hitCount++;
 
-                // Visual Feedback on Hit
                 if (scene.fxManager) {
                     scene.fxManager.showDamageText(target, `CRITICAL!`, '#ff0000');
+                    // Spark effect if available
+                    if (scene.fxManager.createImpactEffect) {
+                        scene.fxManager.createImpactEffect(target.x, target.y);
+                    }
                 }
             }
         });
 
+        // Massive camera shake if hit
         if (hitCount > 0) {
-            scene.cameras.main.shake(200, 0.01);
+            scene.cameras.main.shake(350, 0.035);
+        } else {
+            scene.cameras.main.shake(150, 0.015); // Powerful slash shakes screen even on miss
         }
     }
 }

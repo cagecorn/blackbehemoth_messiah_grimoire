@@ -252,6 +252,56 @@ export default class CCManager {
         });
     }
 
+    /**
+     * Applies a Burn effect to the target.
+     * @param {Phaser.GameObjects.Container} target - The entity to be affected
+     * @param {number} duration - How long the effect lasts in ms
+     */
+    applyBurn(target, duration = 5000) {
+        if (!target || !target.active || target.hp <= 0) return;
+
+        console.log(`[CCManager] Applying Burn to ${target.unitName}...`);
+
+        // Handle existing burn status (refresh)
+        if (target.isBurning) {
+            if (target._burnCleanupTimer) target._burnCleanupTimer.remove();
+            if (target._burnEmitter) target._burnEmitter.destroy();
+            target.isBurning = false;
+        }
+
+        target.isBurning = true;
+        if (target.syncStatusUI) target.syncStatusUI();
+
+        // 1. Reddish/Orange Tint
+        target.sprite.setTint(0xffaa88);
+
+        // 2. Fire Particle Effect
+        target._burnEmitter = this.scene.add.particles(0, 0, 'emoji_fire', {
+            speed: { min: 20, max: 60 },
+            angle: { min: -110, max: -70 },
+            scale: { start: 0.4, end: 0.8 },
+            alpha: { start: 0.8, end: 0 },
+            lifespan: 800,
+            frequency: 150,
+            follow: target,
+            followOffset: { x: 0, y: 10 }
+        });
+        target._burnEmitter.setDepth(3000);
+
+        // Timer to handle cleanup
+        target._burnCleanupTimer = this.scene.time.delayedCall(duration, () => {
+            if (target && target.active) {
+                target.isBurning = false;
+                if (target.sprite) target.sprite.clearTint();
+                if (target.syncStatusUI) target.syncStatusUI();
+            }
+            if (target._burnEmitter) target._burnEmitter.destroy();
+            target._burnCleanupTimer = null;
+            target._burnEmitter = null;
+            console.log(`[CCManager] Burn expired for ${target.unitName}`);
+        });
+    }
+
     update(time, delta) {
         // Future expansion: we can track buffs/debuffs tick-by-tick here if needed
     }

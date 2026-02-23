@@ -8,6 +8,7 @@ import KnockbackShot from '../Skills/KnockbackShot.js';
 import TacticalCommand from '../Skills/TacticalCommand.js';
 import ElectricGrenade from '../Skills/ElectricGrenade.js';
 import PlaceholderSkill from '../Skills/PlaceholderSkill.js';
+import CarpetBombing from '../Skills/CarpetBombing.js';
 
 /**
  * Archer.js
@@ -50,7 +51,18 @@ export default class Archer extends Mercenary {
             this.skill = new PlaceholderSkill();
         }
 
+        // Initialize Ultimate Skill
+        if (this.characterId === 'leona') {
+            this.ultimateSkill = new CarpetBombing(this);
+        }
+
         this.initAI();
+    }
+
+    executeUltimate() {
+        if (this.ultimateSkill) {
+            this.ultimateSkill.execute(this.scene, this);
+        }
     }
 
     getSkillProgress() {

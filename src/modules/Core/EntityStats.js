@@ -299,6 +299,8 @@ export const Characters = {
         skillName: 'ElectricGrenade',
         skillEmoji: '💣',
         skillDescription: '전기 수류탄을 던져 범위 내 적들에게 물리 공격력의 1.8배 피해를 입히고 3초간 감전(행동불능) 상태로 만듭니다. (재사용 대기시간 8초)',
+        ultimateName: '융단폭격',
+        ultimateDescription: '하늘에서 비행기들이 나타나 폭탄을 쏟아붓습니다. 광역 물리 피해를 입히고 6초간 화상(매초 2% 피해) 상태로 만듭니다.',
         atk: 18,
         personality: "생존주의자 밀덕(밀리터리 덕후). 약육강식을 신봉하며 감정을 배제하려 애쓴다. 무기 손질에 집착하며, 은근히 허당끼가 있어 함정을 피하려다 자기가 걸린다.",
         relationships: {

@@ -48,6 +48,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         this.isAirborne = false;
         this.isKnockedBack = false;
         this.isShocked = false;
+        this.isBurning = false;
 
         this.speed = config.speed || 100;
         this.atkRange = config.atkRange || 40;
@@ -398,6 +399,8 @@ export default class Mercenary extends Phaser.GameObjects.Container {
                 if (this.sprite) {
                     if (this.isShocked) {
                         this.sprite.setTint(0xffff00);
+                    } else if (this.isBurning) {
+                        this.sprite.setTint(0xffaa88);
                     } else {
                         this.sprite.clearTint();
                     }
@@ -579,6 +582,18 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             return;
         }
 
+        // Burn DOT: 2% Max HP per second
+        if (this.isBurning) {
+            const dotValue = (this.maxHp * 0.02) * (this.scene.game.loop.delta / 1000);
+            this.hp -= dotValue;
+            if (this.hp < 0) this.hp = 0;
+            this.updateHealthBar();
+
+            // Subtle damage text or omit to prevent spam? 
+            // Let's do it every 1s visually if needed, but for now just HP reduction.
+            if (this.hp <= 0) this.die();
+        }
+
         if (this.isAirborne || this.isStunned || this.isAsleep) {
             // Can't act while CC'd. Keep velocity at 0 unless knocked back (if applicable)
             this.body.setVelocity(0, 0);
@@ -686,6 +701,14 @@ export default class Mercenary extends Phaser.GameObjects.Container {
                 name: '수면 (Sleep)',
                 description: '잠들어서 행동할 수 없습니다. 피해를 입으면 깨어납니다.',
                 emoji: '💤',
+                category: 'status'
+            });
+        }
+        if (this.isBurning) {
+            statuses.push({
+                name: '화상 (Burn)',
+                description: '매초 최대 체력의 2%에 해당하는 피해를 입습니다.',
+                emoji: '🔥',
                 category: 'status'
             });
         }
