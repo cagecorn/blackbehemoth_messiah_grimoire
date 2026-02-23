@@ -117,12 +117,23 @@ export default class ChatChannel {
             </div>
             <div class="chat-skill-view" id="skill-${id}" style="display: none;">
                 <div class="skill-info-container">
-                    <div class="skill-header">
-                        <span class="skill-emoji">✨</span>
-                        <span class="skill-name">Skill Name</span>
+                    <div class="skill-section">
+                        <div class="skill-header">
+                            <span class="skill-emoji">✨</span>
+                            <span class="skill-name">Skill Name</span>
+                        </div>
+                        <div class="skill-description">
+                            Skill description goes here...
+                        </div>
                     </div>
-                    <div class="skill-description">
-                        Skill description goes here...
+                    <div class="skill-section ultimate">
+                        <div class="skill-header">
+                            <span class="skill-emoji">🌟</span>
+                            <span class="skill-name-ult">Ultimate Name</span>
+                        </div>
+                        <div class="skill-description-ult">
+                            Ultimate description goes here...
+                        </div>
                     </div>
                 </div>
             </div>
@@ -402,6 +413,20 @@ export default class ChatChannel {
         if (nameEl) nameEl.textContent = skillData.name || 'Unknown Skill';
         if (emojiEl) emojiEl.textContent = skillData.emoji || '💫';
         if (descEl) descEl.textContent = skillData.description || 'No description available.';
+
+        // Update Ultimate Info if provided
+        const ultNameEl = this.skillView.querySelector('.skill-name-ult');
+        const ultDescEl = this.skillView.querySelector('.skill-description-ult');
+
+        if (skillData.ultimateName) {
+            if (ultNameEl) ultNameEl.textContent = skillData.ultimateName;
+            if (ultDescEl) ultDescEl.textContent = skillData.ultimateDescription || '';
+
+            // Also update the toggle button tooltip
+            if (this.ultToggleBtn) {
+                this.ultToggleBtn.title = `궁극기: ${skillData.ultimateName}\n${skillData.ultimateDescription}`;
+            }
+        }
     }
 
     updatePerks(perkPoints, activatedPerks) {

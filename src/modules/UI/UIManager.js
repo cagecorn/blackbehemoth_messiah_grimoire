@@ -77,7 +77,9 @@ export default class UIManager {
                         {
                             name: charConfig.skillName,
                             emoji: charConfig.skillEmoji,
-                            description: charConfig.skillDescription
+                            description: charConfig.skillDescription,
+                            ultimateName: charConfig.ultimateName,
+                            ultimateDescription: charConfig.ultimateDescription
                         },
                         charConfig.narrativeUnlocks,
                         merc.characterId
@@ -104,7 +106,9 @@ export default class UIManager {
             channel.updateSkill({
                 name: charConfig.skillName,
                 emoji: charConfig.skillEmoji,
-                description: charConfig.skillDescription
+                description: charConfig.skillDescription,
+                ultimateName: charConfig.ultimateName,
+                ultimateDescription: charConfig.ultimateDescription
             });
 
             if (charConfig.narrativeUnlocks) {
@@ -150,7 +154,9 @@ export default class UIManager {
                 {
                     name: charConfig.skillName,
                     emoji: charConfig.skillEmoji,
-                    description: charConfig.skillDescription
+                    description: charConfig.skillDescription,
+                    ultimateName: charConfig.ultimateName,
+                    ultimateDescription: charConfig.ultimateDescription
                 },
                 charConfig.narrativeUnlocks,
                 characterId
