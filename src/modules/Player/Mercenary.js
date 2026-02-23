@@ -42,6 +42,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         this.bonusAtk = 0;
         this.bonusMAtk = 0;
         this.bonusDR = 0;
+        this.bonusCrit = 0;
         this.isTacticalCommandActive = false;
         this.isBloodRaging = false;
         this.isStunned = false;
@@ -221,6 +222,10 @@ export default class Mercenary extends Phaser.GameObjects.Container {
     getTotalMAtk() {
         const base = this.mAtk + this.bonusMAtk;
         return this.isTacticalCommandActive ? base * 1.5 : base;
+    }
+
+    getTotalCrit() {
+        return this.crit + (this.bonusCrit || 0);
     }
 
     /**
@@ -803,7 +808,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             castSpd: this.castSpd,
             acc: this.acc,
             eva: this.eva,
-            crit: this.crit,
+            crit: this.getTotalCrit(),
             perkPoints: this.perkPoints,
             activatedPerks: this.activatedPerks
         };

@@ -5,6 +5,7 @@ import Healer from '../modules/Player/Healer.js';
 import Wizard from '../modules/Player/Wizard.js';
 import Bao from '../modules/Player/Bao.js';
 import Bard from '../modules/Player/Bard.js';
+import Nana from '../modules/Player/Nana.js';
 import Nickle from '../modules/Player/Nickle.js';
 import BossGoblin from '../modules/AI/BossGoblin.js';
 import ProjectileManager from '../modules/Combat/ProjectileManager.js';
@@ -122,7 +123,11 @@ export default class RaidScene extends Phaser.Scene {
                     unit = new Wizard(this, x, y, playerLeader, charConfig);
                 }
             } else if (charConfig.classId === 'bard') {
-                unit = new Bard(this, x, y, playerLeader, charConfig);
+                if (charId === 'nana' || charConfig.characterId === 'nana') {
+                    unit = new Nana(this, x, y, playerLeader, charConfig);
+                } else {
+                    unit = new Bard(this, x, y, playerLeader, charConfig);
+                }
             }
 
             if (unit) this.mercenaries.add(unit);

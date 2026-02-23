@@ -70,8 +70,14 @@ export default class BarkManager {
         console.log(`[BarkManager] ${reactor.unitName} is reacting to ${prevSpeakerName}...`);
 
         try {
+            // Use instance personality if it differs from static config (for Nana)
+            const dynamicConfig = {
+                ...charConfig,
+                personality: reactor.personality || charConfig.personality,
+                dialogueExamples: reactor.dialogueExamples || charConfig.dialogueExamples
+            };
             // Pass level to generateReactionBark
-            const reactionText = await localLLM.generateReactionBark(charConfig, prevSpeakerName, prevText, prevSpeakerId, reactor.level || 1);
+            const reactionText = await localLLM.generateReactionBark(dynamicConfig, prevSpeakerName, prevText, prevSpeakerId, reactor.level || 1);
             if (reactionText) {
                 this.emitBarkEvent(reactor, reactionText);
 
@@ -134,7 +140,13 @@ export default class BarkManager {
 
         console.log(`[BarkManager] Primary bark: ${target.unitName} (LV ${target.level})`);
         try {
-            const barkText = await localLLM.generateBark(charConfig, target.level || 1);
+            // Use instance personality if it differs from static config (for Nana)
+            const dynamicConfig = {
+                ...charConfig,
+                personality: target.personality || charConfig.personality,
+                dialogueExamples: target.dialogueExamples || charConfig.dialogueExamples
+            };
+            const barkText = await localLLM.generateBark(dynamicConfig, target.level || 1);
             if (barkText) {
                 this.emitBarkEvent(target, barkText);
                 return barkText;

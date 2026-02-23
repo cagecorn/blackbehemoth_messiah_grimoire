@@ -97,7 +97,7 @@ export default class BootScene extends Phaser.Scene {
         this.load.svg('emoji_smoke', 'assets/emojis/1f4ad.svg', { width: 32, height: 32 });
         this.load.svg('emoji_sweat', 'assets/emojis/1f4a6.svg', { width: 32, height: 32 });
         this.load.svg('emoji_cry', 'assets/emojis/1f62d.svg', { width: 32, height: 32 });
-        this.load.svg('emoji_lightning', 'assets/emojis/26a1.svg', { width: 64, height: 64 });
+        this.load.svg('emoji_heart', 'assets/emojis/2764.svg', { width: 32, height: 32 });
 
         // Load Character Sprites
         this.load.image('warrior_sprite', 'assets/characters/party/warrior_sprite.png');
@@ -120,15 +120,17 @@ export default class BootScene extends Phaser.Scene {
         this.load.image('king_cutscene', 'assets/characters/party/king_cutscene.png');
         this.load.image('boon_sprite', 'assets/characters/party/boon_sprite.png');
         this.load.image('boon_cutscene', 'assets/characters/party/boon_cutscene.png');
-        this.load.image('boon_sprite', 'assets/characters/party/boon_sprite.png');
         this.load.image('goblin_boss_sprite', 'assets/characters/enemies/goblin_cutscene.png');
         this.load.image('goblin_sprite', 'assets/characters/enemies/goblin_sprite.png');
         this.load.image('guadian_angel_sprite', 'assets/characters/party/guadian_angel_sprite.png');
         this.load.image('siren_sprite', 'assets/characters/party/siren_sprite.png');
         this.load.image('lute_cutscene', 'assets/characters/party/lute_cutscene.png');
         this.load.image('bao_sprite', 'assets/characters/party/bao_sprite.png');
-        this.load.image('bao_cutscene', 'assets/characters/party/bao_cutscene.png');
+        this.load.image('bao_ cutscene', 'assets/characters/party/bao_cutscene.png');
         this.load.image('babao_sprite', 'assets/characters/party/babao_sprite.png');
+        this.load.image('nana_sprite', 'assets/characters/party/nana_sprite.png');
+        this.load.image('nana_cutscene', 'assets/characters/party/nana_cutscene.png');
+        this.load.image('nana_ultimate_sprite', 'assets/characters/party/nana_ultimate_sprite.png');
 
         // Load effect emojis
         this.load.svg('emoji_rock', 'assets/emojis/1f5ff.svg', { width: 32, height: 32 });

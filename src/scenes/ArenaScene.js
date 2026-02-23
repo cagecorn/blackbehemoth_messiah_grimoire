@@ -5,6 +5,7 @@ import Healer from '../modules/Player/Healer.js';
 import Wizard from '../modules/Player/Wizard.js';
 import Bao from '../modules/Player/Bao.js';
 import Bard from '../modules/Player/Bard.js';
+import Nana from '../modules/Player/Nana.js';
 import Nickle from '../modules/Player/Nickle.js';
 import ProjectileManager from '../modules/Combat/ProjectileManager.js';
 import ParticleManager from '../modules/Particles/ParticleManager.js';
@@ -187,7 +188,11 @@ export default class ArenaScene extends Phaser.Scene {
                 unit = new Wizard(this, x, y, leader, finalConfig);
             }
         } else if (classId === 'bard') {
-            unit = new Bard(this, x, y, leader, finalConfig);
+            if (config.id === 'nana' || config.characterId === 'nana') {
+                unit = new Nana(this, x, y, leader, finalConfig);
+            } else {
+                unit = new Bard(this, x, y, leader, finalConfig);
+            }
         }
 
         if (unit && unit.initAI) {

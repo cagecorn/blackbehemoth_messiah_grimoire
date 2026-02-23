@@ -250,7 +250,16 @@ export default class UIManager {
                 if (!channel.chatHistory) channel.chatHistory = [];
 
                 const memories = await embeddingGemma.searchMemory(text);
-                const response = await localLLM.generateResponse(charConfig, text, memories, channel.chatHistory, channel.lastLevel || 1);
+
+                // Construct a dynamic config if the unit exists in the scene
+                const unit = this.scene && this.scene.mercenaries ? this.scene.mercenaries.getChildren().find(m => m.id === agentId) : null;
+                const dynamicConfig = unit ? {
+                    ...charConfig,
+                    personality: unit.personality || charConfig.personality,
+                    dialogueExamples: unit.dialogueExamples || charConfig.dialogueExamples
+                } : charConfig;
+
+                const response = await localLLM.generateResponse(dynamicConfig, text, memories, channel.chatHistory, channel.lastLevel || 1);
 
                 this.addLog(agentId, `[${charName}] ${response}`, '#00ffcc');
 

@@ -38,6 +38,7 @@ export default class ChatChannel {
                 <select class="chat-name-select" id="select-${id}">
                     ${optionsHtml}
                 </select>
+                <span class="nameplate-buff-icon" id="nameplate-buff-${id}" style="display:none; font-size: 16px; margin-left: 4px;" title="나나의 음악 버프 활성화!">🎵</span>
                 <button class="ult-toggle-btn auto" id="ult-toggle-${id}" title="궁극기 사용 모드">AUTO</button>
                 <div class="header-toggles">
                     <button class="chat-dashboard-btn" id="dash-btn-${id}" title="메뉴 열기">⚙️</button>
@@ -331,7 +332,12 @@ export default class ChatChannel {
         this.statusContainer.innerHTML = '';
         this.buffContainer.innerHTML = '';
 
+        const nameplateBuffIcon = this.element.querySelector('.nameplate-buff-icon');
+        let hasNanaBuff = false;
+
         statuses.forEach(status => {
+            if (status.name.includes('NanaCrit')) hasNanaBuff = true;
+
             const span = document.createElement('span');
             span.className = 'status-icon tooltip';
             span.textContent = status.emoji;
@@ -352,6 +358,10 @@ export default class ChatChannel {
                 this.statusContainer.appendChild(span);
             }
         });
+
+        if (nameplateBuffIcon) {
+            nameplateBuffIcon.style.display = hasNanaBuff ? 'inline-block' : 'none';
+        }
     }
 
     updateEquipment(equipment) {
