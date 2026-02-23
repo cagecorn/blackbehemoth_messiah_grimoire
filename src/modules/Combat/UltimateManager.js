@@ -120,6 +120,10 @@ export default class UltimateManager {
             spriteKey = 'aren_cutscene';
             scale = 1.0;
             yOffset = height - 200;
+        } else if (unit.characterId === 'king') {
+            spriteKey = 'king_cutscene';
+            scale = 1.0;
+            yOffset = height - 200;
         } else if (unit.characterId === 'sera') {
             spriteKey = 'sera_cutscene';
             scale = 1.0;

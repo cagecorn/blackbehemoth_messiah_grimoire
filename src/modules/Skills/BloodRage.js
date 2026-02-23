@@ -37,14 +37,54 @@ export default class BloodRage {
         return this.getCooldownProgress(now, castSpd) >= 1;
     }
 
-    execute(caster, targetArray) {
+    cleanup(caster) {
+        if (!caster || !caster.active) return;
+
+        // Stop existing timer
+        if (caster.bloodRageTimer) {
+            caster.bloodRageTimer.remove(false);
+            caster.bloodRageTimer = null;
+        }
+
+        // Remove particle emitter
+        if (caster.bloodRageEmitter) {
+            caster.bloodRageEmitter.destroy();
+            caster.bloodRageEmitter = null;
+        }
+
+        // Revert stats if currently raging
+        if (caster.isBloodRaging && caster.bloodRageBuffs) {
+            const { bonusAtk, bonusSpeed, atkSpdReduction } = caster.bloodRageBuffs;
+            caster.bonusAtk -= bonusAtk;
+            caster.speed -= bonusSpeed;
+            caster.atkSpd += atkSpdReduction;
+
+            caster.isBloodRaging = false;
+            caster.bloodRageBuffs = null;
+
+            caster.sprite.clearTint();
+            if (caster.syncStatusUI) caster.syncStatusUI();
+            console.log(`[Skill] ${caster.unitName}'s Blood Rage cleanup completed.`);
+        }
+    }
+
+    execute(caster, targetArray, force = false) {
         if (!caster || !caster.active || caster.hp <= 0) return false;
 
         const now = this.scene.time.now;
-        if (!this.isReady(now, caster.castSpd)) return false;
 
-        // If already raging, do not recast
-        if (caster.isBloodRaging) return false;
+        if (!force && !this.isReady(now, caster.castSpd)) return false;
+
+        // If already raging
+        if (caster.isBloodRaging) {
+            if (force) {
+                // Force refresh: clean up old instance first
+                this.cleanup(caster);
+            } else {
+                // Normal cast: block if already active
+                return false;
+            }
+        }
 
         this.lastCastTime = now;
         console.log(`[Skill] ${caster.unitName} activates Blood Rage! (Atk+${this.atkBuffPercent * 100}%, Spd+${this.spdBuffPercent * 100}%, AtkSpd+${this.atkSpdBuffPercent * 100}%, +35% Lifesteal)`);
@@ -54,6 +94,13 @@ export default class BloodRage {
         const bonusSpeed = Math.floor(caster.speed * this.spdBuffPercent);
         // For atkSpd, a buff means decreasing the delay (smaller is faster)
         const atkSpdReduction = Math.floor(caster.atkSpd * this.atkSpdBuffPercent);
+
+        // Store buff values on caster for cleanup
+        caster.bloodRageBuffs = {
+            bonusAtk,
+            bonusSpeed,
+            atkSpdReduction
+        };
 
         // 2. Apply State Flags and Flat Buffs
         caster.isBloodRaging = true;
@@ -77,18 +124,13 @@ export default class BloodRage {
             followOffset: { x: 0, y: -20 } // Slightly above center
         });
 
+        // Store emitter
+        caster.bloodRageEmitter = emitter;
+
         // 4. Timer to Reverse Effects
-        this.scene.time.delayedCall(this.duration, () => {
-            if (caster && caster.active) {
-                caster.isBloodRaging = false;
-                caster.bonusAtk -= bonusAtk;
-                caster.speed -= bonusSpeed;
-                caster.atkSpd += atkSpdReduction;
-                caster.sprite.clearTint();
-                if (caster.syncStatusUI) caster.syncStatusUI();
-                console.log(`[Skill] ${caster.unitName}'s Blood Rage ended.`);
-            }
-            emitter.destroy();
+        // Store timer
+        caster.bloodRageTimer = this.scene.time.delayedCall(this.duration, () => {
+            this.cleanup(caster);
         });
 
         return true;
