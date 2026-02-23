@@ -9,6 +9,7 @@ import BloodRage from '../Skills/BloodRage.js';
 import HolyAura from '../Skills/HolyAura.js';
 import SkillMessiah from '../Skills/SkillMessiah.js';
 import MagentaDrive from '../Skills/MagentaDrive.js';
+import ProveExistence from '../Skills/ProveExistence.js';
 
 /**
  * Warrior.js
@@ -72,6 +73,8 @@ export default class Warrior extends Mercenary {
             this.ultimateSkill = new SkillMessiah();
         } else if (this.characterId === 'king') {
             this.ultimateSkill = new MagentaDrive();
+        } else if (this.characterId === 'boon') {
+            this.ultimateSkill = new ProveExistence(this);
         }
 
         console.log(`[Warrior] Initialized ${this.unitName} (${this.characterId}) with skill: ${this.skill ? this.skill.name || this.skill.constructor.name : 'NONE'}`);

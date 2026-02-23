@@ -95,6 +95,7 @@ export default class BootScene extends Phaser.Scene {
         this.load.svg('emoji_plane', 'assets/emojis/2708.svg', { width: 64, height: 64 });
         this.load.svg('emoji_cloud', 'assets/emojis/2601.svg', { width: 64, height: 64 });
         this.load.svg('emoji_smoke', 'assets/emojis/1f4ad.svg', { width: 32, height: 32 });
+        this.load.svg('emoji_lightning', 'assets/emojis/26a1.svg', { width: 64, height: 64 });
 
         // Load Character Sprites
         this.load.image('warrior_sprite', 'assets/characters/party/warrior_sprite.png');
@@ -113,6 +114,8 @@ export default class BootScene extends Phaser.Scene {
         this.load.image('leona_cutscene', 'assets/characters/party/leona_cutscene.png');
         this.load.image('king_sprite', 'assets/characters/party/king_sprite.png');
         this.load.image('king_cutscene', 'assets/characters/party/king_cutscene.png');
+        this.load.image('boon_sprite', 'assets/characters/party/boon_sprite.png');
+        this.load.image('boon_cutscene', 'assets/characters/party/boon_cutscene.png');
         this.load.image('boon_sprite', 'assets/characters/party/boon_sprite.png');
         this.load.image('goblin_boss_sprite', 'assets/characters/enemies/goblin_cutscene.png');
         this.load.image('goblin_sprite', 'assets/characters/enemies/goblin_sprite.png');

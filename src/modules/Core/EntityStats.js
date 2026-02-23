@@ -344,6 +344,8 @@ export const Characters = {
         skillName: 'HolyAura',
         skillEmoji: '✨',
         skillDescription: '5초간 주변에 치유의 오라를 생성하여 범위 내 아군을 매초 (5 + 마법 공격력의 50%)만큼 회복시킵니다. (재사용 대기시간 15초)',
+        ultimateName: '너의 존재를 증명하라!',
+        ultimateDescription: '자신과 똑같은 성스러운 분신을 소환합니다. 분신은 아군 서포터를 지키며 홀리 오라를 사용합니다. 분신이 존재할 때 다시 사용하면 번개로 적을 강타합니다.',
         maxHp: 120,
         hp: 120,
         atk: 8,
