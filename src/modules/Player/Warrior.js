@@ -8,7 +8,6 @@ import StoneSkin from '../Skills/StoneSkin.js';
 import BloodRage from '../Skills/BloodRage.js';
 import HolyAura from '../Skills/HolyAura.js';
 import SkillMessiah from '../Skills/SkillMessiah.js';
-import HellDive from '../Skills/HellDive.js';
 
 /**
  * Warrior.js
@@ -70,8 +69,6 @@ export default class Warrior extends Mercenary {
         // Initialize Ultimate Skill
         if (this.characterId === 'aren') {
             this.ultimateSkill = new SkillMessiah();
-        } else if (this.characterId === 'king') {
-            this.ultimateSkill = new HellDive();
         }
 
         console.log(`[Warrior] Initialized ${this.unitName} (${this.characterId}) with skill: ${this.skill ? this.skill.name || this.skill.constructor.name : 'NONE'}`);
