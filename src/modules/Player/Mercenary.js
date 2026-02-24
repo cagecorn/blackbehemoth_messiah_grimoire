@@ -731,12 +731,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
                 this.lastScaleX = targetScaleX;
                 this.lastFlipTime = now;
                 // Quick flip tween (relative to base scale)
-                this.scene.tweens.add({
-                    targets: this.sprite,
-                    scaleX: targetScaleX * this.baseScaleX,
-                    duration: 150,
-                    ease: 'Back.easeOut'
-                });
+                this.sprite.scaleX = targetScaleX * this.baseScaleX;
             }
         }
     }
