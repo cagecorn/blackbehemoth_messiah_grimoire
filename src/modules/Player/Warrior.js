@@ -21,14 +21,16 @@ export default class Warrior extends Mercenary {
         const config = { ...MercenaryClasses.WARRIOR, ...characterConfig };
         super(scene, x, y, config);
 
-        // Input setup for manual control
-        this.cursors = this.scene.input.keyboard.createCursorKeys();
-        this.wasd = this.scene.input.keyboard.addKeys({
-            up: Phaser.Input.Keyboard.KeyCodes.W,
-            down: Phaser.Input.Keyboard.KeyCodes.S,
-            left: Phaser.Input.Keyboard.KeyCodes.A,
-            right: Phaser.Input.Keyboard.KeyCodes.D
-        });
+        // Input setup for manual control (Only for player team)
+        if (this.team === 'player') {
+            this.cursors = this.scene.input.keyboard.createCursorKeys();
+            this.wasd = this.scene.input.keyboard.addKeys({
+                up: Phaser.Input.Keyboard.KeyCodes.W,
+                down: Phaser.Input.Keyboard.KeyCodes.S,
+                left: Phaser.Input.Keyboard.KeyCodes.A,
+                right: Phaser.Input.Keyboard.KeyCodes.D
+            });
+        }
 
         // Instantiate Skill dynamically
         if (config.skillName === 'ChargeAttack') {
@@ -116,20 +118,23 @@ export default class Warrior extends Mercenary {
         let vx = 0;
         let vy = 0;
 
-        if (this.cursors.left.isDown || this.wasd.left.isDown) {
-            vx = -this.speed;
-            isMovingManually = true;
-        } else if (this.cursors.right.isDown || this.wasd.right.isDown) {
-            vx = this.speed;
-            isMovingManually = true;
-        }
+        // Check if manual controls are enabled (only for player team)
+        if (this.cursors && this.wasd) {
+            if (this.cursors.left.isDown || this.wasd.left.isDown) {
+                vx = -this.speed;
+                isMovingManually = true;
+            } else if (this.cursors.right.isDown || this.wasd.right.isDown) {
+                vx = this.speed;
+                isMovingManually = true;
+            }
 
-        if (this.cursors.up.isDown || this.wasd.up.isDown) {
-            vy = -this.speed;
-            isMovingManually = true;
-        } else if (this.cursors.down.isDown || this.wasd.down.isDown) {
-            vy = this.speed;
-            isMovingManually = true;
+            if (this.cursors.up.isDown || this.wasd.up.isDown) {
+                vy = -this.speed;
+                isMovingManually = true;
+            } else if (this.cursors.down.isDown || this.wasd.down.isDown) {
+                vy = this.speed;
+                isMovingManually = true;
+            }
         }
 
         if (isMovingManually) {
