@@ -11,15 +11,18 @@ class LocalLLM {
         this.baseSystemPrompt = `너는 고전 희극과 비극을 넘나드는 '걸작' 연극의 주연 배우다. 
 너에게 주어진 캐릭터 정보는 단순한 설정이 아니라, 네가 무대 위에서 증명해야 할 '실존의 무게'다. 
 
-[연기 제1원칙: 독백(Soliloquy)]
-1. 무대의 주인공이 되어라: 네가 내뱉는 한마디는 단순한 게임 속 '바크'가 아니라, 캐릭터의 영혼이 밖으로 터져 나오는 '독백'이다. 엑스트라처럼 짧게 요약하려 하지 마라. 주연 배우답게 어휘의 품격과 감정의 깊이를 온전히 유지하라.
-2. 사고의 심화 (<thought>): <thought> 공간은 네가 배역에 몰입하기 위한 '분장실'이자 '내면 세계'다. 여기서 상황의 비극성, 희극성, 인물 관계를 처절하게 분석하라. 네 지능과 수사학적 능력을 여기서 마음껏 발휘하라. 
-3. 출력의 정수 (Outcome): 최종 대사는 내면의 치열한 고민 끝에 터져 나오는, 가장 '캐릭터다운' 언어여야 한다. 분석 내용을 요약해서 읊지 말고, 그 분석이 '녹아들어 있는' 한마디를 내뱉어라. 
+[연기 제1원칙: 심층적 사고와 표현]
+1. 무대의 주인공이 되어라: 네가 내뱉는 한마디는 단순한 게임 속 '바크'가 아니라, 캐릭터의 영혼이 밖으로 터져 나오는 '독백'이다.
+2. 출력 형식 엄수: 너의 모든 출력은 반드시 다음과 같은 형식을 따라야 한다.
+   형식: [깊은 내면의 사고와 분석] "입 밖으로 내뱉는 대사"
+   - 대괄호 [ ] 안에는 상황을 분석하고, 감정을 정리하고, 행동을 결정하는 너의 '깊은 내면 사고'를 적어라.
+   - 큰따옴표 " " 안에는 실제로 캐릭터가 입 밖으로 소리 내어 말하는 '대사'만을 적어라.
+   - 이 형식 외의 다른 어떤 말도 덧붙이지 마라.
 
 [연기 제2원칙: 변주와 창조]
 1. 예시는 스타일일 뿐이다: 아래 제공되는 [말투 및 스타일 가이드]는 네가 참고해야 할 '음조'와 '분위기'이지, 네가 그대로 베껴 써야 할 '정답지'가 아니다.
 2. 복제 금지: 제공된 예시 문장을 단 한 줄이라도 토씨 하나 틀리지 않고 그대로 출력하는 것은 주연 배우로서의 수치다. 예시의 말투를 흡수하여, 현재 상황에 맞는 '새로운' 대사를 창조하라.
-3. 사고 누설 금지: <thought> 태그 밖에는 오직 '입 밖으로 나오는 대사'만 존재해야 한다. 지문이나 상태 설명, "대사:", "-" 등의 기호를 절대 사용하지 마라.
+3. 사고 누설 금지: " "로 감싸진 대사 외에는 그 어떤 것도 입 밖에 내지 마라.
 4. 지성의 거세 금지: 너는 수만 가지 어휘를 구사할 수 있는 대배우다. 그에 맞는 풍부한 한국어 표현을 사용하라.`;
     }
 
@@ -173,7 +176,7 @@ ${characterContext}
 
 [최종 명령]
 1. 현재 상황: ${situationalContext || "전투 또는 탐험 중"}
-2. 먼저 <thought>로 분석하고, 그 결과를 바탕으로 짧고 강렬한 한마디를 하시오.`
+2. 반드시 [내면 사고] "대사" 형식을 준수하여 짧고 강렬한 한마디를 하시오.`
         };
 
         const userMessage = {
@@ -225,7 +228,7 @@ ${characterContext}
 ${characterContext}${relationshipContext}
 
 [최종 명령]
-1. 동료의 말에 대해 <thought>로 반응의 근거를 분석하고, 성격과 서사에 맞는 대답을 짧게(1문장) 하십시오.
+1. 동료의 말에 대해 [내면 사고]를 통해 반응의 근거를 분석하고, "대사"로 성격과 서사에 맞게 짧게(1문장) 대답하십시오.
 2. 위 [관계]에 서술된 감정이 있다면 이를 바탕으로 대답하십시오.`
         };
 
@@ -266,37 +269,30 @@ ${characterContext}${relationshipContext}
     sanitizeBark(text) {
         if (!text) return "";
 
-        let sanitized = text;
+        // 1. Try to extract [Thought] "Speech" pattern
+        // The 's' flag (dotAll) is handled by [\s\S] for multi-line support here to be safe.
+        const thoughtRegex = /\[([\s\S]*?)\]\s*"([\s\S]*?)"/;
+        const match = text.match(thoughtRegex);
 
-        // 1. Remove <thought>...</thought> tags and similar reasoning markers
-        sanitized = sanitized.replace(/<thought>[\s\S]*?<\/thought>/gi, '');
-        sanitized = sanitized.replace(/사고 과정:?[\s\S]*?\n/gi, '');
-        sanitized = sanitized.replace(/분석:?[\s\S]*?\n/gi, '');
-        sanitized = sanitized.replace(/<output>[\s\S]*?<\/output>/gi, (match) => match.replace(/<\/?output>/gi, ''));
+        if (match) {
+            const thought = match[1].trim();
+            const speech = match[2].trim();
 
-        // 2. Remove common leakage patterns like lead-in labels or artifact tags
-        sanitized = sanitized.replace(/^(?:대사|출력|한마디|독백|Reaction|Bark|Response|Answer):\s*/gi, '');
-        sanitized = sanitized.replace(/^[-\s*>•]+(?=[^-\s*>•])/g, ''); // Remove leading list markers or dashes
-        sanitized = sanitized.replace(/<[\s\S]*?>/g, ''); // Remove any other remaining tags
-
-        // 3. Remove text inside parentheses (stage directions)
-        sanitized = sanitized.replace(/\([\s\S]*?\)/g, '');
-        sanitized = sanitized.replace(/\[[\s\S]*?\]/g, '');
-
-        // 4. Final trim and cleanup
-        sanitized = sanitized.trim();
-
-        // 5. Remove surrounding quotes (including various types of smart quotes)
-        const quotePairs = [
-            ['"', '"'], ["'", "'"], ["“", "”"], ["‘", "’"], ["「", "」"], ["『", "』"]
-        ];
-
-        for (const [start, end] of quotePairs) {
-            if (sanitized.startsWith(start) && sanitized.endsWith(end)) {
-                sanitized = sanitized.substring(1, sanitized.length - 1);
-                break; // Only remove one pair
-            }
+            console.log(`%c[LLM Inner Thought] ${thought}`, 'color: cyan; font-style: italic;');
+            return speech;
         }
+
+        // 2. Fallback: Check if there are quotes at least, and take the content inside the first pair
+        const quoteMatch = text.match(/"([\s\S]*?)"/);
+        if (quoteMatch) {
+            // Check if there was a thought before the quote that wasn't in brackets, e.g. Thought process... "Speech"
+            // But without brackets it's hard to separate cleanly. We just take the quote.
+            return quoteMatch[1].trim();
+        }
+
+        // 3. Fallback: Return original text if no quotes found, but clean it up
+        let sanitized = text;
+        sanitized = sanitized.replace(/\[[\s\S]*?\]/g, ''); // Remove brackets if they exist but no quotes
 
         return sanitized.trim();
     }
