@@ -159,6 +159,10 @@ export default class ArenaScene extends Phaser.Scene {
             this.statusText.setText(`아레나 배틀 #${this.battleCount}`);
         }
 
+        // Initialize Camera Target (follows centroid of party)
+        this.cameraTarget = this.add.container(centerX, centerY);
+        this.cameras.main.startFollow(this.cameraTarget, true, 0.1, 0.1);
+
         // Trigger UI binding for the deployed mercenaries
         EventBus.emit(EventBus.EVENTS.PARTY_DEPLOYED, {
             mercenaries: this.mercenaries.getChildren()
@@ -253,9 +257,10 @@ export default class ArenaScene extends Phaser.Scene {
             u.setDepth(u.y); // 발밑 그림자 및 레이어링 해결
 
             // 맵 밖으로 나가지 않도록 강제 클램핑
-            u.x = Phaser.Math.Clamp(u.x, margin, width - margin);
             u.y = Phaser.Math.Clamp(u.y, margin, height - margin);
         });
+
+        this.updateCameraFollow();
 
         // Check for victory/defeat
         const playersAlive = this.mercenaries.countActive(true);
@@ -263,6 +268,28 @@ export default class ArenaScene extends Phaser.Scene {
 
         if (playersAlive === 0 || enemiesAlive === 0) {
             this.handleBattleEnd(enemiesAlive === 0);
+        }
+    }
+
+    updateCameraFollow() {
+        if (!this.mercenaries || !this.cameraTarget) return;
+
+        let totalX = 0;
+        let totalY = 0;
+        let count = 0;
+
+        this.mercenaries.getChildren().forEach(merc => {
+            if (merc.active && merc.hp > 0) {
+                totalX += merc.x;
+                totalY += merc.y;
+                count++;
+            }
+        });
+
+        if (count > 0) {
+            const avgX = totalX / count;
+            const avgY = totalY / count;
+            this.cameraTarget.setPosition(avgX, avgY);
         }
     }
 

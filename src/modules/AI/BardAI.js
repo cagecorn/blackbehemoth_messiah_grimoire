@@ -1,3 +1,4 @@
+import Blackboard from './Blackboard.js';
 import { Action, Sequence, Selector, Condition } from './BehaviorTreeManager.js';
 import BehaviorTreeManager from './BehaviorTreeManager.js';
 import Phaser from 'phaser';
@@ -7,6 +8,13 @@ import Phaser from 'phaser';
  * Hybrid Support logic: Buffs allies first. If all allies are buffed, attacks enemies.
  */
 export default function applyBardAI(unit, getAllyGroup, getEnemyGroup) {
+    if (!unit.blackboard) {
+        unit.blackboard = new Blackboard();
+        unit.blackboard.set('self', unit);
+        unit.blackboard.set('ai_state', 'AGGRESSIVE');
+        unit.blackboard.set('target', null);
+    }
+
     // 1. Conditions
 
     // Target Priority: Buffing Allies

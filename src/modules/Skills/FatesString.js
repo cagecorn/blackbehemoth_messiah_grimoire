@@ -80,9 +80,12 @@ export default class FatesString {
         const startX = caster.x;
         const startY = caster.y;
 
-        // Initial shot goes horizontally across the screen
+        const cam = scene.cameras.main;
+        const view = cam.worldView;
+
+        // Initial shot goes horizontally across the visible screen
         const direction = (caster.sprite.scaleX > 0) ? -1 : 1;
-        const endX = direction === -1 ? -100 : scene.cameras.main.width + 100;
+        const endX = direction === -1 ? view.left - 200 : view.right + 200;
         const endY = startY;
 
         this.createTrajectoryLine(scene, startX, startY, endX, endY, 600);
@@ -92,27 +95,28 @@ export default class FatesString {
     }
 
     async executeCrisscross(scene, caster) {
-        const width = scene.cameras.main.width;
-        const height = scene.cameras.main.height;
+        const cam = scene.cameras.main;
+        const view = cam.worldView;
+        const padding = 200; // Extend well beyond the screen edges
 
         // Number of lines
-        const lineCount = 8;
+        const lineCount = 12; // Increased from 8 for more coverage
 
         for (let i = 0; i < lineCount; i++) {
-            // Pick random start and end points on edges
+            // Pick random start and end points on edges of the world-view
             let startX, startY, endX, endY;
 
             const side = Phaser.Math.Between(0, 3); // 0:Left, 1:Right, 2:Top, 3:Bottom
-            if (side === 0) { startX = -50; startY = Phaser.Math.Between(0, height); }
-            else if (side === 1) { startX = width + 50; startY = Phaser.Math.Between(0, height); }
-            else if (side === 2) { startX = Phaser.Math.Between(0, width); startY = -50; }
-            else { startX = Phaser.Math.Between(0, width); startY = height + 50; }
+            if (side === 0) { startX = view.left - padding; startY = Phaser.Math.Between(view.top, view.bottom); }
+            else if (side === 1) { startX = view.right + padding; startY = Phaser.Math.Between(view.top, view.bottom); }
+            else if (side === 2) { startX = Phaser.Math.Between(view.left, view.right); startY = view.top - padding; }
+            else { startX = Phaser.Math.Between(view.left, view.right); startY = view.bottom + padding; }
 
             const oppositeSide = (side + 2) % 4; // Roughly opposite
-            if (oppositeSide === 0) { endX = -50; endY = Phaser.Math.Between(0, height); }
-            else if (oppositeSide === 1) { endX = width + 50; endY = Phaser.Math.Between(0, height); }
-            else if (oppositeSide === 2) { endX = Phaser.Math.Between(0, width); endY = -50; }
-            else { endX = Phaser.Math.Between(0, width); endY = height + 50; }
+            if (oppositeSide === 0) { endX = view.left - padding; endY = Phaser.Math.Between(view.top, view.bottom); }
+            else if (oppositeSide === 1) { endX = view.right + padding; endY = Phaser.Math.Between(view.top, view.bottom); }
+            else if (oppositeSide === 2) { endX = Phaser.Math.Between(view.left, view.right); endY = view.top - padding; }
+            else { endX = Phaser.Math.Between(view.left, view.right); endY = view.bottom + padding; }
 
             // Stagger the lines
             scene.time.delayedCall(i * 150, () => {
@@ -136,7 +140,14 @@ export default class FatesString {
         graphics.strokePath();
 
         // Glow line
-        graphics.lineStyle(8, 0xff0000, 0.6);
+        graphics.lineStyle(12, 0xff0000, 0.4); // Thicker glow
+        graphics.beginPath();
+        graphics.moveTo(x1, y1);
+        graphics.lineTo(x2, y2);
+        graphics.strokePath();
+
+        // Secondary inner glow
+        graphics.lineStyle(6, 0xff00bb, 0.6);
         graphics.beginPath();
         graphics.moveTo(x1, y1);
         graphics.lineTo(x2, y2);
@@ -160,7 +171,7 @@ export default class FatesString {
         targets.forEach(target => {
             // Simple distance from point to line segment check
             const dist = this.getPointLineDistance(target.x, target.y, x1, y1, x2, y2);
-            if (dist < 40) { // Hitbox width
+            if (dist < 60) { // Increased hit detection width from 40 to 60
                 target.takeDamage(damage, caster, true);
                 if (scene.fxManager && scene.fxManager.createImpactEffect) {
                     scene.fxManager.createImpactEffect(target.x, target.y);

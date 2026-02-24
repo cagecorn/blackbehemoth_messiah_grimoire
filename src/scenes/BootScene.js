@@ -122,11 +122,12 @@ export default class BootScene extends Phaser.Scene {
         this.load.image('boon_cutscene', 'assets/characters/party/boon_cutscene.png');
         this.load.image('goblin_boss_sprite', 'assets/characters/enemies/goblin_cutscene.png');
         this.load.image('goblin_sprite', 'assets/characters/enemies/goblin_sprite.png');
+        this.load.image('orc_sprite', 'assets/characters/enemies/orc_sprite.png');
         this.load.image('guadian_angel_sprite', 'assets/characters/party/guadian_angel_sprite.png');
         this.load.image('siren_sprite', 'assets/characters/party/siren_sprite.png');
         this.load.image('lute_cutscene', 'assets/characters/party/lute_cutscene.png');
         this.load.image('bao_sprite', 'assets/characters/party/bao_sprite.png');
-        this.load.image('bao_ cutscene', 'assets/characters/party/bao_cutscene.png');
+        this.load.image('bao_cutscene', 'assets/characters/party/bao_cutscene.png');
         this.load.image('babao_sprite', 'assets/characters/party/babao_sprite.png');
         this.load.image('nana_sprite', 'assets/characters/party/nana_sprite.png');
         this.load.image('nana_cutscene', 'assets/characters/party/nana_cutscene.png');

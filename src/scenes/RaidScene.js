@@ -133,6 +133,10 @@ export default class RaidScene extends Phaser.Scene {
             if (unit) this.mercenaries.add(unit);
         });
 
+        // Initialize Camera Target (follows centroid of party)
+        this.cameraTarget = this.add.container(150, centerY);
+        this.cameras.main.startFollow(this.cameraTarget, true, 0.1, 0.1);
+
         // Trigger UI binding
         EventBus.emit(EventBus.EVENTS.PARTY_DEPLOYED, {
             mercenaries: this.mercenaries.getChildren().map(m => m.getState())
@@ -195,6 +199,30 @@ export default class RaidScene extends Phaser.Scene {
         // Check for total defeat
         if (this.mercenaries.countActive(true) === 0) {
             this.handlePlayerDefeat();
+        }
+
+        this.updateCameraFollow();
+    }
+
+    updateCameraFollow() {
+        if (!this.mercenaries || !this.cameraTarget) return;
+
+        let totalX = 0;
+        let totalY = 0;
+        let count = 0;
+
+        this.mercenaries.getChildren().forEach(merc => {
+            if (merc.active && merc.hp > 0) {
+                totalX += merc.x;
+                totalY += merc.y;
+                count++;
+            }
+        });
+
+        if (count > 0) {
+            const avgX = totalX / count;
+            const avgY = totalY / count;
+            this.cameraTarget.setPosition(avgX, avgY);
         }
     }
 

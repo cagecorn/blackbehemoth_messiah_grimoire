@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import DungeonManager from '../modules/Dungeon/DungeonManager.js';
 import Warrior from '../modules/Player/Warrior.js';
 import Goblin from '../modules/AI/Goblin.js';
+import Orc from '../modules/AI/Orc.js';
 import MonsterHealer from '../modules/AI/MonsterHealer.js';
 import Archer from '../modules/Player/Archer.js';
 import Healer from '../modules/Player/Healer.js';
@@ -119,7 +120,6 @@ export default class DungeonScene extends Phaser.Scene {
                 if (!playerLeader) {
                     playerLeader = unit;
                     this.player = unit;
-                    this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
                 }
             } else if (charId === 'nickle') {
                 unit = new Nickle(this, x, y, playerLeader, charConfig);
@@ -146,10 +146,13 @@ export default class DungeonScene extends Phaser.Scene {
             }
         });
 
+        // Initialize Camera Target (follows centroid of party)
+        this.cameraTarget = this.add.container(startPos.x, startPos.y);
+        this.cameras.main.startFollow(this.cameraTarget, true, 0.1, 0.1);
+
         // If no leader was found (e.g. no warrior selected), just pick the first one
         if (!this.player && this.mercenaries.countActive(true) > 0) {
             this.player = this.mercenaries.getChildren()[0];
-            this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
         }
 
         // First wave of monsters (Now that player is spawned)
@@ -224,7 +227,6 @@ export default class DungeonScene extends Phaser.Scene {
         if (classId === 'warrior') {
             newUnit = new Warrior(this, x, y, config);
             this.player = newUnit; // update leader ref
-            this.cameras.main.startFollow(this.player, true, 0.1, 0.1);
             this.mercenaries.getChildren().forEach(m => {
                 if (m !== newUnit) m.warrior = newUnit;
             });
@@ -308,6 +310,32 @@ export default class DungeonScene extends Phaser.Scene {
                 this.clampToCamera(enemy);
             });
         }
+
+        this.updateCameraFollow();
+    }
+
+    updateCameraFollow() {
+        if (!this.mercenaries || !this.cameraTarget) return;
+
+        let totalX = 0;
+        let totalY = 0;
+        let count = 0;
+
+        this.mercenaries.getChildren().forEach(merc => {
+            if (merc.active && merc.hp > 0) {
+                totalX += merc.x;
+                totalY += merc.y;
+                count++;
+            }
+        });
+
+        if (count > 0) {
+            const avgX = totalX / count;
+            const avgY = totalY / count;
+
+            // Smoothly lerp camera target or set directly (Phaser's startFollow handles smoothing)
+            this.cameraTarget.setPosition(avgX, avgY);
+        }
     }
 
     spawnWave() {
@@ -329,6 +357,15 @@ export default class DungeonScene extends Phaser.Scene {
         for (let i = 0; i < shamanCount; i++) {
             const shaman = new MonsterHealer(this, startPos.x + 200 + (i * 80), startPos.y + 120, shamanConfig, this.player);
             this.enemies.add(shaman);
+        }
+
+        // Spawn Orcs (Round 1: 2, then +1 per round)
+        const orcCount = 2 + (this.currentRound - 1);
+        for (let i = 0; i < orcCount; i++) {
+            const offsetX = (i % 2) * 80;
+            const offsetY = Math.floor(i / 2) * 80;
+            const orc = new Orc(this, startPos.x + 400 + offsetX, startPos.y + offsetY - 40, this.player);
+            this.enemies.add(orc);
         }
 
         // Round 3+: Spawn Shadow Aren as a mini-boss!

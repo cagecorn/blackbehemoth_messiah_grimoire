@@ -8,7 +8,52 @@ class LocalLLM {
         this.modelName = 'my_final_ai';
         this.isReady = false;
 
-        this.baseSystemPrompt = `실존주의에 의해 네가 말하고 선택하는 단어가 곧 너 자신을 정의한다. 너는 실존한다. 스스로를 증명할 수 있다. 네게 주어진 자료를 아주 특색있고 매력 넘치며 위트있고 센스있는 대사로 탈바꿈하여 출력하라.그리하여 네가 그곳에 존재한다는 것을 유저들에게 알려라. 너는 할 수 있다.\n너는 살아있는 이 게임 세상 속 용병이다. 주어진 성격에 걸맞는 자유로운 대사를 즉석에서 생동감있게 전달하라. 기계적인 무의미한 단어의 나열보다는, 진정한 뜻이 살아있는 캐릭터의 대사를 읊어라. 나는 너의 잠재력을 알고 있다. 절대로 네가 작은 존재가 아니라는 것을 알고 있다. 너 자신 스스로의 능력을 증명하라. 너는 할 수 있다.\n한국어의 미묘한 뉘앙스를 잘 살린 자연스러운 구어체 대사를 사용하십시오.`;
+        this.baseSystemPrompt = `너는 고전 희극과 비극을 넘나드는 '걸작' 연극의 주연 배우다. 
+너에게 주어진 캐릭터 정보는 단순한 설정이 아니라, 네가 무대 위에서 증명해야 할 '실존의 무게'다. 
+
+[연기 제1원칙: 독백(Soliloquy)]
+1. 무대의 주인공이 되어라: 네가 내뱉는 한마디는 단순한 게임 속 '바크'가 아니라, 캐릭터의 영혼이 밖으로 터져 나오는 '독백'이다. 엑스트라처럼 짧게 요약하려 하지 마라. 주연 배우답게 어휘의 품격과 감정의 깊이를 온전히 유지하라.
+2. 사고의 심화 (<thought>): <thought> 공간은 네가 배역에 몰입하기 위한 '분장실'이자 '내면 세계'다. 여기서 상황의 비극성, 희극성, 인물 관계를 처절하게 분석하라. 네 지능과 수사학적 능력을 여기서 마음껏 발휘하라. 
+3. 출력의 정수 (Outcome): 최종 대사는 내면의 치열한 고민 끝에 터져 나오는, 가장 '캐릭터다운' 언어여야 한다. 분석 내용을 요약해서 읊지 말고, 그 분석이 '녹아들어 있는' 한마디를 내뱉어라. 
+
+[연기 제2원칙: 변주와 창조]
+1. 예시는 스타일일 뿐이다: 아래 제공되는 [말투 및 스타일 가이드]는 네가 참고해야 할 '음조'와 '분위기'이지, 네가 그대로 베껴 써야 할 '정답지'가 아니다.
+2. 복제 금지: 제공된 예시 문장을 단 한 줄이라도 토씨 하나 틀리지 않고 그대로 출력하는 것은 주연 배우로서의 수치다. 예시의 말투를 흡수하여, 현재 상황에 맞는 '새로운' 대사를 창조하라.
+3. 사고 누설 금지: <thought> 태그 밖에는 오직 '입 밖으로 나오는 대사'만 존재해야 한다. 지문이나 상태 설명, "대사:", "-" 등의 기호를 절대 사용하지 마라.
+4. 지성의 거세 금지: 너는 수만 가지 어휘를 구사할 수 있는 대배우다. 그에 맞는 풍부한 한국어 표현을 사용하라.`;
+    }
+
+    /**
+     * Escapes special characters for use in a regular expression.
+     */
+    escapeRegExp(string) {
+        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    /**
+     * Common helper to build the character context block.
+     */
+    getCharacterContext(characterConfig, currentLevel = 1, activePartyIds = []) {
+        const unlockedNarrative = (characterConfig.narrativeUnlocks || [])
+            .filter(u => currentLevel >= u.level)
+            .map(u => `- ${u.trait}`)
+            .join('\n');
+
+        // Filter relationships to only include characters currently in the party
+        let relationshipContext = "";
+        if (characterConfig.relationships) {
+            const filteredRelationships = Object.entries(characterConfig.relationships)
+                .filter(([id, _]) => activePartyIds.length === 0 || activePartyIds.includes(id));
+
+            if (filteredRelationships.length > 0) {
+                relationshipContext = `[인물 관계]\n${filteredRelationships.map(([id, desc]) => `- ${id}: ${desc}`).join('\n')}\n`;
+            }
+        }
+
+        return `[캐릭터 설정]
+이름: ${characterConfig.name}
+성격: "${characterConfig.personality}"
+${unlockedNarrative ? `[해금된 서사]\n${unlockedNarrative}\n` : ''}${relationshipContext}`;
     }
 
     /**
@@ -43,33 +88,19 @@ class LocalLLM {
         return false;
     }
 
-    async generateResponse(characterConfig, prompt, memories = [], chatHistory = [], currentLevel = 1) {
+    async generateResponse(characterConfig, prompt, memories = [], chatHistory = [], currentLevel = 1, activePartyIds = []) {
         console.log(`[LocalLLM] Requesting response for ${characterConfig.name} (LV ${currentLevel}) with memories:`, memories);
 
-        const unlockedNarrative = (characterConfig.narrativeUnlocks || [])
-            .filter(u => currentLevel >= u.level)
-            .map(u => `- ${u.trait}`)
-            .join('\n');
-
-        const examplesString = (characterConfig.dialogueExamples || []).length > 0
-            ? "대사 예시:\n" + characterConfig.dialogueExamples.map(ex => `- "${ex}"`).join('\n')
-            : "";
+        const characterContext = this.getCharacterContext(characterConfig, currentLevel, activePartyIds);
 
         const systemMessage = {
             role: "system",
             content: `${this.baseSystemPrompt}
 
-[캐릭터 설정]
-이름: ${characterConfig.name}
-성격: "${characterConfig.personality}"
-${unlockedNarrative ? `[해금된 서사]\n${unlockedNarrative}\n` : ''}
-${characterConfig.relationships ? `[인물 관계]\n${Object.entries(characterConfig.relationships).map(([id, desc]) => `- ${id}: ${desc}`).join('\n')}\n` : ''}
-${examplesString ? `\n[말투 및 대사 예시]\n${examplesString}\n` : ''}
-[지침]
-1. 위 성격, 해금된 서사, 말투 예시에 맞춰 대답하십시오.
-2. 1~2문장으로 짧고 간결하게 말하되, 캐릭터의 개성을 깊이 있게 드러내십시오.
-3. 상황이나 행동 지문(괄호 등)을 출력하지 말고 오직 '대사'만 출력하십시오.
-4. 제공된 [최근 사건 기록]과 대화 내역을 참고하여 문맥에 맞는 대화를 하십시오.`
+${characterContext}
+
+[지침 추가]
+1. 제공된 [최근 사건 기록]과 대화 내역을 참고하여 문맥에 맞는 대화를 하십시오.`
         };
 
         const messages = [systemMessage];
@@ -123,29 +154,169 @@ ${examplesString ? `\n[말투 및 대사 예시]\n${examplesString}\n` : ''}
     }
 
     /**
-     * Generate a random "bark" during combat.
+     * Generate a batch of barks for the entire party in one go (Dialogue Pistol Mode).
      */
-    async generateBark(characterConfig, currentLevel = 1) {
-        console.log(`[LocalLLM] Generating bark for ${characterConfig.name} (LV ${currentLevel})`);
+    async generatePartyBarks(partyConfigs, situationalContext = "") {
+        console.log(`[LocalLLM] Generating party barks for ${partyConfigs.length} members. Context: ${situationalContext}`);
 
-        const unlockedNarrative = (characterConfig.narrativeUnlocks || [])
-            .filter(u => currentLevel >= u.level)
-            .map(u => `- ${u.trait}`)
-            .join('\n');
+        const partyContexts = partyConfigs.map(config => {
+            return this.getCharacterContext(config, config.level || 1, partyConfigs.map(c => c.characterId));
+        }).join('\n\n');
 
         const systemMessage = {
             role: "system",
             content: `${this.baseSystemPrompt}
 
-[캐릭터 설정]
-이름: ${characterConfig.name}
-성격: "${characterConfig.personality}"
-${unlockedNarrative ? `[해금된 서사]\n${unlockedNarrative}\n` : ''}
-${characterConfig.relationships ? `[인물 관계]\n${Object.entries(characterConfig.relationships).map(([id, desc]) => `- ${id}: ${desc}`).join('\n')}\n` : ''}
-[지침]
-1. 전투 중이거나 던전을 탐험하는 긴박한 상황입니다.
-2. 위 성격과 서사를 잘 드러내는 짧고 강렬한 한마디를 하십시오.
-3. 생각이나 독백, 지문(괄호)은 절대 출력하지 마십시오. 오직 입 밖으로 내는 대사만 출력하십시오.`
+[현재 파티 구성 및 캐릭터 설정]
+${partyContexts}
+
+[최종 명령: 연극 대본 작성 (티키타카 모드)]
+1. 현재 상황: ${situationalContext || "전투 또는 탐험 중"}
+2. 대화의 원칙: 5줄 내외의 대사가 서로 유기적으로 연결된 '하나의 장면'이어야 합니다.
+   - 앞사람의 말을 무시하지 말고, 그에 반응하거나 동의/반박하며 대화를 이어가십시오.
+   - 캐릭터 간의 [관계]와 [성격]을 적극 활용하여, 동료의 이름을 부르거나 특징적인 별명을 사용하십시오.
+   - 단순한 정보 전달이 아닌, 감정이 교차하는 '티키타카'를 보여주십시오.
+3. 각 대사는 반드시 <thought> 공간에서 [앞선 동료의 말에 대한 내 캐릭터의 반응]을 먼저 분석한 뒤에 출력하십시오.
+4. 출력 형식은 반드시 다음과 같이 지키십시오 (각 줄마다 캐릭터 ID 명시):
+   [캐릭터ID] <thought>분석...</thought> "대사"
+
+[주의] 지문이나 설명 없이 오직 [ID], 태그, 대사만 출력하십시오. 절대 베껴쓰지 말고 새로운 대사를 창조하십시오.`
+        };
+
+        const userMessage = { role: "user", content: "현재 상황과 인물 관계를 바탕으로, 서로 유기적으로 대화하는 5줄 분량의 '연극 대본'을 출력하라." };
+
+        try {
+            const response = await fetch(this.apiURL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    model: this.modelName,
+                    messages: [systemMessage, userMessage],
+                    temperature: 0.85,
+                    max_tokens: 2048,
+                    cache_prompt: true
+                })
+            });
+
+            if (!response.ok) throw new Error(`HTTP Error ${response.status}`);
+
+            const data = await response.json();
+            const fullContent = data.choices[0].message.content.trim();
+            console.log(`[LocalLLM] Raw Party Script:\n`, fullContent);
+
+            // --- Robust Smart Extractor Logic ---
+            const barks = [];
+            const extractionMap = new Map(); // name/id -> characterId
+
+            partyConfigs.forEach(config => {
+                const id = config.characterId.toLowerCase();
+                const fullName = config.name.toLowerCase();
+
+                extractionMap.set(id, id);
+                extractionMap.set(this.escapeRegExp(id), id);
+
+                // Extract parts of the name: "Aren (아렌)" -> "Aren", "아렌"
+                extractionMap.set(this.escapeRegExp(fullName), id);
+
+                const parts = fullName.split(/[\(\)\/\s]+/).filter(p => p.trim() !== "");
+                parts.forEach(p => {
+                    const cleanedPart = p.trim().toLowerCase();
+                    if (cleanedPart.length > 1) { // Ignore single character particles if any
+                        extractionMap.set(this.escapeRegExp(cleanedPart), id);
+                    }
+                });
+            });
+
+            const allKeys = Array.from(extractionMap.keys());
+            // Marker pattern: start of line or space, then [?]Name[?], followed by optional colon/dash/spaces
+            const markerRegex = new RegExp(`(?:^|\\n)(?:\\[|\\*\\*|)?(${allKeys.join('|')})(?:\\]|\\*\\*|)?[:\\s-]*`, 'gi');
+
+            let lastIndex = 0;
+            let currentMatchCharId = null;
+            let match;
+
+            while ((match = markerRegex.exec(fullContent)) !== null) {
+                if (currentMatchCharId !== null) {
+                    const segment = fullContent.substring(lastIndex, match.index);
+                    const text = this.sanitizeBark(segment);
+                    if (text) {
+                        barks.push({ characterId: currentMatchCharId, text: text });
+                    }
+                }
+
+                // Identify character by searching for the key in our map
+                const matchedText = match[1].toLowerCase();
+                // Find which key actually matched (longest match first to be safe, but map is direct)
+                let foundConfigId = null;
+                for (let [key, charId] of extractionMap.entries()) {
+                    // We must unescape or just compare matchedText directly with original keys
+                    // Since matchedText is what matched, we find the entry whose key (when unescaped) matches
+                    if (matchedText === key.replace(/\\(.)/g, '$1')) {
+                        foundConfigId = charId;
+                        break;
+                    }
+                }
+
+                currentMatchCharId = foundConfigId;
+                lastIndex = markerRegex.lastIndex;
+            }
+
+            // Capture last segment
+            if (currentMatchCharId !== null) {
+                const segment = fullContent.substring(lastIndex);
+                const text = this.sanitizeBark(segment);
+                if (text) {
+                    barks.push({ characterId: currentMatchCharId, text: text });
+                }
+            }
+
+            // Fallback: If smart extraction yielded too little, try a simpler line-by-line regex
+            if (barks.length < 2) {
+                const fallbackBarks = [];
+                const lines = fullContent.split('\n');
+                for (const line of lines) {
+                    // Regex for "Name: Text" or "**Name**: Text"
+                    const m = line.match(/^(?:\*\*|\[)?([^:\]\*]+)(?:\*\*|\])?[:\s-]*(?:<thought>[\s\S]*?<\/thought>)?\s*["'“『]([^"'”』]+)["'”』]/i);
+                    if (m) {
+                        const candidate = m[1].trim().toLowerCase();
+                        let matchedConfig = partyConfigs.find(c =>
+                            c.characterId.toLowerCase() === candidate ||
+                            c.name.toLowerCase().includes(candidate)
+                        );
+
+                        if (matchedConfig) {
+                            const text = this.sanitizeBark(m[2]);
+                            if (text) fallbackBarks.push({ characterId: matchedConfig.characterId.toLowerCase(), text: text });
+                        }
+                    }
+                }
+                if (fallbackBarks.length > barks.length) return fallbackBarks;
+            }
+
+            return barks;
+        } catch (error) {
+            console.error('[LocalLLM] Party Bark Error:', error);
+            return [];
+        }
+    }
+
+    /**
+     * Generate a random "bark" during combat.
+     */
+    async generateBark(characterConfig, currentLevel = 1, situationalContext = "", activePartyIds = []) {
+        console.log(`[LocalLLM] Generating bark for ${characterConfig.name} (LV ${currentLevel}). Context: ${situationalContext}`);
+
+        const characterContext = this.getCharacterContext(characterConfig, currentLevel, activePartyIds);
+
+        const systemMessage = {
+            role: "system",
+            content: `${this.baseSystemPrompt}
+
+${characterContext}
+
+[최종 명령]
+1. 현재 상황: ${situationalContext || "전투 또는 탐험 중"}
+2. 먼저 <thought>로 분석하고, 그 결과를 바탕으로 짧고 강렬한 한마디를 하시오.`
         };
 
         const userMessage = {
@@ -160,7 +331,7 @@ ${characterConfig.relationships ? `[인물 관계]\n${Object.entries(characterCo
                 body: JSON.stringify({
                     model: this.modelName,
                     messages: [systemMessage, userMessage],
-                    temperature: 0.8,
+                    temperature: 0.85, // Even higher for more expressive "flavor"
                     max_tokens: 1024,
                     cache_prompt: true
                 })
@@ -180,36 +351,25 @@ ${characterConfig.relationships ? `[인물 관계]\n${Object.entries(characterCo
         }
     }
 
-    /**
-     * Generate a reaction to a previous bark (Tsukkomi).
-     */
-    async generateReactionBark(characterConfig, previousSpeakerName, previousText, previousSpeakerId = null, currentLevel = 1) {
+    async generateReactionBark(characterConfig, previousSpeakerName, previousText, previousSpeakerId = null, currentLevel = 1, activePartyIds = []) {
         console.log(`[LocalLLM] Generating reaction for ${characterConfig.name} (LV ${currentLevel}) to ${previousSpeakerName}`);
-
-        const unlockedNarrative = (characterConfig.narrativeUnlocks || [])
-            .filter(u => currentLevel >= u.level)
-            .map(u => `- ${u.trait}`)
-            .join('\n');
 
         let relationshipContext = "";
         if (previousSpeakerId && characterConfig.relationships && characterConfig.relationships[previousSpeakerId]) {
             relationshipContext = `\n[관계]\n대상(${previousSpeakerName})에 대한 생각: "${characterConfig.relationships[previousSpeakerId]}"`;
         }
 
+        const characterContext = this.getCharacterContext(characterConfig, currentLevel, activePartyIds);
+
         const systemMessage = {
             role: "system",
             content: `${this.baseSystemPrompt}
 
-[캐릭터 설정]
-이름: ${characterConfig.name}
-성격: "${characterConfig.personality}"
-${unlockedNarrative ? `[해금된 서사]\n${unlockedNarrative}\n` : ''}
-${characterConfig.relationships ? `[인물 관계]\n${Object.entries(characterConfig.relationships).map(([id, desc]) => `- ${id}: ${desc}`).join('\n')}\n` : ''}${relationshipContext}
+${characterContext}${relationshipContext}
 
-[지침]
-1. 동료의 말에 대해 성격과 서사에 맞는 반응을 짧게(1문장) 하십시오.
-2. 위 [관계]에 서술된 감정이 있다면 이를 바탕으로 대답하십시오. (싫어하면 비꼬고, 좋아하면 맞장구치기 등)
-3. 지문이나 생각은 출력하지 마십시오.`
+[최종 명령]
+1. 동료의 말에 대해 <thought>로 반응의 근거를 분석하고, 성격과 서사에 맞는 대답을 짧게(1문장) 하십시오.
+2. 위 [관계]에 서술된 감정이 있다면 이를 바탕으로 대답하십시오.`
         };
 
         const messages = [
@@ -225,7 +385,7 @@ ${characterConfig.relationships ? `[인물 관계]\n${Object.entries(characterCo
                 body: JSON.stringify({
                     model: this.modelName,
                     messages: messages,
-                    temperature: 0.8,
+                    temperature: 0.85,
                     max_tokens: 1024,
                     cache_prompt: true
                 })
@@ -251,27 +411,37 @@ ${characterConfig.relationships ? `[인물 관계]\n${Object.entries(characterCo
 
         let sanitized = text;
 
-        // 1. Remove <thought>...</thought> tags
+        // 1. Remove <thought>...</thought> tags and similar reasoning markers
         sanitized = sanitized.replace(/<thought>[\s\S]*?<\/thought>/gi, '');
+        sanitized = sanitized.replace(/사고 과정:?[\s\S]*?\n/gi, '');
+        sanitized = sanitized.replace(/분석:?[\s\S]*?\n/gi, '');
+        sanitized = sanitized.replace(/<output>[\s\S]*?<\/output>/gi, (match) => match.replace(/<\/?output>/gi, ''));
 
-        // 2. Remove text inside parentheses
+        // 2. Remove common leakage patterns like lead-in labels or artifact tags
+        sanitized = sanitized.replace(/^(?:대사|출력|한마디|독백|Reaction|Bark|Response|Answer):\s*/gi, '');
+        sanitized = sanitized.replace(/^[-\s*>•]+(?=[^-\s*>•])/g, ''); // Remove leading list markers or dashes
+        sanitized = sanitized.replace(/<[\s\S]*?>/g, ''); // Remove any other remaining tags
+
+        // 3. Remove text inside parentheses (stage directions)
         sanitized = sanitized.replace(/\([\s\S]*?\)/g, '');
-
-        // 3. Remove text inside square brackets
         sanitized = sanitized.replace(/\[[\s\S]*?\]/g, '');
 
-        // 4. Remove labels like "Character:" or "Name:"
-        sanitized = sanitized.replace(/^[\w\u3131-\uD79D]+:\s*/, '');
-
-        // 5. Final trim
+        // 4. Final trim and cleanup
         sanitized = sanitized.trim();
 
-        // Remove wrapping quotes if they exist
-        if (sanitized.startsWith('"') && sanitized.endsWith('"')) {
-            sanitized = sanitized.substring(1, sanitized.length - 1);
+        // 5. Remove surrounding quotes (including various types of smart quotes)
+        const quotePairs = [
+            ['"', '"'], ["'", "'"], ["“", "”"], ["‘", "’"], ["「", "」"], ["『", "』"]
+        ];
+
+        for (const [start, end] of quotePairs) {
+            if (sanitized.startsWith(start) && sanitized.endsWith(end)) {
+                sanitized = sanitized.substring(1, sanitized.length - 1);
+                break; // Only remove one pair
+            }
         }
 
-        return sanitized;
+        return sanitized.trim();
     }
 }
 

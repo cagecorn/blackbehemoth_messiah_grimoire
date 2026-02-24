@@ -1,3 +1,4 @@
+import Blackboard from './Blackboard.js';
 import { Action, Sequence, Selector, Condition } from './BehaviorTreeManager.js';
 import BehaviorTreeManager from './BehaviorTreeManager.js';
 import Phaser from 'phaser';
@@ -7,6 +8,13 @@ import Phaser from 'phaser';
  * Targets enemies but tries to maintain a safe distance (Kiting).
  */
 export default function applyRangedAI(unit, skillNode = null) {
+    if (!unit.blackboard) {
+        unit.blackboard = new Blackboard();
+        unit.blackboard.set('self', unit);
+        unit.blackboard.set('ai_state', 'AGGRESSIVE');
+        unit.blackboard.set('target', null);
+    }
+
     // 1. Behavior Tree Nodes
 
     const hasTarget = new Condition(() => unit.blackboard.get('target') != null, "Has Target?");

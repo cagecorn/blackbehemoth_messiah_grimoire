@@ -5,6 +5,7 @@ import intentRouter from '../AI/IntentRouter.js';
 import localLLM from '../AI/LocalLLM.js';
 import embeddingGemma from '../AI/EmbeddingGemma.js';
 import { MercenaryClasses, Characters } from '../Core/EntityStats.js';
+import partyManager from '../Core/PartyManager.js';
 
 export default class UIManager {
     constructor() {
@@ -255,11 +256,11 @@ export default class UIManager {
                 const unit = this.scene && this.scene.mercenaries ? this.scene.mercenaries.getChildren().find(m => m.id === agentId) : null;
                 const dynamicConfig = unit ? {
                     ...charConfig,
-                    personality: unit.personality || charConfig.personality,
-                    dialogueExamples: unit.dialogueExamples || charConfig.dialogueExamples
+                    personality: unit.personality || charConfig.personality
                 } : charConfig;
 
-                const response = await localLLM.generateResponse(dynamicConfig, text, memories, channel.chatHistory, channel.lastLevel || 1);
+                const activePartyIds = partyManager.getActiveParty().filter(id => id !== null);
+                const response = await localLLM.generateResponse(dynamicConfig, text, memories, channel.chatHistory, channel.lastLevel || 1, activePartyIds);
 
                 this.addLog(agentId, `[${charName}] ${response}`, '#00ffcc');
 

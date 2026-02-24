@@ -3,6 +3,7 @@ import intentRouter from '../AI/IntentRouter.js';
 import embeddingGemma from '../AI/EmbeddingGemma.js';
 import localLLM from '../AI/LocalLLM.js';
 import { Characters } from '../Core/EntityStats.js';
+import partyManager from '../Core/PartyManager.js';
 
 class LogManager {
     constructor() {
@@ -109,9 +110,15 @@ class LogManager {
                     this.addLog(`[System] Conversational intent detected. Consulting memory...`, '#aaaaaa');
 
                     const memories = await embeddingGemma.searchMemory(text);
-                    // Defaulting to AREN (Warrior) personality for the main chat fallback
-                    const charConfig = Characters.AREN;
-                    const response = await localLLM.generateResponse(charConfig, text, memories);
+                    const activePartyIds = partyManager.getActiveParty().filter(id => id !== null);
+                    // Defaulting to the first active character if Aren is not in the party
+                    let charConfig = Characters.AREN;
+                    if (!activePartyIds.includes('aren') && activePartyIds.length > 0) {
+                        const firstCharId = activePartyIds[0];
+                        charConfig = Object.values(Characters).find(c => c.id === firstCharId) || Characters.AREN;
+                    }
+
+                    const response = await localLLM.generateResponse(charConfig, text, memories, [], 1, activePartyIds);
 
                     this.addLog(`[${charConfig.name}] ${response}`, '#00ffcc');
                     EventBus.emit(EventBus.EVENTS.AI_RESPONSE, { agentId: 'warrior', text: response });

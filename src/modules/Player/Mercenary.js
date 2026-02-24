@@ -838,6 +838,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             className: this.className,
             classId: this.className, // Add classId for UI compatibility
             characterId: this.characterId,
+            hideInUI: !!this.config.hideInUI,
             unitName: this.unitName,
             x: this.x,
             y: this.y,

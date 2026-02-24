@@ -1,3 +1,4 @@
+import Blackboard from './Blackboard.js';
 import { Action, Sequence, Selector, Condition } from './BehaviorTreeManager.js';
 import BehaviorTreeManager from './BehaviorTreeManager.js';
 import Phaser from 'phaser';
@@ -10,6 +11,13 @@ import Phaser from 'phaser';
  * @param {Function} getEnemyGroup - Function that returns Phaser Group or Array of enemies
  */
 export default function applyHealerAI(unit, getAllyGroup, getEnemyGroup) {
+    if (!unit.blackboard) {
+        unit.blackboard = new Blackboard();
+        unit.blackboard.set('self', unit);
+        unit.blackboard.set('ai_state', 'AGGRESSIVE');
+        unit.blackboard.set('target', null);
+    }
+
     // 1. Conditions
 
     // Check if any ally needs healing

@@ -10,11 +10,13 @@ export default class BarkManager {
     constructor(scene) {
         this.scene = scene;
         this.nextBarkTime = 0;
-        this.barkIntervalMin = 15000; // 15 seconds
-        this.barkIntervalMax = 30000; // 30 seconds
+        this.barkIntervalMin = 8000; // 8 seconds
+        this.barkIntervalMax = 15000; // 15 seconds
+        this.barkBuffer = [];
+        this.isGenerating = false;
 
-        // Initial delay
-        this.setNextBarkTime(scene.time.now + 10000);
+        // Initial delay - trigger soon after entering
+        this.setNextBarkTime(scene.time.now + 1500);
 
         console.log('[BarkManager] Initialized');
     }
@@ -31,26 +33,61 @@ export default class BarkManager {
         }
     }
 
-    /**
-     * Triggers a sequence of barks (Initial + optional reactions)
-     */
     async triggerBarkSequence() {
         if (!this.scene.mercenaries || this.scene.mercenaries.countActive(true) === 0) return;
-        if (!localLLM.isReady) return;
+        if (!localLLM.isReady || this.isGenerating) return;
 
-        // 1. Initial Bark
-        const firstSpeaker = this.getRandomActiveMercenary();
-        if (!firstSpeaker) return;
+        // 1. If buffer is empty, reload the magazine (batch generate)
+        if (this.barkBuffer.length === 0) {
+            console.log(`[BarkManager] Magazine empty. Reloading Dialogue Pistol...`);
+            this.isGenerating = true;
+            try {
+                const activeMercs = this.scene.mercenaries.getChildren().filter(m => m.active && m.hp > 0);
+                const activeConfigs = activeMercs.map(m => {
+                    const charConfig = Object.values(Characters).find(c => c.id === m.characterId);
+                    return { ...charConfig, level: m.level || 1, characterId: m.characterId };
+                });
 
-        const firstBarkText = await this.performBark(firstSpeaker);
-        if (!firstBarkText) return;
+                const sceneType = this.getSceneType();
+                const script = await localLLM.generatePartyBarks(activeConfigs, sceneType);
 
-        // 2. Roll for Reaction (Baton Pass)
-        const reactionChance = 0.60; // Increased chance for chemistry check
-        if (Math.random() < reactionChance) {
-            // Wait 1.5 - 2.5 seconds before the reaction
-            this.scene.time.delayedCall(Phaser.Math.Between(1500, 2500), async () => {
-                await this.triggerReaction(firstSpeaker.unitName, firstBarkText, [firstSpeaker.characterId], firstSpeaker.characterId);
+                if (script && script.length > 0) {
+                    this.barkBuffer = script;
+                    console.log(`[BarkManager] Pistol reloaded with ${this.barkBuffer.length} shots.`);
+                } else {
+                    console.warn("[BarkManager] Reload failed: empty script returned.");
+                }
+            } catch (err) {
+                console.error("[BarkManager] Reload failed with error:", err);
+            } finally {
+                this.isGenerating = false;
+            }
+        }
+
+        // 2. Fire the barks from the buffer
+        if (this.barkBuffer.length > 0) {
+            console.log(`[BarkManager] Firing sequence from buffer (${this.barkBuffer.length} lines left)`);
+
+            let accumulatedDelay = 0;
+            const currentSequence = [...this.barkBuffer];
+            this.barkBuffer = []; // Clear buffer so next trigger reloads
+
+            currentSequence.forEach((shot, index) => {
+                this.scene.time.delayedCall(accumulatedDelay, () => {
+                    const speaker = this.scene.mercenaries.getChildren().find(m => m.characterId === shot.characterId && m.active && m.hp > 0);
+                    if (speaker) {
+                        this.emitBarkEvent(speaker, shot.text);
+                    }
+                });
+
+                // If it's the last bark, schedule the next sequence only after this one finishes
+                if (index === currentSequence.length - 1) {
+                    const finalDelay = accumulatedDelay + 5000; // Extra padding
+                    this.setNextBarkTime(this.scene.time.now + finalDelay);
+                }
+
+                // Natural dialogue gap
+                accumulatedDelay += Phaser.Math.Between(2500, 4000); // Slightly wider gap for readability
             });
         }
     }
@@ -59,7 +96,7 @@ export default class BarkManager {
      * Triggers a reaction bark from another mercenary.
      * Prioritizes mercenaries who have a relationship with the previous speaker.
      */
-    async triggerReaction(prevSpeakerName, prevText, excludedIds = [], prevSpeakerId = null) {
+    async triggerReaction(prevSpeakerName, prevText, excludedIds = [], prevSpeakerId = null, activePartyIds = []) {
         // Try to find a reactor who knows the previous speaker
         const reactor = this.getBestReactor(excludedIds, prevSpeakerId);
         if (!reactor) return;
@@ -73,11 +110,10 @@ export default class BarkManager {
             // Use instance personality if it differs from static config (for Nana)
             const dynamicConfig = {
                 ...charConfig,
-                personality: reactor.personality || charConfig.personality,
-                dialogueExamples: reactor.dialogueExamples || charConfig.dialogueExamples
+                personality: reactor.personality || charConfig.personality
             };
-            // Pass level to generateReactionBark
-            const reactionText = await localLLM.generateReactionBark(dynamicConfig, prevSpeakerName, prevText, prevSpeakerId, reactor.level || 1);
+            // Pass level and activePartyIds to generateReactionBark
+            const reactionText = await localLLM.generateReactionBark(dynamicConfig, prevSpeakerName, prevText, prevSpeakerId, reactor.level || 1, activePartyIds);
             if (reactionText) {
                 this.emitBarkEvent(reactor, reactionText);
 
@@ -87,7 +123,7 @@ export default class BarkManager {
                     excludedIds.push(reactor.characterId);
                     this.scene.time.delayedCall(Phaser.Math.Between(2000, 3000), async () => {
                         // The current reactor becomes the previous speaker for the next link in the chain
-                        await this.triggerReaction(reactor.unitName, reactionText, excludedIds, reactor.characterId);
+                        await this.triggerReaction(reactor.unitName, reactionText, excludedIds, reactor.characterId, activePartyIds);
                     });
                 }
             }
@@ -105,6 +141,28 @@ export default class BarkManager {
         );
         if (activeMercs.length === 0) return null;
         return Phaser.Utils.Array.GetRandom(activeMercs);
+    }
+
+    /**
+     * Gets character IDs of all currently active mercenaries in the scene.
+     */
+    getActivePartyIds() {
+        if (!this.scene.mercenaries) return [];
+        return this.scene.mercenaries.getChildren()
+            .filter(m => m.active && m.hp > 0)
+            .map(m => m.characterId);
+    }
+
+    /**
+     * Identifies the current scene type for LLM context.
+     */
+    getSceneType() {
+        if (!this.scene) return "";
+        const className = this.scene.constructor.name;
+        if (className === 'DungeonScene') return "던전 탐험 중";
+        if (className === 'RaidScene') return "보스 레이드 중";
+        if (className === 'ArenaScene') return "아레나 전투 중";
+        return "전투 중";
     }
 
     /**
@@ -146,7 +204,9 @@ export default class BarkManager {
                 personality: target.personality || charConfig.personality,
                 dialogueExamples: target.dialogueExamples || charConfig.dialogueExamples
             };
-            const barkText = await localLLM.generateBark(dynamicConfig, target.level || 1);
+            const sceneType = this.getSceneType();
+            const activeIds = this.getActivePartyIds();
+            const barkText = await localLLM.generateBark(dynamicConfig, target.level || 1, sceneType, activeIds);
             if (barkText) {
                 this.emitBarkEvent(target, barkText);
                 return barkText;

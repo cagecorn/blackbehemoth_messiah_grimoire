@@ -279,6 +279,51 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
         }
     }
 
+    fireProjectile() {
+        const now = this.scene.time.now;
+        if (now - this.lastAttackTime < this.atkSpd) return false;
+
+        const target = this.blackboard.get('target');
+        if (!target || !target.active || target.hp <= 0) return false;
+
+        this.lastAttackTime = now;
+
+        // Calculate Damage
+        let finalDmg = this.atk;
+
+        // Basic projectile firing via ProjectileManager
+        // For monsters, we use 'orc' or 'archer' type for now, or we can make it dynamic based on config
+        const projectileType = this.config.id === 'orc' ? 'archer' : 'archer';
+
+        this.scene.projectileManager.fire(this.x, this.y, target.x, target.y, finalDmg, projectileType, false, this.targetGroup, this);
+
+        return true;
+    }
+
+    findNearestEnemy() {
+        const targetGroup = this.targetGroup;
+        if (!targetGroup) return;
+
+        const enemies = targetGroup.getChildren();
+        if (enemies.length === 0) {
+            this.blackboard.set('target', null);
+            return;
+        }
+
+        let nearest = null;
+        let minDist = Infinity;
+
+        for (const enemy of enemies) {
+            if (!enemy.active || enemy.hp <= 0) continue;
+            const dist = Phaser.Math.Distance.Between(this.x, this.y, enemy.x, enemy.y);
+            if (dist < minDist) {
+                minDist = dist;
+                nearest = enemy;
+            }
+        }
+        this.blackboard.set('target', nearest);
+    }
+
     die(attackerId = null) {
         if (this.healthBar) this.healthBar.destroy();
 
