@@ -2,23 +2,68 @@ import Phaser from 'phaser';
 
 /**
  * ProjectileManager
- * Manages all projectiles in the scene.
+ * Manages all projectiles in the scene using Object Pooling to minimize GC spikes.
  */
 export default class ProjectileManager {
     constructor(scene) {
         this.scene = scene;
-        this.projectiles = this.scene.physics.add.group();
 
-        // Collision detection for both groups
-        // In Arena, projectiles from both teams can hit either group depending on targetGroup
-        this.scene.physics.add.overlap(this.projectiles, this.scene.enemies, this.handlePhysicsHit, null, this);
-        this.scene.physics.add.overlap(this.projectiles, this.scene.mercenaries, this.handlePhysicsHit, null, this);
+        // Image Pool (for sprites/textures)
+        this.imagePool = this.scene.add.group({
+            classType: Phaser.GameObjects.Image,
+            maxSize: 100,
+            runChildUpdate: false
+        });
+
+        // Text Pool (for emoji text)
+        this.textPool = this.scene.add.group({
+            classType: Phaser.GameObjects.Text,
+            maxSize: 50,
+            runChildUpdate: false
+        });
     }
 
-    handlePhysicsHit(projectile, target) {
-        // Fallback for physics-based projectiles if any are added to this.projectiles group
-        this.handleHit(target, projectile.damage || 0, projectile.isMagic || false, projectile.shooter);
-        projectile.destroy();
+    /**
+     * Retrieves an inactive projectile from the pool or creates a new one.
+     * @param {string} type The texture key or text content.
+     * @param {number} x X position
+     * @param {number} y Y position
+     * @param {boolean} isText Whether it is a text object
+     */
+    getProjectile(type, x, y, isText = false) {
+        let projectile;
+        if (isText) {
+            projectile = this.textPool.get(x, y);
+            if (projectile) {
+                projectile.setText(type);
+                projectile.setFontSize('24px');
+                projectile.setOrigin(0.5);
+            }
+        } else {
+            projectile = this.imagePool.get(x, y, type);
+            if (projectile) {
+                projectile.setTexture(type);
+            }
+        }
+
+        if (projectile) {
+            projectile.setActive(true).setVisible(true);
+            projectile.setAlpha(1);
+            projectile.setScale(1);
+            projectile.setRotation(0);
+            projectile.setTint(0xffffff); // Reset tint
+        }
+        return projectile;
+    }
+
+    /**
+     * Releases a projectile back to the pool.
+     */
+    releaseProjectile(projectile) {
+        if (!projectile) return;
+        this.scene.tweens.killTweensOf(projectile);
+        projectile.setActive(false).setVisible(false);
+        projectile.setPosition(-1000, -1000); // Move offscreen
     }
 
     /**
@@ -40,6 +85,7 @@ export default class ProjectileManager {
 
         if (type === 'laser') {
             // Draw an instant laser beam using Graphics
+            // Graphics are cheap to create/destroy occasionally, keeping as is for now
             const graphics = this.scene.add.graphics();
             graphics.lineStyle(4, 0x00ffff, 1); // Cyan laser
 
@@ -70,7 +116,6 @@ export default class ProjectileManager {
             type = 'emoji_fire';
         }
 
-        const imageTypes = ['emoji_sparkle', 'emoji_note', 'emoji_fire', 'fireball', 'laser_ball'];
         const emojiMap = {
             'archer': '🏹',
             'meteor': '☄️',
@@ -81,17 +126,21 @@ export default class ProjectileManager {
 
         // Check if image/texture actually exists in the scene
         const textureExists = this.scene.textures.exists(type);
+
         if (textureExists) {
-            projectile = this.scene.add.image(x, y, type);
+            projectile = this.getProjectile(type, x, y, false);
             // Default size 32 for general emojis, special cases for larger ones
             const size = (type === 'fireball' || type === 'emoji_fire') ? 48 : 32;
-            projectile.setDisplaySize(size, size);
-            if (type === 'emoji_fire') projectile.setTint(0xffaa00);
+            if (projectile) {
+                projectile.setDisplaySize(size, size);
+                if (type === 'emoji_fire') projectile.setTint(0xffaa00);
+            }
         } else {
             const emoji = emojiMap[type] || (type.includes('fire') ? '🔥' : '🏹');
-            projectile = this.scene.add.text(x, y, emoji, { fontSize: '24px' });
-            projectile.setOrigin(0.5); // Center text for better rotation behavior
+            projectile = this.getProjectile(emoji, x, y, true);
         }
+
+        if (!projectile) return; // Should not happen unless pool max reached and strict
 
         // Linear movement for magic, sparkles, notes, OR if it's a known emoji texture (herd effect)
         const isEmoji = type.startsWith('emoji_');
@@ -105,7 +154,7 @@ export default class ProjectileManager {
                 ease: 'Linear',
                 onComplete: () => {
                     this.checkHitAtTarget(targetX, targetY, damage, groupToHit, isMagic, shooter, onHitCallback);
-                    projectile.destroy();
+                    this.releaseProjectile(projectile);
                 }
             });
         } else {
@@ -132,7 +181,7 @@ export default class ProjectileManager {
                 },
                 onComplete: () => {
                     this.checkHitAtTarget(targetX, targetY, damage, groupToHit, false, shooter, onHitCallback);
-                    projectile.destroy();
+                    this.releaseProjectile(projectile);
                 }
             });
         }

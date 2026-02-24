@@ -18,14 +18,17 @@ export default class SeparationManager {
         // If either unit is phasing, they can pass through each other
         if (unitA.isPhasing || unitB.isPhasing) return;
 
-        const dist = Phaser.Math.Distance.Between(unitA.x, unitA.y, unitB.x, unitB.y);
-
-        // Use physics body radii if available, else fallback to a default
+        // Optimization: Check squared distance first to avoid expensive sqrt
         const radiusA = unitA.body.radius || 20;
         const radiusB = unitB.body.radius || 20;
         const minOverlap = radiusA + radiusB;
+        const minOverlapSq = minOverlap * minOverlap;
 
-        if (dist < minOverlap) {
+        const distSq = Phaser.Math.Distance.Squared(unitA.x, unitA.y, unitB.x, unitB.y);
+
+        if (distSq < minOverlapSq) {
+            const dist = Math.sqrt(distSq);
+
             // Calculate direction from B to A
             let angle = Phaser.Math.Angle.Between(unitB.x, unitB.y, unitA.x, unitA.y);
 
