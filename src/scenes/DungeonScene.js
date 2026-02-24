@@ -21,7 +21,7 @@ import AoeManager from '../modules/Combat/AoeManager.js';
 import CCManager from '../modules/Combat/CCManager.js';
 import ShieldManager from '../modules/Combat/ShieldManager.js';
 import LootManager from '../modules/Loot/LootManager.js';
-import { MercenaryClasses, MonsterClasses, StageConfigs, Characters } from '../modules/Core/EntityStats.js';
+import { MercenaryClasses, MonsterClasses, StageConfigs, Characters, scaleStats } from '../modules/Core/EntityStats.js';
 import SeparationManager from '../modules/Core/SeparationManager.js';
 import BuffManager from '../modules/Core/BuffManager.js';
 import StageManager from '../modules/Environment/StageManager.js';
@@ -346,6 +346,7 @@ export default class DungeonScene extends Phaser.Scene {
 
     spawnWave() {
         const startPos = this.dungeonManager.getPlayerStartPosition();
+        const monsterLevel = this.currentRound;
 
         // Spawn Goblins (Base 12 + 2 per round)
         const goblinConfig = MonsterClasses.GOBLIN;
@@ -353,7 +354,7 @@ export default class DungeonScene extends Phaser.Scene {
         for (let i = 0; i < goblinCount; i++) {
             const offsetX = (i % 4) * 60;
             const offsetY = Math.floor(i / 4) * 60;
-            const goblin = new Goblin(this, startPos.x + 150 + offsetX, startPos.y + offsetY - 80, this.player);
+            const goblin = new Goblin(this, startPos.x + 150 + offsetX, startPos.y + offsetY - 80, this.player, monsterLevel);
             this.enemies.add(goblin);
         }
 
@@ -361,7 +362,7 @@ export default class DungeonScene extends Phaser.Scene {
         const shamanConfig = MonsterClasses.SHAMAN;
         const shamanCount = 2 + Math.floor((this.currentRound - 1) / 2);
         for (let i = 0; i < shamanCount; i++) {
-            const shaman = new MonsterHealer(this, startPos.x + 200 + (i * 80), startPos.y + 120, shamanConfig, this.player);
+            const shaman = new MonsterHealer(this, startPos.x + 200 + (i * 80), startPos.y + 120, shamanConfig, this.player, monsterLevel);
             this.enemies.add(shaman);
         }
 
@@ -370,16 +371,38 @@ export default class DungeonScene extends Phaser.Scene {
         for (let i = 0; i < orcCount; i++) {
             const offsetX = (i % 2) * 80;
             const offsetY = Math.floor(i / 2) * 80;
-            const orc = new Orc(this, startPos.x + 400 + offsetX, startPos.y + offsetY - 40, this.player);
+            const orc = new Orc(this, startPos.x + 400 + offsetX, startPos.y + offsetY - 40, this.player, monsterLevel);
             this.enemies.add(orc);
         }
 
-        // Round 3+: Spawn Shadow Aren as a mini-boss!
-        if (this.currentRound >= 3) {
-            const shadowX = startPos.x + 150; // Reduced from 400
-            const shadowY = startPos.y - 120; // Slightly offset
-            this.spawnShadowMercenary('warrior', Characters.AREN, shadowX, shadowY);
+        // Boss Logic: Every 3 rounds (3, 6, 9...)
+        if (this.currentRound % 3 === 0) {
+            const bossCount = Math.floor(this.currentRound / 3);
+            const shadowX = startPos.x + 150;
+            const shadowY = startPos.y - 120;
+
+            // 1. Spawn Aren (Always the leader/first boss)
+            this.spawnShadowMercenary('warrior', Characters.AREN, shadowX, shadowY, monsterLevel);
             EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, `[!] 그림자 전사 아렌이 나타났습니다! ⚔️`);
+
+            // 2. Spawn Additional Bosses (Round 6 -> +1, Round 9 -> +2, etc.)
+            if (bossCount > 1) {
+                const availableChars = Object.values(Characters).filter(c => c.id !== 'aren');
+                // Shuffle availableChars to pick random unique ones
+                availableChars.sort(() => 0.5 - Math.random());
+
+                const extraBosses = Math.min(bossCount - 1, availableChars.length);
+
+                for (let i = 0; i < extraBosses; i++) {
+                    const charConfig = availableChars[i];
+                    // Offset position slightly for each extra boss so they don't stack
+                    const offsetX = (i + 1) * 50;
+                    const offsetY = (i % 2 === 0 ? 1 : -1) * 40;
+
+                    this.spawnShadowMercenary(charConfig.classId, charConfig, shadowX + offsetX, shadowY + offsetY, monsterLevel);
+                    EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, `[!] 추가 증원: 그림자 ${charConfig.name} 등장!`);
+                }
+            }
         }
 
         if (this.currentRound > 1) {
@@ -393,13 +416,17 @@ export default class DungeonScene extends Phaser.Scene {
      * @param {Object} characterConfig Configuration from EntityStats.js
      * @param {number} x X position
      * @param {number} y Y position
+     * @param {number} level Monster level
      */
-    spawnShadowMercenary(classId, characterConfig, x, y) {
+    spawnShadowMercenary(classId, characterConfig, x, y, level = 1) {
+        // Apply scaling
+        let config = scaleStats(characterConfig, level);
+
         // Create config with enemy team
-        const config = {
-            ...characterConfig,
-            id: characterConfig.id + '_shadow', // unique ID to avoid PartyManager conflicts
-            name: `그림자 ${characterConfig.name}`,
+        config = {
+            ...config,
+            id: characterConfig.id + '_shadow_' + Phaser.Math.Between(10000, 99999), // unique ID
+            name: `Lv.${level} 그림자 ${characterConfig.name}`,
             team: 'enemy'
         };
 
