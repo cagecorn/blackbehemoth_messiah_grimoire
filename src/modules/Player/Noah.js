@@ -11,7 +11,7 @@ export default class Noah extends Bard {
         this.skill = new HelpAnimalFriends({ cooldown: 12000 });
 
         // Fix shadow grounding (high-res sprites often need larger offsets)
-        this.shadowOffset = 32;
+        this.shadowOffset = 15;
         if (this.shadow) {
             this.shadow.destroy();
             this.shadow = this.scene.fxManager.createShadow(this);
