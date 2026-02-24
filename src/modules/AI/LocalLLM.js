@@ -93,9 +93,16 @@ ${unlockedNarrative ? `[해금된 서사]\n${unlockedNarrative}\n` : ''}${relati
 
                 console.warn(`[LocalLLM] HTTP Error ${response.status}: ${errorText}`);
 
+                // Check specifically for "Channel Error" which indicates backend instability
+                if (errorText.includes("Channel Error")) {
+                    console.error("[LocalLLM] 'Channel Error' detected. This usually indicates an LM Studio backend crash (often due to GPU/Model instability).");
+                }
+
                 // Retry logic for 400 Bad Request (often context/cache issues) or 500
                 if (retryCount > 0) {
-                    console.log(`[LocalLLM] Retrying request without cache_prompt...`);
+                    console.log(`[LocalLLM] Retrying request without cache_prompt in 1s...`);
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+
                     // Disable cache_prompt to bypass potential KV cache corruption
                     const newPayload = { ...payload, cache_prompt: false };
                     return this._makeRequest(newPayload, retryCount - 1);
@@ -108,8 +115,10 @@ ${unlockedNarrative ? `[해금된 서사]\n${unlockedNarrative}\n` : ''}${relati
         } catch (error) {
             console.error(`[LocalLLM] Request failed:`, error);
             // If it's a network error (like "Failed to fetch"), we might also want to retry
-            if (retryCount > 0 && error.message.includes('fetch')) {
-                 console.log(`[LocalLLM] Network error encountered. Retrying...`);
+            if (retryCount > 0) {
+                 console.log(`[LocalLLM] Network/Connection error. Retrying in 1s...`);
+                 await new Promise(resolve => setTimeout(resolve, 1000));
+
                  const newPayload = { ...payload, cache_prompt: false };
                  return this._makeRequest(newPayload, retryCount - 1);
             }
