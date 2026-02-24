@@ -159,7 +159,7 @@ ${unlockedNarrative ? `[해금된 서사]\n${unlockedNarrative}\n` : ''}${relati
     }
 
     async generateResponse(characterConfig, prompt, memories = [], chatHistory = [], currentLevel = 1, activePartyIds = []) {
-        console.log(`[LocalLLM] Requesting response for ${characterConfig.name || "Unknown"} (LV ${currentLevel}) with memories:`, memories);
+        console.log(`[LocalLLM] Requesting response for ${characterConfig.name || "Unknown"} (LV ${currentLevel}) - Memories: ${memories.length}`);
 
         const characterContext = this.getCharacterContext(characterConfig, currentLevel, activePartyIds);
 
