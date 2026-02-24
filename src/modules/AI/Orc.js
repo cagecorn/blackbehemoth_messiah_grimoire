@@ -1,16 +1,17 @@
 import Blackboard from './Blackboard.js';
 import BaseMonster from './BaseMonster.js';
 import applyRangedAI from './RangedAI.js';
-import { MonsterClasses } from '../Core/EntityStats.js';
+import { MonsterClasses, scaleStats } from '../Core/EntityStats.js';
 
 /**
  * Orc.js
  * Ranged enemy using Orc sprite.
  */
 export default class Orc extends BaseMonster {
-    constructor(scene, x, y, target) {
+    constructor(scene, x, y, target, level = 1) {
         // We pass the ORC config from EntityStats
-        super(scene, x, y, MonsterClasses.ORC, target);
+        const config = scaleStats(MonsterClasses.ORC, level);
+        super(scene, x, y, config, target);
         this.initAI();
     }
 

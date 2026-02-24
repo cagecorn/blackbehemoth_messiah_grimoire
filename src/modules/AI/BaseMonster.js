@@ -17,6 +17,9 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
         this.id = config.id + '_' + Phaser.Math.Between(1000, 9999);
         this.className = config.id; // Keeping original className
         this.unitName = config.name;
+        if (config.level && config.level > 1) {
+            this.unitName = `Lv.${config.level} ${config.name}`;
+        }
 
         // Stats
         this.maxHp = config.maxHp;

@@ -801,3 +801,27 @@ export const StageConfigs = {
         background: 'bg_cursed_forest'
     }
 };
+
+/**
+ * Utility: Scale stats based on level.
+ * @param {Object} config The base config.
+ * @param {number} level The target level.
+ * @returns {Object} A new config object with scaled stats.
+ */
+export function scaleStats(config, level) {
+    if (level <= 1) return { ...config, level: 1 };
+
+    // 10% stats increase per level
+    const multiplier = 1 + (level - 1) * 0.1;
+    const newConfig = { ...config };
+
+    newConfig.level = level;
+    newConfig.maxHp = Math.floor((config.maxHp || 0) * multiplier);
+    newConfig.hp = newConfig.maxHp;
+    newConfig.atk = Math.floor((config.atk || 0) * multiplier);
+    newConfig.mAtk = Math.floor((config.mAtk || 0) * multiplier);
+    newConfig.def = Math.floor((config.def || 0) * multiplier);
+    newConfig.mDef = Math.floor((config.mDef || 0) * multiplier);
+
+    return newConfig;
+}

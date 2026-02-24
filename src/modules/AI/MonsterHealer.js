@@ -3,17 +3,19 @@ import BaseMonster from './BaseMonster.js';
 import applyHealerAI from './HealerAI.js';
 import Blackboard from './Blackboard.js';
 import { HealerActions } from '../Combat/HealerActions.js';
+import { scaleStats } from '../Core/EntityStats.js';
 
 /**
  * MonsterHealer.js
  * An enemy that heals its own group and attacks the player.
  */
 export default class MonsterHealer extends BaseMonster {
-    constructor(scene, x, y, config, target) {
-        super(scene, x, y, config, target);
+    constructor(scene, x, y, config, target, level = 1) {
+        const scaledConfig = scaleStats(config, level);
+        super(scene, x, y, scaledConfig, target);
 
         // Stats
-        this.mAtk = config.mAtk || 10;
+        this.mAtk = scaledConfig.mAtk || 10;
         this.castSpd = config.castSpd || 1500;
         this.atkSpd = config.atkSpd || 2000;
         // lastActionTime is used inside HealerActions.js, 
