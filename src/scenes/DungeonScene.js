@@ -11,6 +11,8 @@ import Bao from '../modules/Player/Bao.js';
 import Bard from '../modules/Player/Bard.js';
 import Nana from '../modules/Player/Nana.js';
 import Nickle from '../modules/Player/Nickle.js';
+import Noah from '../modules/Player/Noah.js';
+import Noel from '../modules/Player/Noel.js';
 import ProjectileManager from '../modules/Combat/ProjectileManager.js';
 import ParticleManager from '../modules/Particles/ParticleManager.js';
 import FXManager from '../modules/Combat/FXManager.js';
@@ -136,6 +138,10 @@ export default class DungeonScene extends Phaser.Scene {
             } else if (charConfig.classId === 'bard') {
                 if (charId === 'nana') {
                     unit = new Nana(this, x, y, playerLeader, charConfig);
+                } else if (charId === 'noah') {
+                    unit = new Noah(this, x, y, playerLeader, charConfig);
+                } else if (charId === 'noel') {
+                    unit = new Noel(this, x, y, playerLeader, charConfig);
                 } else {
                     unit = new Bard(this, x, y, playerLeader, charConfig);
                 }

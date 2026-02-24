@@ -160,6 +160,14 @@ export default class UltimateManager {
             spriteKey = 'nana_cutscene';
             scale = 1.0;
             yOffset = height - 200;
+        } else if (unit.characterId === 'noah') {
+            spriteKey = 'noah_cutscene';
+            scale = 1.0;
+            yOffset = height - 200;
+        } else if (unit.characterId === 'noel') {
+            spriteKey = 'noel_cutscene';
+            scale = 1.0;
+            yOffset = height - 200;
         }
 
         const closeUp = this.scene.add.image(-200, yOffset, spriteKey)

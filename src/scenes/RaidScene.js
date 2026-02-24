@@ -36,11 +36,13 @@ export default class RaidScene extends Phaser.Scene {
         EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, `[레이드] 레이드가 시작되었습니다! 원정대 출격! 🏰`);
 
         // Background (Reuse Cursed Forest for Raid)
-        const bg = this.add.image(0, 0, 'bg_cursed_forest').setOrigin(0, 0);
+        const bgCenterX = this.cameras.main.width / 2;
+        const bgCenterY = this.cameras.main.height / 2;
+        const bg = this.add.image(bgCenterX, bgCenterY, 'bg_cursed_forest').setOrigin(0.5, 0.5);
         const scaleX = this.cameras.main.width / bg.width;
         const scaleY = this.cameras.main.height / bg.height;
-        const scale = Math.max(scaleX, scaleY);
-        bg.setScale(scale).setScrollFactor(0);
+        const scale = Math.max(scaleX, scaleY) * 1.2; // Extra scale to allow for camera movement room
+        bg.setScale(scale);
 
         // Physics Groups
         this.mercenaries = this.physics.add.group();

@@ -50,10 +50,14 @@ class LocalLLM {
             }
         }
 
+        const examples = (characterConfig.dialogueExamples || [])
+            .map(ex => `- "${ex}"`)
+            .join('\n');
+
         return `[캐릭터 설정]
 이름: ${characterConfig.name}
 성격: "${characterConfig.personality}"
-${unlockedNarrative ? `[해금된 서사]\n${unlockedNarrative}\n` : ''}${relationshipContext}`;
+${unlockedNarrative ? `[해금된 서사]\n${unlockedNarrative}\n` : ''}${relationshipContext}${examples ? `\n[말투 및 스타일 가이드]\n${examples}\n` : ''}`;
     }
 
     /**
@@ -150,153 +154,6 @@ ${characterContext}
         } catch (error) {
             console.error('[LocalLLM] Error:', error);
             return "...";
-        }
-    }
-
-    /**
-     * Generate a batch of barks for the entire party in one go (Dialogue Pistol Mode).
-     */
-    async generatePartyBarks(partyConfigs, situationalContext = "") {
-        console.log(`[LocalLLM] Generating party barks for ${partyConfigs.length} members. Context: ${situationalContext}`);
-
-        const partyContexts = partyConfigs.map(config => {
-            return this.getCharacterContext(config, config.level || 1, partyConfigs.map(c => c.characterId));
-        }).join('\n\n');
-
-        const systemMessage = {
-            role: "system",
-            content: `${this.baseSystemPrompt}
-
-[현재 파티 구성 및 캐릭터 설정]
-${partyContexts}
-
-[최종 명령: 연극 대본 작성 (티키타카 모드)]
-1. 현재 상황: ${situationalContext || "전투 또는 탐험 중"}
-2. 대화의 원칙: 5줄 내외의 대사가 서로 유기적으로 연결된 '하나의 장면'이어야 합니다.
-   - 앞사람의 말을 무시하지 말고, 그에 반응하거나 동의/반박하며 대화를 이어가십시오.
-   - 캐릭터 간의 [관계]와 [성격]을 적극 활용하여, 동료의 이름을 부르거나 특징적인 별명을 사용하십시오.
-   - 단순한 정보 전달이 아닌, 감정이 교차하는 '티키타카'를 보여주십시오.
-3. 각 대사는 반드시 <thought> 공간에서 [앞선 동료의 말에 대한 내 캐릭터의 반응]을 먼저 분석한 뒤에 출력하십시오.
-4. 출력 형식은 반드시 다음과 같이 지키십시오 (각 줄마다 캐릭터 ID 명시):
-   [캐릭터ID] <thought>분석...</thought> "대사"
-
-[주의] 지문이나 설명 없이 오직 [ID], 태그, 대사만 출력하십시오. 절대 베껴쓰지 말고 새로운 대사를 창조하십시오.`
-        };
-
-        const userMessage = { role: "user", content: "현재 상황과 인물 관계를 바탕으로, 서로 유기적으로 대화하는 5줄 분량의 '연극 대본'을 출력하라." };
-
-        try {
-            const response = await fetch(this.apiURL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    model: this.modelName,
-                    messages: [systemMessage, userMessage],
-                    temperature: 0.85,
-                    max_tokens: 2048,
-                    cache_prompt: true
-                })
-            });
-
-            if (!response.ok) throw new Error(`HTTP Error ${response.status}`);
-
-            const data = await response.json();
-            const fullContent = data.choices[0].message.content.trim();
-            console.log(`[LocalLLM] Raw Party Script:\n`, fullContent);
-
-            // --- Robust Smart Extractor Logic ---
-            const barks = [];
-            const extractionMap = new Map(); // name/id -> characterId
-
-            partyConfigs.forEach(config => {
-                const id = config.characterId.toLowerCase();
-                const fullName = config.name.toLowerCase();
-
-                extractionMap.set(id, id);
-                extractionMap.set(this.escapeRegExp(id), id);
-
-                // Extract parts of the name: "Aren (아렌)" -> "Aren", "아렌"
-                extractionMap.set(this.escapeRegExp(fullName), id);
-
-                const parts = fullName.split(/[\(\)\/\s]+/).filter(p => p.trim() !== "");
-                parts.forEach(p => {
-                    const cleanedPart = p.trim().toLowerCase();
-                    if (cleanedPart.length > 1) { // Ignore single character particles if any
-                        extractionMap.set(this.escapeRegExp(cleanedPart), id);
-                    }
-                });
-            });
-
-            const allKeys = Array.from(extractionMap.keys());
-            // Marker pattern: start of line or space, then [?]Name[?], followed by optional colon/dash/spaces
-            const markerRegex = new RegExp(`(?:^|\\n)(?:\\[|\\*\\*|)?(${allKeys.join('|')})(?:\\]|\\*\\*|)?[:\\s-]*`, 'gi');
-
-            let lastIndex = 0;
-            let currentMatchCharId = null;
-            let match;
-
-            while ((match = markerRegex.exec(fullContent)) !== null) {
-                if (currentMatchCharId !== null) {
-                    const segment = fullContent.substring(lastIndex, match.index);
-                    const text = this.sanitizeBark(segment);
-                    if (text) {
-                        barks.push({ characterId: currentMatchCharId, text: text });
-                    }
-                }
-
-                // Identify character by searching for the key in our map
-                const matchedText = match[1].toLowerCase();
-                // Find which key actually matched (longest match first to be safe, but map is direct)
-                let foundConfigId = null;
-                for (let [key, charId] of extractionMap.entries()) {
-                    // We must unescape or just compare matchedText directly with original keys
-                    // Since matchedText is what matched, we find the entry whose key (when unescaped) matches
-                    if (matchedText === key.replace(/\\(.)/g, '$1')) {
-                        foundConfigId = charId;
-                        break;
-                    }
-                }
-
-                currentMatchCharId = foundConfigId;
-                lastIndex = markerRegex.lastIndex;
-            }
-
-            // Capture last segment
-            if (currentMatchCharId !== null) {
-                const segment = fullContent.substring(lastIndex);
-                const text = this.sanitizeBark(segment);
-                if (text) {
-                    barks.push({ characterId: currentMatchCharId, text: text });
-                }
-            }
-
-            // Fallback: If smart extraction yielded too little, try a simpler line-by-line regex
-            if (barks.length < 2) {
-                const fallbackBarks = [];
-                const lines = fullContent.split('\n');
-                for (const line of lines) {
-                    // Regex for "Name: Text" or "**Name**: Text"
-                    const m = line.match(/^(?:\*\*|\[)?([^:\]\*]+)(?:\*\*|\])?[:\s-]*(?:<thought>[\s\S]*?<\/thought>)?\s*["'“『]([^"'”』]+)["'”』]/i);
-                    if (m) {
-                        const candidate = m[1].trim().toLowerCase();
-                        let matchedConfig = partyConfigs.find(c =>
-                            c.characterId.toLowerCase() === candidate ||
-                            c.name.toLowerCase().includes(candidate)
-                        );
-
-                        if (matchedConfig) {
-                            const text = this.sanitizeBark(m[2]);
-                            if (text) fallbackBarks.push({ characterId: matchedConfig.characterId.toLowerCase(), text: text });
-                        }
-                    }
-                }
-                if (fallbackBarks.length > barks.length) return fallbackBarks;
-            }
-
-            return barks;
-        } catch (error) {
-            console.error('[LocalLLM] Party Bark Error:', error);
-            return [];
         }
     }
 

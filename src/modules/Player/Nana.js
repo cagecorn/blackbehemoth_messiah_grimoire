@@ -127,6 +127,7 @@ export default class Nana extends Bard {
 
         // 4. Personality Swap
         this.personality = this.berserkPersonality;
+        this.config.dialogueExamples = Characters.NANA.berserkDialogueExamples;
 
         // 5. Visual Aura
         this.berserkAura = this.scene.add.particles(0, 0, 'emoji_blood_drop', {
@@ -162,6 +163,7 @@ export default class Nana extends Bard {
 
         // 4. Personality Revert
         this.personality = this.normalPersonality;
+        this.config.dialogueExamples = Characters.NANA.dialogueExamples;
 
         // 5. Penalty: Sleep for 2 seconds
         this.isAsleep = true;

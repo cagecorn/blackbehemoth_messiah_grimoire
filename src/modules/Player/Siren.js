@@ -89,12 +89,16 @@ export default class Siren extends Mercenary {
         this.lastFireTime = now;
 
         // Visual "Singing" nudge
-        this.scene.tweens.add({
-            targets: this.sprite,
-            y: this.sprite.y - 10,
-            duration: 100,
-            yoyo: true
-        });
+        if (this.sprite) {
+            this.scene.tweens.killTweensOf(this.sprite);
+            this.sprite.y = 0; // Reset y position
+            this.scene.tweens.add({
+                targets: this.sprite,
+                y: -10, // Absolute relative offset
+                duration: 100,
+                yoyo: true
+            });
+        }
 
         // Laser attack (Instant hit)
         this.scene.projectileManager.fire(

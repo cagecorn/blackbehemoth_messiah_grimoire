@@ -88,7 +88,7 @@ export default function applyMeleeAI(agent, targetListGetter, initialState = 'AG
 
         // Physics move toward target if not close enough
         const dist = Phaser.Math.Distance.Between(a.x, a.y, target.x, target.y);
-        const atkRange = a.config.atkRange || 50;
+        const atkRange = a.getTotalAtkRange ? a.getTotalAtkRange() : (a.config.atkRange || 50);
 
         // Account for collision radii for better combat depth/reach
         const r1 = a.body ? a.body.radius : 0;
@@ -96,7 +96,7 @@ export default function applyMeleeAI(agent, targetListGetter, initialState = 'AG
         const reachDist = dist - r1 - r2;
 
         if (reachDist > atkRange) {
-            a.scene.physics.moveToObject(a, target, a.speed);
+            agent.scene.physics.moveToObject(agent, target, agent.getTotalSpeed ? agent.getTotalSpeed() : agent.speed);
             return 1; // RUNNING
         } else {
             // Reached target, stop moving
@@ -115,28 +115,24 @@ export default function applyMeleeAI(agent, targetListGetter, initialState = 'AG
 
         const now = a.scene.time.now;
         if (!a.lastAttackTime) a.lastAttackTime = 0;
-        const atkSpd = a.atkSpd || 1000;
-
-        // Prevent attack if shocked
-        if (a.isShocked) {
-            return 1; // RUNNING
-        }
-
-        if (now - a.lastAttackTime >= atkSpd) {
-            a.lastAttackTime = now;
+        const currentAtkSpd = agent.getTotalAtkSpd ? agent.getTotalAtkSpd() : (agent.atkSpd || 1000);
+        if (now - agent.lastAttackTime >= currentAtkSpd) {
+            agent.lastAttackTime = now;
 
             // Hit Animation (Simple Tween)
+            a.scene.tweens.killTweensOf(a.sprite);
+            a.sprite.x = 0;
             a.scene.tweens.add({
                 targets: a.sprite,
-                x: a.sprite.x + (a.lastScaleX * 10), // nudge forward
+                x: a.lastScaleX * 10,
                 duration: 50,
                 yoyo: true
             });
 
             // Calculate and Apply Damage
             let damage = a.getTotalAtk ? a.getTotalAtk() : a.atk;
-            // Basic Accuracy / Crit check logic could go here
-            if (Math.random() * 100 < a.crit) {
+            const currentCrit = a.getTotalCrit ? a.getTotalCrit() : (a.crit || 0);
+            if (Math.random() * 100 < currentCrit) {
                 damage *= 1.5;
             }
 

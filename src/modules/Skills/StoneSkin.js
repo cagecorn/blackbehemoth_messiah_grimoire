@@ -69,9 +69,11 @@ export default class StoneSkin {
 
         // Add a small cast animation (nudge up/down)
         if (caster.sprite) {
+            this.scene.tweens.killTweensOf(caster.sprite);
+            caster.sprite.y = 0;
             this.scene.tweens.add({
                 targets: caster.sprite,
-                y: caster.sprite.y - 10,
+                y: -10,
                 duration: 150,
                 yoyo: true,
                 ease: 'Sine.easeInOut'

@@ -80,9 +80,11 @@ export default class ProjectileManager {
         };
 
         // Check if image/texture actually exists in the scene
-        if (imageTypes.includes(type) && this.scene.textures.exists(type)) {
+        const textureExists = this.scene.textures.exists(type);
+        if (textureExists) {
             projectile = this.scene.add.image(x, y, type);
-            const size = (type === 'fireball' || type === 'emoji_fire') ? 48 : 24;
+            // Default size 32 for general emojis, special cases for larger ones
+            const size = (type === 'fireball' || type === 'emoji_fire') ? 48 : 32;
             projectile.setDisplaySize(size, size);
             if (type === 'emoji_fire') projectile.setTint(0xffaa00);
         } else {
@@ -91,7 +93,9 @@ export default class ProjectileManager {
             projectile.setOrigin(0.5); // Center text for better rotation behavior
         }
 
-        if (type === 'emoji_sparkle' || type === 'emoji_note' || isMagic) {
+        // Linear movement for magic, sparkles, notes, OR if it's a known emoji texture (herd effect)
+        const isEmoji = type.startsWith('emoji_');
+        if (type === 'emoji_sparkle' || type === 'emoji_note' || isMagic || isEmoji) {
             this.scene.tweens.add({
                 targets: projectile,
                 x: targetX,

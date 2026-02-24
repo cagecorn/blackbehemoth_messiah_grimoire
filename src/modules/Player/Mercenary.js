@@ -43,6 +43,16 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         this.bonusMAtk = 0;
         this.bonusDR = 0;
         this.bonusCrit = 0;
+        this.bonusEva = 0;
+        this.bonusSpeed = 0;
+        this.bonusAtkSpd = 0;
+        this.bonusDef = 0;
+        this.bonusMDef = 0;
+        this.bonusAtkRange = 0;
+        this.bonusRangeMin = 0;
+        this.bonusRangeMax = 0;
+        this.bonusCastSpd = 0;
+        this.bonusAcc = 0;
         this.isTacticalCommandActive = false;
         this.isBloodRaging = false;
         this.isStunned = false;
@@ -109,6 +119,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
 
         this.healthBar = new HealthBar(scene, x, y - this.barYOffset, 64, 8);
         this.cooldownBar = new CooldownBar(scene, x, y - (this.barYOffset - 10), 64, 4); // Placed just below HP
+        this.ultBar = new CooldownBar(scene, x, y - (this.barYOffset - 16), 64, 4); // Ultimate Bar
 
         this.aiDebugText = this.scene.add.text(0, -(this.barYOffset + 14), '', {
             fontSize: '12px',
@@ -228,6 +239,48 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         return this.crit + (this.bonusCrit || 0);
     }
 
+    getTotalDef() {
+        return this.def + (this.bonusDef || 0);
+    }
+
+    getTotalEva() {
+        return this.eva + (this.bonusEva || 0);
+    }
+
+    getTotalSpeed() {
+        return this.speed + (this.bonusSpeed || 0);
+    }
+
+    getTotalMDef() {
+        return this.mDef + (this.bonusMDef || 0);
+    }
+
+    getTotalAtkSpd() {
+        return Math.max(100, this.atkSpd - (this.bonusAtkSpd || 0));
+    }
+
+    getTotalAtkRange() {
+        return this.atkRange + (this.bonusAtkRange || 0);
+    }
+
+    getTotalRangeMin() {
+        return Math.max(0, this.rangeMin + (this.bonusRangeMin || 0));
+    }
+
+    getTotalRangeMax() {
+        return Math.max(0, this.rangeMax + (this.bonusRangeMax || 0));
+    }
+
+    getTotalCastSpd() {
+        // castSpd usually works like atkSpd (lower is better or higher is better depends on implementation)
+        // In our case, castSpd is like cooldown/delay, so lower is better.
+        return Math.max(100, this.castSpd - (this.bonusCastSpd || 0));
+    }
+
+    getTotalAcc() {
+        return this.acc + (this.bonusAcc || 0);
+    }
+
     /**
      * Returns the Phaser group that contains potential targets for this unit.
      */
@@ -283,8 +336,9 @@ export default class Mercenary extends Phaser.GameObjects.Container {
 
     takeDamage(amount, attacker = null, isUltimate = false) {
         // --- 0. Accuracy vs Evasion Check ---
-        if (attacker && typeof attacker === 'object' && attacker.acc !== undefined && this.eva !== undefined) {
-            const hitChance = Math.max(0.05, Math.min(1.0, (attacker.acc - this.eva) / 100.0));
+        const myEva = this.getTotalEva ? this.getTotalEva() : (this.eva || 0);
+        if (attacker && typeof attacker === 'object' && attacker.acc !== undefined) {
+            const hitChance = Math.max(0.05, Math.min(1.0, (attacker.acc - myEva) / 100.0));
             if (Math.random() > hitChance) {
                 // MISS!
                 if (this.scene.fxManager) {
@@ -303,7 +357,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         const attackerId = (attacker && typeof attacker === 'object') ? (attacker.id || attacker.className) : attacker;
 
         // 1. Physical Damage is reduced by Def
-        let finalDamage = Math.max(1, amount - this.def);
+        let finalDamage = Math.max(1, amount - this.getTotalDef());
 
         // 1.5 Damage Reduction Buff
         if (this.bonusDR > 0) {
@@ -347,7 +401,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
 
     takeMagicDamage(amount, attacker = null, isUltimate = false) {
         // 1. Magic Damage is reduced by mDef
-        let finalDamage = Math.max(1, amount - this.mDef);
+        let finalDamage = Math.max(1, amount - this.getTotalMDef());
 
         // 1.5 Damage Reduction Buff
         if (this.bonusDR > 0) {
@@ -557,7 +611,35 @@ export default class Mercenary extends Phaser.GameObjects.Container {
 
         if (this.healthBar) this.healthBar.destroy();
         if (this.cooldownBar) this.cooldownBar.destroy();
+        if (this.ultBar) this.ultBar.destroy();
         this.destroy();
+    }
+
+    cleanse() {
+        if (this.wakeUp) this.wakeUp();
+        if (this._shockCleanupTimer) {
+            this.isShocked = false;
+            if (this.sprite) {
+                this.sprite.clearTint();
+                this.sprite.x = 0;
+            }
+            if (this._shockShakeTween) this._shockShakeTween.stop();
+            if (this._shockEmitter) this._shockEmitter.destroy();
+            this._shockCleanupTimer.remove();
+            this._shockCleanupTimer = null;
+        }
+        if (this._burnCleanupTimer) {
+            this.isBurning = false;
+            if (this.sprite) this.sprite.clearTint();
+            if (this._burnEmitter) this._burnEmitter.destroy();
+            this._burnCleanupTimer.remove();
+            this._burnCleanupTimer = null;
+        }
+        if (this.isAirborne) this.isAirborne = false;
+        if (this.isStunned) this.isStunned = false;
+
+        if (this.syncStatusUI) this.syncStatusUI();
+        console.log(`[Mercenary] ${this.unitName} has been cleansed.`);
     }
 
     destroy(fromScene) {
@@ -575,7 +657,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         EventBus.off(EventBus.EVENTS.ULT_TRIGGER, this.handleUltTrigger);
         EventBus.off('PERK_LEARN', this.handlePerkLearn);
 
-        console.log(`[Mercenary] Cleaned up listeners for ${this.unitName} (${this.characterId})`);
+        console.log(`[Mercenary] Cleaned up listeners for ${this.unitName}(${this.characterId})`);
 
         super.destroy(fromScene);
     }
@@ -616,6 +698,10 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             } else {
                 this.cooldownBar.setValue(0); // Empty if no skill
             }
+        }
+        if (this.ultBar) {
+            this.ultBar.setPos(this.x, this.y - (this.barYOffset - 16));
+            this.ultBar.setValue(this.ultGauge / this.maxUltGauge);
         }
         if (this.btManager && this.aiDebugText) {
             this.aiDebugText.setText(this.btManager.lastActiveNodeName || 'No Name');
@@ -765,10 +851,10 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             myBuffs.forEach(buff => {
                 let desc = '';
                 if (buff.amountAtk > 0 || buff.amountMAtk > 0) {
-                    desc = `공격력 +${buff.amountAtk}, 마법공격력 +${buff.amountMAtk}`;
+                    desc = `공격력 + ${buff.amountAtk}, 마법공격력 + ${buff.amountMAtk} `;
                 }
                 if (buff.amountDR > 0) {
-                    desc += (desc ? ', ' : '') + `피해 감소 +${(buff.amountDR * 100).toFixed(0)}%`;
+                    desc += (desc ? ', ' : '') + `피해 감소 + ${(buff.amountDR * 100).toFixed(0)}% `;
                 }
 
                 let emoji = '💪';

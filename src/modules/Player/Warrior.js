@@ -138,8 +138,9 @@ export default class Warrior extends Mercenary {
                 this.blackboard.set('ai_state', 'MANUAL');
                 console.log(`[${this.unitName}] Manual override engaged, AI disabled.`);
             }
+            const currentSpeed = this.getTotalSpeed();
             this.body.setVelocity(vx, vy);
-            this.body.velocity.normalize().scale(this.speed);
+            this.body.velocity.normalize().scale(currentSpeed);
         } else if (this.blackboard && this.blackboard.get('ai_state') !== 'AGGRESSIVE') {
             // Stop moving if purely manual and keys are released
             this.body.setVelocity(0);

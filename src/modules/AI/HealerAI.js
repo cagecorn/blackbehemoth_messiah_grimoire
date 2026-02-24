@@ -107,7 +107,8 @@ export default function applyHealerAI(unit, getAllyGroup, getEnemyGroup) {
 
         // Move to heal range if too far
         if (reachDist > (unit.config.atkRange || 200)) {
-            unit.scene.physics.moveToObject(unit, target, unit.speed);
+            const currentSpeed = unit.getTotalSpeed ? unit.getTotalSpeed() : unit.speed;
+            unit.scene.physics.moveToObject(unit, target, currentSpeed);
             return 1; // RUNNING
         } else {
             if (unit.body) unit.body.setVelocity(0, 0);
@@ -124,9 +125,10 @@ export default function applyHealerAI(unit, getAllyGroup, getEnemyGroup) {
         if (!targetObj || !targetObj.active) return 2; // FAILED
 
         const angle = Phaser.Math.Angle.Between(targetObj.x, targetObj.y, unit.x, unit.y);
+        const currentSpeed = unit.getTotalSpeed ? unit.getTotalSpeed() : unit.speed;
         unit.body.setVelocity(
-            Math.cos(angle) * unit.speed,
-            Math.sin(angle) * unit.speed
+            Math.cos(angle) * currentSpeed,
+            Math.sin(angle) * currentSpeed
         );
         return 1; // RUNNING
     }, "Kiting (Flee)");
@@ -140,9 +142,10 @@ export default function applyHealerAI(unit, getAllyGroup, getEnemyGroup) {
         const r2 = targetObj.body ? targetObj.body.radius : 0;
         const reachDist = dist - r1 - r2;
 
-        const atkRange = unit.config.atkRange || 200;
+        const atkRange = unit.getTotalAtkRange ? unit.getTotalAtkRange() : (unit.config.atkRange || 200);
         if (reachDist > atkRange) {
-            unit.scene.physics.moveToObject(unit, targetObj, unit.speed);
+            const currentSpeed = unit.getTotalSpeed ? unit.getTotalSpeed() : unit.speed;
+            unit.scene.physics.moveToObject(unit, targetObj, currentSpeed);
             return 1; // RUNNING
         }
         return 0; // SUCCESS

@@ -55,6 +55,15 @@ export default class SkillStoneBlast {
         rock.setAlpha(0);
 
         // 2. Levitation phase
+        scene.tweens.killTweensOf(caster.sprite);
+        caster.sprite.y = 0;
+        scene.tweens.add({
+            targets: caster.sprite,
+            y: -100,
+            duration: 400,
+            yoyo: true,
+            ease: 'Power2'
+        });
         scene.tweens.add({
             targets: rock,
             y: caster.y - 100,

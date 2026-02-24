@@ -88,9 +88,11 @@ export default class Bard extends Mercenary {
         }
 
         // Visual cast bump
+        this.scene.tweens.killTweensOf(this.sprite);
+        this.sprite.y = 0;
         this.scene.tweens.add({
             targets: this.sprite,
-            y: this.sprite.y - 15,
+            y: -15,
             duration: 100,
             yoyo: true
         });
@@ -100,13 +102,15 @@ export default class Bard extends Mercenary {
 
     fireProjectile(target) {
         const now = this.scene.time.now;
-        if (now - this.lastFireTime < this.atkSpd) return false;
+        if (now - this.lastFireTime < this.getTotalAtkSpd()) return false;
 
         this.lastFireTime = now;
 
+        this.scene.tweens.killTweensOf(this.sprite);
+        this.sprite.x = 0;
         this.scene.tweens.add({
             targets: this.sprite,
-            x: this.sprite.x + (this.lastScaleX * 10),
+            x: this.lastScaleX * 10,
             duration: 50,
             yoyo: true
         });

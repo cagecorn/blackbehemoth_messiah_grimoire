@@ -99,6 +99,23 @@ export default class BootScene extends Phaser.Scene {
         this.load.svg('emoji_cry', 'assets/emojis/1f62d.svg', { width: 32, height: 32 });
         this.load.svg('emoji_heart', 'assets/emojis/2764.svg', { width: 32, height: 32 });
 
+        // Noah's Animals
+        this.load.svg('emoji_dog', 'assets/emojis/1f415.svg', { width: 32, height: 32 });
+        this.load.svg('emoji_cat', 'assets/emojis/1f408.svg', { width: 32, height: 32 });
+        this.load.svg('emoji_horse', 'assets/emojis/1f40e.svg', { width: 32, height: 32 });
+        this.load.svg('emoji_pig', 'assets/emojis/1f416.svg', { width: 32, height: 32 });
+        this.load.svg('emoji_tiger', 'assets/emojis/1f405.svg', { width: 32, height: 32 });
+        this.load.svg('emoji_bison', 'assets/emojis/1f9ac.svg', { width: 32, height: 32 });
+        this.load.svg('emoji_sheep', 'assets/emojis/1f411.svg', { width: 32, height: 32 });
+
+        // Noel's Plants
+        this.load.svg('emoji_kiwi', 'assets/emojis/1f95d.svg', { width: 32, height: 32 });
+        this.load.svg('emoji_grapes', 'assets/emojis/1f347.svg', { width: 32, height: 32 });
+        this.load.svg('emoji_watermelon', 'assets/emojis/1f349.svg', { width: 32, height: 32 });
+        this.load.svg('emoji_pineapple', 'assets/emojis/1f34d.svg', { width: 32, height: 32 });
+        this.load.svg('emoji_banana', 'assets/emojis/1f34c.svg', { width: 32, height: 32 });
+        this.load.svg('emoji_strawberry', 'assets/emojis/1f353.svg', { width: 32, height: 32 });
+
         // Load Character Sprites
         this.load.image('warrior_sprite', 'assets/characters/party/warrior_sprite.png');
         this.load.image('archer_sprite', 'assets/characters/party/archer_sprite.png');
@@ -132,6 +149,10 @@ export default class BootScene extends Phaser.Scene {
         this.load.image('nana_sprite', 'assets/characters/party/nana_sprite.png');
         this.load.image('nana_cutscene', 'assets/characters/party/nana_cutscene.png');
         this.load.image('nana_ultimate_sprite', 'assets/characters/party/nana_ultimate_sprite.png');
+        this.load.image('noah_sprite', 'assets/characters/party/noah_sprite.png');
+        this.load.image('noah_cutscene', 'assets/characters/party/noah_cutscene.png');
+        this.load.image('noel_sprite', 'assets/characters/party/noel_sprite.png');
+        this.load.image('noel_cutscene', 'assets/characters/party/noel_cutscene.png');
 
         // Load effect emojis
         this.load.svg('emoji_rock', 'assets/emojis/1f5ff.svg', { width: 32, height: 32 });

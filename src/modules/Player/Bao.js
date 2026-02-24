@@ -24,6 +24,8 @@ export default class Bao extends Wizard {
         this.skill = new SkillStoneBlast();
         this.ultimateSkill = new SkillGoBabao();
 
+        this.shadowOffset = 32;
+
         // Re-initialize AI with the new skill
         this.initAI();
 

@@ -96,7 +96,8 @@ export default function applyProtectAI(agent, allyGroupGetter, enemyGroupGetter)
         const dist = Phaser.Math.Distance.Between(a.x, a.y, target.x, target.y);
 
         if (dist > 60) {
-            a.scene.physics.moveToObject(a, target, a.speed);
+            const currentSpeed = a.getTotalSpeed ? a.getTotalSpeed() : a.speed;
+            a.scene.physics.moveToObject(a, target, currentSpeed);
             return 1; // RUNNING
         } else {
             a.body.setVelocity(0, 0);
@@ -113,10 +114,11 @@ export default function applyProtectAI(agent, allyGroupGetter, enemyGroupGetter)
         }
 
         const dist = Phaser.Math.Distance.Between(a.x, a.y, threat.x, threat.y);
-        const range = a.atkRange || 50;
+        const range = a.getTotalAtkRange ? a.getTotalAtkRange() : (a.atkRange || 50);
 
         if (dist > range) {
-            a.scene.physics.moveToObject(a, threat, a.speed);
+            const currentSpeed = a.getTotalSpeed ? a.getTotalSpeed() : a.speed;
+            a.scene.physics.moveToObject(a, threat, currentSpeed);
             return 1;
         } else {
             a.body.setVelocity(0, 0);
@@ -135,9 +137,11 @@ export default function applyProtectAI(agent, allyGroupGetter, enemyGroupGetter)
             a.lastAttackTime = now;
 
             // Basic melee attack logic
+            a.scene.tweens.killTweensOf(a.sprite);
+            a.sprite.x = 0;
             a.scene.tweens.add({
                 targets: a.sprite,
-                x: a.sprite.x + (a.lastScaleX * 10),
+                x: a.lastScaleX * 10,
                 duration: 50,
                 yoyo: true
             });

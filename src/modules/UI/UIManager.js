@@ -255,8 +255,8 @@ export default class UIManager {
                 // Construct a dynamic config if the unit exists in the scene
                 const unit = this.scene && this.scene.mercenaries ? this.scene.mercenaries.getChildren().find(m => m.id === agentId) : null;
                 const dynamicConfig = unit ? {
-                    ...charConfig,
-                    personality: unit.personality || charConfig.personality
+                    ...unit.config,
+                    personality: unit.personality || unit.config.personality
                 } : charConfig;
 
                 const activePartyIds = partyManager.getActiveParty().filter(id => id !== null);

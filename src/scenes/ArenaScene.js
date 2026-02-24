@@ -44,11 +44,13 @@ export default class ArenaScene extends Phaser.Scene {
         console.log('ArenaScene started');
 
         // Background
-        const bg = this.add.image(0, 0, 'bg_arena').setOrigin(0, 0);
+        const centerX = this.cameras.main.width / 2;
+        const centerY = this.cameras.main.height / 2;
+        const bg = this.add.image(centerX, centerY, 'bg_arena').setOrigin(0.5, 0.5);
         const scaleX = this.cameras.main.width / bg.width;
         const scaleY = this.cameras.main.height / bg.height;
-        const scale = Math.max(scaleX, scaleY);
-        bg.setScale(scale).setScrollFactor(0);
+        const scale = Math.max(scaleX, scaleY) * 1.2; // Extra scale to allow for camera movement room
+        bg.setScale(scale);
 
         // Physics Groups
         this.mercenaries = this.physics.add.group();
@@ -286,6 +288,15 @@ export default class ArenaScene extends Phaser.Scene {
             }
         });
 
+        // Add enemies to the focus calculation
+        this.enemies.getChildren().forEach(enemy => {
+            if (enemy.active && enemy.hp > 0) {
+                totalX += enemy.x;
+                totalY += enemy.y;
+                count++;
+            }
+        });
+
         if (count > 0) {
             const avgX = totalX / count;
             const avgY = totalY / count;
@@ -306,7 +317,7 @@ export default class ArenaScene extends Phaser.Scene {
             fontStyle: 'bold',
             stroke: '#000',
             strokeThickness: 8
-        }).setOrigin(0.5).setDepth(2000).setAlpha(0).setAlpha(1);
+        }).setOrigin(0.5).setDepth(2000).setScrollFactor(0).setAlpha(0).setAlpha(1);
 
         this.time.delayedCall(3000, () => {
             this.battleCount++;

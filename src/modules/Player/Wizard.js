@@ -102,9 +102,11 @@ export default class Wizard extends Mercenary {
         this.lastFireTime = now;
 
         // Use mAtk and pass 'laser' type to ProjectileManager
+        this.scene.tweens.killTweensOf(this.sprite);
+        this.sprite.x = 0;
         this.scene.tweens.add({
             targets: this.sprite,
-            x: this.sprite.x + (this.lastScaleX * 10), // nudge forward
+            x: this.lastScaleX * 10,
             duration: 50,
             yoyo: true
         });

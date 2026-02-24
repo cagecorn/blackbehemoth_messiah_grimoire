@@ -17,7 +17,7 @@ export default class CCManager {
      * @param {number} height - How high the sprite goes
      */
     applyAirborne(target, duration = 1000, height = 60) {
-        if (!target || !target.active || target.hp <= 0) return;
+        if (!target || !target.active || target.hp <= 0 || target.isCCImmune) return;
 
         // Prevent overriding an existing airborne unless we want to reset it
         if (target.isAirborne) {
@@ -63,7 +63,7 @@ export default class CCManager {
      * @param {number} duration - How fast they are pushed in ms
      */
     applyKnockback(target, angle, distance = 150, duration = 300) {
-        if (!target || !target.active || target.hp <= 0) return;
+        if (!target || !target.active || target.hp <= 0 || target.isCCImmune) return;
 
         if (target.isKnockedBack) {
             return; // Ignore if already being knocked back
@@ -115,7 +115,7 @@ export default class CCManager {
      * @param {number} duration - How long the effect lasts in ms
      */
     applyShock(target, duration = 3000) {
-        if (!target || !target.active || target.hp <= 0) return;
+        if (!target || !target.active || target.hp <= 0 || target.isCCImmune) return;
 
         console.log(`[CCManager] Attempting to apply Shock to ${target.unitName}...`);
 
@@ -190,7 +190,7 @@ export default class CCManager {
      * @param {number} duration - How long the effect lasts in ms
      */
     applySleep(target, duration = 5000) {
-        if (!target || !target.active || target.hp <= 0) return;
+        if (!target || !target.active || target.hp <= 0 || target.isCCImmune) return;
 
         console.log(`[CCManager] Applying Sleep to ${target.unitName}...`);
 
@@ -258,7 +258,7 @@ export default class CCManager {
      * @param {number} duration - How long the effect lasts in ms
      */
     applyBurn(target, duration = 5000) {
-        if (!target || !target.active || target.hp <= 0) return;
+        if (!target || !target.active || target.hp <= 0 || target.isCCImmune) return;
 
         console.log(`[CCManager] Applying Burn to ${target.unitName}...`);
 
@@ -294,11 +294,31 @@ export default class CCManager {
                 target.isBurning = false;
                 if (target.sprite) target.sprite.clearTint();
                 if (target.syncStatusUI) target.syncStatusUI();
+                if (target._burnInterval) target._burnInterval.remove();
             }
             if (target._burnEmitter) target._burnEmitter.destroy();
             target._burnCleanupTimer = null;
             target._burnEmitter = null;
+            target._burnInterval = null;
             console.log(`[CCManager] Burn expired for ${target.unitName}`);
+        });
+
+        // 3. DOT Damage Logic (2% Max HP per second)
+        target._burnInterval = this.scene.time.addEvent({
+            delay: 1000,
+            repeat: Math.floor(duration / 1000) - 1,
+            callback: () => {
+                if (target && target.active && target.hp > 0) {
+                    const maxHp = target.getTotalMaxHp ? target.getTotalMaxHp() : (target.maxHp || 100);
+                    const damage = Math.ceil(maxHp * 0.02);
+
+                    // Apply raw damage (bypass defense for true fire damage if desired, but takeDamage is standard)
+                    target.takeDamage(damage);
+                    if (this.scene.fxManager) {
+                        this.scene.fxManager.showDamageText(target, damage.toString(), '#ff4400');
+                    }
+                }
+            }
         });
     }
 

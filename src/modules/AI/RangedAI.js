@@ -41,8 +41,8 @@ export default function applyRangedAI(unit, skillNode = null) {
         const r2 = targetObj.body ? targetObj.body.radius : 0;
         const reachDist = dist - r1 - r2;
 
-        const rangeMin = unit.rangeMin !== undefined ? unit.rangeMin : 150;
-        const rangeMax = unit.rangeMax !== undefined ? unit.rangeMax : 300;
+        const rangeMin = unit.getTotalRangeMin ? unit.getTotalRangeMin() : (unit.rangeMin !== undefined ? unit.rangeMin : 150);
+        const rangeMax = unit.getTotalRangeMax ? unit.getTotalRangeMax() : (unit.rangeMax !== undefined ? unit.rangeMax : 300);
         return reachDist >= rangeMin && reachDist <= rangeMax;
     }, "In Ideal Range?");
 
@@ -51,9 +51,10 @@ export default function applyRangedAI(unit, skillNode = null) {
         if (!targetObj) return 2; // FAILED
 
         const angle = Phaser.Math.Angle.Between(targetObj.x, targetObj.y, unit.x, unit.y);
+        const currentSpeed = unit.getTotalSpeed ? unit.getTotalSpeed() : unit.speed;
         unit.body.setVelocity(
-            Math.cos(angle) * unit.speed,
-            Math.sin(angle) * unit.speed
+            Math.cos(angle) * currentSpeed,
+            Math.sin(angle) * currentSpeed
         );
         return 1; // RUNNING
     }, "Kiting (Flee)");
@@ -82,16 +83,18 @@ export default function applyRangedAI(unit, skillNode = null) {
             avgX /= count;
             avgY /= count;
             const angle = Phaser.Math.Angle.Between(avgX, avgY, unit.x, unit.y);
+            const currentSpeed = unit.getTotalSpeed ? unit.getTotalSpeed() : unit.speed;
             unit.body.setVelocity(
-                Math.cos(angle) * unit.speed,
-                Math.sin(angle) * unit.speed
+                Math.cos(angle) * currentSpeed,
+                Math.sin(angle) * currentSpeed
             );
         } else {
             // If no one is near, just move away from current target or leader
             const targetObj = unit.blackboard.get('target');
             if (targetObj) {
                 const angle = Phaser.Math.Angle.Between(targetObj.x, targetObj.y, unit.x, unit.y);
-                unit.body.setVelocity(Math.cos(angle) * unit.speed, Math.sin(angle) * unit.speed);
+                const currentSpeed = unit.getTotalSpeed ? unit.getTotalSpeed() : unit.speed;
+                unit.body.setVelocity(Math.cos(angle) * currentSpeed, Math.sin(angle) * currentSpeed);
             }
         }
         return 1; // RUNNING
@@ -106,12 +109,13 @@ export default function applyRangedAI(unit, skillNode = null) {
         const r2 = targetObj.body ? targetObj.body.radius : 0;
         const reachDist = dist - r1 - r2;
 
-        const rangeMax = unit.rangeMax !== undefined ? unit.rangeMax : 300;
+        const rangeMax = unit.getTotalRangeMax ? unit.getTotalRangeMax() : (unit.rangeMax !== undefined ? unit.rangeMax : 300);
         if (reachDist > rangeMax) {
             const angle = Phaser.Math.Angle.Between(unit.x, unit.y, targetObj.x, targetObj.y);
+            const currentSpeed = unit.getTotalSpeed ? unit.getTotalSpeed() : unit.speed;
             unit.body.setVelocity(
-                Math.cos(angle) * unit.speed,
-                Math.sin(angle) * unit.speed
+                Math.cos(angle) * currentSpeed,
+                Math.sin(angle) * currentSpeed
             );
             return 1; // RUNNING
         }

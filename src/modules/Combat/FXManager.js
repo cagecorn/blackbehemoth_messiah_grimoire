@@ -88,8 +88,8 @@ export default class FXManager {
         if (!target || !target.active) return null;
 
         // Position at feet: target is centered, so feet are at target.y + half height
-        // Assuming default height is 64, offset is ~20-25 for better grounding
-        const yOffset = 25 * scale;
+        // Adjusted for high-res sprites that might have different base offsets
+        const yOffset = target.shadowOffset !== undefined ? target.shadowOffset : (25 * scale);
         const shadow = this.scene.add.ellipse(target.x, target.y + yOffset, 40 * scale, 20 * scale, 0x000000, 0.5);
         shadow.setDepth(target.depth - 1); // Stay behind
 
@@ -265,5 +265,51 @@ export default class FXManager {
                 target.isStunned = false;
             }
         });
+    }
+
+    /**
+     * Create an orbiting effect with specific textures.
+     * @param {Phaser.GameObjects.GameObject} target 
+     * @param {string[]} textures 
+     * @param {number} duration 
+     */
+    createOrbitEffect(target, textures, duration) {
+        if (!target || !target.active) return;
+
+        const objects = [];
+        const count = textures.length;
+        const radius = 40;
+
+        for (let i = 0; i < count; i++) {
+            const obj = this.scene.add.image(target.x, target.y - 20, textures[i]);
+            obj.setDisplaySize(24, 24);
+            obj.setDepth(target.depth + 1);
+            objects.push(obj);
+
+            // Orbit tween
+            this.scene.tweens.add({
+                targets: obj,
+                angle: 360,
+                duration: 2000,
+                repeat: -1
+            });
+        }
+
+        const followListener = () => {
+            if (!target.active || (this.scene.time.now > (target.orbitEndTime || 0))) {
+                this.scene.events.off('update', followListener);
+                objects.forEach(o => o.destroy());
+                return;
+            }
+            objects.forEach((obj, idx) => {
+                const time = this.scene.time.now / 1000;
+                const angle = time * 3 + (idx / count) * Math.PI * 2;
+                obj.x = target.x + Math.cos(angle) * radius;
+                obj.y = target.y - 20 + Math.sin(angle) * (radius / 2);
+                obj.setDepth(target.depth + (Math.sin(angle) > 0 ? 1 : -1));
+            });
+        };
+        target.orbitEndTime = this.scene.time.now + duration;
+        this.scene.events.on('update', followListener);
     }
 }

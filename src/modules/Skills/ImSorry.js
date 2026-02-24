@@ -25,10 +25,15 @@ export default class ImSorry {
         console.log(`[ImSorry] Executing ultimate for ${caster.unitName}`);
         this.isExecuting = true;
 
+        // Kill any existing nudges and reset to baseline
+        scene.tweens.killTweensOf(caster.sprite);
+        caster.sprite.y = 0;
+        caster.sprite.x = 0;
+
         // Store original state
         const originalScaleX = caster.sprite.scaleX;
         const originalScaleY = caster.sprite.scaleY;
-        const originalY = caster.sprite.y;
+        const originalY = 0; // Baseline is always 0 now
 
         // 1. Play dramatic cutscene
         await scene.ultimateManager.playCutscene(caster, this.name);

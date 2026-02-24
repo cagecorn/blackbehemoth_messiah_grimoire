@@ -12,7 +12,6 @@ export default class BarkManager {
         this.nextBarkTime = 0;
         this.barkIntervalMin = 8000; // 8 seconds
         this.barkIntervalMax = 15000; // 15 seconds
-        this.barkBuffer = [];
         this.isGenerating = false;
 
         // Initial delay - trigger soon after entering
@@ -37,58 +36,31 @@ export default class BarkManager {
         if (!this.scene.mercenaries || this.scene.mercenaries.countActive(true) === 0) return;
         if (!localLLM.isReady || this.isGenerating) return;
 
-        // 1. If buffer is empty, reload the magazine (batch generate)
-        if (this.barkBuffer.length === 0) {
-            console.log(`[BarkManager] Magazine empty. Reloading Dialogue Pistol...`);
-            this.isGenerating = true;
-            try {
-                const activeMercs = this.scene.mercenaries.getChildren().filter(m => m.active && m.hp > 0);
-                const activeConfigs = activeMercs.map(m => {
-                    const charConfig = Object.values(Characters).find(c => c.id === m.characterId);
-                    return { ...charConfig, level: m.level || 1, characterId: m.characterId };
-                });
+        console.log(`[BarkManager] Triggering individual bark sequence...`);
 
-                const sceneType = this.getSceneType();
-                const script = await localLLM.generatePartyBarks(activeConfigs, sceneType);
+        // Select a random mercenary who hasn't spoken recently (simple random for now)
+        const target = this.getRandomActiveMercenary();
+        if (!target) return;
 
-                if (script && script.length > 0) {
-                    this.barkBuffer = script;
-                    console.log(`[BarkManager] Pistol reloaded with ${this.barkBuffer.length} shots.`);
-                } else {
-                    console.warn("[BarkManager] Reload failed: empty script returned.");
+        this.isGenerating = true;
+        try {
+            const barkText = await this.performBark(target);
+            if (barkText) {
+                // Optional: 40% chance for a reaction bark
+                const reactionChance = 0.40;
+                if (Math.random() < reactionChance) {
+                    this.scene.time.delayedCall(Phaser.Math.Between(1500, 3000), async () => {
+                        const activePartyIds = this.getActivePartyIds();
+                        await this.triggerReaction(target.unitName, barkText, [target.characterId], target.characterId, activePartyIds);
+                    });
                 }
-            } catch (err) {
-                console.error("[BarkManager] Reload failed with error:", err);
-            } finally {
-                this.isGenerating = false;
             }
-        }
-
-        // 2. Fire the barks from the buffer
-        if (this.barkBuffer.length > 0) {
-            console.log(`[BarkManager] Firing sequence from buffer (${this.barkBuffer.length} lines left)`);
-
-            let accumulatedDelay = 0;
-            const currentSequence = [...this.barkBuffer];
-            this.barkBuffer = []; // Clear buffer so next trigger reloads
-
-            currentSequence.forEach((shot, index) => {
-                this.scene.time.delayedCall(accumulatedDelay, () => {
-                    const speaker = this.scene.mercenaries.getChildren().find(m => m.characterId === shot.characterId && m.active && m.hp > 0);
-                    if (speaker) {
-                        this.emitBarkEvent(speaker, shot.text);
-                    }
-                });
-
-                // If it's the last bark, schedule the next sequence only after this one finishes
-                if (index === currentSequence.length - 1) {
-                    const finalDelay = accumulatedDelay + 5000; // Extra padding
-                    this.setNextBarkTime(this.scene.time.now + finalDelay);
-                }
-
-                // Natural dialogue gap
-                accumulatedDelay += Phaser.Math.Between(2500, 4000); // Slightly wider gap for readability
-            });
+        } catch (err) {
+            console.error("[BarkManager] Bark trigger failed:", err);
+        } finally {
+            this.isGenerating = false;
+            // Set next interval after completion
+            this.setNextBarkTime(this.scene.time.now);
         }
     }
 
@@ -200,9 +172,9 @@ export default class BarkManager {
         try {
             // Use instance personality if it differs from static config (for Nana)
             const dynamicConfig = {
-                ...charConfig,
-                personality: target.personality || charConfig.personality,
-                dialogueExamples: target.dialogueExamples || charConfig.dialogueExamples
+                ...target.config,
+                personality: target.personality || target.config.personality,
+                level: target.level || 1
             };
             const sceneType = this.getSceneType();
             const activeIds = this.getActivePartyIds();
