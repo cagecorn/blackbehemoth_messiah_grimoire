@@ -35,8 +35,13 @@ class LocalLLM {
 
     /**
      * Common helper to build the character context block.
+     * Includes input sanitization to prevent undefined values in the prompt.
      */
     getCharacterContext(characterConfig, currentLevel = 1, activePartyIds = []) {
+        // Sanitize inputs
+        const name = characterConfig.name || "Unknown";
+        const personality = characterConfig.personality || "Standard Personality";
+
         const unlockedNarrative = (characterConfig.narrativeUnlocks || [])
             .filter(u => currentLevel >= u.level)
             .map(u => `- ${u.trait}`)
@@ -58,9 +63,58 @@ class LocalLLM {
             .join('\n');
 
         return `[캐릭터 설정]
-이름: ${characterConfig.name}
-성격: "${characterConfig.personality}"
+이름: ${name}
+성격: "${personality}"
 ${unlockedNarrative ? `[해금된 서사]\n${unlockedNarrative}\n` : ''}${relationshipContext}${examples ? `\n[말투 및 스타일 가이드]\n${examples}\n` : ''}`;
+    }
+
+    /**
+     * Private helper to execute the fetch request with error handling and retry logic.
+     * Retries once with cache_prompt: false if a 400 or network error occurs.
+     */
+    async _makeRequest(payload, retryCount = 1) {
+        try {
+            const response = await fetch(this.apiURL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                // Try to read the error body
+                let errorText = await response.text();
+                // If it's JSON, parse it for better logging, otherwise use raw text
+                try {
+                    const errorJson = JSON.parse(errorText);
+                    errorText = JSON.stringify(errorJson, null, 2);
+                } catch (e) {
+                    // It was just text or HTML
+                }
+
+                console.warn(`[LocalLLM] HTTP Error ${response.status}: ${errorText}`);
+
+                // Retry logic for 400 Bad Request (often context/cache issues) or 500
+                if (retryCount > 0) {
+                    console.log(`[LocalLLM] Retrying request without cache_prompt...`);
+                    // Disable cache_prompt to bypass potential KV cache corruption
+                    const newPayload = { ...payload, cache_prompt: false };
+                    return this._makeRequest(newPayload, retryCount - 1);
+                }
+
+                throw new Error(`HTTP ${response.status}: ${errorText}`);
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error(`[LocalLLM] Request failed:`, error);
+            // If it's a network error (like "Failed to fetch"), we might also want to retry
+            if (retryCount > 0 && error.message.includes('fetch')) {
+                 console.log(`[LocalLLM] Network error encountered. Retrying...`);
+                 const newPayload = { ...payload, cache_prompt: false };
+                 return this._makeRequest(newPayload, retryCount - 1);
+            }
+            throw error;
+        }
     }
 
     /**
@@ -96,7 +150,7 @@ ${unlockedNarrative ? `[해금된 서사]\n${unlockedNarrative}\n` : ''}${relati
     }
 
     async generateResponse(characterConfig, prompt, memories = [], chatHistory = [], currentLevel = 1, activePartyIds = []) {
-        console.log(`[LocalLLM] Requesting response for ${characterConfig.name} (LV ${currentLevel}) with memories:`, memories);
+        console.log(`[LocalLLM] Requesting response for ${characterConfig.name || "Unknown"} (LV ${currentLevel}) with memories:`, memories);
 
         const characterContext = this.getCharacterContext(characterConfig, currentLevel, activePartyIds);
 
@@ -134,22 +188,16 @@ ${characterContext}
             content: prompt
         });
 
+        const payload = {
+            model: this.modelName,
+            messages: messages,
+            temperature: 0.7,
+            max_tokens: 1024,
+            cache_prompt: true
+        };
+
         try {
-            const response = await fetch(this.apiURL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    model: this.modelName,
-                    messages: messages,
-                    temperature: 0.7,
-                    max_tokens: 1024,
-                    cache_prompt: true
-                })
-            });
-
-            if (!response.ok) throw new Error(`HTTP Error ${response.status}`);
-
-            const data = await response.json();
+            const data = await this._makeRequest(payload);
             this.isReady = true;
             const content = data.choices[0].message.content.trim();
             console.log(`[LocalLLM] Raw Response from ${characterConfig.name}:`, content);
@@ -164,7 +212,7 @@ ${characterContext}
      * Generate a random "bark" during combat.
      */
     async generateBark(characterConfig, currentLevel = 1, situationalContext = "", activePartyIds = []) {
-        console.log(`[LocalLLM] Generating bark for ${characterConfig.name} (LV ${currentLevel}). Context: ${situationalContext}`);
+        console.log(`[LocalLLM] Generating bark for ${characterConfig.name || "Unknown"} (LV ${currentLevel}). Context: ${situationalContext}`);
 
         const characterContext = this.getCharacterContext(characterConfig, currentLevel, activePartyIds);
 
@@ -184,22 +232,16 @@ ${characterContext}
             content: "상황에 맞는 대사를 한마디 하시오."
         };
 
+        const payload = {
+            model: this.modelName,
+            messages: [systemMessage, userMessage],
+            temperature: 0.85, // Even higher for more expressive "flavor"
+            max_tokens: 1024,
+            cache_prompt: true
+        };
+
         try {
-            const response = await fetch(this.apiURL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    model: this.modelName,
-                    messages: [systemMessage, userMessage],
-                    temperature: 0.85, // Even higher for more expressive "flavor"
-                    max_tokens: 1024,
-                    cache_prompt: true
-                })
-            });
-
-            if (!response.ok) throw new Error(`HTTP Error ${response.status}`);
-
-            const data = await response.json();
+            const data = await this._makeRequest(payload);
             let content = data.choices[0].message.content.trim();
             console.log(`[LocalLLM] Raw Bark:`, content);
             content = this.sanitizeBark(content);
@@ -212,7 +254,7 @@ ${characterContext}
     }
 
     async generateReactionBark(characterConfig, previousSpeakerName, previousText, previousSpeakerId = null, currentLevel = 1, activePartyIds = []) {
-        console.log(`[LocalLLM] Generating reaction for ${characterConfig.name} (LV ${currentLevel}) to ${previousSpeakerName}`);
+        console.log(`[LocalLLM] Generating reaction for ${characterConfig.name || "Unknown"} (LV ${currentLevel}) to ${previousSpeakerName}`);
 
         let relationshipContext = "";
         if (previousSpeakerId && characterConfig.relationships && characterConfig.relationships[previousSpeakerId]) {
@@ -238,22 +280,16 @@ ${characterContext}${relationshipContext}
             { role: "user", content: "동료의 말에 대꾸하시오." }
         ];
 
+        const payload = {
+            model: this.modelName,
+            messages: messages,
+            temperature: 0.85,
+            max_tokens: 1024,
+            cache_prompt: true
+        };
+
         try {
-            const response = await fetch(this.apiURL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    model: this.modelName,
-                    messages: messages,
-                    temperature: 0.85,
-                    max_tokens: 1024,
-                    cache_prompt: true
-                })
-            });
-
-            if (!response.ok) throw new Error(`HTTP Error ${response.status}`);
-
-            const data = await response.json();
+            const data = await this._makeRequest(payload);
             let content = data.choices[0].message.content.trim();
             console.log(`[LocalLLM] Raw Reaction:`, content);
             return this.sanitizeBark(content);
