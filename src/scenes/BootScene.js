@@ -102,6 +102,11 @@ export default class BootScene extends Phaser.Scene {
         this.load.svg('emoji_snowman', 'assets/emojis/26c4.svg', { width: 32, height: 32 });
         this.load.svg('emoji_snowcloud', 'assets/emojis/1f328.svg', { width: 64, height: 64 });
 
+        this.load.on('loaderror', (file) => {
+            console.error(`[BootScene] Error loading asset: ${file.key} from ${file.src}`);
+            EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, `[에러] 자산을 불러오지 못했습니다: ${file.key}`);
+        });
+
         // Noah's Animals
         this.load.svg('emoji_dog', 'assets/emojis/1f415.svg', { width: 32, height: 32 });
         this.load.svg('emoji_cat', 'assets/emojis/1f408.svg', { width: 32, height: 32 });

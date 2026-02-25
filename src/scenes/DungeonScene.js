@@ -60,7 +60,7 @@ export default class DungeonScene extends Phaser.Scene {
         this.dungeonManager.generateDungeon();
 
         // Stage visual rendering
-        const worldSize = 50 * 32;
+        const worldSize = 80 * 32; // Increased for higher resolution
         this.stageManager = new StageManager(this, StageConfigs.CURSED_FOREST);
         this.stageManager.buildStage(worldSize, worldSize);
 

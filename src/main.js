@@ -16,10 +16,11 @@ import { Characters } from './modules/Core/EntityStats.js';
 const config = {
     type: Phaser.AUTO,
     scale: {
-        mode: Phaser.Scale.RESIZE,
+        mode: Phaser.Scale.FIT,
+        autoCenter: Phaser.Scale.CENTER_BOTH,
         parent: 'game-container',
-        width: '100%',
-        height: '100%'
+        width: 1080,
+        height: 1920
     },
     parent: 'game-container',
     backgroundColor: '#000000',
