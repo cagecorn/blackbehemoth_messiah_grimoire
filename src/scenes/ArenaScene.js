@@ -171,9 +171,8 @@ export default class ArenaScene extends Phaser.Scene {
 
         // Trigger UI binding for the deployed mercenaries
         EventBus.emit(EventBus.EVENTS.PARTY_DEPLOYED, {
-            mercenaries: this.mercenaries.getChildren()
-                .filter(m => !m.config.hideInUI)
-                .map(m => m.getState())
+            scene: this,
+            mercenaries: this.mercenaries.getChildren().map(m => m.getState())
         });
     }
 

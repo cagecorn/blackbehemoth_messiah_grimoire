@@ -102,6 +102,8 @@ export default class TerritoryScene extends Phaser.Scene {
         if (this.partyOverlay) return;
 
         const { Characters } = await import('../modules/Core/EntityStats.js');
+        const { default: partyManager } = await import('../modules/Core/PartyManager.js');
+        const { default: EventBus } = await import('../modules/Events/EventBus.js');
 
         this.partyOverlay = document.createElement('div');
         this.partyOverlay.className = 'party-selection-overlay';
@@ -117,27 +119,105 @@ export default class TerritoryScene extends Phaser.Scene {
         });
 
         this.partyOverlay.innerHTML = `
-            <div class="party-selection-title">원정대 편성 (드래그하여 슬롯에 배치)</div>
+            <div class="party-selection-title">원정대 편성 (슬롯에 드래그하거나 클릭하여 배치)</div>
+            
+            <div class="party-slots">
+                <div class="party-slot" data-slot="0">1</div>
+                <div class="party-slot" data-slot="1">2</div>
+                <div class="party-slot" data-slot="2">3</div>
+                <div class="party-slot" data-slot="3">4</div>
+                <div class="party-slot" data-slot="4">5</div>
+            </div>
+
             <div class="mercenary-candidates">
                 ${candidatesHtml}
             </div>
+            
             <button class="party-confirm-btn">편성 완료</button>
         `;
 
         document.body.appendChild(this.partyOverlay);
 
-        // Add drag start listeners
+        const currentSlots = [...partyManager.getActiveParty()];
+        const slotEls = this.partyOverlay.querySelectorAll('.party-slot');
         const cards = this.partyOverlay.querySelectorAll('.mercenary-card');
+
+        const updateSlotUI = (index) => {
+            const charId = currentSlots[index];
+            const slotEl = slotEls[index];
+            if (charId) {
+                const char = Object.values(Characters).find(c => c.id === charId);
+                slotEl.innerHTML = `<img src="assets/characters/party/${char.sprite}.png" alt="${char.name}">`;
+                slotEl.classList.add('filled');
+            } else {
+                slotEl.innerHTML = `${index + 1}`;
+                slotEl.classList.remove('filled');
+            }
+        };
+
+        // Initialize slots
+        currentSlots.forEach((_, i) => updateSlotUI(i));
+
+        // Drag & Drop
         cards.forEach(card => {
             card.addEventListener('dragstart', (e) => {
                 e.dataTransfer.setData('characterId', card.dataset.id);
             });
+            // Click to pick
+            card.onclick = () => {
+                const charId = card.dataset.id;
+                // Find first empty slot or replace selected
+                let emptyIndex = currentSlots.indexOf(null);
+                if (emptyIndex !== -1) {
+                    currentSlots[emptyIndex] = charId;
+                    updateSlotUI(emptyIndex);
+                }
+            };
+        });
+
+        slotEls.forEach((slot, i) => {
+            slot.addEventListener('dragover', (e) => e.preventDefault());
+            slot.addEventListener('drop', (e) => {
+                e.preventDefault();
+                const charId = e.dataTransfer.getData('characterId');
+                if (charId) {
+                    currentSlots[i] = charId;
+                    updateSlotUI(i);
+                }
+            });
+            slot.onclick = () => {
+                currentSlots[i] = null;
+                updateSlotUI(i);
+            };
         });
 
         const confirmBtn = this.partyOverlay.querySelector('.party-confirm-btn');
         confirmBtn.addEventListener('click', () => {
+            // Save to PartyManager
+            currentSlots.forEach((id, i) => {
+                partyManager.setPartySlot(i, id);
+            });
+
             this.partyOverlay.remove();
             this.partyOverlay = null;
+
+            // Sync with Mobile HUD
+            EventBus.emit(EventBus.EVENTS.PARTY_DEPLOYED, {
+                scene: this,
+                mercenaries: currentSlots
+                    .filter(id => id !== null)
+                    .map(id => {
+                        const char = Object.values(Characters).find(c => c.id === id);
+                        return {
+                            id: `init-${id}`,
+                            characterId: id,
+                            unitName: char.name,
+                            sprite: char.sprite,
+                            hp: 100, maxHp: 100 // Dummy for HUD display
+                        };
+                    })
+            });
+
             console.log('[Territory] Party selection confirmed.');
         });
     }

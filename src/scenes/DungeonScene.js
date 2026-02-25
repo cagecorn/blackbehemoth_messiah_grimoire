@@ -175,6 +175,7 @@ export default class DungeonScene extends Phaser.Scene {
         // Sync UI after spawn
         this.time.delayedCall(500, () => {
             EventBus.emit(EventBus.EVENTS.PARTY_DEPLOYED, {
+                scene: this,
                 mercenaries: this.mercenaries.getChildren()
                     .filter(m => !m.config.hideInUI)
                     .map(m => m.getState())

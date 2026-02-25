@@ -19,6 +19,16 @@ export default class UIManager {
         this.inventoryDirty = true; // initially dirty to load first time
         this.isRefreshing = false;
 
+        // Mobile HUD Elements
+        this.hudGold = document.getElementById('hud-gold');
+        this.hudGem = document.getElementById('hud-gem');
+        this.portraitBar = document.getElementById('portrait-bar');
+        this.popupOverlay = document.getElementById('popup-overlay');
+        this.popupInner = document.getElementById('popup-inner');
+        this.popupClose = document.getElementById('popup-close');
+        this.btnInventory = document.getElementById('btn-inventory');
+        this.btnParty = document.getElementById('btn-party');
+
         // Bind the RAF loop
         this.rafLoop = this.rafLoop.bind(this);
     }
@@ -28,6 +38,7 @@ export default class UIManager {
 
         this.createTooltip();
         this.setupChatChannels();
+        this.setupMobileEvents();
         this.injectTestItems();
 
         // Listen for combat and loot events
@@ -62,6 +73,20 @@ export default class UIManager {
         });
 
         EventBus.on(EventBus.EVENTS.PARTY_DEPLOYED, (payload) => {
+            this.scene = payload.scene; // Store scene reference
+
+            const sceneKey = this.scene?.scene?.key || this.scene?.sys?.settings?.key;
+            console.log(`[UIManager] Party deployed in scene: ${sceneKey}`);
+
+            // Hide portrait bar in TerritoryScene to reduce clutter
+            if (this.portraitBar) {
+                if (sceneKey === 'TerritoryScene') {
+                    this.portraitBar.style.display = 'none';
+                } else {
+                    this.portraitBar.style.display = 'flex';
+                }
+            }
+
             // payload: { mercenaries: [{ id, name, sprite, classId, ... }] }
             this.unitToChannel = {}; // Reset mapping
 
@@ -139,6 +164,135 @@ export default class UIManager {
         EventBus.on('UI_SLOT_ASSIGNED', (payload) => {
             this.handleSlotAssigned(payload.slotId, payload.characterId);
         });
+
+        // Sync HUD stats periodically
+        setInterval(() => this.updateMobileHUD(), 1000);
+    }
+
+    setupMobileEvents() {
+        if (this.btnInventory) {
+            this.btnInventory.onclick = () => this.showPopup('inventory');
+        }
+        if (this.btnParty) {
+            this.btnParty.onclick = () => this.showPopup('party');
+        }
+        if (this.popupClose) {
+            this.popupClose.onclick = () => this.hidePopup();
+        }
+        if (this.popupOverlay) {
+            this.popupOverlay.onclick = (e) => {
+                if (e.target === this.popupOverlay) this.hidePopup();
+            };
+        }
+    }
+
+    showPopup(type) {
+        if (!this.popupOverlay || !this.popupInner) return;
+        this.popupInner.innerHTML = '';
+
+        if (type === 'inventory') {
+            // Move original inventory sections into popup
+            const invContent = document.getElementById('sidebar-right');
+            if (invContent) {
+                // Clone or move
+                this.popupInner.appendChild(invContent);
+                invContent.style.display = 'flex';
+                invContent.style.height = '100%';
+                invContent.style.background = 'transparent';
+                invContent.style.border = 'none';
+                invContent.style.boxShadow = 'none';
+            }
+        } else if (type === 'party') {
+            const chatContent = document.getElementById('chat-container');
+            if (chatContent) {
+                this.popupInner.appendChild(chatContent);
+                chatContent.style.display = 'flex';
+                chatContent.style.height = '100%';
+                chatContent.style.background = 'transparent';
+            }
+        } else if (type === 'character') {
+            // Detailed character view...
+        }
+
+        this.popupOverlay.style.display = 'flex';
+    }
+
+    hidePopup() {
+        if (this.popupOverlay) this.popupOverlay.style.display = 'none';
+    }
+
+    updateMobileHUD() {
+        // Update Gold/Gem from DBManager or similar
+        // For now dummy update
+        if (this.hudGold) {
+            DBManager.getInventoryItem('emoji_coin').then(item => {
+                this.hudGold.textContent = item ? item.amount : 0;
+            });
+        }
+        if (this.hudGem) {
+            DBManager.getInventoryItem('emoji_gem').then(item => {
+                this.hudGem.textContent = item ? item.amount : 0;
+            });
+        }
+
+        this.updatePortraitBar();
+    }
+
+    updatePortraitBar() {
+        if (!this.portraitBar) return;
+
+        // Ensure we have correct number of portraits
+        const activeMercs = this.scene && this.scene.mercenaries ?
+            this.scene.mercenaries.getChildren().filter(m => !m.hideInUI) : [];
+
+        // Clear and rebuild for simplicity or keep track
+        // Rebuilding is safer for dynamic scaling
+        this.portraitBar.innerHTML = '';
+        activeMercs.forEach(merc => {
+            const charConfig = Object.values(Characters).find(c => c.id === merc.characterId) || merc;
+            const portrait = document.createElement('div');
+            portrait.className = 'unit-portrait';
+            if (merc.hp <= 0) portrait.style.filter = 'grayscale(100%) opacity(0.5)';
+
+            const hpPercent = (merc.hp / merc.maxHp) * 100;
+
+            portrait.innerHTML = `
+                <img src="assets/characters/party/${charConfig.sprite}.png" alt="${merc.unitName}">
+                <div class="portrait-hp-ring" style="border-top-color: ${this.getHPColor(hpPercent)}; border-width: 3px; clip-path: inset(0 0 ${100 - hpPercent}% 0);"></div>
+            `;
+
+            portrait.onclick = () => {
+                // Show character detail or select
+                const channel = this.unitToChannel[merc.id];
+                if (channel) {
+                    this.showCharacterDetail(channel);
+                }
+            };
+
+            this.portraitBar.appendChild(portrait);
+        });
+    }
+
+    getHPColor(percent) {
+        if (percent > 60) return '#00ffcc';
+        if (percent > 30) return '#ffcc00';
+        return '#ff5555';
+    }
+
+    showCharacterDetail(channel) {
+        if (!this.popupOverlay || !this.popupInner) return;
+        this.popupInner.innerHTML = '';
+        this.popupInner.appendChild(channel.element);
+        channel.element.style.display = 'flex';
+        channel.element.style.height = '100%';
+        channel.element.classList.add('has-unit');
+
+        // Auto-switch to dashboard for easier mobile access
+        if (channel.currentView === 'chat') {
+            channel.toggleView('dashboard');
+        }
+
+        this.popupOverlay.style.display = 'flex';
     }
 
     handleSlotAssigned(slotId, characterId) {

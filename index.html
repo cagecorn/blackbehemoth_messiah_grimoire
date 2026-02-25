@@ -36,11 +36,29 @@
         <!-- Dynamic Chat Channels Container (Bottom-Left) -->
         <div id="chat-container"></div>
 
-        <!-- Minimap Placeholder (Bottom-Right) -->
-        <div id="minimap-container">
-            <div class="panel-title">Minimap</div>
-            <div class="minimap-content">
-                <!-- Map visualization will go here -->
+        <!-- Mobile HUD Layer -->
+        <div id="mobile-hud">
+            <div id="hud-top">
+                <div class="hud-stat"><img src="assets/emojis/1fa99.svg" alt="Gold"> <span id="hud-gold">0</span></div>
+                <div class="hud-stat"><img src="assets/emojis/1f48e.svg" alt="Gem"> <span id="hud-gem">0</span></div>
+                <div id="hud-menu-btns">
+                    <button id="btn-inventory" title="Inventory">🎒</button>
+                    <button id="btn-party" title="Party">⚔️</button>
+                </div>
+            </div>
+
+            <div id="hud-bottom">
+                <div id="portrait-bar">
+                    <!-- Portraits will be injected here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Popups (Hidden by default) -->
+        <div id="popup-overlay" style="display: none;">
+            <div id="popup-content">
+                <button id="popup-close">✕</button>
+                <div id="popup-inner"></div>
             </div>
         </div>
     </div>
