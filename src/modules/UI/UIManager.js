@@ -28,6 +28,7 @@ export default class UIManager {
         this.popupClose = document.getElementById('popup-close');
         this.btnInventory = document.getElementById('btn-inventory');
         this.btnParty = document.getElementById('btn-party');
+        this.btnFullscreen = document.getElementById('btn-fullscreen');
 
         // Bind the RAF loop
         this.rafLoop = this.rafLoop.bind(this);
@@ -184,6 +185,21 @@ export default class UIManager {
                 if (e.target === this.popupOverlay) this.hidePopup();
             };
         }
+        if (this.btnFullscreen) {
+            this.btnFullscreen.onclick = () => this.toggleFullscreen();
+        }
+    }
+
+    toggleFullscreen() {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch((err) => {
+                console.warn(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
+            });
+        } else {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            }
+        }
     }
 
     showPopup(type) {
@@ -242,7 +258,7 @@ export default class UIManager {
         if (!this.portraitBar) return;
 
         // Ensure we have correct number of portraits
-        const activeMercs = this.scene && this.scene.mercenaries ?
+        const activeMercs = this.scene && this.scene.mercenaries && typeof this.scene.mercenaries.getChildren === 'function' ?
             this.scene.mercenaries.getChildren().filter(m => !m.hideInUI) : [];
 
         // Clear and rebuild for simplicity or keep track

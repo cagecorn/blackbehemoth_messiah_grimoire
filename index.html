@@ -3,10 +3,16 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Isac-like RPG</title>
+    <!-- Mobile App Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+
     <!-- Custom CSS for DOM Overlay -->
-    <link rel="stylesheet" href="src/index.css?v=1.4">
+    <link rel="stylesheet" href="src/index.css?v=1.6">
 </head>
 
 <body>
@@ -42,6 +48,7 @@
                 <div class="hud-stat"><img src="assets/emojis/1fa99.svg" alt="Gold"> <span id="hud-gold">0</span></div>
                 <div class="hud-stat"><img src="assets/emojis/1f48e.svg" alt="Gem"> <span id="hud-gem">0</span></div>
                 <div id="hud-menu-btns">
+                    <button id="btn-fullscreen" title="Fullscreen">⛶</button>
                     <button id="btn-inventory" title="Inventory">🎒</button>
                     <button id="btn-party" title="Party">⚔️</button>
                 </div>
@@ -63,7 +70,7 @@
         </div>
     </div>
 
-    <script type="module" src="src/main.js?v=1.4"></script>
+    <script type="module" src="src/main.js?v=1.6"></script>
 </body>
 
 </html>
