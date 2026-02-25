@@ -109,69 +109,14 @@ export default class UltimateManager {
         // Mercenary Sprite Close-up
         let spriteKey = unit.config.sprite;
         let scale = 4;
-        let yOffset = height - 150;
+        let yOffset = height - 300; // Raised from 150 to avoid HUD
 
-        // Special case: high-res cutscene for Merlin
-        if (unit.characterId === 'merlin') {
-            spriteKey = 'merlin_cutscene';
+        // Special case: high-res cutscene characters
+        const cutsceneChars = ['merlin', 'aren', 'sera', 'lute', 'nickle', 'bao', 'king', 'leona', 'silvi', 'ella', 'boon', 'nana', 'noah', 'noel', 'aina'];
+        if (cutsceneChars.includes(unit.characterId)) {
+            spriteKey = unit.characterId + '_cutscene';
             scale = 1.0;
-            yOffset = height - 200; // Adjust slightly higher for large image
-        } else if (unit.characterId === 'aren') {
-            spriteKey = 'aren_cutscene';
-            scale = 1.0;
-            yOffset = height - 200;
-        } else if (unit.characterId === 'sera') {
-            spriteKey = 'sera_cutscene';
-            scale = 1.0;
-            yOffset = height - 200;
-        } else if (unit.characterId === 'lute') {
-            spriteKey = 'lute_cutscene';
-            scale = 1.0;
-            yOffset = height - 200;
-        } else if (unit.characterId === 'nickle') {
-            spriteKey = 'nickle_cutscene';
-            scale = 1.0;
-            yOffset = height - 200;
-        } else if (unit.characterId === 'bao') {
-            spriteKey = 'bao_cutscene';
-            scale = 1.0;
-            yOffset = height - 200;
-        } else if (unit.characterId === 'king') {
-            spriteKey = 'king_cutscene';
-            scale = 1.0;
-            yOffset = height - 200;
-        } else if (unit.characterId === 'leona') {
-            spriteKey = 'leona_cutscene';
-            scale = 1.0;
-            yOffset = height - 200;
-        } else if (unit.characterId === 'silvi') {
-            spriteKey = 'silvi_cutscene';
-            scale = 1.0;
-            yOffset = height - 200;
-        } else if (unit.characterId === 'ella') {
-            spriteKey = 'ella_cutscene';
-            scale = 1.0;
-            yOffset = height - 200;
-        } else if (unit.characterId === 'boon') {
-            spriteKey = 'boon_cutscene';
-            scale = 1.0;
-            yOffset = height - 200;
-        } else if (unit.characterId === 'nana') {
-            spriteKey = 'nana_cutscene';
-            scale = 1.0;
-            yOffset = height - 200;
-        } else if (unit.characterId === 'noah') {
-            spriteKey = 'noah_cutscene';
-            scale = 1.0;
-            yOffset = height - 200;
-        } else if (unit.characterId === 'noel') {
-            spriteKey = 'noel_cutscene';
-            scale = 1.0;
-            yOffset = height - 200;
-        } else if (unit.characterId === 'aina') {
-            spriteKey = 'aina_cutscene';
-            scale = 1.0;
-            yOffset = height - 200;
+            yOffset = height - 350; // Raised further for high-res images to stay clear of portraits
         }
 
         const closeUp = this.scene.add.image(-200, yOffset, spriteKey)
@@ -181,7 +126,7 @@ export default class UltimateManager {
             .setTint(0xffffff);
 
         // Skill Name Text
-        const text = this.scene.add.text(width + 200, height - 100, `[ ${skillName} ]`, {
+        const text = this.scene.add.text(width + 200, height - 300, `[ ${skillName} ]`, {
             fontSize: '64px',
             fontStyle: 'bold italic',
             fill: '#ffcc00',

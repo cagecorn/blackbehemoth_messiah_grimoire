@@ -21,6 +21,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         this.className = config.classId || config.id; // e.g., 'warrior'
         this.characterId = config.id; // e.g., 'aren' or 'silvi'
         this.unitName = config.name;
+        this.hideInUI = config.hideInUI || false;
 
         // Team selection ('player' or 'enemy')
         this.team = config.team || 'player';
