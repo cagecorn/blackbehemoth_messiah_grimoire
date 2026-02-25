@@ -397,9 +397,14 @@ export default class UIManager {
                 const div = document.createElement('div');
                 div.className = 'inv-item';
                 div.draggable = true;
+                const elementalBadge = (itemData.prefix && itemData.prefix.emoji)
+                    ? `<div class="item-element-badge">${itemData.prefix.emoji}</div>`
+                    : '';
+
                 div.innerHTML = `
                     <img class="inv-icon" src="assets/emojis/${filename}" alt="${item.id}" draggable="false">
                     <span class="inv-amount">${item.amount}</span>
+                    ${elementalBadge}
                 `;
 
                 div.ondragstart = (e) => {
