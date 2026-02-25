@@ -73,23 +73,36 @@ export default class ProveExistence {
         const avgX = enemies.reduce((sum, e) => sum + e.x, 0) / enemies.length;
         const avgY = enemies.reduce((sum, e) => sum + e.y, 0) / enemies.length;
 
-        // Visual FX: Lightning strike
-        const lightning = this.scene.add.image(avgX, avgY - 300, 'emoji_lightning')
-            .setDepth(3002)
-            .setScale(2)
-            .setTint(0xffffff);
+        // Visual FX: Lightning strike (Layered Pillar)
+        const layers = 5;
+        const lightningSprites = [];
 
-        this.scene.tweens.add({
-            targets: lightning,
-            y: avgY,
-            alpha: { start: 1, end: 0 },
-            duration: 300,
-            ease: 'Expo.easeIn',
-            onComplete: () => {
-                lightning.destroy();
-                this.smiteImpact(avgX, avgY);
-            }
-        });
+        for (let i = 0; i < layers; i++) {
+            const scale = 1.5 + (i * 0.4);
+            const alpha = 1.0 - (i * 0.15);
+            const lightning = this.scene.add.image(avgX, avgY - 400, 'emoji_lightning')
+                .setDepth(3002 + i)
+                .setScale(scale)
+                .setAlpha(alpha)
+                .setTint(0xffffff)
+                .setBlendMode('ADD');
+
+            lightningSprites.push(lightning);
+
+            this.scene.tweens.add({
+                targets: lightning,
+                y: avgY,
+                alpha: { start: alpha, end: 0 },
+                duration: 300 + (i * 50),
+                ease: 'Expo.easeIn',
+                onComplete: () => {
+                    lightning.destroy();
+                    if (i === 0) {
+                        this.smiteImpact(avgX, avgY);
+                    }
+                }
+            });
+        }
 
         // Flash and Camera Shake
         this.scene.cameras.main.shake(200, 0.01);

@@ -722,6 +722,13 @@ export default class Mercenary extends Phaser.GameObjects.Container {
     }
 
     die() {
+        if (!this.active) return;
+
+        // Clean up all CC visuals and timers immediately
+        if (this.scene && this.scene.ccManager) {
+            this.scene.ccManager.cleanUpAllCC(this);
+        }
+
         console.error(`%c[Dead] %c${this.unitName} has been defeated!`, 'color: #ff0000; font-weight: bold;', 'color: #ffffff;');
 
         EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, `${this.unitName}가 쓰러졌습니다! 💀`);

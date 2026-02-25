@@ -182,7 +182,7 @@ export default class BootScene extends Phaser.Scene {
             let status = 'AI Status: ';
             status += intentReady ? 'Intent OK | ' : 'Intent... | ';
             status += gemmaReady ? 'Embedding OK | ' : 'Embedding... | ';
-            status += llmReady ? 'LM Studio OK' : 'LM Studio...';
+            status += llmReady ? 'Dialogue OK' : 'Dialogue...';
 
             this.loadingText.setText(status);
 

@@ -20,8 +20,9 @@
 2. **독특한 재화 시스템:**
    * **이모지 화폐 (Emoji Currency):** 게임 내에서 드랍되는 모든 채집물 및 화폐 기호는 **트위터 이모지(Twemoji SVG)**로 시각화됩니다. 수많은 종류의 이모지들이 게임 세계의 경제와 재료 시스템을 구축합니다.
 
-3. **LLM 통합:**
-   * 게임 마스터(GM) 역할이나 NPC 대화, 그리고 이모지 보상 판정 등에서 대규모 언어 모델(LLM)을 활용한 동적이고 유연한 시스템을 목표로 합니다.
+3. **온디바이스 AI (On-Device AI):**
+   * **임베딩 기반 상황 인식**: `EmbeddingGemma` 모델을 브라우저 웹 워커에서 직접 실행하여 "누가 무엇을 했다"는 상황을 데이터로 축적합니다.
+   * **지능적 대사 선택**: 외부 서버 없이도 캐릭터의 성격(`Persona`)과 현재 전황을 고려하여 가장 적절한 대사를 선택하여 출력합니다.
 
 ## 개발 원칙
 
@@ -217,8 +218,8 @@
 ## 기술 스택
 - **Engine:** Phaser 3
 - **Desktop Framework:** Electron
-- **Build Tool:** Vite
-- **AI / LLM:** LM Studio (Local Server) - Gemma 3
+- **Build Tool:** Vite (GitHub Pages 배포 최적화)
+- **AI / LLM:** On-Device Embedding (Gemma-300m) & Static Persona System
 - **Assets:** [Twemoji](https://github.com/twitter/twemoji) (트위터 무료 이모지 라이브러리 활용)
 
 ---
