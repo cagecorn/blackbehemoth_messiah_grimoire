@@ -6,10 +6,12 @@ import localLLM from '../AI/LocalLLM.js';
 import embeddingGemma from '../AI/EmbeddingGemma.js';
 import { MercenaryClasses, Characters } from '../Core/EntityStats.js';
 import partyManager from '../Core/PartyManager.js';
+import ItemManager from '../Core/ItemManager.js';
 
 export default class UIManager {
     constructor() {
-        this.inventoryContainer = document.getElementById('inventory-list');
+        this.materialList = document.getElementById('material-list');
+        this.gearList = document.getElementById('gear-list');
         this.chatContainer = document.getElementById('chat-container');
         this.channels = []; // Fixed array of 5 channels
         this.unitToChannel = {}; // unitId -> ChatChannel instance
@@ -24,7 +26,9 @@ export default class UIManager {
     init() {
         console.log('[UIManager] Initialized DOM Overlay');
 
+        this.createTooltip();
         this.setupChatChannels();
+        this.injectTestItems();
 
         // Listen for combat and loot events
         EventBus.on(EventBus.EVENTS.MONSTER_KILLED, this.handleMonsterKilled, this);
@@ -66,6 +70,9 @@ export default class UIManager {
             visibleMercs.forEach((merc, i) => {
                 if (i < this.channels.length) {
                     const channel = this.channels[i];
+                    // Link unit to channel EARLY so we can update it
+                    this.unitToChannel[merc.id] = channel;
+
                     const charConfig = Object.values(Characters).find(c => c.id === merc.characterId) || merc;
 
                     // Store classId on the channel for dropdown population and swaps
@@ -297,6 +304,50 @@ export default class UIManager {
         console.log(`[Combat] ${attackerName} killed ${monsterName} (${monsterId})`);
     }
 
+    createTooltip() {
+        if (document.getElementById('inv-tooltip')) return;
+        this.tooltipEl = document.createElement('div');
+        this.tooltipEl.id = 'inv-tooltip';
+        this.tooltipEl.className = 'inv-tooltip';
+        document.body.appendChild(this.tooltipEl);
+
+        document.addEventListener('mousemove', (e) => {
+            if (this.tooltipEl.style.display === 'flex') {
+                this.tooltipEl.style.left = e.clientX + 'px';
+                this.tooltipEl.style.top = e.clientY + 'px';
+            }
+        });
+    }
+
+    showTooltip(itemId) {
+        const item = ItemManager.getItem(itemId);
+        if (!item || !this.tooltipEl) return;
+
+        let statsHtml = '';
+        if (item.stats) {
+            Object.entries(item.stats).forEach(([key, val]) => {
+                const label = key.toUpperCase();
+                statsHtml += `<div class="stat-line"><span class="stat-label">${label}</span><span class="stat-value">+${val}</span></div>`;
+            });
+        }
+
+        this.tooltipEl.innerHTML = `
+            <div class="item-name">${item.name}</div>
+            <div class="item-type">${item.slot || 'ITEM'}</div>
+            <div class="item-stats">
+                ${statsHtml}
+            </div>
+            <div class="item-description">${item.description || ''}</div>
+        `;
+        this.tooltipEl.style.display = 'flex';
+    }
+
+    hideTooltip() {
+        if (this.tooltipEl) {
+            this.tooltipEl.style.display = 'none';
+        }
+    }
+
     addLog(agentId, text, color) {
         const channel = this.unitToChannel[agentId] || (this.channels.find(c => c.id === agentId));
         if (channel) {
@@ -304,39 +355,95 @@ export default class UIManager {
         }
     }
 
+    async injectTestItems() {
+        try {
+            const testItems = [
+                'test_sword_fire', 'test_sword_ice', 'test_sword_lightning',
+                'test_staff_fire', 'test_staff_ice', 'test_staff_lightning'
+            ];
+
+            for (const id of testItems) {
+                const item = await DBManager.getInventoryItem(id);
+                if (!item) {
+                    await DBManager.saveInventoryItem(id, 1);
+                }
+            }
+
+            this.inventoryDirty = true;
+        } catch (e) {
+            console.error('[UIManager] Error injecting test items:', e);
+        }
+    }
+
     async refreshInventory() {
         this.isRefreshing = true;
         try {
             const items = await DBManager.getAllInventory();
-            if (!items || items.length === 0) return;
 
-            // Ensure container exists
-            if (!this.inventoryContainer) {
-                this.inventoryContainer = document.getElementById('inventory-list');
-                if (!this.inventoryContainer) return;
-            }
+            if (!this.materialList) this.materialList = document.getElementById('material-list');
+            if (!this.gearList) this.gearList = document.getElementById('gear-list');
+            if (!this.materialList || !this.gearList) return;
 
-            // Clear current list
-            this.inventoryContainer.innerHTML = '';
+            this.materialList.innerHTML = '';
+            this.gearList.innerHTML = '';
 
-            // Sort by amount descending
             items.sort((a, b) => b.amount - a.amount);
 
             items.forEach(item => {
-                const filename = this.getSVGFilename(item.id);
+                const itemData = ItemManager.getItem(item.id);
+                if (!itemData) return;
 
+                const filename = ItemManager.getSVGFilename(item.id);
                 const div = document.createElement('div');
                 div.className = 'inv-item';
+                div.draggable = true;
                 div.innerHTML = `
                     <img class="inv-icon" src="assets/emojis/${filename}" alt="${item.id}" draggable="false">
                     <span class="inv-amount">${item.amount}</span>
                 `;
-                this.inventoryContainer.appendChild(div);
+
+                div.ondragstart = (e) => {
+                    e.dataTransfer.setData('itemId', item.id);
+                    e.dataTransfer.effectAllowed = 'copyMove';
+                };
+
+                div.onmouseenter = () => this.showTooltip(item.id);
+                div.onmouseleave = () => this.hideTooltip();
+
+                if (itemData.type === 'equipment') {
+                    div.classList.add('is-gear');
+                    div.onclick = () => this.handleItemClick(item.id);
+                    this.gearList.appendChild(div);
+                } else {
+                    this.materialList.appendChild(div);
+                }
             });
         } catch (e) {
             console.error('[UIManager] Error refreshing inventory UI:', e);
         } finally {
             this.isRefreshing = false;
+        }
+    }
+
+    handleItemClick(itemId) {
+        // Equip to the currently "active" or first applicable mercenary
+        // For now, let's find a channel that is focused or just the first one
+        const activeChannel = this.channels.find(c => c.active);
+        if (activeChannel && activeChannel.boundUnitId) {
+            EventBus.emit(EventBus.EVENTS.EQUIP_REQUEST, {
+                unitId: activeChannel.boundUnitId,
+                itemId: itemId
+            });
+        } else {
+            console.log('[UIManager] No active/focused character to equip to.');
+            // Fallback: try to find any bound channel
+            const firstBound = this.channels.find(c => c.boundUnitId);
+            if (firstBound) {
+                EventBus.emit(EventBus.EVENTS.EQUIP_REQUEST, {
+                    unitId: firstBound.boundUnitId,
+                    itemId: itemId
+                });
+            }
         }
     }
 

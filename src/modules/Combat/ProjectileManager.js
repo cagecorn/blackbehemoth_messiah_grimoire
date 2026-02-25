@@ -68,26 +68,43 @@ export default class ProjectileManager {
 
     /**
      * Fire a projectile.
-     * @param {number} x Start X
-     * @param {number} y Start Y
-     * @param {number} targetX End X
-     * @param {number} targetY End Y
-     * @param {number} damage Damage amount
-     * @param {string} type 'archer' or 'emoji_sparkle'
-     * @param {Boolean} isMagic Whether this is a magic attack
-     * @param {Phaser.GameObjects.Group} targetGroup The group to hit (mercenaries or enemies)
-     * @param {Object} shooter The shooter object for Miss/Kill attribution
-     * @param {Function} onHitCallback Optional callback when a hit is confirmed (target, damage)
      */
-    fire(x, y, targetX, targetY, damage, type = 'archer', isMagic = false, targetGroup = null, shooter = null, onHitCallback = null) {
+    fire(x, y, targetX, targetY, damage, type = 'archer', isMagic = false, targetGroup = null, shooter = null, onHitCallback = null, isUltimate = false, element = null, isCritical = false) {
         let projectile;
         const groupToHit = targetGroup || this.scene.enemies;
 
+        // --- Centralized Synergy Check ---
+        let finalElement = element;
+        let weaponElement = null;
+        let weaponSuffix = null;
+
+        if (shooter && shooter.getWeaponPrefix) {
+            const prefix = shooter.getWeaponPrefix();
+            if (prefix) weaponElement = prefix.element;
+
+            // FUTURE: Retrieve Suffix for Clone/Pierce/Enhance
+            // weaponSuffix = shooter.getWeaponSuffix();
+        }
+
+        // Inheritance: If no skill element, use weapon element
+        if (!finalElement && weaponElement) {
+            finalElement = weaponElement;
+        }
+
+        // FUTURE: Handle 'Clone' Suffix (Recursive call or loop)
+        // if (weaponSuffix === 'clone') { ... }
+
         if (type === 'laser') {
             // Draw an instant laser beam using Graphics
-            // Graphics are cheap to create/destroy occasionally, keeping as is for now
             const graphics = this.scene.add.graphics();
-            graphics.lineStyle(4, 0x00ffff, 1); // Cyan laser
+
+            // Dynamic laser color based on element
+            let laserColor = 0x00ffff; // Default Cyan
+            if (finalElement === 'fire') laserColor = 0xff9d00;
+            else if (finalElement === 'ice') laserColor = 0x00bbff;
+            else if (finalElement === 'lightning') laserColor = 0xffff00;
+
+            graphics.lineStyle(4, laserColor, 1);
 
             // Draw the line from shooter to target
             graphics.beginPath();
@@ -107,7 +124,7 @@ export default class ProjectileManager {
             });
 
             // Instant hit calculation
-            this.checkHitAtTarget(targetX, targetY, damage, groupToHit, isMagic, shooter, onHitCallback);
+            this.checkHitAtTarget(targetX, targetY, damage, groupToHit, isMagic, shooter, onHitCallback, isUltimate, finalElement, isCritical, weaponElement);
             return; // Skip standard projectile logic
         }
 
@@ -130,7 +147,11 @@ export default class ProjectileManager {
         if (textureExists) {
             projectile = this.getProjectile(type, x, y, false);
             // Default size 32 for general emojis, special cases for larger ones
-            const size = (type === 'fireball' || type === 'emoji_fire') ? 48 : 32;
+            let size = (type === 'fireball' || type === 'emoji_fire') ? 48 : 32;
+
+            // FUTURE: Handle 'Enhance' Suffix (Size increase)
+            // if (weaponSuffix === 'enhance') size *= 1.5;
+
             if (projectile) {
                 projectile.setDisplaySize(size, size);
                 if (type === 'emoji_fire') projectile.setTint(0xffaa00);
@@ -138,13 +159,24 @@ export default class ProjectileManager {
         } else {
             const emoji = emojiMap[type] || (type.includes('fire') ? '🔥' : '🏹');
             projectile = this.getProjectile(emoji, x, y, true);
+
+            // Apply elemental tint for notes and sparkles
+            if ((type === 'emoji_note' || type === 'emoji_sparkle') && finalElement && this.scene.fxManager) {
+                const colorStr = this.scene.fxManager.getElementColor(finalElement);
+                if (colorStr) {
+                    const hex = parseInt(colorStr.replace('#', '0x'), 16);
+                    projectile.setTint(hex);
+                }
+            }
         }
 
-        if (!projectile) return; // Should not happen unless pool max reached and strict
+        if (!projectile) return; // Should not happen unless pool max reached
 
-        // Linear movement for magic, sparkles, notes, OR if it's a known emoji texture (herd effect)
+        // Movement Logic (Normal Linear or Arc)
         const isEmoji = type.startsWith('emoji_');
-        if (type === 'emoji_sparkle' || type === 'emoji_note' || isMagic || isEmoji) {
+        const movementType = (type === 'emoji_sparkle' || type === 'emoji_note' || isMagic || isEmoji) ? 'LINEAR' : 'ARC';
+
+        if (movementType === 'LINEAR') {
             this.scene.tweens.add({
                 targets: projectile,
                 x: targetX,
@@ -152,9 +184,21 @@ export default class ProjectileManager {
                 rotation: Phaser.Math.Angle.Between(x, y, targetX, targetY) + Math.PI / 2,
                 duration: 400,
                 ease: 'Linear',
+                onUpdate: () => {
+                    if (this.scene.fxManager && Math.random() > 0.5) {
+                        if (finalElement) this.scene.fxManager.spawnElementalParticles(projectile.x, projectile.y, finalElement);
+                        if (weaponElement && weaponElement !== finalElement) this.scene.fxManager.spawnElementalParticles(projectile.x, projectile.y, weaponElement);
+                    }
+                },
                 onComplete: () => {
-                    this.checkHitAtTarget(targetX, targetY, damage, groupToHit, isMagic, shooter, onHitCallback);
-                    this.releaseProjectile(projectile);
+                    const hitCount = this.checkHitAtTarget(targetX, targetY, damage, groupToHit, isMagic, shooter, onHitCallback, isUltimate, finalElement, isCritical, weaponElement, projectile);
+
+                    const config = (onHitCallback && typeof onHitCallback === 'object') ? onHitCallback : {};
+                    const isPiercing = config.pierceCount && config.pierceCount > 0;
+
+                    if (!isPiercing || hitCount === 0 || (projectile.currentHits >= config.pierceCount)) {
+                        this.releaseProjectile(projectile);
+                    }
                 }
             });
         } else {
@@ -178,51 +222,96 @@ export default class ProjectileManager {
                         const nextY = Math.pow(1 - nextT, 2) * y + 2 * (1 - nextT) * nextT * midY + Math.pow(nextT, 2) * targetY;
                         projectile.setRotation(Phaser.Math.Angle.Between(currX, currY, nextX, nextY) + Math.PI / 4);
                     }
+
+                    if (this.scene.fxManager && Math.random() > 0.5) {
+                        if (finalElement) this.scene.fxManager.spawnElementalParticles(projectile.x, projectile.y, finalElement);
+                        if (weaponElement && weaponElement !== finalElement) this.scene.fxManager.spawnElementalParticles(projectile.x, projectile.y, weaponElement);
+                    }
                 },
                 onComplete: () => {
-                    this.checkHitAtTarget(targetX, targetY, damage, groupToHit, false, shooter, onHitCallback);
-                    this.releaseProjectile(projectile);
+                    const hitCount = this.checkHitAtTarget(targetX, targetY, damage, groupToHit, false, shooter, onHitCallback, isUltimate, finalElement, isCritical, weaponElement, projectile);
+
+                    const config = (onHitCallback && typeof onHitCallback === 'object') ? onHitCallback : {};
+                    const isPiercing = config.pierceCount && config.pierceCount > 0;
+
+                    if (!isPiercing || hitCount === 0 || (projectile.currentHits >= config.pierceCount)) {
+                        this.releaseProjectile(projectile);
+                    }
                 }
             });
         }
     }
 
-    checkHitAtTarget(tx, ty, damage, targetGroup, isMagic, shooter, onHitCallback = null) {
-        if (!targetGroup) return;
+    checkHitAtTarget(tx, ty, damage, targetGroup, isMagic, shooter, onHitCallback = null, isUltimate = false, element = null, isCritical = false, secondaryElement = null, projectile = null) {
+        if (!targetGroup) return 0;
 
-        const threshold = 80; // Increased for better feel in Arena
-        const hitTarget = targetGroup.getChildren().find(e => {
-            if (!e.active || e.hp <= 0) return false;
-            const dist = Phaser.Math.Distance.Between(e.x, e.y, tx, ty);
+        const config = (onHitCallback && typeof onHitCallback === 'object') ? onHitCallback : {};
+        const isPiercing = config.pierceCount && config.pierceCount > 0;
 
-            // Account for target size:
-            // 1. Minimum logical threshold (80)
-            // 2. Add extra buffer for large units (scale > 1)
-            let dynamicThreshold = threshold;
-            if (e.scale > 1.2) {
-                dynamicThreshold += (e.scale - 1) * 30; // Bosses get a much larger hit area
+        const threshold = 80;
+        const potentialTargets = targetGroup.getChildren().filter(e => e.active && e.hp > 0);
+
+        let hitCount = 0;
+
+        if (isPiercing) {
+            if (projectile && !projectile.hitLog) projectile.hitLog = new Map();
+
+            potentialTargets.forEach(e => {
+                const dist = Phaser.Math.Distance.Between(e.x, e.y, tx, ty);
+                let dynamicThreshold = threshold;
+                if (e.scale > 1.2) dynamicThreshold += (e.scale - 1) * 30;
+
+                if (dist <= dynamicThreshold) {
+                    const now = this.scene.time.now;
+                    const lastHit = projectile.hitLog.get(e) || 0;
+                    const hitCooldown = config.hitCooldown || 150;
+
+                    if (now - lastHit > hitCooldown) {
+                        projectile.hitLog.set(e, now);
+                        projectile.currentHits = (projectile.currentHits || 0) + 1;
+                        this.handleHit(e, damage, isMagic, shooter, onHitCallback, isUltimate, element, isCritical, secondaryElement);
+                        hitCount++;
+                    }
+                }
+            });
+        } else {
+            const hitTarget = potentialTargets.find(e => {
+                const dist = Phaser.Math.Distance.Between(e.x, e.y, tx, ty);
+                let dynamicThreshold = threshold;
+                if (e.scale > 1.2) dynamicThreshold += (e.scale - 1) * 30;
+                return dist <= dynamicThreshold;
+            });
+
+            if (hitTarget) {
+                this.handleHit(hitTarget, damage, isMagic, shooter, onHitCallback, isUltimate, element, isCritical, secondaryElement);
+                hitCount = 1;
             }
-
-            return dist <= dynamicThreshold;
-        });
-
-        if (hitTarget) {
-            this.handleHit(hitTarget, damage, isMagic, shooter, onHitCallback);
         }
+        return hitCount;
     }
 
-    handleHit(target, damage, isMagic, shooter, onHitCallback = null) {
-        if (target) {
-            if (isMagic && target.takeMagicDamage) {
-                target.takeMagicDamage(damage, shooter);
-            } else if (target.takeDamage) {
-                target.takeDamage(damage, shooter);
-            }
+    handleHit(target, damage, isMagic, shooter, onHitCallback = null, isUltimate = false, element = null, isCritical = false, secondaryElement = null) {
+        if (!target) return;
 
-            // Execute additional hit effects
-            if (onHitCallback) {
-                onHitCallback(target, damage);
+        // Apply Primary Damage
+        if (isMagic && target.takeMagicDamage) {
+            target.takeMagicDamage(damage, shooter, isUltimate, element, isCritical, 0);
+            // Synergy: Apply secondary element bonus from weapon
+            if (secondaryElement && secondaryElement !== element) {
+                target.takeMagicDamage(0, shooter, isUltimate, secondaryElement, isCritical, 150);
             }
+        } else if (target.takeDamage) {
+            target.takeDamage(damage, shooter, isUltimate, element, isCritical, 0);
+            if (secondaryElement && secondaryElement !== element) {
+                target.takeDamage(0, shooter, isUltimate, secondaryElement, isCritical, 150);
+            }
+        }
+
+        // Execute additional hit effects
+        if (typeof onHitCallback === 'function') {
+            onHitCallback(target, damage, isUltimate);
+        } else if (onHitCallback && typeof onHitCallback.onHit === 'function') {
+            onHitCallback.onHit(target, damage, isUltimate);
         }
     }
 }

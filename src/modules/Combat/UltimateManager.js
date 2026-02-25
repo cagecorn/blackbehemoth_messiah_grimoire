@@ -168,6 +168,10 @@ export default class UltimateManager {
             spriteKey = 'noel_cutscene';
             scale = 1.0;
             yOffset = height - 200;
+        } else if (unit.characterId === 'aina') {
+            spriteKey = 'aina_cutscene';
+            scale = 1.0;
+            yOffset = height - 200;
         }
 
         const closeUp = this.scene.add.image(-200, yOffset, spriteKey)

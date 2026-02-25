@@ -92,6 +92,7 @@ export default class Wizard extends Mercenary {
         this.blackboard.set('target', nearest);
     }
 
+
     fireProjectile() {
         const now = this.scene.time.now;
         if (now - this.lastFireTime < this.atkSpd) return false;
@@ -102,18 +103,23 @@ export default class Wizard extends Mercenary {
         this.lastFireTime = now;
 
         // Use mAtk and pass 'laser' type to ProjectileManager
+        if (this.restoreSpriteTint) this.restoreSpriteTint(); // Ensure no leftover hit tints
         this.scene.tweens.killTweensOf(this.sprite);
         this.sprite.x = 0;
         this.scene.tweens.add({
             targets: this.sprite,
             x: this.lastScaleX * 10,
             duration: 50,
-            yoyo: true
+            yoyo: true,
+            onComplete: () => this.restoreSpriteTint ? this.restoreSpriteTint() : this.sprite.clearTint()
         });
+
+        const prefix = this.getWeaponPrefix();
+        const element = prefix ? prefix.id : null;
 
         this.scene.projectileManager.fire(
             this.x, this.y, target.x, target.y,
-            this.getTotalMAtk(), 'laser', true, this.targetGroup, this
+            this.getTotalMAtk(), 'laser', true, this.targetGroup, this, null, false, element
         );
         return true;
     }

@@ -19,6 +19,9 @@ export default class GuardianAngel extends Mercenary {
             atk: master.mAtk * 1.5,   // Scaled by mAtk
             def: master.mDef,
             mDef: master.mDef,
+            fireRes: master.mAtk * 0.1,
+            iceRes: master.mAtk * 0.1,
+            lightningRes: master.mAtk * 0.1,
             speed: 180,              // Faster than average
             atkSpd: 800,             // Fast attacks
             atkRange: 60,

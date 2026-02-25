@@ -727,22 +727,55 @@ body {
     text-transform: uppercase;
 }
 
-/* Inventory Styles */
-.panel-title {
-    font-size: 20px;
-    font-weight: bold;
-    margin-bottom: 15px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    color: #f0f0f0;
-    border-bottom: 1px solid #444;
-    padding-bottom: 5px;
+.inventory-section {
+    position: relative;
+    max-height: 200px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    /* Prevent horizontal scrollbars */
+    margin-bottom: 20px;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+    box-sizing: border-box;
 }
 
-#inventory-list {
+/* Custom Scrollbar */
+.inventory-section::-webkit-scrollbar {
+    width: 6px;
+}
+
+.inventory-section::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.inventory-section::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+}
+
+.inventory-section::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.section-title {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: rgba(30, 30, 30, 0.95);
+    font-size: 13px;
+    color: #88ccff;
+    font-weight: bold;
+    padding: 6px 8px;
+    text-transform: uppercase;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.inventory-grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 8px;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 4px;
+    padding: 8px 4px;
     width: 100%;
 }
 
@@ -751,32 +784,35 @@ body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    padding: 6px 2px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+    padding: 4px;
     aspect-ratio: 1 / 1;
     min-width: 0;
     box-sizing: border-box;
     transition: background 0.2s, transform 0.1s;
-    cursor: default;
+    cursor: grab;
+    user-select: none;
 }
 
 .inv-item:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.15);
     transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
 }
 
 .inv-icon {
-    width: 28px;
-    height: 28px;
-    margin-bottom: 4px;
+    width: 22px;
+    height: 22px;
+    margin-bottom: 2px;
+    pointer-events: none;
 }
 
 .inv-amount {
-    font-size: 12px;
+    font-size: 10px;
     font-weight: bold;
     color: #e0e0e0;
+    pointer-events: none;
 }
 
 /* Custom CSS Tooltips for Status Icons */
@@ -848,11 +884,17 @@ body {
     border-radius: 6px;
     padding: 10px;
     font-size: 14px;
-    transition: border-color 0.2s;
+    transition: border-color 0.2s, background 0.2s;
 }
 
 .gear-slot:hover {
     border-color: rgba(187, 136, 255, 0.4);
+}
+
+.gear-slot.drag-over {
+    background: rgba(187, 136, 255, 0.2);
+    border-color: #bb88ff;
+    box-shadow: 0 0 10px rgba(187, 136, 255, 0.3);
 }
 
 .slot-label {
@@ -922,22 +964,55 @@ body {
     text-transform: uppercase;
 }
 
-/* Inventory Styles */
-.panel-title {
-    font-size: 20px;
-    font-weight: bold;
-    margin-bottom: 15px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    color: #f0f0f0;
-    border-bottom: 1px solid #444;
-    padding-bottom: 5px;
+.inventory-section {
+    position: relative;
+    max-height: 200px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    /* Prevent horizontal scrollbars */
+    margin-bottom: 20px;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+    box-sizing: border-box;
 }
 
-#inventory-list {
+/* Custom Scrollbar */
+.inventory-section::-webkit-scrollbar {
+    width: 6px;
+}
+
+.inventory-section::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.inventory-section::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+}
+
+.inventory-section::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.section-title {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: rgba(30, 30, 30, 0.95);
+    font-size: 13px;
+    color: #88ccff;
+    font-weight: bold;
+    padding: 6px 8px;
+    text-transform: uppercase;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.inventory-grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 8px;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 4px;
+    padding: 8px 4px;
     width: 100%;
 }
 
@@ -946,32 +1021,35 @@ body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    padding: 6px 2px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+    padding: 4px;
     aspect-ratio: 1 / 1;
     min-width: 0;
     box-sizing: border-box;
     transition: background 0.2s, transform 0.1s;
-    cursor: default;
+    cursor: grab;
+    user-select: none;
 }
 
 .inv-item:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.15);
     transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
 }
 
 .inv-icon {
-    width: 28px;
-    height: 28px;
-    margin-bottom: 4px;
+    width: 22px;
+    height: 22px;
+    margin-bottom: 2px;
+    pointer-events: none;
 }
 
 .inv-amount {
-    font-size: 12px;
+    font-size: 10px;
     font-weight: bold;
     color: #e0e0e0;
+    pointer-events: none;
 }
 
 /* Custom CSS Tooltips for Status Icons */
@@ -1157,4 +1235,69 @@ body {
     color: #ffffff;
     border-color: #666;
     background: rgba(255, 255, 255, 0.05);
+}
+/* Pretty Inventory Tooltip */
+.inv-tooltip {
+    position: fixed;
+    z-index: 10000;
+    pointer-events: none;
+    background: rgba(20, 20, 25, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    padding: 14px;
+    width: 240px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), inset 0 0 10px rgba(255, 255, 255, 0.05);
+    display: none;
+    flex-direction: column;
+    gap: 8px;
+    color: #e2e8f0;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    transform: translate(15px, 15px);
+    transition: opacity 0.2s ease;
+}
+
+.inv-tooltip .item-name {
+    font-size: 18px;
+    font-weight: 800;
+    color: #bb88ff;
+    text-shadow: 0 0 10px rgba(187, 136, 255, 0.4);
+    margin-bottom: 2px;
+}
+
+.inv-tooltip .item-type {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: #888;
+    font-weight: bold;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 6px;
+}
+
+.inv-tooltip .item-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.inv-tooltip .stat-line {
+    font-size: 13px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.inv-tooltip .stat-label { color: #aaa; }
+.inv-tooltip .stat-value { color: #4ade80; font-weight: bold; }
+
+.inv-tooltip .item-description {
+    font-size: 12px;
+    line-height: 1.6;
+    color: #cbd5e1;
+    font-style: italic;
+    background: rgba(255, 255, 255, 0.03);
+    padding: 8px;
+    border-radius: 6px;
+    margin-top: 4px;
 }

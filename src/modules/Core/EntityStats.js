@@ -29,7 +29,10 @@ export const MercenaryClasses = {
         physicsRadius: 20,
         spriteSize: 64,
         spawnOffset: { x: 0, y: 0 },
-        aiType: 'MELEE'
+        aiType: 'MELEE',
+        fireRes: 0,
+        iceRes: 0,
+        lightningRes: 0
     },
     ARCHER: {
         id: 'archer',
@@ -53,7 +56,10 @@ export const MercenaryClasses = {
         physicsRadius: 20,
         spriteSize: 64,
         spawnOffset: { x: -50, y: 0 },
-        aiType: 'RANGED'
+        aiType: 'RANGED',
+        fireRes: 0,
+        iceRes: 0,
+        lightningRes: 0
     },
     HEALER: {
         id: 'healer',
@@ -77,7 +83,10 @@ export const MercenaryClasses = {
         physicsRadius: 20,
         spriteSize: 64,
         spawnOffset: { x: -100, y: 0 },
-        aiType: 'SUPPORT'
+        aiType: 'SUPPORT',
+        fireRes: 0,
+        iceRes: 0,
+        lightningRes: 0
     },
     WIZARD: {
         id: 'wizard',
@@ -101,7 +110,10 @@ export const MercenaryClasses = {
         physicsRadius: 20,
         spriteSize: 64,
         spawnOffset: { x: -140, y: 0 },
-        aiType: 'RANGED'
+        aiType: 'RANGED',
+        fireRes: 0,
+        iceRes: 0,
+        lightningRes: 0
     },
     BARD: {
         id: 'bard',
@@ -125,7 +137,10 @@ export const MercenaryClasses = {
         physicsRadius: 20,
         spriteSize: 64,
         spawnOffset: { x: -180, y: 0 },
-        aiType: 'SUPPORT'
+        aiType: 'SUPPORT',
+        fireRes: 0,
+        iceRes: 0,
+        lightningRes: 0
     }
 };
 
@@ -248,9 +263,9 @@ export const Characters = {
         sprite: 'wizard_sprite',
         skillName: 'SkillFireball',
         skillEmoji: '🔥',
-        skillDescription: '하늘에서 거대한 불덩이를 떨어뜨려 범위 내 적들에게 마법 공격력의 1.8배 피해를 입히고 기절시킵니다. (재사용 대기시간 5초)',
+        skillDescription: '하늘에서 거대한 불덩이를 떨어뜨려 범위 내 적들에게 마법 공격력의 1.8배 피해를 입힙니다. 속성 무기 장착 시 1~50%의 화염 추가 피해가 발생하며 기절시킵니다. (재사용 대기시간 5초)',
         ultimateName: '메테오 스트라이크',
-        ultimateDescription: '50발의 운석이 각 마법 공격력의 0.85배 마법 피해를 입히며 150px 반경 AOE를 타격합니다. CC 없음.',
+        ultimateDescription: '50발의 운석이 각 마법 공격력의 0.85배 마법 피해를 입히며 150px 반경 AOE를 타격합니다. (속성 무기 장착 시 1~50% 화염 추가 피해)',
         atk: 5,
         mAtk: 35,
         personality: '도박에 미친 마법사. 인생의 모든 것을 확률과 운, 홀짝으로 해석한다. "이번 마법이 빗나갈 확률은 3%!" 같은 소리를 한다. 도박광 주제에 가계부는 꼼꼼히 쓴다.',
@@ -400,9 +415,9 @@ export const Characters = {
         sprite: 'leona_sprite',
         skillName: 'ElectricGrenade',
         skillEmoji: '💣',
-        skillDescription: '전기 수류탄을 던져 범위 내 적들에게 물리 공격력의 1.8배 피해를 입히고 3초간 감전(행동불능) 상태로 만듭니다. (재사용 대기시간 8초)',
+        skillDescription: '전기 수류탄을 던져 범위 내 적들에게 물리 공격력의 1.8배 피해를 입히고 3초간 감전(행동불능) 상태로 만듭니다. 속성 무기 장착 시 1~50%의 번개 추가 피해가 발생합니다. (재사용 대기시간 8초)',
         ultimateName: '융단폭격',
-        ultimateDescription: '하늘에서 비행기들이 나타나 폭탄을 쏟아붓습니다. 광역 물리 피해를 입히고 6초간 화상(매초 2% 피해) 상태로 만듭니다.',
+        ultimateDescription: '하늘에서 비행기들이 나타나 폭탄을 쏟아붓습니다. 광역 물리 피해를 입히고 6초간 화상(매초 2% 피해) 상태로 만듭니다. (속성 무기 장착 시 1~50% 화염 추가 피해)',
         atk: 18,
         personality: "생존주의자 밀덕(밀리터리 덕후). 약육강식을 신봉하며 감정을 배제하려 애쓴다. 무기 손질에 집착하며, 은근히 허당끼가 있어 함정을 피하려다 자기가 걸린다.",
         relationships: {
@@ -662,6 +677,43 @@ export const Characters = {
             "전투는 무섭지만, 식물 친구들이 곁에 있어서 든든해."
         ]
     },
+    AINA: {
+        id: 'aina',
+        characterId: 'aina',
+        classId: 'wizard',
+        name: 'Aina (아이나)',
+        sprite: 'aina_sprite',
+        skillName: 'SkillIceBall',
+        skillEmoji: '❄️',
+        skillDescription: '거대한 눈덩이를 발사하여 마법 공격력의 1.8배 범위 피해를 입히고 적들을 3초간 [동결]시킵니다. 10% 확률로 눈사람(분열 시 0.4배 피해)을 발사하며, 속성 무기 장착 시 1~50%의 빙결 추가 피해를 입힙니다.',
+        ultimateName: '아이스 스톰',
+        ultimateDescription: '15초 동안 거대한 눈구름을 소환합니다. 눈구름은 적들을 자동으로 추적하며 눈덩이를 떨어뜨려 각각 마법 공격력의 0.45배 피해(폭발 시 0.5배)와 [동결] 효과를 입힙니다. (속성 무기 장착 시 1~50% 빙결 추가 피해)',
+        atk: 5,
+        mAtk: 38,
+        def: 6,
+        mDef: 22,
+        speed: 95,
+        personality: '차가운 얼음 여왕. 이성적이고 현명한 여인으로, 동료들에게 냉철하지만 도움이 되는 조언을 하길 좋아합니다. 상당한 동안이지만 실제로는 나이가 꽤 많은 듯하며, 나이에 대한 질문에는 매우 민감하게 반응합니다. 의외로 아주 매운 음식을 즐겨 먹습니다.',
+        relationships: {
+            merlin: '확률에 의존하는 것은 어리석은 짓이에요. 하지만 당신의 마법적 지식은 인정하죠.',
+            sera: '당신의 거친 언행 뒤에 숨겨진 따뜻함을 알아요. 조금 더 솔직해지는 건 어떨까요?',
+            aren: '열정은 좋지만 가끔은 머리를 식힐 필요가 있어요. 고기만 먹으면 혈관이 얼어붙을 거예요.'
+        },
+        dialogueExamples: [
+            "차가운 이성만이 승리를 가져다줄 것입니다. 제 조언을 흘려듣지 마세요.",
+            "나이가 몇 살이냐고요? ...그 질문, 오늘 마지막으로 듣는 게 좋을 거예요.",
+            "후우... 전장의 열기가 너무 뜨겁군요. 시원하게 얼려드리죠.",
+            "이 떡볶이, 생각보다 맵지 않네요. 좀 더 자극적인 건 없나요?",
+            "실수하지 마세요. 얼음은 작은 균열 하나에도 무너지는 법이니까요.",
+            "제 피부의 비결요? 글쎄요, 영하의 환경에서 생활해 보는 건 어떤가요?",
+            "제 지팡이가 가리키는 곳에 혹독한 겨울이 찾아올 것입니다.",
+            "조언 한 마디 하죠. 적의 발을 묶는 것이 승리의 지름길이랍니다.",
+            "나이... 나이가 그렇게 중요한가요? 전 지금이 가장 아름다운 나이라고 생각해요.",
+            "이 얼음처럼 차갑고 단단한 의지를 가지세요. 그래야 살아남을 수 있습니다.",
+            "매운맛이 부족하군요. 제 마법으로 혀를 마비시켜 드려야 할까요?",
+            "동결 완료. 이제 부서질 일만 남았군요. 자, 마무리하세요."
+        ]
+    },
 };
 
 export const SummonStats = {
@@ -703,7 +755,10 @@ export const MonsterClasses = {
         spriteSize: 64,
         spawnOffset: { x: 400, y: 400 },
         aiType: 'MELEE',
-        scale: 1
+        scale: 1,
+        fireRes: 0,
+        iceRes: 0,
+        lightningRes: 0
     },
     SHAMAN: {
         id: 'shaman',
@@ -727,7 +782,10 @@ export const MonsterClasses = {
         physicsRadius: 20,
         spriteSize: 64,
         aiType: 'SUPPORT',
-        scale: 1.2
+        scale: 1.2,
+        fireRes: 0,
+        iceRes: 0,
+        lightningRes: 0
     },
     BOSS_GOBLIN: {
         id: 'boss_goblin',
@@ -751,7 +809,10 @@ export const MonsterClasses = {
         physicsRadius: 30,
         spriteSize: 64,
         aiType: 'MELEE',
-        scale: 4.0
+        scale: 4.0,
+        fireRes: 0,
+        iceRes: 0,
+        lightningRes: 0
     },
     ORC: {
         id: 'orc',
@@ -776,7 +837,10 @@ export const MonsterClasses = {
         spriteSize: 64,
         spawnOffset: { x: 450, y: 450 },
         aiType: 'RANGED',
-        scale: 1.1
+        scale: 1.1,
+        fireRes: 0,
+        iceRes: 0,
+        lightningRes: 0
     }
     // New monsters like SLIME or ORC can be added here easily
 };
@@ -809,19 +873,36 @@ export const StageConfigs = {
  * @returns {Object} A new config object with scaled stats.
  */
 export function scaleStats(config, level) {
-    if (level <= 1) return { ...config, level: 1 };
+    if (!config) return { level: level || 1 };
 
-    // 10% stats increase per level
-    const multiplier = 1 + (level - 1) * 0.1;
-    const newConfig = { ...config };
+    // Ensure basic defaults exist before scaling
+    const base = {
+        maxHp: 100,
+        atk: 10,
+        mAtk: 10,
+        def: 5,
+        mDef: 5,
+        fireRes: 0,
+        iceRes: 0,
+        lightningRes: 0,
+        ...config
+    };
 
+    if (level <= 1) {
+        return { ...base, level: 1, hp: base.maxHp };
+    }
+
+    // Strictly linear additive scaling for predictable testing
+    const newConfig = { ...base };
     newConfig.level = level;
-    newConfig.maxHp = Math.floor((config.maxHp || 0) * multiplier);
+
+    const levelFactor = level - 1;
+    newConfig.maxHp = base.maxHp + (levelFactor * 30);
     newConfig.hp = newConfig.maxHp;
-    newConfig.atk = Math.floor((config.atk || 0) * multiplier);
-    newConfig.mAtk = Math.floor((config.mAtk || 0) * multiplier);
-    newConfig.def = Math.floor((config.def || 0) * multiplier);
-    newConfig.mDef = Math.floor((config.mDef || 0) * multiplier);
+    newConfig.atk = base.atk + (levelFactor * 3);
+    newConfig.mAtk = (base.mAtk || 0) + (levelFactor * 3);
+    newConfig.def = base.def + (levelFactor * 2);
+    newConfig.mDef = (base.mDef || 0) + (levelFactor * 2);
 
     return newConfig;
 }

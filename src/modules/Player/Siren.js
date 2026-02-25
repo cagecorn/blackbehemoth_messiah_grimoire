@@ -21,6 +21,9 @@ export default class Siren extends Mercenary {
             mAtk: master.mAtk * 1.2, // Stronger magic scaling
             def: master.mDef * 0.8,
             mDef: master.mDef * 1.2,
+            fireRes: master.mAtk * 0.1,
+            iceRes: master.mAtk * 0.1,
+            lightningRes: master.mAtk * 0.1,
             speed: 120,
             atkSpd: 1500,
             atkRange: 250,
@@ -101,12 +104,16 @@ export default class Siren extends Mercenary {
         }
 
         // Laser attack (Instant hit)
+        const prefix = this.master ? (this.master.getWeaponPrefix ? this.master.getWeaponPrefix() : null) : null;
+        const element = prefix ? prefix.id : null;
+
         this.scene.projectileManager.fire(
             this.x, this.y, target.x, target.y,
             this.getTotalMAtk(), 'laser', true, this.targetGroup, this,
             (hitTarget) => {
                 this.handleHitEffect(hitTarget);
-            }
+            },
+            false, element
         );
 
         return true;

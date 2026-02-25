@@ -7,6 +7,7 @@ import MonsterHealer from '../modules/AI/MonsterHealer.js';
 import Archer from '../modules/Player/Archer.js';
 import Healer from '../modules/Player/Healer.js';
 import Wizard from '../modules/Player/Wizard.js';
+import Aina from '../modules/Player/Aina.js';
 import Bao from '../modules/Player/Bao.js';
 import Bard from '../modules/Player/Bard.js';
 import Nana from '../modules/Player/Nana.js';
@@ -132,6 +133,8 @@ export default class DungeonScene extends Phaser.Scene {
             } else if (charConfig.classId === 'wizard') {
                 if (charId === 'bao') {
                     unit = new Bao(this, x, y, playerLeader, charConfig);
+                } else if (charId === 'aina') {
+                    unit = new Aina(this, x, y, playerLeader, charConfig);
                 } else {
                     unit = new Wizard(this, x, y, playerLeader, charConfig);
                 }
@@ -245,6 +248,8 @@ export default class DungeonScene extends Phaser.Scene {
         } else if (classId === 'wizard') {
             if (characterId === 'bao') {
                 newUnit = new Bao(this, x, y, this.player, config);
+            } else if (characterId === 'aina') {
+                newUnit = new Aina(this, x, y, this.player, config);
             } else {
                 newUnit = new Wizard(this, x, y, this.player, config);
             }
@@ -346,11 +351,12 @@ export default class DungeonScene extends Phaser.Scene {
 
     spawnWave() {
         const startPos = this.dungeonManager.getPlayerStartPosition();
-        const monsterLevel = this.currentRound;
+        // Monster scaling: Increases every 5 rounds
+        const monsterLevel = Math.floor((this.currentRound - 1) / 5) + 1;
 
-        // Spawn Goblins (Base 12 + 2 per round)
+        // Spawn Goblins (Base 12 + 1 per round)
         const goblinConfig = MonsterClasses.GOBLIN;
-        const goblinCount = 12 + (this.currentRound - 1) * 2;
+        const goblinCount = 12 + (this.currentRound - 1) * 1;
         for (let i = 0; i < goblinCount; i++) {
             const offsetX = (i % 4) * 60;
             const offsetY = Math.floor(i / 4) * 60;
@@ -366,8 +372,8 @@ export default class DungeonScene extends Phaser.Scene {
             this.enemies.add(shaman);
         }
 
-        // Spawn Orcs (Round 1: 2, then +1 per round)
-        const orcCount = 2 + (this.currentRound - 1);
+        // Spawn Orcs (Round 1: 2, then +0.5 per round)
+        const orcCount = 2 + Math.floor((this.currentRound - 1) / 2);
         for (let i = 0; i < orcCount; i++) {
             const offsetX = (i % 2) * 80;
             const offsetY = Math.floor(i / 2) * 80;
@@ -382,7 +388,7 @@ export default class DungeonScene extends Phaser.Scene {
             const shadowY = startPos.y - 120;
 
             // 1. Spawn Aren (Always the leader/first boss)
-            this.spawnShadowMercenary('warrior', Characters.AREN, shadowX, shadowY, monsterLevel);
+            const shadowAren = this.spawnShadowMercenary('warrior', Characters.AREN, shadowX, shadowY, monsterLevel);
             EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, `[!] 그림자 전사 아렌이 나타났습니다! ⚔️`);
 
             // 2. Spawn Additional Bosses (Round 6 -> +1, Round 9 -> +2, etc.)
@@ -399,7 +405,8 @@ export default class DungeonScene extends Phaser.Scene {
                     const offsetX = (i + 1) * 50;
                     const offsetY = (i % 2 === 0 ? 1 : -1) * 40;
 
-                    this.spawnShadowMercenary(charConfig.classId, charConfig, shadowX + offsetX, shadowY + offsetY, monsterLevel);
+                    // Pass shadowAren as leader so they follow him, not the player!
+                    this.spawnShadowMercenary(charConfig.classId, charConfig, shadowX + offsetX, shadowY + offsetY, monsterLevel, shadowAren);
                     EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, `[!] 추가 증원: 그림자 ${charConfig.name} 등장!`);
                 }
             }
@@ -418,11 +425,17 @@ export default class DungeonScene extends Phaser.Scene {
      * @param {number} y Y position
      * @param {number} level Monster level
      */
-    spawnShadowMercenary(classId, characterConfig, x, y, level = 1) {
-        // Apply scaling
-        let config = scaleStats(characterConfig, level);
+    spawnShadowMercenary(classId, characterConfig, x, y, level = 1, leader = null) {
+        // BUG FIX: Get base class stats first, otherwise scaleStats will result in 0 HP/ATK
+        const baseClassConfig = MercenaryClasses[classId.toUpperCase()] || {};
 
-        // Create config with enemy team
+        // Merge them: Base Class -> Character Specifics
+        const mergedBaseConfig = { ...baseClassConfig, ...characterConfig };
+
+        // Apply scaling
+        let config = scaleStats(mergedBaseConfig, level);
+
+        // Create config with enemy team and unique ID
         config = {
             ...config,
             id: characterConfig.id + '_shadow_' + Phaser.Math.Between(10000, 99999), // unique ID
@@ -430,27 +443,33 @@ export default class DungeonScene extends Phaser.Scene {
             team: 'enemy'
         };
 
+        // For shadow enemies, we want them following their own leader if possible.
+        const leaderRef = leader || this.player;
+
         let unit = null;
         if (classId === 'warrior') {
             unit = new Warrior(this, x, y, config);
         } else if (characterConfig.id === 'nickle' || characterConfig.characterId === 'nickle') {
-            unit = new Nickle(this, x, y, this.player, config);
+            unit = new Nickle(this, x, y, leaderRef, config);
         } else if (classId === 'archer') {
-            unit = new Archer(this, x, y, this.player, config);
+            unit = new Archer(this, x, y, leaderRef, config);
         } else if (classId === 'healer') {
-            unit = new Healer(this, x, y, this.player, config);
+            unit = new Healer(this, x, y, leaderRef, config);
         } else if (classId === 'wizard') {
             if (characterConfig.id === 'bao' || characterConfig.characterId === 'bao') {
-                unit = new Bao(this, x, y, this.player, config);
+                unit = new Bao(this, x, y, leaderRef, config);
+            } else if (characterConfig.id === 'aina' || characterConfig.characterId === 'aina') {
+                unit = new Aina(this, x, y, leaderRef, config);
             } else {
-                unit = new Wizard(this, x, y, this.player, config);
+                unit = new Wizard(this, x, y, leaderRef, config);
             }
         } else if (classId === 'bard') {
-            unit = new Bard(this, x, y, this.player, config);
+            unit = new Bard(this, x, y, leaderRef, config);
         }
 
         if (unit) {
             this.enemies.add(unit);
+            console.log(`[Dungeon] Spawned Shadow ${config.name} (ID: ${unit.id}) with HP: ${unit.hp}/${unit.maxHp}, Team: ${unit.team}`);
 
             // Re-initialize AI targets to be sure it targets the player party
             if (unit.initAI) {

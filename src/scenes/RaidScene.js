@@ -3,6 +3,7 @@ import Warrior from '../modules/Player/Warrior.js';
 import Archer from '../modules/Player/Archer.js';
 import Healer from '../modules/Player/Healer.js';
 import Wizard from '../modules/Player/Wizard.js';
+import Aina from '../modules/Player/Aina.js';
 import Bao from '../modules/Player/Bao.js';
 import Bard from '../modules/Player/Bard.js';
 import Nana from '../modules/Player/Nana.js';
@@ -121,6 +122,8 @@ export default class RaidScene extends Phaser.Scene {
             } else if (charConfig.classId === 'wizard') {
                 if (charId === 'bao') {
                     unit = new Bao(this, x, y, playerLeader, charConfig);
+                } else if (charId === 'aina') {
+                    unit = new Aina(this, x, y, playerLeader, charConfig);
                 } else {
                     unit = new Wizard(this, x, y, playerLeader, charConfig);
                 }

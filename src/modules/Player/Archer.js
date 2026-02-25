@@ -214,7 +214,10 @@ export default class Archer extends Mercenary {
             }
         }
 
-        this.scene.projectileManager.fire(this.x, this.y, target.x, target.y, finalDmg, 'archer', false, this.targetGroup, this);
+        const prefix = this.getWeaponPrefix();
+        const element = prefix ? prefix.id : null;
+
+        this.scene.projectileManager.fire(this.x, this.y, target.x, target.y, finalDmg, 'archer', false, this.targetGroup, this, null, false, element);
 
         // Perk: Hit and Run
         if (this.activatedPerks.includes('hit_and_run')) {

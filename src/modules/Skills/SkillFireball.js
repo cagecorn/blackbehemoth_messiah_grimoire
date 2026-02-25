@@ -100,7 +100,7 @@ export default class SkillFireball {
                 console.log(`[Fireball] Group Check: ${opposingGroup ? 'FOUND (count: ' + opposingGroup.getChildren().length + ')' : 'NULL'}`);
 
                 if (opposingGroup) {
-                    scene.aoeManager.triggerAoe(target.x, target.y, this.aoeRadius, damage, caster, opposingGroup, true);
+                    scene.aoeManager.triggerAoe(target.x, target.y, this.aoeRadius, damage, caster, opposingGroup, true, false, 'fire');
                 } else {
                     console.error(`[Fireball] FAILED to trigger AOE: targetGroup is NULL! Team: ${caster.team}`);
                 }

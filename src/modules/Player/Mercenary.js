@@ -4,6 +4,7 @@ import CooldownBar from '../UI/CooldownBar.js';
 import EventBus from '../Events/EventBus.js';
 import SpeechBubble from '../UI/SpeechBubble.js';
 import partyManager from '../Core/PartyManager.js';
+import ItemManager from '../Core/ItemManager.js';
 
 /**
  * Mercenary.js
@@ -23,6 +24,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
 
         // Team selection ('player' or 'enemy')
         this.team = config.team || 'player';
+        console.log(`[Mercenary] Created ${this.unitName} (${this.id}) on team: ${this.team}`);
 
         // Stats
         this.maxHp = config.maxHp;
@@ -37,6 +39,9 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         this.mAtk = config.mAtk || 0;
         this.def = config.def || 0;
         this.mDef = config.mDef || 0;
+        this.fireRes = config.fireRes || 0;
+        this.iceRes = config.iceRes || 0;
+        this.lightningRes = config.lightningRes || 0;
 
         // Dynamic Buffs
         this.bonusAtk = 0;
@@ -53,6 +58,9 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         this.bonusRangeMax = 0;
         this.bonusCastSpd = 0;
         this.bonusAcc = 0;
+        this.bonusFireRes = 0;
+        this.bonusIceRes = 0;
+        this.bonusLightningRes = 0;
         this.isTacticalCommandActive = false;
         this.isBloodRaging = false;
         this.isStunned = false;
@@ -60,6 +68,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         this.isKnockedBack = false;
         this.isShocked = false;
         this.isBurning = false;
+        this.isFrozen = false;
 
         this.speed = config.speed || 100;
         this.atkRange = config.atkRange || 40;
@@ -77,6 +86,12 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         this.ultGauge = 0;
         this.maxUltGauge = 100;
         this.autoUlt = true; // Auto-use by default
+
+        this.equipment = {
+            weapon: null,
+            armor: null,
+            accessory: null
+        };
 
         this.acc = config.acc || 100;
         this.eva = config.eva || 0;
@@ -172,6 +187,16 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             }
         };
         EventBus.on('PERK_LEARN', this.handlePerkLearn);
+
+        this.handleEquipRequest = (payload) => {
+            if (payload.unitId === this.id) {
+                const item = ItemManager.getItem(payload.itemId);
+                if (item && item.type === 'equipment') {
+                    this.equipItem(item.slot, item);
+                }
+            }
+        };
+        EventBus.on(EventBus.EVENTS.EQUIP_REQUEST, this.handleEquipRequest);
     }
 
     handleAICommand(cmd) {
@@ -225,14 +250,32 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         this.currentBubble = new SpeechBubble(this.scene, this, text);
     }
 
+    getEquipmentBonus(statName) {
+        let total = 0;
+        for (const slot in this.equipment) {
+            const item = this.equipment[slot];
+            if (item && item.stats && item.stats[statName]) {
+                total += item.stats[statName];
+            }
+        }
+        return total;
+    }
+
+    getWeaponPrefix() {
+        const weapon = this.equipment.weapon;
+        return (weapon && weapon.prefix) ? weapon.prefix : null;
+    }
+
     getTotalAtk() {
-        const base = this.atk + this.bonusAtk;
-        return this.isTacticalCommandActive ? base * 1.5 : base;
+        const base = this.atk + this.bonusAtk + this.getEquipmentBonus('atk');
+        let final = this.isTacticalCommandActive ? base * 1.5 : base;
+        return final;
     }
 
     getTotalMAtk() {
-        const base = this.mAtk + this.bonusMAtk;
-        return this.isTacticalCommandActive ? base * 1.5 : base;
+        const base = this.mAtk + this.bonusMAtk + this.getEquipmentBonus('mAtk');
+        let final = this.isTacticalCommandActive ? base * 1.5 : base;
+        return final;
     }
 
     getTotalCrit() {
@@ -248,7 +291,8 @@ export default class Mercenary extends Phaser.GameObjects.Container {
     }
 
     getTotalSpeed() {
-        return this.speed + (this.bonusSpeed || 0);
+        const base = this.speed + (this.bonusSpeed || 0);
+        return this.isFrozen ? base * 0.5 : base;
     }
 
     getTotalMDef() {
@@ -256,7 +300,8 @@ export default class Mercenary extends Phaser.GameObjects.Container {
     }
 
     getTotalAtkSpd() {
-        return Math.max(100, this.atkSpd - (this.bonusAtkSpd || 0));
+        const base = Math.max(100, this.atkSpd - (this.bonusAtkSpd || 0));
+        return this.isFrozen ? base * 2 : base; // Lower is faster, so multiply by 2 to slow down
     }
 
     getTotalAtkRange() {
@@ -274,7 +319,8 @@ export default class Mercenary extends Phaser.GameObjects.Container {
     getTotalCastSpd() {
         // castSpd usually works like atkSpd (lower is better or higher is better depends on implementation)
         // In our case, castSpd is like cooldown/delay, so lower is better.
-        return Math.max(100, this.castSpd - (this.bonusCastSpd || 0));
+        const base = Math.max(100, this.castSpd - (this.bonusCastSpd || 0));
+        return this.isFrozen ? base * 2 : base;
     }
 
     getTotalAcc() {
@@ -334,7 +380,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         return false;
     }
 
-    takeDamage(amount, attacker = null, isUltimate = false) {
+    takeDamage(amount, attacker = null, isUltimate = false, element = null, isCritical = false, delay = 0) {
         // --- 0. Accuracy vs Evasion Check ---
         const myEva = this.getTotalEva ? this.getTotalEva() : (this.eva || 0);
         if (attacker && typeof attacker === 'object' && attacker.acc !== undefined) {
@@ -358,6 +404,15 @@ export default class Mercenary extends Phaser.GameObjects.Container {
 
         // 1. Physical Damage is reduced by Def
         let finalDamage = Math.max(1, amount - this.getTotalDef());
+
+        // 1.2 Elemental Resistance
+        if (element) {
+            let res = 0;
+            if (element === 'fire') res = this.getTotalFireRes();
+            else if (element === 'ice') res = this.getTotalIceRes();
+            else if (element === 'lightning') res = this.getTotalLightningRes();
+            finalDamage *= (1 - (res / 100));
+        }
 
         // 1.5 Damage Reduction Buff
         if (this.bonusDR > 0) {
@@ -387,7 +442,16 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         this.updateHealthBar();
 
         if (this.scene.fxManager) {
-            this.scene.fxManager.showDamageText(this, finalDamage, '#ffaa00');
+            const primaryColor = isCritical ? '#ffcc00' : '#ffffff'; // Mercenary Physical: White/Gold
+            this.scene.fxManager.showDamageText(this, finalDamage, primaryColor, isCritical, 0, delay);
+
+            // Calculate and show Elemental Bonus Damage (Prefix)
+            if (element) {
+                const extraDmg = finalDamage * (0.01 + Math.random() * 0.49);
+                const elementColor = this.scene.fxManager.getElementColor(element) || '#ffffff';
+                this.scene.fxManager.showDamageText(this, extraDmg, elementColor, isCritical, 30, delay);
+                this.scene.fxManager.spawnElementalParticles(this.x, this.y, element);
+            }
         }
 
         console.info(`[Combat] ${this.unitName} took ${finalDamage.toFixed(1)} physical damage.`);
@@ -399,9 +463,18 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         }
     }
 
-    takeMagicDamage(amount, attacker = null, isUltimate = false) {
+    takeMagicDamage(amount, attacker = null, isUltimate = false, element = null, isCritical = false, delay = 0) {
         // 1. Magic Damage is reduced by mDef
         let finalDamage = Math.max(1, amount - this.getTotalMDef());
+
+        // 1.2 Elemental Resistance
+        if (element) {
+            let res = 0;
+            if (element === 'fire') res = this.getTotalFireRes();
+            else if (element === 'ice') res = this.getTotalIceRes();
+            else if (element === 'lightning') res = this.getTotalLightningRes();
+            finalDamage *= (1 - (res / 100));
+        }
 
         // 1.5 Damage Reduction Buff
         if (this.bonusDR > 0) {
@@ -436,7 +509,16 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         this.updateHealthBar();
 
         if (this.scene.fxManager) {
-            this.scene.fxManager.showDamageText(this, finalDamage, '#33ccff');
+            const primaryColor = isCritical ? '#ffcc00' : '#cc88ff'; // Mercenary Magic: Purple/Gold
+            this.scene.fxManager.showDamageText(this, finalDamage, primaryColor, isCritical, 0, delay);
+
+            // Calculate and show Elemental Bonus Damage (Prefix)
+            if (element) {
+                const extraDmg = finalDamage * (0.01 + Math.random() * 0.49);
+                const elementColor = this.scene.fxManager.getElementColor(element) || '#ffffff';
+                this.scene.fxManager.showDamageText(this, extraDmg, elementColor, isCritical, 30, delay);
+                this.scene.fxManager.spawnElementalParticles(this.x, this.y, element);
+            }
         }
 
         console.info(`[Combat] ${this.unitName} took ${finalDamage.toFixed(1)} magic damage.`);
@@ -449,23 +531,43 @@ export default class Mercenary extends Phaser.GameObjects.Container {
     }
 
     playHitEffect() {
+        if (!this.sprite) return;
+
         this.scene.tweens.add({
             targets: this.sprite,
             tint: 0xff0000,
             duration: 100,
             yoyo: true,
-            onComplete: () => {
-                if (this.sprite) {
-                    if (this.isShocked) {
-                        this.sprite.setTint(0xffff00);
-                    } else if (this.isBurning) {
-                        this.sprite.setTint(0xffaa88);
-                    } else {
-                        this.sprite.clearTint();
-                    }
-                }
-            }
+            onComplete: () => this.restoreSpriteTint(),
+            onStop: () => this.restoreSpriteTint(),
+            onTerminate: () => this.restoreSpriteTint()
         });
+    }
+
+    getTotalFireRes() {
+        return Math.min(75, (this.fireRes || 0) + (this.bonusFireRes || 0));
+    }
+
+    getTotalIceRes() {
+        return Math.min(75, (this.iceRes || 0) + (this.bonusIceRes || 0));
+    }
+
+    getTotalLightningRes() {
+        return Math.min(75, (this.lightningRes || 0) + (this.bonusLightningRes || 0));
+    }
+
+    restoreSpriteTint() {
+        if (!this.sprite) return;
+
+        if (this.isShocked) {
+            this.sprite.setTint(0xffff00);
+        } else if (this.isBurning) {
+            this.sprite.setTint(0xffaa88);
+        } else if (this.isFrozen) {
+            this.sprite.setTint(0x8888ff);
+        } else {
+            this.sprite.clearTint();
+        }
     }
 
     calculateExpToNextLevel(level) {
@@ -550,6 +652,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
     gainUltGauge(amount) {
         if (!this.active || this.hp <= 0) return;
 
+        // console.log(`[Ult Debug] ${this.unitName} gain gauge: +${amount} (Current: ${this.ultGauge})`);
         this.ultGauge = Math.min(this.maxUltGauge, this.ultGauge + amount);
 
         EventBus.emit(EventBus.EVENTS.STATUS_UPDATED, {
@@ -634,6 +737,13 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             if (this._burnEmitter) this._burnEmitter.destroy();
             this._burnCleanupTimer.remove();
             this._burnCleanupTimer = null;
+        }
+        if (this._freezeCleanupTimer) {
+            this.isFrozen = false;
+            if (this.sprite) this.sprite.clearTint();
+            if (this._freezeEmitter) this._freezeEmitter.destroy();
+            this._freezeCleanupTimer.remove();
+            this._freezeCleanupTimer = null;
         }
         if (this.isAirborne) this.isAirborne = false;
         if (this.isStunned) this.isStunned = false;
@@ -795,6 +905,14 @@ export default class Mercenary extends Phaser.GameObjects.Container {
                 name: '화상 (Burn)',
                 description: '매초 최대 체력의 2%에 해당하는 피해를 입습니다.',
                 emoji: '🔥',
+                category: 'status'
+            });
+        }
+        if (this.isFrozen) {
+            statuses.push({
+                name: '동결 (Freeze)',
+                description: '공격 속도와 이동 속도가 50% 감소합니다.',
+                emoji: '❄️',
                 category: 'status'
             });
         }

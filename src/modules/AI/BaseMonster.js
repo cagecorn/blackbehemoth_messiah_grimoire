@@ -29,12 +29,18 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
         this.mAtk = config.mAtk || 0;
         this.def = config.def || 0;
         this.mDef = config.mDef || 0;
+        this.fireRes = config.fireRes || 0;
+        this.iceRes = config.iceRes || 0;
+        this.lightningRes = config.lightningRes || 0;
 
         this.bonusDR = 0;
         this.bonusAtk = 0;
         this.bonusMAtk = 0;
         this.bonusDef = 0;
         this.bonusMDef = 0;
+        this.bonusFireRes = 0;
+        this.bonusIceRes = 0;
+        this.bonusLightningRes = 0;
 
         this.speed = config.speed || 50;
         this.atkRange = config.atkRange || 40;
@@ -54,6 +60,7 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
         this.isBloodRaging = false; // Blood rage lifesteal buff
         this.isTacticalCommandActive = false; // 50% basic attack boost
         this.isAsleep = false; // Sleep CC
+        this.isFrozen = false; // Freeze CC
 
         // Combat Timers
         this.lastAttackTime = 0;
@@ -123,7 +130,7 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
         return summon;
     }
 
-    takeDamage(amount, attacker = null, isUltimate = false) {
+    takeDamage(amount, attacker = null, isUltimate = false, element = null, isCritical = false, delay = 0) {
         // --- 0. Accuracy vs Evasion Check ---
         if (attacker && typeof attacker === 'object' && attacker.acc !== undefined && this.eva !== undefined) {
             const hitChance = Math.max(0.05, Math.min(1.0, (attacker.acc - this.eva) / 100.0));
@@ -141,6 +148,15 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
 
         // 1. Physical Damage is reduced by Def
         let finalDamage = Math.max(1, amount - this.def);
+
+        // 1.2 Elemental Resistance
+        if (element) {
+            let res = 0;
+            if (element === 'fire') res = this.getTotalFireRes();
+            else if (element === 'ice') res = this.getTotalIceRes();
+            else if (element === 'lightning') res = this.getTotalLightningRes();
+            finalDamage *= (1 - (res / 100));
+        }
 
         // 1.5 Damage Reduction Buff
         if (this.bonusDR > 0) {
@@ -172,10 +188,17 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
             }
         }
 
-        this.updateHealthBar();
-
         if (this.scene.fxManager) {
-            this.scene.fxManager.showDamageText(this, finalDamage, '#ff0000');
+            const primaryColor = isCritical ? '#ffcc00' : '#ff3333'; // Physical: Red/Gold
+            this.scene.fxManager.showDamageText(this, finalDamage, primaryColor, isCritical, 0, delay);
+
+            // Calculate and show Elemental Bonus Damage (Prefix)
+            if (element) {
+                const extraDmg = finalDamage * (0.01 + Math.random() * 0.49);
+                const elementColor = this.scene.fxManager.getElementColor(element) || '#ffffff';
+                this.scene.fxManager.showDamageText(this, extraDmg, elementColor, isCritical, 30, delay);
+                this.scene.fxManager.spawnElementalParticles(this.x, this.y, element);
+            }
         }
 
         console.info(`%c[Combat] %c${this.unitName}%c was hit for %c${finalDamage.toFixed(1)}%c physical damage. (HP: ${this.hp.toFixed(1)}/${this.maxHp})`,
@@ -193,11 +216,32 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
         }
     }
 
-    takeMagicDamage(amount, attacker = null, isUltimate = false) {
+    getTotalFireRes() {
+        return Math.min(75, (this.fireRes || 0) + (this.bonusFireRes || 0));
+    }
+
+    getTotalIceRes() {
+        return Math.min(75, (this.iceRes || 0) + (this.bonusIceRes || 0));
+    }
+
+    getTotalLightningRes() {
+        return Math.min(75, (this.lightningRes || 0) + (this.bonusLightningRes || 0));
+    }
+
+    takeMagicDamage(amount, attacker = null, isUltimate = false, element = null, isCritical = false, delay = 0) {
         const attackerId = (attacker && typeof attacker === 'object') ? (attacker.id || attacker.className) : attacker;
 
         // 1. Magic Damage is reduced by mDef
         let finalDamage = Math.max(1, amount - this.mDef);
+
+        // 1.2 Elemental Resistance
+        if (element) {
+            let res = 0;
+            if (element === 'fire') res = this.getTotalFireRes();
+            else if (element === 'ice') res = this.getTotalIceRes();
+            else if (element === 'lightning') res = this.getTotalLightningRes();
+            finalDamage *= (1 - (res / 100));
+        }
 
         // 1.5 Damage Reduction Buff
         if (this.bonusDR > 0) {
@@ -229,10 +273,17 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
             }
         }
 
-        this.updateHealthBar();
-
         if (this.scene.fxManager) {
-            this.scene.fxManager.showDamageText(this, finalDamage, '#ff0000');
+            const primaryColor = isCritical ? '#ffcc00' : '#cc88ff'; // Magic: Purple/Gold
+            this.scene.fxManager.showDamageText(this, finalDamage, primaryColor, isCritical, 0, delay);
+
+            // Calculate and show Elemental Bonus Damage (Prefix)
+            if (element) {
+                const extraDmg = finalDamage * (0.01 + Math.random() * 0.49);
+                const elementColor = this.scene.fxManager.getElementColor(element) || '#ffffff';
+                this.scene.fxManager.showDamageText(this, extraDmg, elementColor, isCritical, 30, delay);
+                this.scene.fxManager.spawnElementalParticles(this.x, this.y, element);
+            }
         }
 
         console.info(`%c[Combat] %c${this.unitName}%c was hit for %c${finalDamage.toFixed(1)}%c magic damage. (HP: ${this.hp.toFixed(1)}/${this.maxHp})`,
@@ -257,7 +308,13 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
             duration: 100,
             yoyo: true,
             onComplete: () => {
-                if (this.sprite) this.sprite.clearTint();
+                if (this.sprite) {
+                    if (this.isFrozen) {
+                        this.sprite.setTint(0x8888ff);
+                    } else {
+                        this.sprite.clearTint();
+                    }
+                }
             }
         });
     }
@@ -450,6 +507,25 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
     getTotalMAtk() {
         const base = this.mAtk + this.bonusMAtk;
         return this.isTacticalCommandActive ? base * 1.5 : base;
+    }
+
+    getTotalSpeed() {
+        const base = this.speed + (this.bonusSpeed || 0);
+        return this.isFrozen ? base * 0.5 : base;
+    }
+
+    getTotalAtkSpd() {
+        const base = Math.max(100, this.atkSpd - (this.bonusAtkSpd || 0));
+        return this.isFrozen ? base * 2 : base;
+    }
+
+    getTotalCastSpd() {
+        const base = Math.max(100, this.castSpd - (this.bonusCastSpd || 0));
+        return this.isFrozen ? base * 2 : base;
+    }
+
+    getTotalAtkRange() {
+        return this.atkRange + (this.bonusAtkRange || 0);
     }
 
     /**

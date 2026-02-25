@@ -76,7 +76,7 @@ export default class SkillMeteorStrike {
 
         const targetGroup = caster.targetGroup;
         if (scene.aoeManager && targetGroup) {
-            const hits = scene.aoeManager.triggerAoe(x, y, aoeRadius, damage, caster, targetGroup, true, true);
+            const hits = scene.aoeManager.triggerAoe(x, y, aoeRadius, damage, caster, targetGroup, true, true, 'fire');
             if (hits.length > 0) {
                 console.log(`%c[Ultimate: ${this.name}] %c${caster.unitName}%c HIT %c${hits.length}%c targets for %c${damage.toFixed(1)}%c damage!`,
                     'color: #ffcc00; font-weight: bold;',

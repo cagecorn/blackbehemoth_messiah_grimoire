@@ -174,9 +174,12 @@ export default class Nickle extends Archer {
                 const tX = this.x + Math.cos(finalAngle) * dist;
                 const tY = this.y + Math.sin(finalAngle) * dist;
 
+                const prefix = this.getWeaponPrefix();
+                const element = prefix ? prefix.id : null;
+
                 this.scene.projectileManager.fire(
                     this.x, this.y, tX, tY,
-                    this.atk, 'archer', false, this.targetGroup, this
+                    this.atk, 'archer', false, this.targetGroup, this, null, false, element
                 );
             });
         }

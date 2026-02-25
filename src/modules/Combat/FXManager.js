@@ -10,13 +10,33 @@ export default class FXManager {
     }
 
     /**
+     * Get hex color for a specific element.
+     * @param {string} element 
+     * @returns {string} Hex color string
+     */
+    getElementColor(element) {
+        switch (element) {
+            case 'fire': return '#ff9d00'; // Bright Orange
+            case 'ice': return '#00bbff';  // Blue
+            case 'lightning': return '#ffff00'; // Yellow
+            default: return null;
+        }
+    }
+
+    /**
      * Show high-resolution floating damage text.
      * @param {Phaser.GameObjects.GameObject} target 
      * @param {number} amount 
      * @param {string} color - Hex color string (e.g., '#ff0000')
+     * @param {boolean} isCritical - Whether this is a critical hit
+     * @param {number} offsetX - Optional horizontal offset for dual text
+     * @param {number} delay - Delay before showing the text (ms)
      */
-    showDamageText(target, amount, color = '#ff0000') {
+    showDamageText(target, amount, color = '#ff0000', isCritical = false, offsetX = 0, delay = 0) {
         if (!target || !target.active) return;
+
+        // Prevent showing 0 damage texts if it's just for a secondary effect (unless it's an intentional text)
+        if (typeof amount === 'number' && amount <= 0 && offsetX === 0) return;
 
         let displayAmount = typeof amount === 'number' ? `-${amount.toFixed(1)}` : amount;
 
@@ -24,27 +44,95 @@ export default class FXManager {
         const scale = (target.config && target.config.scale) || 1;
         const yOffset = 40 * scale;
 
+        // Add a tiny random jitter to the position so overlapping texts are visible
+        const jitterX = (Math.random() - 0.5) * 10;
+        const jitterY = (Math.random() - 0.5) * 10;
+
         // High-Resolution crisp text rendering technique:
-        const text = this.scene.add.text(target.x, target.y - yOffset, displayAmount, {
-            fontSize: '32px',
+        const fontSize = isCritical ? '48px' : '32px';
+        const text = this.scene.add.text(target.x + offsetX + jitterX, target.y - yOffset + jitterY, displayAmount, {
+            fontSize: fontSize,
             fill: color,
             fontStyle: 'bold',
             stroke: '#000',
-            strokeThickness: 5,
+            strokeThickness: isCritical ? 7 : 5,
             resolution: 2
-        }).setOrigin(0.5).setScale(0.5);
+        }).setOrigin(0.5).setScale(0.5).setAlpha(0);
+
+        if (delay > 0) {
+            this.scene.time.delayedCall(delay, () => {
+                if (text && text.active) this.animateDamageText(text, target, yOffset, isCritical);
+            });
+        } else {
+            this.animateDamageText(text, target, yOffset, isCritical);
+        }
+    }
+
+    animateDamageText(text, target, yOffset, isCritical) {
+        text.setAlpha(1);
+        if (isCritical) {
+            // Give critical hits a little "pop" animation
+            this.scene.tweens.add({
+                targets: text,
+                scale: 0.8,
+                duration: 100,
+                yoyo: true,
+                ease: 'Back.easeOut'
+            });
+        }
 
         // Ensure damage numbers are always on top of sprites
         text.setDepth(20000);
 
         this.scene.tweens.add({
             targets: text,
-            y: target.y - yOffset - 40,
+            y: '-=40',
             alpha: 0,
             duration: 800,
             ease: 'Power2',
             onComplete: () => text.destroy()
         });
+    }
+
+    /**
+     * Spawn elemental particles on hit.
+     * @param {number} x 
+     * @param {number} y 
+     * @param {string} element - 'fire', 'ice', 'lightning'
+     */
+    spawnElementalParticles(x, y, element) {
+        if (!element) return;
+
+        const textureMap = {
+            'fire': 'emoji_fire',
+            'ice': 'emoji_snowball',
+            'lightning': 'emoji_lightning'
+        };
+
+        const texture = textureMap[element] || 'emoji_sparkle';
+        const count = 6;
+
+        for (let i = 0; i < count; i++) {
+            const particle = this.scene.add.image(x, y, texture);
+            particle.setDisplaySize(16, 16);
+
+            const angle = Math.random() * Math.PI * 2;
+            const speed = 40 + Math.random() * 80;
+
+            this.scene.physics.add.existing(particle);
+            particle.body.setVelocity(Math.cos(angle) * speed, Math.sin(angle) * speed);
+            particle.body.setDrag(80);
+            particle.setRotation(Math.random() * Math.PI * 2);
+
+            this.scene.tweens.add({
+                targets: particle,
+                alpha: 0,
+                scale: 0.2,
+                angle: '+=90',
+                duration: 500 + Math.random() * 500,
+                onComplete: () => particle.destroy()
+            });
+        }
     }
 
     /**

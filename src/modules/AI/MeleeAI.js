@@ -40,9 +40,18 @@ export default function applyMeleeAI(agent, targetListGetter, initialState = 'AG
 
         for (let t of targets) {
             // ★ 파괴/비활성 유닛은 반드시 먼저 스킵 (t.body 접근 전)
-            if (!t || !t.active || !t.body) continue;
+            if (!t || !t.active || !t.body) {
+                continue;
+            }
             // 체력이 0 이하인 유닛 스킵
-            if (t.hp !== undefined && t.hp <= 0) continue;
+            if (t.hp !== undefined && t.hp <= 0) {
+                continue;
+            }
+
+            // [DEBUG] Check teams
+            if (t.team === a.team) {
+                continue;
+            }
 
             const dist = Phaser.Math.Distance.Between(a.x, a.y, t.x, t.y);
 
@@ -67,7 +76,7 @@ export default function applyMeleeAI(agent, targetListGetter, initialState = 'AG
             // 타겟이 바뀔 때만 로그 출력 (매 프레임 폭발 방지)
             const prevTarget = bb.get('target');
             if (prevTarget !== bestTarget) {
-                console.log(`[MeleeAI] ${a.unitName} -> 새 타겟: ${bestTarget.unitName || bestTarget.id} (거리: ${Math.round(minDist)})`);
+                console.log(`[MeleeAI] ${a.unitName} (${a.team}) -> 새 타겟: ${bestTarget.unitName || bestTarget.id} (${bestTarget.team}) (거리: ${Math.round(minDist)})`);
             }
             bb.set('target', bestTarget);
             return 0; // SUCCESS (Proceed to chase)
@@ -132,13 +141,18 @@ export default function applyMeleeAI(agent, targetListGetter, initialState = 'AG
             // Calculate and Apply Damage
             let damage = a.getTotalAtk ? a.getTotalAtk() : a.atk;
             const currentCrit = a.getTotalCrit ? a.getTotalCrit() : (a.crit || 0);
-            if (Math.random() * 100 < currentCrit) {
+            const isCritical = Math.random() * 100 < currentCrit;
+            if (isCritical) {
                 damage *= 1.5;
             }
 
             if (target.takeDamage) {
+                // Pass weapon prefix element if available
+                const prefix = a.getWeaponPrefix ? a.getWeaponPrefix() : null;
+                const element = prefix ? prefix.id : null;
+
                 // Pass a so the kill is attributed correctly and Miss works
-                target.takeDamage(damage, a);
+                target.takeDamage(damage, a, false, element, isCritical);
                 if (a.onHitDealt) a.onHitDealt(target, damage);
             }
         }

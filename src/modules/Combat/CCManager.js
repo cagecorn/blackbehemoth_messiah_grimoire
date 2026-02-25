@@ -322,6 +322,58 @@ export default class CCManager {
         });
     }
 
+    /**
+     * Applies a Freeze effect to the target.
+     * Reduces speed and attack speed by 50% and adds ice particles.
+     * @param {Phaser.GameObjects.Container} target - The entity to be affected
+     * @param {number} duration - How long the effect lasts in ms
+     */
+    applyFreeze(target, duration = 3000) {
+        if (!target || !target.active || target.hp <= 0 || target.isCCImmune) return;
+
+        console.log(`[CCManager] Applying Freeze to ${target.unitName}...`);
+
+        // Handle existing freeze status (refresh)
+        if (target.isFrozen) {
+            if (target._freezeCleanupTimer) target._freezeCleanupTimer.remove();
+            if (target._freezeEmitter) target._freezeEmitter.destroy();
+            target.isFrozen = false;
+        }
+
+        target.isFrozen = true;
+        if (target.syncStatusUI) target.syncStatusUI();
+
+        // 1. Blue Tint
+        target.sprite.setTint(0x8888ff);
+
+        // 2. Ice Particle Effect (Snowflakes falling)
+        target._freezeEmitter = this.scene.add.particles(0, 0, 'emoji_snowball', {
+            speedY: { min: 50, max: 100 },
+            speedX: { min: -20, max: 20 },
+            scale: { start: 0.3, end: 0.1 },
+            alpha: { start: 0.8, end: 0 },
+            lifespan: 1000,
+            frequency: 200,
+            follow: target,
+            followOffset: { x: 0, y: -30 },
+            emitZone: { type: 'random', source: new Phaser.Geom.Rectangle(-20, 0, 40, 10) }
+        });
+        target._freezeEmitter.setDepth(3000);
+
+        // Timer to handle cleanup
+        target._freezeCleanupTimer = this.scene.time.delayedCall(duration, () => {
+            if (target && target.active) {
+                target.isFrozen = false;
+                if (target.sprite) target.sprite.clearTint();
+                if (target.syncStatusUI) target.syncStatusUI();
+            }
+            if (target._freezeEmitter) target._freezeEmitter.destroy();
+            target._freezeCleanupTimer = null;
+            target._freezeEmitter = null;
+            console.log(`[CCManager] Freeze expired for ${target.unitName}`);
+        });
+    }
+
     update(time, delta) {
         // Future expansion: we can track buffs/debuffs tick-by-tick here if needed
     }

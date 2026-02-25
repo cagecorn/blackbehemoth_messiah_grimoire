@@ -98,6 +98,9 @@ export default class BootScene extends Phaser.Scene {
         this.load.svg('emoji_sweat', 'assets/emojis/1f4a6.svg', { width: 32, height: 32 });
         this.load.svg('emoji_cry', 'assets/emojis/1f62d.svg', { width: 32, height: 32 });
         this.load.svg('emoji_heart', 'assets/emojis/2764.svg', { width: 32, height: 32 });
+        this.load.svg('emoji_snowball', 'assets/emojis/2744.svg', { width: 32, height: 32 });
+        this.load.svg('emoji_snowman', 'assets/emojis/26c4.svg', { width: 32, height: 32 });
+        this.load.svg('emoji_snowcloud', 'assets/emojis/1f328.svg', { width: 64, height: 64 });
 
         // Noah's Animals
         this.load.svg('emoji_dog', 'assets/emojis/1f415.svg', { width: 32, height: 32 });
@@ -153,6 +156,8 @@ export default class BootScene extends Phaser.Scene {
         this.load.image('noah_cutscene', 'assets/characters/party/noah_cutscene.png');
         this.load.image('noel_sprite', 'assets/characters/party/noel_sprite.png');
         this.load.image('noel_cutscene', 'assets/characters/party/noel_cutscene.png');
+        this.load.image('aina_sprite', 'assets/characters/party/aina_sprite.png');
+        this.load.image('aina_cutscene', 'assets/characters/party/aina_cutscene.png');
 
         // Load effect emojis
         this.load.svg('emoji_rock', 'assets/emojis/1f5ff.svg', { width: 32, height: 32 });

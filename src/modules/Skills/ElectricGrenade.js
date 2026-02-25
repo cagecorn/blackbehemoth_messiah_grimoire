@@ -141,7 +141,7 @@ export default class ElectricGrenade {
                     console.warn(`[Grenade] Scene inactive during detonation. Skipping damage.`);
                     return;
                 }
-                const hitEnemies = scene.aoeManager.triggerAoe(x, y, this.aoeRadius, damage, caster, opposingGroup, false);
+                const hitEnemies = scene.aoeManager.triggerAoe(x, y, this.aoeRadius, damage, caster, opposingGroup, false, false, 'lightning');
 
                 if (scene.ccManager) {
                     hitEnemies.forEach(enemy => {

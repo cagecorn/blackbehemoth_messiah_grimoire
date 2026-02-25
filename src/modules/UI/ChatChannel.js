@@ -105,6 +105,9 @@ export default class ChatChannel {
                     <div class="stat-item"><span class="stat-label">mATK</span><span class="stat-value" data-stat="mAtk">0</span></div>
                     <div class="stat-item"><span class="stat-label">DEF</span><span class="stat-value" data-stat="def">0</span></div>
                     <div class="stat-item"><span class="stat-label">mDEF</span><span class="stat-value" data-stat="mDef">0</span></div>
+                    <div class="stat-item"><span class="stat-label">FIRE RES</span><span class="stat-value" data-stat="fireRes">0</span>%</div>
+                    <div class="stat-item"><span class="stat-label">ICE RES</span><span class="stat-value" data-stat="iceRes">0</span>%</div>
+                    <div class="stat-item"><span class="stat-label">LTNG RES</span><span class="stat-value" data-stat="lightningRes">0</span>%</div>
                     <div class="stat-item"><span class="stat-label">SPD</span><span class="stat-value" data-stat="speed">0</span></div>
                     <div class="stat-item"><span class="stat-label">AtkSpd</span><span class="stat-value" data-stat="atkSpd">0</span></div>
                     <div class="stat-item"><span class="stat-label">AtkRange</span><span class="stat-value" data-stat="atkRange">0</span></div>
@@ -164,6 +167,7 @@ export default class ChatChannel {
         this.statusView = this.element.querySelector('.chat-status-view');
         this.narrativeView = this.element.querySelector('.chat-narrative-view');
         this.currentView = 'chat'; // 'chat', 'dashboard', 'gear', 'skill', 'status', 'narrative', 'perk'
+        this.setupGearDragDrop();
 
         // Bind dashboard button
         this.dashboardBtn.addEventListener('click', () => {
@@ -377,8 +381,10 @@ export default class ChatChannel {
         Object.keys(slots).forEach(key => {
             const slotEl = this.gearView.querySelector(`.gear-slot[data-slot="${key}"] .slot-value`);
             if (slotEl) {
-                slotEl.textContent = slots[key];
-                slotEl.style.color = slots[key] === 'Empty' ? '#666' : '#fff';
+                const item = slots[key];
+                const displayName = (item && item.name) ? item.name : (typeof item === 'string' ? item : 'Empty');
+                slotEl.textContent = displayName;
+                slotEl.style.color = displayName === 'Empty' ? '#666' : '#fff';
             }
         });
     }
@@ -394,6 +400,9 @@ export default class ChatChannel {
             { key: 'mAtk', val: stats.mAtk !== undefined ? stats.mAtk.toFixed(1) : undefined },
             { key: 'def', val: stats.def !== undefined ? stats.def.toFixed(1) : undefined },
             { key: 'mDef', val: stats.mDef !== undefined ? stats.mDef.toFixed(1) : undefined },
+            { key: 'fireRes', val: stats.fireRes },
+            { key: 'iceRes', val: stats.iceRes },
+            { key: 'lightningRes', val: stats.lightningRes },
             { key: 'speed', val: stats.speed },
             { key: 'atkSpd', val: stats.atkSpd },
             { key: 'atkRange', val: stats.atkRange },
@@ -597,6 +606,41 @@ export default class ChatChannel {
                     });
                 });
             }
+        });
+    }
+
+    setupGearDragDrop() {
+        if (!this.gearView) return;
+
+        const slots = this.gearView.querySelectorAll('.gear-slot');
+        slots.forEach(slot => {
+            slot.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                slot.classList.add('drag-over');
+            });
+
+            slot.addEventListener('dragleave', (e) => {
+                e.stopPropagation();
+                slot.classList.remove('drag-over');
+            });
+
+            slot.addEventListener('drop', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                slot.classList.remove('drag-over');
+
+                const itemId = e.dataTransfer.getData('itemId');
+                if (itemId && this.linkedUnitId) {
+                    import('../Events/EventBus.js').then(module => {
+                        const EventBus = module.default;
+                        EventBus.emit(EventBus.EVENTS.EQUIP_REQUEST, {
+                            unitId: this.linkedUnitId,
+                            itemId: itemId
+                        });
+                    });
+                }
+            });
         });
     }
 

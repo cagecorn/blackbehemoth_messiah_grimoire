@@ -55,7 +55,7 @@ export const HealerActions = {
             'color: #00ff00; font-weight: bold;',
             'color: #ffff00;',
             'color: #e0e0e0;',
-            'color: #00ffcc;',
+            'color: #00ccff;',
             'color: #e0e0e0;',
             'color: #55ff55; font-weight: bold;',
             'color: #e0e0e0;'
@@ -89,9 +89,12 @@ export const HealerActions = {
 
         // Magic attack (sparkle projectile)
         if (unit.scene.projectileManager) {
+            const prefix = unit.getWeaponPrefix ? unit.getWeaponPrefix() : null;
+            const element = prefix ? prefix.id : null;
+
             unit.scene.projectileManager.fire(
                 unit.x, unit.y, target.x, target.y,
-                mAtk, 'emoji_sparkle', true, targetGroup, unit
+                mAtk, 'emoji_sparkle', true, targetGroup, unit, null, false, element
             );
         }
         return true;
