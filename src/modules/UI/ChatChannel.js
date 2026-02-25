@@ -321,7 +321,28 @@ export default class ChatChannel {
     addLog(text, color = '#e0e0e0') {
         const entry = document.createElement('div');
         entry.style.color = color;
-        entry.textContent = `> ${text}`;
+
+        if (text.includes('[깊은 사고]')) {
+            const lines = text.split('\n');
+            const thoughtLine = lines[0]; // e.g. "[깊은 사고] I should..."
+            const speechLine = lines.slice(1).join('\n'); // Everything else
+
+            const thoughtSpan = document.createElement('span');
+            thoughtSpan.style.fontStyle = 'italic';
+            thoughtSpan.style.color = '#888';
+            thoughtSpan.textContent = thoughtLine;
+
+            const speechText = document.createElement('div');
+            speechText.textContent = speechLine;
+            speechText.style.marginTop = '2px';
+
+            entry.appendChild(document.createTextNode('> '));
+            entry.appendChild(thoughtSpan);
+            entry.appendChild(speechText);
+        } else {
+            entry.textContent = `> ${text}`;
+        }
+
         this.log.appendChild(entry);
 
         if (this.log.children.length > 50) {

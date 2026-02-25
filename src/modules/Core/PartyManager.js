@@ -69,6 +69,18 @@ class PartyManager {
 
         const totalLevels = states.reduce((sum, state) => sum + (state.level || 1), 0);
         return Math.floor(totalLevels / states.length);
+        /**
+     * Heals all mercenaries in the state map to their maximum HP.
+     */
+        healAll() {
+            console.log('[PartyManager] Healing all units...');
+            Object.keys(this.mercenaryStates).forEach(id => {
+                const state = this.mercenaryStates[id];
+                if (state.maxHp) {
+                    state.hp = state.maxHp;
+                }
+            });
+        }
     }
 }
 

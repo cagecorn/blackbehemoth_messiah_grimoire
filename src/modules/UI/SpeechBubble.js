@@ -19,22 +19,63 @@ export default class SpeechBubble extends Phaser.GameObjects.Container {
         const fontSize = '14px';
         const maxWidth = 220;
 
-        // Create Text
-        this.textObj = this.scene.add.text(0, 0, text, {
-            fontSize,
-            fill: '#000',
-            align: 'center',
-            wordWrap: { width: maxWidth - padding * 2 }
-        });
+        const isThought = text.startsWith('[깊은 사고]');
+        let mainText = text;
+        let thoughtContent = '';
+
+        if (isThought) {
+            const splitIdx = text.indexOf('\n');
+            if (splitIdx !== -1) {
+                thoughtContent = text.substring(0, splitIdx).trim();
+                mainText = text.substring(splitIdx + 1).trim();
+            } else {
+                thoughtContent = '[깊은 사고]';
+                mainText = text.replace('[깊은 사고]', '').trim();
+            }
+        }
+
+        // Create Container for text elements
+        const textContainer = this.scene.add.container(0, 0);
+
+        if (isThought) {
+            // Create Thought Text (Italic, Gray, word wrap support)
+            this.thoughtTextObj = this.scene.add.text(0, 0, thoughtContent, {
+                fontSize: '11px',
+                fill: '#777',
+                fontStyle: 'italic',
+                align: 'center',
+                wordWrap: { width: maxWidth - padding * 2 }
+            });
+
+            const thoughtBounds = this.thoughtTextObj.getBounds();
+
+            // Create Main Text below thought
+            this.textObj = this.scene.add.text(0, thoughtBounds.height + 6, mainText, {
+                fontSize,
+                fill: '#000',
+                align: 'center',
+                wordWrap: { width: maxWidth - padding * 2 }
+            });
+
+            textContainer.add([this.thoughtTextObj, this.textObj]);
+        } else {
+            // Create Normal Text
+            this.textObj = this.scene.add.text(0, 0, text, {
+                fontSize,
+                fill: '#000',
+                align: 'center',
+                wordWrap: { width: maxWidth - padding * 2 }
+            });
+            textContainer.add(this.textObj);
+        }
 
         // Calculate dimensions
-        const bounds = this.textObj.getBounds();
+        const bounds = textContainer.getBounds();
         const width = Math.min(maxWidth, bounds.width + padding * 2);
         const height = bounds.height + padding * 2;
 
         // Position text relative to container
-        // We want the bubble to be above the unit
-        this.textObj.setPosition(-width / 2 + padding, -height - 50 + padding);
+        textContainer.setPosition(-width / 2 + padding, -height - 50 + padding);
 
         // Graphics for the bubble background
         this.bubble = this.scene.add.graphics();
@@ -57,7 +98,7 @@ export default class SpeechBubble extends Phaser.GameObjects.Container {
         this.bubble.strokePath();
 
         this.add(this.bubble);
-        this.add(this.textObj);
+        this.add(textContainer);
 
         // Life cycle - Fade in
         this.alpha = 0;

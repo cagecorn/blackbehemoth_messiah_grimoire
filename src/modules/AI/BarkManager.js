@@ -17,6 +17,10 @@ export default class BarkManager {
         // Initial delay - trigger soon after entering
         this.setNextBarkTime(scene.time.now + 1500);
 
+        // Track recent barks to prevent repetition
+        this.recentBarks = {}; // { characterId: [string, string, ...] }
+        this.maxHistory = 3;
+
         console.log('[BarkManager] Initialized');
     }
 
@@ -84,10 +88,12 @@ export default class BarkManager {
                 ...charConfig,
                 personality: reactor.personality || charConfig.personality
             };
+            const avoidList = this.recentBarks[reactor.characterId] || [];
             // Pass level and activePartyIds to generateReactionBark
-            const reactionText = await localLLM.generateReactionBark(dynamicConfig, prevSpeakerName, prevText, prevSpeakerId, reactor.level || 1, activePartyIds);
+            const reactionText = await localLLM.generateReactionBark(dynamicConfig, prevSpeakerName, prevText, prevSpeakerId, reactor.level || 1, activePartyIds, avoidList);
             if (reactionText) {
                 this.emitBarkEvent(reactor, reactionText);
+                this.addToHistory(reactor.characterId, reactionText);
 
                 // Option for 3rd string chain (Chain reaction)
                 const chainChance = 0.30; // 30% chance for a 3rd person to join
@@ -101,6 +107,22 @@ export default class BarkManager {
             }
         } catch (error) {
             console.error('[BarkManager] Reaction failed:', error);
+        }
+    }
+
+    addToHistory(characterId, fullText) {
+        if (!this.recentBarks[characterId]) this.recentBarks[characterId] = [];
+
+        // Extract speech part for comparison
+        let speechPart = fullText;
+        const quoteIdx = fullText.indexOf('"');
+        if (quoteIdx !== -1) {
+            speechPart = fullText.substring(quoteIdx).replace(/"/g, '').trim();
+        }
+
+        this.recentBarks[characterId].push(speechPart);
+        if (this.recentBarks[characterId].length > this.maxHistory) {
+            this.recentBarks[characterId].shift();
         }
     }
 
@@ -178,9 +200,12 @@ export default class BarkManager {
             };
             const sceneType = this.getSceneType();
             const activeIds = this.getActivePartyIds();
-            const barkText = await localLLM.generateBark(dynamicConfig, target.level || 1, sceneType, activeIds);
+            const avoidList = this.recentBarks[target.characterId] || [];
+
+            const barkText = await localLLM.generateBark(dynamicConfig, target.level || 1, sceneType, activeIds, avoidList);
             if (barkText) {
                 this.emitBarkEvent(target, barkText);
+                this.addToHistory(target.characterId, barkText);
                 return barkText;
             }
         } catch (error) {

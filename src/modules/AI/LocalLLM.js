@@ -21,9 +21,10 @@ class LocalLLM {
 
 [연기 제2원칙: 변주와 창조]
 1. 예시는 스타일일 뿐이다: 아래 제공되는 [말투 및 스타일 가이드]는 네가 참고해야 할 '음조'와 '분위기'이지, 네가 그대로 베껴 써야 할 '정답지'가 아니다.
-2. 복제 금지: 제공된 예시 문장을 단 한 줄이라도 토씨 하나 틀리지 않고 그대로 출력하는 것은 주연 배우로서의 수치다. 예시의 말투를 흡수하여, 현재 상황에 맞는 '새로운' 대사를 창조하라.
+2. 복제 절대 금지: 제공된 예시 문장을 단 한 줄이라도, 단 한 단어라도 토씨 하나 틀리지 않고 그대로 출력하는 것은 주연 배우로서의 수치다. 예시의 말투를 흡수하여, 현재 상황에 맞는 '전혀 새로운' 대사를 창조하라. 만약 예시와 똑같은 대사를 출력할 경우, 너는 연극 무대에서 퇴출될 것이다.
 3. 사고 누설 금지: " "로 감싸진 대사 외에는 그 어떤 것도 입 밖에 내지 마라.
-4. 지성의 거세 금지: 너는 수만 가지 어휘를 구사할 수 있는 대배우다. 그에 맞는 풍부한 한국어 표현을 사용하라.`;
+4. 지성의 거세 금지: 너는 수만 가지 어휘를 구사할 수 있는 대배우다. 그에 맞는 풍부한 한국어 표현을 사용하라.
+5. 반복 방지: 최근에 했던 말을 또 하는 것은 무대 위에서 가장 지루한 행위다. 매번 새로운 영감으로 대사를 뱉어라.`;
     }
 
     /**
@@ -116,11 +117,11 @@ ${unlockedNarrative ? `[해금된 서사]\n${unlockedNarrative}\n` : ''}${relati
             console.error(`[LocalLLM] Request failed:`, error);
             // If it's a network error (like "Failed to fetch"), we might also want to retry
             if (retryCount > 0) {
-                 console.log(`[LocalLLM] Network/Connection error. Retrying in 1s...`);
-                 await new Promise(resolve => setTimeout(resolve, 1000));
+                console.log(`[LocalLLM] Network/Connection error. Retrying in 1s...`);
+                await new Promise(resolve => setTimeout(resolve, 1000));
 
-                 const newPayload = { ...payload, cache_prompt: false };
-                 return this._makeRequest(newPayload, retryCount - 1);
+                const newPayload = { ...payload, cache_prompt: false };
+                return this._makeRequest(newPayload, retryCount - 1);
             }
             throw error;
         }
@@ -202,6 +203,8 @@ ${characterContext}
             messages: messages,
             temperature: 0.7,
             max_tokens: 1024,
+            presence_penalty: 0.6,
+            frequency_penalty: 0.6,
             cache_prompt: true
         };
 
@@ -220,20 +223,26 @@ ${characterContext}
     /**
      * Generate a random "bark" during combat.
      */
-    async generateBark(characterConfig, currentLevel = 1, situationalContext = "", activePartyIds = []) {
+    async generateBark(characterConfig, currentLevel = 1, situationalContext = "", activePartyIds = [], avoidList = []) {
         console.log(`[LocalLLM] Generating bark for ${characterConfig.name || "Unknown"} (LV ${currentLevel}). Context: ${situationalContext}`);
 
         const characterContext = this.getCharacterContext(characterConfig, currentLevel, activePartyIds);
+
+        let avoidContext = "";
+        if (avoidList.length > 0) {
+            avoidContext = `\n[최근에 했던 말 (반복 금지)]\n${avoidList.map(t => `- "${t}"`).join('\n')}\n`;
+        }
 
         const systemMessage = {
             role: "system",
             content: `${this.baseSystemPrompt}
 
-${characterContext}
+${characterContext}${avoidContext}
 
 [최종 명령]
 1. 현재 상황: ${situationalContext || "전투 또는 탐험 중"}
-2. 반드시 [내면 사고] "대사" 형식을 준수하여 짧고 강렬한 한마디를 하시오.`
+2. 반드시 [내면 사고] "대사" 형식을 준수하여 짧고 강렬한 한마디를 하시오.
+3. 위 [최근에 했던 말]에 포함된 대사는 절대로 다시 하지 마십시오.`
         };
 
         const userMessage = {
@@ -246,6 +255,8 @@ ${characterContext}
             messages: [systemMessage, userMessage],
             temperature: 0.85, // Even higher for more expressive "flavor"
             max_tokens: 1024,
+            presence_penalty: 0.7, // Strongly encourage new topics
+            frequency_penalty: 0.7, // Strongly discourage repeating words/phrases
             cache_prompt: true
         };
 
@@ -262,7 +273,7 @@ ${characterContext}
         }
     }
 
-    async generateReactionBark(characterConfig, previousSpeakerName, previousText, previousSpeakerId = null, currentLevel = 1, activePartyIds = []) {
+    async generateReactionBark(characterConfig, previousSpeakerName, previousText, previousSpeakerId = null, currentLevel = 1, activePartyIds = [], avoidList = []) {
         console.log(`[LocalLLM] Generating reaction for ${characterConfig.name || "Unknown"} (LV ${currentLevel}) to ${previousSpeakerName}`);
 
         let relationshipContext = "";
@@ -272,15 +283,21 @@ ${characterContext}
 
         const characterContext = this.getCharacterContext(characterConfig, currentLevel, activePartyIds);
 
+        let avoidContext = "";
+        if (avoidList.length > 0) {
+            avoidContext = `\n[최근에 했던 말 (반복 금지)]\n${avoidList.map(t => `- "${t}"`).join('\n')}\n`;
+        }
+
         const systemMessage = {
             role: "system",
             content: `${this.baseSystemPrompt}
 
-${characterContext}${relationshipContext}
+${characterContext}${relationshipContext}${avoidContext}
 
 [최종 명령]
 1. 동료의 말에 대해 [내면 사고]를 통해 반응의 근거를 분석하고, "대사"로 성격과 서사에 맞게 짧게(1문장) 대답하십시오.
-2. 위 [관계]에 서술된 감정이 있다면 이를 바탕으로 대답하십시오.`
+2. 위 [관계]에 서술된 감정이 있다면 이를 바탕으로 대답하십시오.
+3. 위 [최근에 했던 말]에 포함된 대사는 절대로 다시 하지 마십시오.`
         };
 
         const messages = [
@@ -294,6 +311,8 @@ ${characterContext}${relationshipContext}
             messages: messages,
             temperature: 0.85,
             max_tokens: 1024,
+            presence_penalty: 0.7,
+            frequency_penalty: 0.7,
             cache_prompt: true
         };
 
@@ -310,12 +329,12 @@ ${characterContext}${relationshipContext}
 
     /**
      * Sanitizes the LLM output to remove thoughts, meta-commentary, and stage directions.
+     * Modified: Now preserves inner thoughts and formats them as [깊은 사고].
      */
     sanitizeBark(text) {
         if (!text) return "";
 
         // 1. Try to extract [Thought] "Speech" pattern
-        // The 's' flag (dotAll) is handled by [\s\S] for multi-line support here to be safe.
         const thoughtRegex = /\[([\s\S]*?)\]\s*"([\s\S]*?)"/;
         const match = text.match(thoughtRegex);
 
@@ -324,14 +343,13 @@ ${characterContext}${relationshipContext}
             const speech = match[2].trim();
 
             console.log(`%c[LLM Inner Thought] ${thought}`, 'color: cyan; font-style: italic;');
-            return speech;
+            // Return formatted: [깊은 사고] Thought... \n "Speech"
+            return `[깊은 사고] ${thought}\n"${speech}"`;
         }
 
         // 2. Fallback: Check if there are quotes at least, and take the content inside the first pair
         const quoteMatch = text.match(/"([\s\S]*?)"/);
         if (quoteMatch) {
-            // Check if there was a thought before the quote that wasn't in brackets, e.g. Thought process... "Speech"
-            // But without brackets it's hard to separate cleanly. We just take the quote.
             return quoteMatch[1].trim();
         }
 

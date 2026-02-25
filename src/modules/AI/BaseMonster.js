@@ -189,7 +189,7 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
         }
 
         if (this.scene.fxManager) {
-            const primaryColor = isCritical ? '#ffcc00' : '#ff3333'; // Physical: Red/Gold
+            const primaryColor = isCritical ? '#ff0000' : '#ff3333'; // Physical: Red/Stronger Red
             this.scene.fxManager.showDamageText(this, finalDamage, primaryColor, isCritical, 0, delay);
 
             // Calculate and show Elemental Bonus Damage (Prefix)
@@ -274,7 +274,7 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
         }
 
         if (this.scene.fxManager) {
-            const primaryColor = isCritical ? '#ffcc00' : '#cc88ff'; // Magic: Purple/Gold
+            const primaryColor = isCritical ? '#ff0000' : '#cc88ff'; // Magic: Purple/Red
             this.scene.fxManager.showDamageText(this, finalDamage, primaryColor, isCritical, 0, delay);
 
             // Calculate and show Elemental Bonus Damage (Prefix)

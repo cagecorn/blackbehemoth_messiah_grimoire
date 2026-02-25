@@ -154,7 +154,7 @@ export default class MusicalMagicalCritical {
         }
 
         if (scene.fxManager) {
-            scene.fxManager.showDamageText(target, 'CRIT UP! ♪', '#ffcc00');
+            scene.fxManager.showDamageText(target, 'CRIT UP! ♪', '#ff0000');
         }
     }
 }

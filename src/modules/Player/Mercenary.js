@@ -442,7 +442,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         this.updateHealthBar();
 
         if (this.scene.fxManager) {
-            const primaryColor = isCritical ? '#ffcc00' : '#ffffff'; // Mercenary Physical: White/Gold
+            const primaryColor = isCritical ? '#ff0000' : '#ffffff'; // Mercenary Physical: White/Red
             this.scene.fxManager.showDamageText(this, finalDamage, primaryColor, isCritical, 0, delay);
 
             // Calculate and show Elemental Bonus Damage (Prefix)
@@ -509,7 +509,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         this.updateHealthBar();
 
         if (this.scene.fxManager) {
-            const primaryColor = isCritical ? '#ffcc00' : '#cc88ff'; // Mercenary Magic: Purple/Gold
+            const primaryColor = isCritical ? '#ff0000' : '#cc88ff'; // Mercenary Magic: Purple/Red
             this.scene.fxManager.showDamageText(this, finalDamage, primaryColor, isCritical, 0, delay);
 
             // Calculate and show Elemental Bonus Damage (Prefix)
