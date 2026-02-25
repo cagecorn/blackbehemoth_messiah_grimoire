@@ -60,8 +60,8 @@ class EmbeddingGemmaManager {
     }
 
     sendToAI(eventString) {
-        if (!this.isReady) {
-            console.warn('[EmbeddingGemma] Model mapping is still loading, skipped event:', eventString);
+        if (!this.isReady || !this.worker) {
+            console.warn('[EmbeddingGemma] Worker not available or model still loading, skipped event:', eventString);
             return;
         }
 
@@ -75,7 +75,7 @@ class EmbeddingGemmaManager {
      * @returns {Promise<Array>}
      */
     async searchMemory(query) {
-        if (!this.isReady) return [];
+        if (!this.isReady || !this.worker) return [];
 
         return new Promise((resolve) => {
             this.pendingSearch = { query, resolve };

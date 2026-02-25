@@ -1222,21 +1222,24 @@ body {
 
 .party-slots {
     display: flex;
-    gap: 20px;
-    margin-bottom: 50px;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 30px;
+    width: 100%;
 }
 
 .party-slot {
-    width: 80px;
-    height: 80px;
+    width: 60px;
+    height: 60px;
     border-radius: 50%;
-    border: 3px dashed rgba(255, 255, 255, 0.4);
+    border: 2px dashed rgba(255, 255, 255, 0.4);
     display: flex;
     align-items: center;
     justify-content: center;
     position: relative;
     background: rgba(0, 0, 0, 0.4);
-    font-size: 20px;
+    font-size: 16px;
     color: rgba(255, 255, 255, 0.3);
 }
 
@@ -1244,12 +1247,12 @@ body {
     border-style: solid;
     border-color: #bb88ff;
     background: rgba(187, 136, 255, 0.15);
-    box-shadow: 0 0 20px rgba(187, 136, 255, 0.3);
+    box-shadow: 0 0 15px rgba(187, 136, 255, 0.3);
 }
 
 .party-slot img {
-    width: 80%;
-    height: 80%;
+    width: 70%;
+    height: 70%;
     image-rendering: pixelated;
 }
 
