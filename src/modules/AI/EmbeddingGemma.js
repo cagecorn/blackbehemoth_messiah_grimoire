@@ -12,18 +12,27 @@ class EmbeddingGemmaManager {
     }
 
     init() {
+        // Disable heavy AI to prevent freezing (esp. on mobile)
+        // Since it's a web build, we'll keep it disabled for now as per user request
+        console.log('[EmbeddingGemma] Resource-heavy AI Worker is disabled for stability.');
+        this.isReady = true; // Set to ready so dependents don't wait forever
+
+        /* 
         console.log('[EmbeddingGemma] Initializing...');
-
         // Vite specific worker instantiation
-        this.worker = new Worker(new URL('../../workers/embeddingWorker.js', import.meta.url), { type: 'module' });
+        try {
+            this.worker = new Worker(new URL('../../workers/embeddingWorker.js', import.meta.url), { type: 'module' });
+            this.worker.onmessage = (e) => this.handleWorkerMessage(e);
+            this.worker.onerror = (err) => console.error('[EmbeddingGemma] Worker Error:', err);
+            // Tell worker to start loading the model
+            this.worker.postMessage({ type: 'INIT' });
+        } catch (e) {
+            console.error('[EmbeddingGemma] Failed to start worker:', e);
+            this.isReady = true;
+        }
+        */
 
-        this.worker.onmessage = (e) => this.handleWorkerMessage(e);
-        this.worker.onerror = (err) => console.error('[EmbeddingGemma] Worker Error:', err);
-
-        // Tell worker to start loading the model
-        this.worker.postMessage({ type: 'INIT' });
-
-        // Subscribe to Global Event Bus
+        // Subscribe to Global Event Bus (Keep subscriptions so methods don't error)
         EventBus.on(EventBus.EVENTS.ITEM_COLLECTED, this.handleItemCollected, this);
         EventBus.on(EventBus.EVENTS.MONSTER_KILLED, this.handleMonsterKilled, this);
         EventBus.on(EventBus.EVENTS.SYSTEM_MESSAGE, this.handleSystemMessage, this);
