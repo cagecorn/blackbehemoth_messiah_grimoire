@@ -94,7 +94,7 @@ export default class KnockbackShot {
             delay: 30,
             callback: () => {
                 if (!projectile || !projectile.active || !projectile.scene) return;
-                const trail = projectile.scene.add.circle(projectile.x, projectile.y, 8, 0xffaa00, 0.6);
+                const trail = projectile.scene.add.circle(projectile.x, projectile.y, 8, 0xff3300, 0.6);
                 projectile.scene.tweens.add({
                     targets: trail,
                     alpha: 0,

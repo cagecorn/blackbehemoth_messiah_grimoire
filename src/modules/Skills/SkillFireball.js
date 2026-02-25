@@ -68,7 +68,37 @@ export default class SkillFireball {
         const meteor = scene.add.image(startX, startY, 'emoji_fire');
         meteor.setDisplaySize(96, 96); // huge!
         meteor.setDepth(target.depth + 1000); // render way above
-        meteor.setTint(0xff5555); // glowing red overlay
+        meteor.setTint(0xff3300); // More intense red
+        meteor.setBlendMode('ADD'); // Glow effect
+
+        // 1.5 Gradient Aura (Intense core glow)
+        const auraGraphic = scene.add.graphics();
+        auraGraphic.setDepth(meteor.depth - 1);
+        auraGraphic.setBlendMode('ADD');
+
+        const steps = 10;
+        const auraColor = 0xff3300;
+        const maxRadius = 120; // Larger area for visibility
+        for (let i = steps; i > 0; i--) {
+            const r = (maxRadius / steps) * i;
+            const alpha = 0.03 + (0.04 * (steps - i)); // Increased alpha
+            auraGraphic.fillStyle(auraColor, alpha);
+            auraGraphic.fillCircle(0, 0, r);
+        }
+
+        // 1.6 Intense Particle Trail
+        const trailEmitter = scene.add.particles(0, 0, 'emoji_fire', {
+            speed: { min: 20, max: 60 },
+            angle: { min: 0, max: 360 },
+            scale: { start: 0.8, end: 0 },
+            alpha: { start: 1, end: 0 },
+            lifespan: 800,
+            frequency: 10, // Very frequent for smooth trail
+            blendMode: 'ADD',
+            tint: 0xff5500, // Slightly brighter red-orange
+            follow: meteor
+        });
+        trailEmitter.setDepth(meteor.depth - 2);
 
         const duration = 600;
 
@@ -79,8 +109,15 @@ export default class SkillFireball {
             y: target.y,
             duration: duration,
             ease: 'Sine.easeIn',
+            onUpdate: () => {
+                if (auraGraphic && auraGraphic.active !== false) {
+                    auraGraphic.setPosition(meteor.x, meteor.y);
+                }
+            },
             onComplete: () => {
                 if (meteor && meteor.destroy) meteor.destroy();
+                if (auraGraphic && auraGraphic.destroy) auraGraphic.destroy();
+                if (trailEmitter && trailEmitter.destroy) trailEmitter.destroy();
             }
         });
 

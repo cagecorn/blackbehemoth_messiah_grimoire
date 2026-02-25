@@ -100,7 +100,7 @@ export default class ProjectileManager {
 
             // Dynamic laser color based on element
             let laserColor = 0x00ffff; // Default Cyan
-            if (finalElement === 'fire') laserColor = 0xff9d00;
+            if (finalElement === 'fire') laserColor = 0xff3300;
             else if (finalElement === 'ice') laserColor = 0x00bbff;
             else if (finalElement === 'lightning') laserColor = 0xffff00;
 
@@ -154,7 +154,7 @@ export default class ProjectileManager {
 
             if (projectile) {
                 projectile.setDisplaySize(size, size);
-                if (type === 'emoji_fire') projectile.setTint(0xffaa00);
+                if (type === 'emoji_fire') projectile.setTint(0xff3300);
             }
         } else {
             const emoji = emojiMap[type] || (type.includes('fire') ? '🔥' : '🏹');

@@ -49,7 +49,37 @@ export default class SkillMeteorStrike {
         meteor.setDisplaySize(32 * scale, 32 * scale);
         meteor.setDepth(20000);
         meteor.setTint(0xff3300); // More intense red
+        meteor.setBlendMode('ADD');
         meteor.setAlpha(0.9);
+
+        // 1.1 Gradient Aura for each meteor
+        const auraGraphic = scene.add.graphics();
+        auraGraphic.setDepth(meteor.depth - 1);
+        auraGraphic.setBlendMode('ADD');
+
+        const steps = 8;
+        const auraColor = 0xff3300;
+        const auraRadius = (32 * scale) * 1.5; // Larger
+        for (let i = steps; i > 0; i--) {
+            const r = (auraRadius / steps) * i;
+            const alpha = 0.02 + (0.03 * (steps - i)); // Increased alpha
+            auraGraphic.fillStyle(auraColor, alpha);
+            auraGraphic.fillCircle(0, 0, r);
+        }
+
+        // 1.2 Intense Particle Trail for each meteor
+        const trailEmitter = scene.add.particles(0, 0, 'emoji_fire', {
+            speed: { min: 10, max: 40 },
+            angle: { min: 0, max: 360 },
+            scale: { start: 0.5 * scale, end: 0 },
+            alpha: { start: 1, end: 0 },
+            lifespan: 500,
+            frequency: 15, // Faster emission
+            blendMode: 'ADD',
+            tint: 0xff5500,
+            follow: meteor
+        });
+        trailEmitter.setDepth(meteor.depth - 2);
 
         const duration = 600;
 
@@ -60,8 +90,15 @@ export default class SkillMeteorStrike {
             y: ty,
             duration: duration,
             ease: 'Sine.easeIn',
+            onUpdate: () => {
+                if (auraGraphic && auraGraphic.active !== false) {
+                    auraGraphic.setPosition(meteor.x, meteor.y);
+                }
+            },
             onComplete: () => {
                 if (meteor && meteor.destroy) meteor.destroy();
+                if (auraGraphic && auraGraphic.destroy) auraGraphic.destroy();
+                if (trailEmitter && trailEmitter.destroy) trailEmitter.destroy();
                 this.detonate(scene, caster, tx, ty, scale);
             }
         });

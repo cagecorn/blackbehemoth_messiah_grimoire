@@ -119,7 +119,7 @@ export default class CarpetBombing {
 
     explode(x, y, targetGroup) {
         // Visuals: Explosion Flash
-        const flash = this.scene.add.circle(x, y, 10, 0xffaa00, 0.8)
+        const flash = this.scene.add.circle(x, y, 10, 0xff3300, 0.8)
             .setDepth(3001);
         this.scene.tweens.add({
             targets: flash,

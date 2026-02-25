@@ -418,6 +418,11 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
             this.scene.lootManager.spawnLoot(this.x, this.y);
         }
 
+        // Clean up all CC visuals and timers immediately
+        if (this.scene && this.scene.ccManager) {
+            this.scene.ccManager.cleanUpAllCC(this);
+        }
+
         // Stop logic
         this.btManager = null;
 

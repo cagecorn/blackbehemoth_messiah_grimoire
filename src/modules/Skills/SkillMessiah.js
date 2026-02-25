@@ -118,7 +118,7 @@ export default class SkillMessiah {
             alpha: { start: 1, end: 0 },
             lifespan: 600,
             gravityY: 400,
-            tint: [0xffaa00, 0xffcc00, 0xffff00],
+            tint: [0xff3300, 0xffcc00, 0xffff00],
             quantity: explosionCount
         });
         emitter.explode(explosionCount);

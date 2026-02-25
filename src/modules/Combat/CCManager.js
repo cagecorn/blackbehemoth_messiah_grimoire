@@ -374,6 +374,51 @@ export default class CCManager {
         });
     }
 
+    /**
+     * Clears all active CC visuals, timers, and tweens for a specific target.
+     * Should be called when a unit dies or is removed.
+     */
+    cleanUpAllCC(target) {
+        if (!target) return;
+
+        // 1. Shock Cleanup
+        if (target._shockCleanupTimer) target._shockCleanupTimer.remove();
+        if (target._shockShakeTween) target._shockShakeTween.stop();
+        if (target._shockEmitter) target._shockEmitter.destroy();
+        target.isShocked = false;
+        target._shockCleanupTimer = null;
+        target._shockShakeTween = null;
+        target._shockEmitter = null;
+
+        // 2. Sleep Cleanup
+        if (target._sleepCleanupTimer) target._sleepCleanupTimer.remove();
+        if (target._sleepEmitter) target._sleepEmitter.destroy();
+        target.isAsleep = false;
+        target._sleepCleanupTimer = null;
+        target._sleepEmitter = null;
+        if (target.wakeUp) target.wakeUp = null;
+
+        // 3. Burn Cleanup
+        if (target._burnCleanupTimer) target._burnCleanupTimer.remove();
+        if (target._burnEmitter) target._burnEmitter.destroy();
+        if (target._burnInterval) target._burnInterval.remove();
+        target.isBurning = false;
+        target._burnCleanupTimer = null;
+        target._burnEmitter = null;
+        target._burnInterval = null;
+
+        // 4. Freeze Cleanup
+        if (target._freezeCleanupTimer) target._freezeCleanupTimer.remove();
+        if (target._freezeEmitter) target._freezeEmitter.destroy();
+        target.isFrozen = false;
+        target._freezeCleanupTimer = null;
+        target._freezeEmitter = null;
+
+        // Reset visual state
+        if (target.sprite) target.sprite.clearTint();
+        if (target.syncStatusUI) target.syncStatusUI();
+    }
+
     update(time, delta) {
         // Future expansion: we can track buffs/debuffs tick-by-tick here if needed
     }

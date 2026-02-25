@@ -16,7 +16,7 @@ export default class FXManager {
      */
     getElementColor(element) {
         switch (element) {
-            case 'fire': return '#ff9d00'; // Bright Orange
+            case 'fire': return '#ff3300'; // Pure Red/Orange Red
             case 'ice': return '#00bbff';  // Blue
             case 'lightning': return '#ffff00'; // Yellow
             default: return null;
@@ -115,6 +115,13 @@ export default class FXManager {
         for (let i = 0; i < count; i++) {
             const particle = this.scene.add.image(x, y, texture);
             particle.setDisplaySize(16, 16);
+            particle.setAlpha(0.5); // 50% opacity for subtle glow
+            particle.setBlendMode('ADD'); // Linear Dodge effect
+
+            // Apply red tint to fire to distinguish from lightning
+            if (element === 'fire') {
+                particle.setTint(0xff3300);
+            }
 
             const angle = Math.random() * Math.PI * 2;
             const speed = 40 + Math.random() * 80;

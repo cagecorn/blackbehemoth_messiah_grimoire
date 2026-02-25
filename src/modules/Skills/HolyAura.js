@@ -64,25 +64,46 @@ export default class HolyAura {
 
         console.log(`[Skill] ${caster.unitName} activates Holy Aura! (Radius: ${radius}, Heal/sec: ${healAmount})`);
 
-        // 1. Visuals: Aura Circle and Particles
-        const auraAlpha = 0.2;
+        // 1. Visuals: Gradient Aura and Particles
         const auraColor = 0xffffaa;
-
         const auraGraphic = this.scene.add.graphics();
-        auraGraphic.fillStyle(auraColor, auraAlpha);
-        auraGraphic.fillCircle(0, 0, radius);
+        auraGraphic.setBlendMode('ADD'); // Glow effect
+
+        // Draw concentric circles to fake a radial gradient
+        const steps = 12;
+        for (let i = steps; i > 0; i--) {
+            const r = (radius / steps) * i;
+            // Higher alpha towards the center, fading out at the edges
+            const alpha = 0.02 + (0.015 * (steps - i));
+            auraGraphic.fillStyle(auraColor, alpha);
+            auraGraphic.fillCircle(0, 0, r);
+        }
+
         auraGraphic.setDepth(caster.depth - 1); // Behind the caster
 
+        // Pulsing animation for a "breathing" aura effect
+        this.scene.tweens.add({
+            targets: auraGraphic,
+            scale: 1.05,
+            alpha: 0.8,
+            duration: 1200,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut'
+        });
+
+        // 2. Particles: Rising sparkles
         const emitter = this.scene.add.particles(0, 0, 'emoji_sparkles', {
-            speed: { min: 10, max: 30 },
-            angle: { min: 0, max: 360 }, // Move outward slowly
-            scale: { start: 0.8, end: 0 },
-            alpha: { start: 1, end: 0 },
-            lifespan: 1500,
-            frequency: 300,
+            speedY: { min: -20, max: -60 }, // Move upwards
+            speedX: { min: -20, max: 20 },
+            scale: { start: 0.6, end: 0 },
+            alpha: { start: 0.6, end: 0 },
+            lifespan: 2000,
+            frequency: 200,
+            blendMode: 'ADD',
             emitZone: {
                 type: 'random',
-                source: new Phaser.Geom.Circle(0, 0, radius)
+                source: new Phaser.Geom.Circle(0, 0, radius * 0.8)
             }
         });
         emitter.setDepth(caster.depth + 1);

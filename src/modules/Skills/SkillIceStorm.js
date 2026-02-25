@@ -29,16 +29,17 @@ export default class SkillIceStorm {
         cloudContainer.setDepth(2000);
 
         const clouds = [];
-        const layerCount = 3;
-        const colors = [0xffffff, 0xddddff, 0xeeeeff];
-        const scales = [2.0, 1.8, 2.2];
+        const layerCount = 5;
+        const colors = [0xffffff, 0xddddff, 0xccccff, 0xbbddff, 0xeeeeff];
+        const scales = [2.2, 1.8, 2.4, 2.0, 2.6];
 
         for (let i = 0; i < layerCount; i++) {
             // Positions are relative to container (0, 0)
             const cloud = scene.add.image(0, 0, 'emoji_snowcloud');
             cloud.setScale(0);
-            cloud.setAlpha(0.6 + (i * 0.1));
+            cloud.setAlpha(0.25); // Lower alpha for better layering with ADD
             cloud.setTint(colors[i]);
+            cloud.setBlendMode('ADD'); // Glow effect
 
             cloudContainer.add(cloud);
 
@@ -47,15 +48,15 @@ export default class SkillIceStorm {
                 scale: scales[i],
                 duration: 800,
                 ease: 'Back.easeOut',
-                delay: i * 150
+                delay: i * 120
             });
 
             // "Floating" animation (relative movement inside container)
             scene.tweens.add({
                 targets: cloud,
-                y: '-=10',
-                x: i % 2 === 0 ? '+=15' : '-=15',
-                duration: 2000 + (i * 500),
+                y: '-=15',
+                x: i % 2 === 0 ? '+=20' : '-=20',
+                duration: 2500 + (i * 400),
                 yoyo: true,
                 repeat: -1,
                 ease: 'Sine.easeInOut'
@@ -63,6 +64,23 @@ export default class SkillIceStorm {
 
             clouds.push(cloud);
         }
+
+        // 1.5 Internal Sparkles: Tiny ice grains/sparkles inside the cloud
+        const internalSparkles = scene.add.particles(0, 0, 'emoji_sparkles', {
+            speed: { min: 20, max: 80 },
+            angle: { min: 0, max: 360 },
+            scale: { start: 0.5, end: 0 },
+            alpha: { start: 0.6, end: 0 },
+            lifespan: 1500,
+            frequency: 100,
+            blendMode: 'ADD',
+            emitZone: {
+                type: 'random',
+                source: new Phaser.Geom.Circle(0, 0, 80)
+            }
+        });
+        cloudContainer.add(internalSparkles);
+        internalSparkles.setDepth(1); // Above the clouds
 
         // 2. Tracking & Dropping Logic
         const totalMAtk = caster.getTotalMAtk ? caster.getTotalMAtk() : caster.mAtk;
