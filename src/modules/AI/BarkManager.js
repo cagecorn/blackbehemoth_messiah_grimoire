@@ -21,7 +21,40 @@ export default class BarkManager {
         this.recentBarks = {}; // { characterId: [string, string, ...] }
         this.maxHistory = 3;
 
+        // --- Sequential Bark Queue ---
+        this.barkQueue = [];
+        this.isProcessingQueue = false;
+        this.barkDisplayDuration = 4500; // 4.5 seconds minimum gap between barks
+
         console.log('[BarkManager] Initialized');
+    }
+
+    enqueueBark(target, text) {
+        this.barkQueue.push({ target, text });
+        if (!this.isProcessingQueue) {
+            this.processBarkQueue();
+        }
+    }
+
+    processBarkQueue() {
+        if (this.barkQueue.length === 0) {
+            this.isProcessingQueue = false;
+            return;
+        }
+
+        this.isProcessingQueue = true;
+        const { target, text } = this.barkQueue.shift();
+
+        // Safety check for target
+        if (target && target.active && target.hp > 0) {
+            this.emitBarkEvent(target, text);
+            this.addToHistory(target.characterId, text);
+        }
+
+        // Wait then recurse
+        this.scene.time.delayedCall(this.barkDisplayDuration, () => {
+            this.processBarkQueue();
+        });
     }
 
     setNextBarkTime(now) {
@@ -50,9 +83,14 @@ export default class BarkManager {
         try {
             const barkText = await this.performBark(target);
             if (barkText) {
+                // Enqueue the primary bark
+                this.enqueueBark(target, barkText);
+
                 // Optional: 40% chance for a reaction bark
                 const reactionChance = 0.40;
                 if (Math.random() < reactionChance) {
+                    // Reactions are triggered slightly after the primary bark starts,
+                    // but they will be queued sequentially by emitBarkEvent logic.
                     this.scene.time.delayedCall(Phaser.Math.Between(1500, 3000), async () => {
                         const activePartyIds = this.getActivePartyIds();
                         await this.triggerReaction(target.unitName, barkText, [target.characterId], target.characterId, activePartyIds);
@@ -92,8 +130,7 @@ export default class BarkManager {
             // Pass level and activePartyIds to generateReactionBark
             const reactionText = await localLLM.generateReactionBark(dynamicConfig, prevSpeakerName, prevText, prevSpeakerId, reactor.level || 1, activePartyIds, avoidList);
             if (reactionText) {
-                this.emitBarkEvent(reactor, reactionText);
-                this.addToHistory(reactor.characterId, reactionText);
+                this.enqueueBark(reactor, reactionText);
 
                 // Option for 3rd string chain (Chain reaction)
                 const chainChance = 0.30; // 30% chance for a 3rd person to join
@@ -204,8 +241,7 @@ export default class BarkManager {
 
             const barkText = await localLLM.generateBark(dynamicConfig, target.level || 1, sceneType, activeIds, avoidList);
             if (barkText) {
-                this.emitBarkEvent(target, barkText);
-                this.addToHistory(target.characterId, barkText);
+                // No longer emitting here, triggerBarkSequence handles it
                 return barkText;
             }
         } catch (error) {

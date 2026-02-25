@@ -73,13 +73,16 @@ export default class SkillIceBall {
         }
 
         // Apply Freeze to all in AOE
-        const targets = caster.targetGroup.getChildren();
-        for (const t of targets) {
-            if (t.active && t.hp > 0) {
-                const dist = Phaser.Math.Distance.Between(target.x, target.y, t.x, t.y);
-                if (dist <= this.aoeRadius) {
-                    if (scene.ccManager) {
-                        scene.ccManager.applyFreeze(t, 3000);
+        const targetGroup = caster.targetGroup;
+        if (targetGroup) {
+            const targets = targetGroup.getChildren();
+            for (const t of targets) {
+                if (t.active && t.hp > 0) {
+                    const dist = Phaser.Math.Distance.Between(target.x, target.y, t.x, t.y);
+                    if (dist <= this.aoeRadius) {
+                        if (scene.ccManager) {
+                            scene.ccManager.applyFreeze(t, 3000);
+                        }
                     }
                 }
             }
@@ -102,7 +105,10 @@ export default class SkillIceBall {
             const spreadY = y + Math.sin(angle) * 30;
 
             // Simple "tracking" projectile: find a new target or use current cluster
-            const targets = caster.targetGroup.getChildren().filter(t => t.active && t.hp > 0);
+            const targetGroup = caster.targetGroup;
+            if (!targetGroup) continue;
+
+            const targets = targetGroup.getChildren().filter(t => t.active && t.hp > 0);
             let miniTarget = targets[Math.floor(Math.random() * targets.length)];
 
             if (miniTarget) {

@@ -190,6 +190,8 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
             }
         }
 
+        this.updateHealthBar();
+
         if (this.scene.fxManager) {
             const primaryColor = isCritical ? '#ff0000' : '#ff3333'; // Physical: Red/Stronger Red
             this.scene.fxManager.showDamageText(this, finalDamage, primaryColor, isCritical, 0, delay);
@@ -279,6 +281,8 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
                 this.wakeUp();
             }
         }
+
+        this.updateHealthBar();
 
         if (this.scene.fxManager) {
             const primaryColor = isCritical ? '#ff0000' : '#cc88ff'; // Magic: Purple/Red

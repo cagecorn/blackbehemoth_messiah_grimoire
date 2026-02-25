@@ -115,9 +115,9 @@ export default class Nana extends Bard {
         this.rangeMax = 80;
 
         // Update config for AI visibility
-        this.config.atkRange = this.tempStats.atkRange;
-        this.config.rangeMin = this.tempStats.rangeMin;
-        this.config.rangeMax = this.tempStats.rangeMax;
+        this.config.atkRange = this.atkRange;
+        this.config.rangeMin = this.rangeMin;
+        this.config.rangeMax = this.rangeMax;
 
         // 3. AI Swap
         // Melee AI for berserk mode

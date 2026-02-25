@@ -7,6 +7,7 @@ class LocalLLM {
         this.apiURL = 'http://localhost:1234/v1/chat/completions';
         this.modelName = 'my_final_ai';
         this.isReady = false;
+        this.activeRequest = null; // Thread-safety queue for persona protection
 
         this.baseSystemPrompt = `너는 고전 희극과 비극을 넘나드는 '걸작' 연극의 주연 배우다. 
 너에게 주어진 캐릭터 정보는 단순한 설정이 아니라, 네가 무대 위에서 증명해야 할 '실존의 무게'다. 
@@ -159,83 +160,99 @@ ${unlockedNarrative ? `[해금된 서사]\n${unlockedNarrative}\n` : ''}${relati
         return false;
     }
 
+    /**
+     * Sequential queue helper to prevent persona pollution and parallel processing issues.
+     */
+    async _enqueue(operation) {
+        const previous = this.activeRequest || Promise.resolve();
+        const current = (async () => {
+            await previous.catch(() => { }); // Always wait for previous to complete
+            return await operation();
+        })();
+        this.activeRequest = current;
+        return current;
+    }
+
     async generateResponse(characterConfig, prompt, memories = [], chatHistory = [], currentLevel = 1, activePartyIds = []) {
-        console.log(`[LocalLLM] Requesting response for ${characterConfig.name || "Unknown"} (LV ${currentLevel}) - Memories: ${memories.length}`);
+        return this._enqueue(async () => {
+            console.log(`[LocalLLM] Requesting response for ${characterConfig.name || "Unknown"} (LV ${currentLevel}) - Memories: ${memories.length}`);
 
-        const characterContext = this.getCharacterContext(characterConfig, currentLevel, activePartyIds);
+            const characterContext = this.getCharacterContext(characterConfig, currentLevel, activePartyIds);
 
-        const systemMessage = {
-            role: "system",
-            content: `${this.baseSystemPrompt}
+            const systemMessage = {
+                role: "system",
+                content: `${this.baseSystemPrompt}
 
 ${characterContext}
 
 [지침 추가]
 1. 제공된 [최근 사건 기록]과 대화 내역을 참고하여 문맥에 맞는 대화를 하십시오.`
-        };
+            };
 
-        const messages = [systemMessage];
+            const messages = [systemMessage];
 
-        // Add history messages to keep context window stable
-        chatHistory.forEach(h => {
-            messages.push({
-                role: h.role === 'user' ? 'user' : 'assistant',
-                content: h.text
+            // Add history messages to keep context window stable
+            chatHistory.forEach(h => {
+                messages.push({
+                    role: h.role === 'user' ? 'user' : 'assistant',
+                    content: h.text
+                });
             });
-        });
 
-        // Add dynamic context (memories) as a final context injection
-        if (memories.length > 0) {
+            // Add dynamic context (memories) as a final context injection
+            if (memories.length > 0) {
+                messages.push({
+                    role: "system",
+                    content: "[최근 사건 기록]\n" + memories.map(m => `- ${m.text}`).join('\n')
+                });
+            }
+
+            // Add final user prompt
             messages.push({
-                role: "system",
-                content: "[최근 사건 기록]\n" + memories.map(m => `- ${m.text}`).join('\n')
+                role: "user",
+                content: prompt
             });
-        }
 
-        // Add final user prompt
-        messages.push({
-            role: "user",
-            content: prompt
+            const payload = {
+                model: this.modelName,
+                messages: messages,
+                temperature: 0.7,
+                max_tokens: 1024,
+                presence_penalty: 0.6,
+                frequency_penalty: 0.6,
+                cache_prompt: true
+            };
+
+            try {
+                const data = await this._makeRequest(payload);
+                this.isReady = true;
+                const content = data.choices[0].message.content.trim();
+                console.log(`[LocalLLM] Raw Response from ${characterConfig.name}:`, content);
+                return this.sanitizeBark(content);
+            } catch (error) {
+                console.error('[LocalLLM] Error:', error);
+                return "...";
+            }
         });
-
-        const payload = {
-            model: this.modelName,
-            messages: messages,
-            temperature: 0.7,
-            max_tokens: 1024,
-            presence_penalty: 0.6,
-            frequency_penalty: 0.6,
-            cache_prompt: true
-        };
-
-        try {
-            const data = await this._makeRequest(payload);
-            this.isReady = true;
-            const content = data.choices[0].message.content.trim();
-            console.log(`[LocalLLM] Raw Response from ${characterConfig.name}:`, content);
-            return this.sanitizeBark(content);
-        } catch (error) {
-            console.error('[LocalLLM] Error:', error);
-            return "...";
-        }
     }
 
     /**
      * Generate a random "bark" during combat.
      */
     async generateBark(characterConfig, currentLevel = 1, situationalContext = "", activePartyIds = [], avoidList = []) {
-        console.log(`[LocalLLM] Generating bark for ${characterConfig.name || "Unknown"} (LV ${currentLevel}). Context: ${situationalContext}`);
+        return this._enqueue(async () => {
+            console.log(`[LocalLLM] Generating bark for ${characterConfig.name || "Unknown"} (LV ${currentLevel}). Context: ${situationalContext}`);
 
-        const characterContext = this.getCharacterContext(characterConfig, currentLevel, activePartyIds);
+            const characterContext = this.getCharacterContext(characterConfig, currentLevel, activePartyIds);
 
-        let avoidContext = "";
-        if (avoidList.length > 0) {
-            avoidContext = `\n[최근에 했던 말 (반복 금지)]\n${avoidList.map(t => `- "${t}"`).join('\n')}\n`;
-        }
+            let avoidContext = "";
+            if (avoidList.length > 0) {
+                avoidContext = `\n[최근에 했던 말 (반복 금지)]\n${avoidList.map(t => `- "${t}"`).join('\n')}\n`;
+            }
 
-        const systemMessage = {
-            role: "system",
-            content: `${this.baseSystemPrompt}
+            const systemMessage = {
+                role: "system",
+                content: `${this.baseSystemPrompt}
 
 ${characterContext}${avoidContext}
 
@@ -243,54 +260,56 @@ ${characterContext}${avoidContext}
 1. 현재 상황: ${situationalContext || "전투 또는 탐험 중"}
 2. 반드시 [내면 사고] "대사" 형식을 준수하여 짧고 강렬한 한마디를 하시오.
 3. 위 [최근에 했던 말]에 포함된 대사는 절대로 다시 하지 마십시오.`
-        };
+            };
 
-        const userMessage = {
-            role: "user",
-            content: "상황에 맞는 대사를 한마디 하시오."
-        };
+            const userMessage = {
+                role: "user",
+                content: "상황에 맞는 대사를 한마디 하시오."
+            };
 
-        const payload = {
-            model: this.modelName,
-            messages: [systemMessage, userMessage],
-            temperature: 0.85, // Even higher for more expressive "flavor"
-            max_tokens: 1024,
-            presence_penalty: 0.7, // Strongly encourage new topics
-            frequency_penalty: 0.7, // Strongly discourage repeating words/phrases
-            cache_prompt: true
-        };
+            const payload = {
+                model: this.modelName,
+                messages: [systemMessage, userMessage],
+                temperature: 0.85, // Even higher for more expressive "flavor"
+                max_tokens: 1024,
+                presence_penalty: 0.7, // Strongly encourage new topics
+                frequency_penalty: 0.7, // Strongly discourage repeating words/phrases
+                cache_prompt: true
+            };
 
-        try {
-            const data = await this._makeRequest(payload);
-            let content = data.choices[0].message.content.trim();
-            console.log(`[LocalLLM] Raw Bark:`, content);
-            content = this.sanitizeBark(content);
+            try {
+                const data = await this._makeRequest(payload);
+                let content = data.choices[0].message.content.trim();
+                console.log(`[LocalLLM] Raw Bark:`, content);
+                content = this.sanitizeBark(content);
 
-            return content;
-        } catch (error) {
-            console.error('[LocalLLM] Bark Error:', error);
-            return null;
-        }
+                return content;
+            } catch (error) {
+                console.error('[LocalLLM] Bark Error:', error);
+                return null;
+            }
+        });
     }
 
     async generateReactionBark(characterConfig, previousSpeakerName, previousText, previousSpeakerId = null, currentLevel = 1, activePartyIds = [], avoidList = []) {
-        console.log(`[LocalLLM] Generating reaction for ${characterConfig.name || "Unknown"} (LV ${currentLevel}) to ${previousSpeakerName}`);
+        return this._enqueue(async () => {
+            console.log(`[LocalLLM] Generating reaction for ${characterConfig.name || "Unknown"} (LV ${currentLevel}) to ${previousSpeakerName}`);
 
-        let relationshipContext = "";
-        if (previousSpeakerId && characterConfig.relationships && characterConfig.relationships[previousSpeakerId]) {
-            relationshipContext = `\n[관계]\n대상(${previousSpeakerName})에 대한 생각: "${characterConfig.relationships[previousSpeakerId]}"`;
-        }
+            let relationshipContext = "";
+            if (previousSpeakerId && characterConfig.relationships && characterConfig.relationships[previousSpeakerId]) {
+                relationshipContext = `\n[관계]\n대상(${previousSpeakerName})에 대한 생각: "${characterConfig.relationships[previousSpeakerId]}"`;
+            }
 
-        const characterContext = this.getCharacterContext(characterConfig, currentLevel, activePartyIds);
+            const characterContext = this.getCharacterContext(characterConfig, currentLevel, activePartyIds);
 
-        let avoidContext = "";
-        if (avoidList.length > 0) {
-            avoidContext = `\n[최근에 했던 말 (반복 금지)]\n${avoidList.map(t => `- "${t}"`).join('\n')}\n`;
-        }
+            let avoidContext = "";
+            if (avoidList.length > 0) {
+                avoidContext = `\n[최근에 했던 말 (반복 금지)]\n${avoidList.map(t => `- "${t}"`).join('\n')}\n`;
+            }
 
-        const systemMessage = {
-            role: "system",
-            content: `${this.baseSystemPrompt}
+            const systemMessage = {
+                role: "system",
+                content: `${this.baseSystemPrompt}
 
 ${characterContext}${relationshipContext}${avoidContext}
 
@@ -298,33 +317,34 @@ ${characterContext}${relationshipContext}${avoidContext}
 1. 동료의 말에 대해 [내면 사고]를 통해 반응의 근거를 분석하고, "대사"로 성격과 서사에 맞게 짧게(1문장) 대답하십시오.
 2. 위 [관계]에 서술된 감정이 있다면 이를 바탕으로 대답하십시오.
 3. 위 [최근에 했던 말]에 포함된 대사는 절대로 다시 하지 마십시오.`
-        };
+            };
 
-        const messages = [
-            systemMessage,
-            { role: "user", content: `${previousSpeakerName}: "${previousText}"` },
-            { role: "user", content: "동료의 말에 대꾸하시오." }
-        ];
+            const messages = [
+                systemMessage,
+                { role: "user", content: `${previousSpeakerName}: "${previousText}"` },
+                { role: "user", content: "동료의 말에 대꾸하시오." }
+            ];
 
-        const payload = {
-            model: this.modelName,
-            messages: messages,
-            temperature: 0.85,
-            max_tokens: 1024,
-            presence_penalty: 0.7,
-            frequency_penalty: 0.7,
-            cache_prompt: true
-        };
+            const payload = {
+                model: this.modelName,
+                messages: messages,
+                temperature: 0.85,
+                max_tokens: 1024,
+                presence_penalty: 0.7,
+                frequency_penalty: 0.7,
+                cache_prompt: true
+            };
 
-        try {
-            const data = await this._makeRequest(payload);
-            let content = data.choices[0].message.content.trim();
-            console.log(`[LocalLLM] Raw Reaction:`, content);
-            return this.sanitizeBark(content);
-        } catch (error) {
-            console.error('[LocalLLM] Reaction Bark Error:', error);
-            return null;
-        }
+            try {
+                const data = await this._makeRequest(payload);
+                let content = data.choices[0].message.content.trim();
+                console.log(`[LocalLLM] Raw Reaction:`, content);
+                return this.sanitizeBark(content);
+            } catch (error) {
+                console.error('[LocalLLM] Reaction Bark Error:', error);
+                return null;
+            }
+        });
     }
 
     /**

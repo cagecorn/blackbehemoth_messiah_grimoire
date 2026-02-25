@@ -215,6 +215,9 @@ export default class Archer extends Mercenary {
             }
         }
 
+        const prefix = this.getWeaponPrefix();
+        const element = prefix ? prefix.element : null;
+
         // Calculate Critical
         const currentCrit = this.getTotalCrit();
         const isCritical = Math.random() * 100 < currentCrit;
