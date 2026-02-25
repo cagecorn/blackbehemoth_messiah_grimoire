@@ -125,14 +125,15 @@ export default class UltimateManager {
             .setScale(scale)
             .setTint(0xffffff);
 
-        // Skill Name Text
-        const text = this.scene.add.text(width + 200, height - 300, `[ ${skillName} ]`, {
-            fontSize: '64px',
+        // Skill Name Text - positioned over the sprite on the left side
+        const text = this.scene.add.text(30, height - 450, `[ ${skillName} ]`, {
+            fontSize: '52px',
             fontStyle: 'bold italic',
             fill: '#ffcc00',
             stroke: '#000',
             strokeThickness: 8,
-            fontFamily: 'Arial Black'
+            fontFamily: 'Arial Black',
+            wordWrap: { width: width - 60, useAdvancedWrap: true }
         }).setScrollFactor(0).setDepth(30002).setAlpha(0);
 
         return new Promise(res => {
@@ -144,10 +145,9 @@ export default class UltimateManager {
                 ease: 'Back.easeOut'
             });
 
-            // Slide in text
+            // Fade in text (no slide - it's already positioned on the left)
             this.scene.tweens.add({
                 targets: text,
-                x: width / 2,
                 alpha: 1,
                 duration: 300,
                 ease: 'Power2',

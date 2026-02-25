@@ -446,7 +446,8 @@ export default class DungeonScene extends Phaser.Scene {
             ...config,
             id: characterConfig.id + '_shadow_' + Phaser.Math.Between(10000, 99999), // unique ID
             name: `Lv.${level} 그림자 ${characterConfig.name}`,
-            team: 'enemy'
+            team: 'enemy',
+            hideInUI: true  // Don't show in portrait bar
         };
 
         // For shadow enemies, we want them following their own leader if possible.

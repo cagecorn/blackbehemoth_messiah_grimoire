@@ -1,6 +1,7 @@
 import intentRouter from '../modules/AI/IntentRouter.js';
 import embeddingGemma from '../modules/AI/EmbeddingGemma.js';
 import localLLM from '../modules/AI/LocalLLM.js';
+import EventBus from '../modules/Events/EventBus.js';
 
 export default class BootScene extends Phaser.Scene {
     constructor() {
@@ -104,7 +105,6 @@ export default class BootScene extends Phaser.Scene {
 
         this.load.on('loaderror', (file) => {
             console.error(`[BootScene] Error loading asset: ${file.key} from ${file.src}`);
-            EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, `[에러] 자산을 불러오지 못했습니다: ${file.key}`);
         });
 
         // Noah's Animals

@@ -31,7 +31,8 @@ export default class BoonClone extends Mercenary {
             physicsRadius: 24,
             spriteSize: 64,
             team: master.team,
-            aiType: 'MELEE'
+            aiType: 'MELEE',
+            hideInUI: true  // Summon - Don't show in portrait bar
         };
 
         super(scene, x, y, config);

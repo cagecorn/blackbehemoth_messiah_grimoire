@@ -32,7 +32,8 @@ export default class Siren extends Mercenary {
             physicsRadius: 24,
             spriteSize: 64,
             team: master.team,
-            aiType: 'RANGED'
+            aiType: 'RANGED',
+            hideInUI: true  // Summon - Don't show in portrait bar
         };
 
         super(scene, x, y, config);
