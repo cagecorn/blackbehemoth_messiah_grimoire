@@ -39,6 +39,9 @@ export default class ArenaScene extends Phaser.Scene {
         // Reset state on every restart
         this.gameState = 'BATTLE';
         this.isResetting = false;
+
+        // Global Heal on Scene Entry
+        if (partyManager) partyManager.healAll();
     }
 
     create() {

@@ -46,6 +46,11 @@ export default class DungeonScene extends Phaser.Scene {
         this.roundClearExp = 500;
     }
 
+    init() {
+        // Global Heal on Scene Entry
+        if (partyManager) partyManager.healAll();
+    }
+
     create() {
         console.log('DungeonScene started');
         this.cameras.main.setBackgroundColor('#2d2d2d');

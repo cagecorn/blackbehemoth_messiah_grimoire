@@ -32,6 +32,11 @@ export default class RaidScene extends Phaser.Scene {
         this.raidCount = 1;
     }
 
+    init() {
+        // Global Heal on Scene Entry
+        if (partyManager) partyManager.healAll();
+    }
+
     create() {
         console.log('RaidScene started');
         EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, `[레이드] 레이드가 시작되었습니다! 원정대 출격! 🏰`);
