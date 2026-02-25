@@ -49,17 +49,18 @@ export default class BloodRage {
         this.lastCastTime = now;
         console.log(`[Skill] ${caster.unitName} activates Blood Rage! (Atk+${this.atkBuffPercent * 100}%, Spd+${this.spdBuffPercent * 100}%, AtkSpd+${this.atkSpdBuffPercent * 100}%, +35% Lifesteal)`);
 
-        // 1. Calculate Buff Amounts based on base stats
-        const bonusAtk = Math.floor((caster.getTotalAtk ? caster.getTotalAtk() : caster.atk) * this.atkBuffPercent);
+        // 1. Calculate Buff Amounts based on BASE stats to prevent compounding with Tactical Command
+        // We use (base + equipment) as the baseline for percentage buffs.
+        const baselineAtk = caster.atk + caster.getEquipmentBonus('atk');
+        const bonusAtk = Math.floor(baselineAtk * this.atkBuffPercent);
         const bonusSpeed = Math.floor(caster.speed * this.spdBuffPercent);
-        // For atkSpd, a buff means decreasing the delay (smaller is faster)
-        const atkSpdReduction = Math.floor(caster.atkSpd * this.atkSpdBuffPercent);
+        const bonusAtkSpd = Math.floor(caster.atkSpd * this.atkSpdBuffPercent);
 
         // 2. Apply State Flags and Flat Buffs
         caster.isBloodRaging = true;
         caster.bonusAtk += bonusAtk;
-        caster.speed += bonusSpeed;
-        caster.atkSpd -= atkSpdReduction;
+        caster.bonusSpeed += bonusSpeed;
+        caster.bonusAtkSpd += bonusAtkSpd;
         if (caster.syncStatusUI) caster.syncStatusUI();
 
         // 3. Visuals: Red Tint and Aura
@@ -82,8 +83,8 @@ export default class BloodRage {
             if (caster && caster.active) {
                 caster.isBloodRaging = false;
                 caster.bonusAtk -= bonusAtk;
-                caster.speed -= bonusSpeed;
-                caster.atkSpd += atkSpdReduction;
+                caster.bonusSpeed -= bonusSpeed;
+                caster.bonusAtkSpd -= bonusAtkSpd;
                 caster.sprite.clearTint();
                 if (caster.syncStatusUI) caster.syncStatusUI();
                 console.log(`[Skill] ${caster.unitName}'s Blood Rage ended.`);

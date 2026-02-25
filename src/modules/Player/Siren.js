@@ -15,15 +15,15 @@ export default class Siren extends Mercenary {
             id: 'siren_' + Date.now(),
             name: '사이렌 (Siren)',
             sprite: 'siren_sprite',
-            maxHp: master.mAtk * 8, // Slightly lower HP than Guardian Angel but ranged
-            hp: master.mAtk * 8,
+            maxHp: master.getTotalMAtk() * 8, // Slightly lower HP than Guardian Angel but ranged
+            hp: master.getTotalMAtk() * 8,
             atk: 0,
-            mAtk: master.mAtk * 1.2, // Stronger magic scaling
-            def: master.mDef * 0.8,
-            mDef: master.mDef * 1.2,
-            fireRes: master.mAtk * 0.1,
-            iceRes: master.mAtk * 0.1,
-            lightningRes: master.mAtk * 0.1,
+            mAtk: master.getTotalMAtk() * 1.2, // Stronger magic scaling
+            def: master.getTotalMDef() * 0.8,
+            mDef: master.getTotalMDef() * 1.2,
+            fireRes: master.getTotalMAtk() * 0.1,
+            iceRes: master.getTotalMAtk() * 0.1,
+            lightningRes: master.getTotalMAtk() * 0.1,
             speed: 120,
             atkSpd: 1500,
             atkRange: 250,
@@ -105,7 +105,7 @@ export default class Siren extends Mercenary {
 
         // Laser attack (Instant hit)
         const prefix = this.master ? (this.master.getWeaponPrefix ? this.master.getWeaponPrefix() : null) : null;
-        const element = prefix ? prefix.id : null;
+        const element = prefix ? prefix.element : null;
 
         this.scene.projectileManager.fire(
             this.x, this.y, target.x, target.y,

@@ -137,11 +137,18 @@ export default class ImSorry {
         const targets = caster.targetGroup.getChildren().filter(e => e.active && e.hp > 0);
         const damage = caster.getTotalAtk() * this.damageMultiplier;
 
+        // Check for weapon element synergy
+        let weaponElement = null;
+        if (caster && caster.getWeaponPrefix) {
+            const prefix = caster.getWeaponPrefix();
+            if (prefix) weaponElement = prefix.element;
+        }
+
         targets.forEach(target => {
             const dist = Phaser.Math.Distance.Between(emoji.x, emoji.y, target.x, target.y);
             if (dist < radius) {
                 // Set isUltimate to true to prevent recursive gauge gains
-                target.takeDamage(damage, caster, true);
+                target.takeDamage(damage, caster, true, weaponElement);
 
                 // Knockback
                 if (target.body) {

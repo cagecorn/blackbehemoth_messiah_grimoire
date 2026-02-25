@@ -116,7 +116,7 @@ export default class Bard extends Mercenary {
         });
 
         const prefix = this.getWeaponPrefix();
-        const element = prefix ? prefix.id : null;
+        const element = prefix ? prefix.element : null;
 
         this.scene.projectileManager.fire(
             this.x, this.y, target.x, target.y,

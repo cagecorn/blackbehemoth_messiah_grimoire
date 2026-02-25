@@ -102,19 +102,17 @@ export default class Nana extends Bard {
             rangeMax: this.rangeMax || 220
         };
 
-        // 2. Stat boosts
-        this.tempStats = {
-            atk: this.oldStats.atk * 2.5,
-            atkSpd: this.oldStats.atkSpd * 0.5,
-            speed: this.oldStats.speed + 150,
-            crit: this.oldStats.crit + 50,
-            eva: this.oldStats.eva + 40, // Increased evasion as requested
-            atkRange: 60, // Force melee
-            rangeMin: 0,
-            rangeMax: 80
-        };
+        // 2. Stat boosts (Using Bonus Properties)
+        this.bonusAtk += this.oldStats.atk * 1.5; // +150% = x2.5 total
+        this.bonusAtkSpd += this.oldStats.atkSpd * 0.5; // Reduce delay by 50%
+        this.bonusSpeed += 150;
+        this.bonusCrit += 50;
+        this.bonusEva += 40;
 
-        Object.assign(this, this.tempStats);
+        // Range modification still done directly as it's a fixed mode-swap
+        this.atkRange = 60;
+        this.rangeMin = 0;
+        this.rangeMax = 80;
 
         // Update config for AI visibility
         this.config.atkRange = this.tempStats.atkRange;
@@ -153,7 +151,16 @@ export default class Nana extends Bard {
         }
 
         // 2. Stat Revert
-        Object.assign(this, this.oldStats);
+        this.bonusAtk -= this.oldStats.atk * 1.5;
+        this.bonusAtkSpd -= this.oldStats.atkSpd * 0.5;
+        this.bonusSpeed -= 150;
+        this.bonusCrit -= 50;
+        this.bonusEva -= 40;
+
+        this.atkRange = this.oldStats.atkRange;
+        this.rangeMin = this.oldStats.rangeMin;
+        this.rangeMax = this.oldStats.rangeMax;
+
         this.config.atkRange = this.oldStats.atkRange;
         this.config.rangeMin = this.oldStats.rangeMin;
         this.config.rangeMax = this.oldStats.rangeMax;

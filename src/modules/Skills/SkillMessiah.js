@@ -141,11 +141,18 @@ export default class SkillMessiah {
         const radius = 180;
         const targets = caster.targetGroup.getChildren().filter(e => e.active && e.hp > 0);
 
+        // Check for weapon element
+        let weaponElement = null;
+        if (caster && caster.getWeaponPrefix) {
+            const prefix = caster.getWeaponPrefix();
+            if (prefix) weaponElement = prefix.element;
+        }
+
         targets.forEach(e => {
             const dist = Phaser.Math.Distance.Between(x, y, e.x, e.y);
             if (dist <= radius) {
                 // Damage (Pass isUltimate = true)
-                e.takeDamage(damage, caster, true);
+                e.takeDamage(damage, caster, true, weaponElement);
 
                 // 1. Airborne CC
                 e.isAirborne = true;

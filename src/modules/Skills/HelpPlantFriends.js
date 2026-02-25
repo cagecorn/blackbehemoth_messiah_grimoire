@@ -70,17 +70,17 @@ export default class HelpPlantFriends {
                 scene.fxManager.showDamageText(target, 'ULT GAUGE UP!', '#ff00ff');
             };
             case 'emoji_grapes': return (target, owner, scene) => {
-                const atkSpdBoost = Math.ceil(target.atkSpd * 0.2);
+                const atkSpdBoost = Math.ceil(target.getTotalAtkSpd() * 0.2);
                 scene.buffManager.applyBuff(target, owner, 'Plant_AtkSpd', 5000, 0, 0, 0, { bonusAtkSpd: atkSpdBoost });
                 scene.fxManager.showDamageText(target, 'ATK SPD UP!', '#ffff88');
             };
             case 'emoji_watermelon': return (target, owner, scene) => {
-                const defBoost = Math.ceil(target.def * 0.1);
+                const defBoost = Math.ceil(target.getTotalDef() * 0.1);
                 scene.buffManager.applyBuff(target, owner, 'Plant_Def', 5000, 0, 0, 0, { bonusDef: defBoost });
                 scene.fxManager.showDamageText(target, 'DEF UP!', '#55ff55');
             };
             case 'emoji_pineapple': return (target, owner, scene) => {
-                const critBoost = Math.ceil(target.crit * 0.1);
+                const critBoost = Math.ceil(target.getTotalCrit() * 0.1);
                 scene.buffManager.applyBuff(target, owner, 'Plant_Crit', 5000, 0, 0, 0, { bonusCrit: critBoost });
                 scene.fxManager.showDamageText(target, 'CRIT UP!', '#ff8888');
             };

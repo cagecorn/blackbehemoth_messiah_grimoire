@@ -115,12 +115,23 @@ export default class ProveExistence {
         const targetGroup = this.caster.targetGroup;
         const enemies = targetGroup.getChildren();
 
+        // Check for weapon element
+        let weaponElement = null;
+        if (this.caster && this.caster.getWeaponPrefix) {
+            const prefix = this.caster.getWeaponPrefix();
+            if (prefix) weaponElement = prefix.element;
+        }
+
         enemies.forEach(enemy => {
             if (!enemy.active || enemy.hp <= 0) return;
             const dist = Phaser.Math.Distance.Between(x, y, enemy.x, enemy.y);
             if (dist <= this.smiteRadius) {
                 // Magic damage
-                enemy.takeDamage(damage, true, this.caster);
+                if (enemy.takeMagicDamage) {
+                    enemy.takeMagicDamage(damage, this.caster, true, weaponElement);
+                } else if (enemy.takeDamage) {
+                    enemy.takeDamage(damage, this.caster, true, weaponElement);
+                }
             }
         });
     }

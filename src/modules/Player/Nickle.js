@@ -52,13 +52,13 @@ export default class Nickle extends Archer {
         // 1. Sprite Swap
         this.sprite.setTexture('nickle_ultimate_sprite');
 
-        // 2. Stat Buffs
-        this.speed *= 3.0; // Extreme speed boost (Lightning-like)
-        this.atk *= 1.5;
-        this.mAtk *= 1.5;
-        this.def *= 1.5;
-        this.mDef *= 1.5;
-        this.atkSpd *= 0.5; // Double attack speed
+        // 2. Stat Buffs (Using Bonus Properties)
+        this.bonusSpeed += this.speed * 2.0; // +200% = x3.0 total
+        this.bonusAtk += this.atk * 0.5;
+        this.bonusMAtk += this.mAtk * 0.5;
+        this.bonusDef += this.def * 0.5;
+        this.bonusMDef += this.mDef * 0.5;
+        this.bonusAtkSpd += this.atkSpd * 0.5; // Double attack speed (reduce delay by 50%)
 
         // 2.1 Raid Specific Logic: Move closer to the boss for multi-hit arrows
         if (this.scene.constructor.name === 'RaidScene') {
@@ -106,12 +106,13 @@ export default class Nickle extends Archer {
 
         // Revert Stats and Sprite
         if (this.originalStats) {
-            this.speed = this.originalStats.speed;
-            this.atk = this.originalStats.atk;
-            this.mAtk = this.originalStats.mAtk;
-            this.def = this.originalStats.def;
-            this.mDef = this.originalStats.mDef;
-            this.atkSpd = this.originalStats.atkSpd;
+            this.bonusSpeed -= this.originalStats.speed * 2.0;
+            this.bonusAtk -= this.originalStats.atk * 0.5;
+            this.bonusMAtk -= this.originalStats.mAtk * 0.5;
+            this.bonusDef -= this.originalStats.def * 0.5;
+            this.bonusMDef -= this.originalStats.mDef * 0.5;
+            this.bonusAtkSpd -= this.originalStats.atkSpd * 0.5;
+
             this.rangeMin = this.originalStats.rangeMin;
             this.rangeMax = this.originalStats.rangeMax;
             this.sprite.setTexture(this.originalStats.spriteTexture);
@@ -175,11 +176,11 @@ export default class Nickle extends Archer {
                 const tY = this.y + Math.sin(finalAngle) * dist;
 
                 const prefix = this.getWeaponPrefix();
-                const element = prefix ? prefix.id : null;
+                const element = prefix ? prefix.element : null;
 
                 this.scene.projectileManager.fire(
                     this.x, this.y, tX, tY,
-                    this.atk, 'archer', false, this.targetGroup, this, null, false, element
+                    this.getTotalAtk(), 'archer', false, this.targetGroup, this, null, false, element
                 );
             });
         }

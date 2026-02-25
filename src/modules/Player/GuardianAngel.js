@@ -14,14 +14,14 @@ export default class GuardianAngel extends Mercenary {
             id: 'guardian_angel_' + Date.now(),
             name: '수호 천사',
             sprite: 'guadian_angel_sprite',
-            maxHp: master.mAtk * 10, // Scaled by mAtk
-            hp: master.mAtk * 10,
-            atk: master.mAtk * 1.5,   // Scaled by mAtk
-            def: master.mDef,
-            mDef: master.mDef,
-            fireRes: master.mAtk * 0.1,
-            iceRes: master.mAtk * 0.1,
-            lightningRes: master.mAtk * 0.1,
+            maxHp: master.getTotalMAtk() * 10,
+            hp: master.getTotalMAtk() * 10,
+            atk: master.getTotalMAtk() * 1.5,
+            def: master.getTotalMDef(),
+            mDef: master.getTotalMDef(),
+            fireRes: master.getTotalMAtk() * 0.1,
+            iceRes: master.getTotalMAtk() * 0.1,
+            lightningRes: master.getTotalMAtk() * 0.1,
             speed: 180,              // Faster than average
             atkSpd: 800,             // Fast attacks
             atkRange: 60,
@@ -42,6 +42,10 @@ export default class GuardianAngel extends Mercenary {
         this.initAI();
     }
 
+    getWeaponPrefix() {
+        return (this.master && this.master.getWeaponPrefix) ? this.master.getWeaponPrefix() : null;
+    }
+
     initAI() {
         // Use generic Melee AI
         applyMeleeAI(
@@ -56,9 +60,11 @@ export default class GuardianAngel extends Mercenary {
         const multiplier = 1 + (stage * 0.3); // Stage 1: +30%, Stage 2: +60%
 
         const oldMaxHp = this.maxHp;
+        const baseAtk = this.config.atk;
+
         this.maxHp = this.config.maxHp * multiplier;
         this.hp = (this.hp / oldMaxHp) * this.maxHp; // maintain percentage
-        this.atk = this.config.atk * multiplier;
+        this.bonusAtk = baseAtk * (multiplier - 1);
 
         // Apply Tint for Buff Stages
         if (stage === 1) {

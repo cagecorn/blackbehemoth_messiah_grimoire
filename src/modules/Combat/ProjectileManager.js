@@ -74,21 +74,21 @@ export default class ProjectileManager {
         const groupToHit = targetGroup || this.scene.enemies;
 
         // --- Centralized Synergy Check ---
-        let finalElement = element;
+        const inherentElement = element;
         let weaponElement = null;
-        let weaponSuffix = null;
 
         if (shooter && shooter.getWeaponPrefix) {
             const prefix = shooter.getWeaponPrefix();
             if (prefix) weaponElement = prefix.element;
-
-            // FUTURE: Retrieve Suffix for Clone/Pierce/Enhance
-            // weaponSuffix = shooter.getWeaponSuffix();
         }
 
-        // Inheritance: If no skill element, use weapon element
-        if (!finalElement && weaponElement) {
-            finalElement = weaponElement;
+        // Final primary element for the projectile appearance & first hit
+        let finalElement = inherentElement || weaponElement;
+
+        // Synergy: Weapon adds a secondary hit IF the skill already has an inherent element
+        let secondaryElement = (inherentElement && weaponElement) ? weaponElement : null;
+        if (inherentElement && weaponElement) {
+            console.log(`[Projectile] Elemental Synergy: ${inherentElement} + ${weaponElement}`);
         }
 
         // FUTURE: Handle 'Clone' Suffix (Recursive call or loop)
@@ -297,12 +297,12 @@ export default class ProjectileManager {
         if (isMagic && target.takeMagicDamage) {
             target.takeMagicDamage(damage, shooter, isUltimate, element, isCritical, 0);
             // Synergy: Apply secondary element bonus from weapon
-            if (secondaryElement && secondaryElement !== element) {
+            if (secondaryElement) {
                 target.takeMagicDamage(0, shooter, isUltimate, secondaryElement, isCritical, 150);
             }
         } else if (target.takeDamage) {
             target.takeDamage(damage, shooter, isUltimate, element, isCritical, 0);
-            if (secondaryElement && secondaryElement !== element) {
+            if (secondaryElement) {
                 target.takeDamage(0, shooter, isUltimate, secondaryElement, isCritical, 150);
             }
         }

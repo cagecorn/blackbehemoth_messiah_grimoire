@@ -18,14 +18,14 @@ export default class Babao extends Mercenary {
             id: 'babao_' + Date.now(),
             name: stats.name,
             sprite: stats.sprite,
-            maxHp: master.mAtk * stats.hpMult,
-            hp: master.mAtk * stats.hpMult,
-            atk: master.mAtk * stats.atkMult,
-            def: master.mDef * stats.defMult,
-            mDef: master.mDef * stats.defMult,
-            fireRes: master.mAtk * 0.1,
-            iceRes: master.mAtk * 0.1,
-            lightningRes: master.mAtk * 0.1,
+            maxHp: master.getTotalMAtk() * stats.hpMult,
+            hp: master.getTotalMAtk() * stats.hpMult,
+            atk: master.getTotalMAtk() * stats.atkMult,
+            def: master.getTotalMDef() * stats.defMult,
+            mDef: master.getTotalMDef() * stats.defMult,
+            fireRes: master.getTotalMAtk() * 0.1,
+            iceRes: master.getTotalMAtk() * 0.1,
+            lightningRes: master.getTotalMAtk() * 0.1,
             speed: stats.speed,
             atkSpd: 1000,
             atkRange: stats.atkRange,
@@ -44,6 +44,10 @@ export default class Babao extends Mercenary {
 
         // Custom scale for "little brother" feel
         this.setScale(0.85);
+    }
+
+    getWeaponPrefix() {
+        return (this.master && this.master.getWeaponPrefix) ? this.master.getWeaponPrefix() : null;
     }
 
     initAI() {

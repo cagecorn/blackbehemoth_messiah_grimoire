@@ -41,7 +41,6 @@ export default class MusicalMagicalCritical {
 
         // Apply effects
         const allies = caster.allyGroup.getChildren().filter(a => a.active && a.hp > 0);
-        const enemies = caster.targetGroup.getChildren().filter(e => e.active && e.hp > 0);
 
         allies.forEach(ally => {
             if (Phaser.Math.Distance.Between(bestTarget.x, bestTarget.y, ally.x, ally.y) < this.radius) {
@@ -49,12 +48,10 @@ export default class MusicalMagicalCritical {
             }
         });
 
-        enemies.forEach(enemy => {
-            if (Phaser.Math.Distance.Between(bestTarget.x, bestTarget.y, enemy.x, enemy.y) < this.radius) {
-                const damage = caster.getTotalMAtk() * this.damageMultiplier;
-                enemy.takeMagicDamage(damage, caster);
-            }
-        });
+        if (scene.aoeManager) {
+            const damage = caster.getTotalMAtk() * this.damageMultiplier;
+            scene.aoeManager.triggerAoe(bestTarget.x, bestTarget.y, this.radius, damage, caster, caster.targetGroup, true);
+        }
 
         // Skill activation effect text
         if (scene.fxManager) {

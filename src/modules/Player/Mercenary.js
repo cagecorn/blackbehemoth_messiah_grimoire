@@ -267,13 +267,13 @@ export default class Mercenary extends Phaser.GameObjects.Container {
     }
 
     getTotalAtk() {
-        const base = this.atk + this.bonusAtk + this.getEquipmentBonus('atk');
+        const base = this.atk + (this.bonusAtk || 0) + this.getEquipmentBonus('atk');
         let final = this.isTacticalCommandActive ? base * 1.5 : base;
         return final;
     }
 
     getTotalMAtk() {
-        const base = this.mAtk + this.bonusMAtk + this.getEquipmentBonus('mAtk');
+        const base = this.mAtk + (this.bonusMAtk || 0) + this.getEquipmentBonus('mAtk');
         let final = this.isTacticalCommandActive ? base * 1.5 : base;
         return final;
     }
@@ -300,8 +300,9 @@ export default class Mercenary extends Phaser.GameObjects.Container {
     }
 
     getTotalAtkSpd() {
+        // Lower is faster
         const base = Math.max(100, this.atkSpd - (this.bonusAtkSpd || 0));
-        return this.isFrozen ? base * 2 : base; // Lower is faster, so multiply by 2 to slow down
+        return this.isFrozen ? base * 2 : base;
     }
 
     getTotalAtkRange() {
@@ -317,10 +318,12 @@ export default class Mercenary extends Phaser.GameObjects.Container {
     }
 
     getTotalCastSpd() {
-        // castSpd usually works like atkSpd (lower is better or higher is better depends on implementation)
-        // In our case, castSpd is like cooldown/delay, so lower is better.
         const base = Math.max(100, this.castSpd - (this.bonusCastSpd || 0));
         return this.isFrozen ? base * 2 : base;
+    }
+
+    getTotalDR() {
+        return (this.dr || 0) + (this.bonusDR || 0);
     }
 
     getTotalAcc() {
@@ -381,6 +384,8 @@ export default class Mercenary extends Phaser.GameObjects.Container {
     }
 
     takeDamage(amount, attacker = null, isUltimate = false, element = null, isCritical = false, delay = 0) {
+        if (!this.active || !this.scene) return;
+
         // --- 0. Accuracy vs Evasion Check ---
         const myEva = this.getTotalEva ? this.getTotalEva() : (this.eva || 0);
         if (attacker && typeof attacker === 'object' && attacker.acc !== undefined) {
@@ -447,7 +452,11 @@ export default class Mercenary extends Phaser.GameObjects.Container {
 
             // Calculate and show Elemental Bonus Damage (Prefix)
             if (element) {
-                const extraDmg = finalDamage * (0.01 + Math.random() * 0.49);
+                // For synergistic hits (amount = 0), use attacker power as baseline
+                const basePower = (attacker && attacker.getTotalAtk) ? attacker.getTotalAtk() : 100;
+                const synergyDmg = (amount === 0) ? (basePower * 0.3) : finalDamage;
+                const extraDmg = synergyDmg * (0.1 + Math.random() * 0.4);
+
                 const elementColor = this.scene.fxManager.getElementColor(element) || '#ffffff';
                 this.scene.fxManager.showDamageText(this, extraDmg, elementColor, isCritical, 30, delay);
                 this.scene.fxManager.spawnElementalParticles(this.x, this.y, element);
@@ -464,6 +473,8 @@ export default class Mercenary extends Phaser.GameObjects.Container {
     }
 
     takeMagicDamage(amount, attacker = null, isUltimate = false, element = null, isCritical = false, delay = 0) {
+        if (!this.active || !this.scene) return;
+
         // 1. Magic Damage is reduced by mDef
         let finalDamage = Math.max(1, amount - this.getTotalMDef());
 
@@ -514,7 +525,11 @@ export default class Mercenary extends Phaser.GameObjects.Container {
 
             // Calculate and show Elemental Bonus Damage (Prefix)
             if (element) {
-                const extraDmg = finalDamage * (0.01 + Math.random() * 0.49);
+                // For synergistic hits (amount = 0), use attacker power as baseline
+                const basePower = (attacker && attacker.getTotalMAtk) ? attacker.getTotalMAtk() : 100;
+                const synergyDmg = (amount === 0) ? (basePower * 0.3) : finalDamage;
+                const extraDmg = synergyDmg * (0.1 + Math.random() * 0.4);
+
                 const elementColor = this.scene.fxManager.getElementColor(element) || '#ffffff';
                 this.scene.fxManager.showDamageText(this, extraDmg, elementColor, isCritical, 30, delay);
                 this.scene.fxManager.spawnElementalParticles(this.x, this.y, element);

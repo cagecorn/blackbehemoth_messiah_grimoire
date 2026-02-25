@@ -190,13 +190,20 @@ export default class MagentaDrive {
 
     applyDamage(scene, caster, x1, y1, x2, y2) {
         // Hitbox: Rectangle covering the dash path
-        const minX = Math.min(x1, x2) - 1000; // expanded hitbox to catch everything in the slice
+        const minX = Math.min(x1, x2) - 1000;
         const maxX = Math.max(x1, x2) + 1000;
         const minY = y1 - 100;
         const maxY = y1 + 100;
 
-        const targets = caster.targetGroup.getChildren().filter(e => e.active && e.hp > 0);
+        const targets = caster.targetGroup ? caster.targetGroup.getChildren().filter(e => e.active && e.hp > 0) : [];
         let hitCount = 0;
+
+        // Check for weapon element
+        let weaponElement = null;
+        if (caster && caster.getWeaponPrefix) {
+            const prefix = caster.getWeaponPrefix();
+            if (prefix) weaponElement = prefix.element;
+        }
 
         targets.forEach(target => {
             if (target.x >= minX && target.x <= maxX &&
@@ -207,7 +214,7 @@ export default class MagentaDrive {
                 const executeDmg = missingHp * 0.20;
                 const totalDmg = baseDmg + executeDmg;
 
-                target.takeDamage(totalDmg, caster, true);
+                target.takeDamage(totalDmg, caster, true, weaponElement);
                 hitCount++;
 
                 if (scene.fxManager) {

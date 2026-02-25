@@ -152,23 +152,15 @@ export default class CarpetBombing {
         this.scene.cameras.main.shake(200, 0.005);
 
         // Damage & Status Application
-        const damage = this.caster.getTotalAtk() * this.damageMultiplier;
-        const enemies = targetGroup.getChildren();
+        if (this.scene.aoeManager) {
+            const damage = this.caster.getTotalAtk() * this.damageMultiplier;
+            const hitUnits = this.scene.aoeManager.triggerAoe(x, y, this.aoeRadius, damage, this.caster, targetGroup, false, true, 'fire');
 
-        enemies.forEach(enemy => {
-            if (!enemy.active || enemy.hp <= 0) return;
-
-            const dist = Phaser.Math.Distance.Between(x, y, enemy.x, enemy.y);
-            if (dist <= this.aoeRadius) {
-                // Apply Physical Damage
-                enemy.takeDamage(damage, false, this.caster);
-
-                // Apply Burn
-                if (this.scene.ccManager) {
-                    this.scene.ccManager.applyBurn(enemy, this.burnDuration);
-                }
+            // Apply Burn to those hit
+            if (this.scene.ccManager) {
+                hitUnits.forEach(u => this.scene.ccManager.applyBurn(u, this.burnDuration));
             }
-        });
+        }
 
         // Debris Particles
         const debrisColors = [0x555555, 0x333333, 0x884400];

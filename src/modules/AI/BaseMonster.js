@@ -131,6 +131,8 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
     }
 
     takeDamage(amount, attacker = null, isUltimate = false, element = null, isCritical = false, delay = 0) {
+        if (!this.active || !this.scene) return;
+
         // --- 0. Accuracy vs Evasion Check ---
         if (attacker && typeof attacker === 'object' && attacker.acc !== undefined && this.eva !== undefined) {
             const hitChance = Math.max(0.05, Math.min(1.0, (attacker.acc - this.eva) / 100.0));
@@ -147,7 +149,7 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
         const attackerId = (attacker && typeof attacker === 'object') ? (attacker.id || attacker.className) : attacker;
 
         // 1. Physical Damage is reduced by Def
-        let finalDamage = Math.max(1, amount - this.def);
+        let finalDamage = Math.max(1, amount - this.getTotalDef());
 
         // 1.2 Elemental Resistance
         if (element) {
@@ -159,8 +161,8 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
         }
 
         // 1.5 Damage Reduction Buff
-        if (this.bonusDR > 0) {
-            finalDamage = finalDamage * (1 - this.bonusDR);
+        if (this.getTotalDR() > 0) {
+            finalDamage = finalDamage * (1 - this.getTotalDR());
         }
 
         // 2. Intercept with Shield
@@ -194,7 +196,10 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
 
             // Calculate and show Elemental Bonus Damage (Prefix)
             if (element) {
-                const extraDmg = finalDamage * (0.01 + Math.random() * 0.49);
+                // For synergistic hits (amount = 0), we use a base percentage of the attacker's power
+                const basePower = (attacker && attacker.getTotalAtk) ? attacker.getTotalAtk() : (this.atk || 100);
+                const synergyDmg = (amount === 0) ? (basePower * 0.3) : finalDamage;
+                const extraDmg = synergyDmg * (0.1 + Math.random() * 0.4); // 10% - 50% bonus
                 const elementColor = this.scene.fxManager.getElementColor(element) || '#ffffff';
                 this.scene.fxManager.showDamageText(this, extraDmg, elementColor, isCritical, 30, delay);
                 this.scene.fxManager.spawnElementalParticles(this.x, this.y, element);
@@ -229,10 +234,12 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
     }
 
     takeMagicDamage(amount, attacker = null, isUltimate = false, element = null, isCritical = false, delay = 0) {
+        if (!this.active || !this.scene) return;
+
         const attackerId = (attacker && typeof attacker === 'object') ? (attacker.id || attacker.className) : attacker;
 
         // 1. Magic Damage is reduced by mDef
-        let finalDamage = Math.max(1, amount - this.mDef);
+        let finalDamage = Math.max(1, amount - this.getTotalMDef());
 
         // 1.2 Elemental Resistance
         if (element) {
@@ -244,8 +251,8 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
         }
 
         // 1.5 Damage Reduction Buff
-        if (this.bonusDR > 0) {
-            finalDamage = finalDamage * (1 - this.bonusDR);
+        if (this.getTotalDR() > 0) {
+            finalDamage = finalDamage * (1 - this.getTotalDR());
         }
 
         // 2. Intercept with Shield
@@ -279,7 +286,10 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
 
             // Calculate and show Elemental Bonus Damage (Prefix)
             if (element) {
-                const extraDmg = finalDamage * (0.01 + Math.random() * 0.49);
+                // For synergistic hits (amount = 0), use attacker power as baseline
+                const basePower = (attacker && attacker.getTotalMAtk) ? attacker.getTotalMAtk() : (this.mAtk || 100);
+                const synergyDmg = (amount === 0) ? (basePower * 0.3) : finalDamage;
+                const extraDmg = synergyDmg * (0.1 + Math.random() * 0.4); // 10% - 50% bonus
                 const elementColor = this.scene.fxManager.getElementColor(element) || '#ffffff';
                 this.scene.fxManager.showDamageText(this, extraDmg, elementColor, isCritical, 30, delay);
                 this.scene.fxManager.spawnElementalParticles(this.x, this.y, element);
@@ -349,13 +359,18 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
         this.lastAttackTime = now;
 
         // Calculate Damage
-        let finalDmg = this.atk;
+        let finalDmg = this.getTotalAtk();
+        const currentCrit = this.getTotalCrit();
+        const isCritical = Math.random() * 100 < currentCrit;
+        if (isCritical) {
+            finalDmg *= 1.5;
+        }
 
         // Basic projectile firing via ProjectileManager
         // For monsters, we use 'orc' or 'archer' type for now, or we can make it dynamic based on config
         const projectileType = this.config.id === 'orc' ? 'archer' : 'archer';
 
-        this.scene.projectileManager.fire(this.x, this.y, target.x, target.y, finalDmg, projectileType, false, this.targetGroup, this);
+        this.scene.projectileManager.fire(this.x, this.y, target.x, target.y, finalDmg, projectileType, false, this.targetGroup, this, null, false, null, isCritical);
 
         return true;
     }
@@ -486,7 +501,16 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
             if (this.isShocked) return;
 
             this.lastAttackTime = now;
-            this.target.takeDamage(this.atk, this);
+
+            // Calculate Critical
+            let damage = this.getTotalAtk();
+            const currentCrit = this.getTotalCrit();
+            const isCritical = Math.random() * 100 < currentCrit;
+            if (isCritical) {
+                damage *= 1.5;
+            }
+
+            this.target.takeDamage(damage, this, false, null, isCritical);
 
             // Visual attack nudge
             this.scene.tweens.add({
@@ -500,13 +524,37 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
     }
 
     getTotalAtk() {
-        const base = this.atk + this.bonusAtk;
+        const base = this.atk + (this.bonusAtk || 0);
         return this.isTacticalCommandActive ? base * 1.5 : base;
     }
 
     getTotalMAtk() {
-        const base = this.mAtk + this.bonusMAtk;
+        const base = this.mAtk + (this.bonusMAtk || 0);
         return this.isTacticalCommandActive ? base * 1.5 : base;
+    }
+
+    getTotalDef() {
+        return (this.def || 0) + (this.bonusDef || 0);
+    }
+
+    getTotalMDef() {
+        return (this.mDef || 0) + (this.bonusMDef || 0);
+    }
+
+    getTotalCrit() {
+        return (this.crit || 0) + (this.bonusCrit || 0);
+    }
+
+    getTotalEva() {
+        return (this.eva || 0) + (this.bonusEva || 0);
+    }
+
+    getTotalAcc() {
+        return (this.acc || 0) + (this.bonusAcc || 0);
+    }
+
+    getTotalDR() {
+        return (this.dr || 0) + (this.bonusDR || 0);
     }
 
     getTotalSpeed() {
@@ -515,12 +563,12 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
     }
 
     getTotalAtkSpd() {
-        const base = Math.max(100, this.atkSpd - (this.bonusAtkSpd || 0));
+        const base = Math.max(100, (this.atkSpd || 1500) - (this.bonusAtkSpd || 0));
         return this.isFrozen ? base * 2 : base;
     }
 
     getTotalCastSpd() {
-        const base = Math.max(100, this.castSpd - (this.bonusCastSpd || 0));
+        const base = Math.max(100, (this.castSpd || 1000) - (this.bonusCastSpd || 0));
         return this.isFrozen ? base * 2 : base;
     }
 

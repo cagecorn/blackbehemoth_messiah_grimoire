@@ -56,6 +56,40 @@
   * `wizard`: 마법사
   * `bard`: 바드
 
+## ⚔️ Combat Development Rules (신규 필독!)
+
+전투 및 데미지 시스템의 일관성을 유지하기 위해 다음 규칙을 반드시 준수해야 합니다.
+
+### 1. 스탯 참조 방식 (Standardized Getters)
+모든 전투 로직(데미지, 힐, CC 등)에서는 멤버 변수를 직접 참조(`this.atk`)하지 않고, 반드시 **통합 Getter**를 사용해야 합니다.
+- **GETTER**: `getTotalAtk()`, `getTotalMAtk()`, `getTotalCrit()`, `getTotalDef()`, `getTotalEva()`, `getTotalSpeed()`, `getTotalAtkSpd()`, `getTotalAcc()`
+- **계산식**: `(Base Stat + Equipment Bonus + Temporary BonusAddition) * Multipliers`
+- **장점**: 장비 보너스, 소모품 버프, '택티컬 커맨드' 등 전역 승수 효과가 자동으로 통합 적용됩니다.
+
+### 2. 버프 및 스탯 수정 (Stat Modification)
+궁극기나 스킬로 일시적인 스탯 보너스를 부여할 때는 **기본 스탯을 직접 수정하지 마십시오.** (영구 스탯 오염 방지)
+- **BAD**: `this.atk *= 1.5;` / `this.speed += 50;`
+- **GOOD**: `this.bonusAtk += amount;` / `this.bonusSpeed += 50;`
+- **표준 보너스 속성**: `bonusAtk`, `bonusMAtk`, `bonusCrit`, `bonusEva`, `bonusSpeed`, `bonusDef`, `bonusMDef`, `bonusAtkSpd`, `bonusAcc`, `bonusDR`, `bonusCastSpd`
+
+### 3. 데미지 및 힐 공식 (Stacking Logic)
+- **물리 데미지**: `attacker.getTotalAtk() * Multiplier`
+- **마법 데미지/힐**: `attacker.getTotalMAtk() * Multiplier`
+- **중첩 규칙**: 퍼센트 보너스 계산 시, `(Base + Equipment)`를 기준으로 계산하여 지수적으로 수치가 치솟는 현상을 방지합니다.
+
+### 4. 속성 시너지 (Elemental Synergy)
+- **Prefix 연동**: 무기 속성은 `getWeaponPrefix().element`를 통해 참조합니다.
+- **Synergy Hit**: 
+  - 스킬에 속성이 없는 경우: 무기 속성을 상속받아 공격합니다.
+  - 스킬에 속성이 있는 경우: 무기 속성이 **추가 타격(Secondary Hit)**으로 발생합니다.
+  - 추가 타격 데미지: 공격자 위력의 **30% (Base) + 10~50% (Bonus)**로 설계되어 중첩 시너지를 보장합니다.
+
+### 5. 소환 및 복제물 (Summons & Clones)
+소환물의 초기 스탯은 소생(Master)의 `getTotal...()` 값을 기반으로 스케일링 되어야 합니다.
+- **예시**: `GuardianAngel`은 소환 시점 세라의 `getTotalMAtk()`를 기준으로 최대 체력과 공격력을 결정합니다.
+
+---
+
 ## 캐릭터 로스터 (Characters)
 각 용병 캐릭터는 고유한 성격과 스킬을 보유하고 있으며, LLM 바크 시스템을 통해 각자의 페르소나를 표현합니다.
 
@@ -184,7 +218,7 @@
 - **Engine:** Phaser 3
 - **Desktop Framework:** Electron
 - **Build Tool:** Vite
-- **AI / LLM:** LM Studio (Local Server) - Gemma 2 / Llama 3 기반 모델 권장
+- **AI / LLM:** LM Studio (Local Server) - Gemma 3
 - **Assets:** [Twemoji](https://github.com/twitter/twemoji) (트위터 무료 이모지 라이브러리 활용)
 
 ---

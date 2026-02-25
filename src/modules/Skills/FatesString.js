@@ -168,11 +168,18 @@ export default class FatesString {
         const targets = caster.targetGroup.getChildren().filter(e => e.active && e.hp > 0);
         const damage = caster.getTotalAtk() * this.damageMultiplier;
 
+        // Check for weapon element
+        let weaponElement = null;
+        if (caster && caster.getWeaponPrefix) {
+            const prefix = caster.getWeaponPrefix();
+            if (prefix) weaponElement = prefix.element;
+        }
+
         targets.forEach(target => {
             // Simple distance from point to line segment check
             const dist = this.getPointLineDistance(target.x, target.y, x1, y1, x2, y2);
             if (dist < 60) { // Increased hit detection width from 40 to 60
-                target.takeDamage(damage, caster, true);
+                target.takeDamage(damage, caster, true, weaponElement);
                 if (scene.fxManager && scene.fxManager.createImpactEffect) {
                     scene.fxManager.createImpactEffect(target.x, target.y);
                 }

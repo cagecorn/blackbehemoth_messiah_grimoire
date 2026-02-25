@@ -11,7 +11,7 @@ import HolyAura from '../Skills/HolyAura.js';
 export default class BoonClone extends Mercenary {
     constructor(scene, x, y, master) {
         // Stats scaled by master's mAtk
-        const mAtk = master.getTotalMAtk ? master.getTotalMAtk() : master.mAtk;
+        const mAtk = master.getTotalMAtk();
 
         const config = {
             id: 'boon_clone_' + Date.now(),
@@ -20,12 +20,12 @@ export default class BoonClone extends Mercenary {
             maxHp: mAtk * 8,
             hp: mAtk * 8,
             atk: mAtk * 1.2,
-            def: master.def * 0.8,
-            mDef: master.mDef * 0.8,
+            def: master.getTotalDef() * 0.8,
+            mDef: master.getTotalMDef() * 0.8,
             fireRes: mAtk * 0.1,
             iceRes: mAtk * 0.1,
             lightningRes: mAtk * 0.1,
-            speed: master.speed * 1.1,
+            speed: master.getTotalSpeed() * 1.1,
             atkSpd: 1000,
             atkRange: 50,
             physicsRadius: 24,

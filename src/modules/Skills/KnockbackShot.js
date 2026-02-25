@@ -147,8 +147,15 @@ export default class KnockbackShot {
                             const totalAtk = caster.getTotalAtk ? caster.getTotalAtk() : caster.atk;
                             const totalDamage = totalAtk * this.damageMultiplier;
 
+                            // Check for weapon element
+                            let weaponElement = null;
+                            if (caster && caster.getWeaponPrefix) {
+                                const prefix = caster.getWeaponPrefix();
+                                if (prefix) weaponElement = prefix.element;
+                            }
+
                             if (unit.takeDamage) {
-                                unit.takeDamage(totalDamage, caster);
+                                unit.takeDamage(totalDamage, caster, false, weaponElement);
                             } else {
                                 console.error(`[KnockbackShot] Unit ${unit.unitName} lacks takeDamage method!`);
                             }

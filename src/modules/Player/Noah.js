@@ -30,22 +30,22 @@ export default class Noah extends Bard {
         allies.forEach(ally => {
             // Noah's Ark: +15% to ALL stats
             const buffStats = {
-                bonusCrit: ally.crit * 0.15,
-                bonusEva: ally.eva * 0.15,
-                bonusSpeed: ally.speed * 0.15,
-                bonusDef: ally.def * 0.15,
-                bonusMDef: ally.mDef * 0.15,
-                bonusAtkSpd: ally.atkSpd * 0.15,
-                bonusAtkRange: ally.atkRange * 0.15,
-                bonusRangeMin: ally.rangeMin * 0.15,
-                bonusRangeMax: ally.rangeMax * 0.15,
-                bonusCastSpd: ally.castSpd * 0.15,
-                bonusAcc: ally.acc * 0.15
+                bonusCrit: ally.getTotalCrit() * 0.15,
+                bonusEva: ally.getTotalEva() * 0.15,
+                bonusSpeed: ally.getTotalSpeed() * 0.15,
+                bonusDef: ally.getTotalDef() * 0.15,
+                bonusMDef: ally.getTotalMDef() * 0.15,
+                bonusAtkSpd: ally.getTotalAtkSpd() * 0.15,
+                bonusAtkRange: ally.getTotalAtkRange() * 0.15,
+                bonusRangeMin: ally.getTotalRangeMin() * 0.15,
+                bonusRangeMax: ally.getTotalRangeMax() * 0.15,
+                bonusCastSpd: ally.getTotalCastSpd() * 0.15,
+                bonusAcc: ally.getTotalAcc() * 0.15
             };
 
             // Hybrid stats (atk, mAtk) are separate arguments in applyBuff for compatibility
-            const amountAtk = ally.atk * 0.15;
-            const amountMAtk = ally.mAtk * 0.15;
+            const amountAtk = ally.getTotalAtk() * 0.15;
+            const amountMAtk = ally.getTotalMAtk() * 0.15;
 
             scene.buffManager.applyBuff(
                 ally,

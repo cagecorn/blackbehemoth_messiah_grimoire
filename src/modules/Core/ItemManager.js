@@ -16,9 +16,9 @@ export const EQUIP_SLOTS = {
 };
 
 export const WEAPON_PREFIXES = {
-    FIRE: { id: 'fire', name: '불타는', color: '#ff9d00', particle: 'fire' },
-    ICE: { id: 'ice', name: '얼어붙은', color: '#00bbff', particle: 'ice' },
-    LIGHTNING: { id: 'lightning', name: '비릿한', color: '#ffff00', particle: 'lightning' }
+    FIRE: { id: 'fire', element: 'fire', name: '불타는', color: '#ff9d00', particle: 'fire' },
+    ICE: { id: 'ice', element: 'ice', name: '얼어붙은', color: '#00bbff', particle: 'ice' },
+    LIGHTNING: { id: 'lightning', element: 'lightning', name: '비릿한', color: '#ffff00', particle: 'lightning' }
 };
 
 const ITEM_DATABASE = {

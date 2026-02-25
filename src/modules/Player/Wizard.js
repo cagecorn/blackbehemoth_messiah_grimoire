@@ -115,11 +115,19 @@ export default class Wizard extends Mercenary {
         });
 
         const prefix = this.getWeaponPrefix();
-        const element = prefix ? prefix.id : null;
+        const element = prefix ? prefix.element : null;
+
+        // Calculate Critical
+        let finalDmg = this.getTotalMAtk();
+        const currentCrit = this.getTotalCrit();
+        const isCritical = Math.random() * 100 < currentCrit;
+        if (isCritical) {
+            finalDmg *= 1.5;
+        }
 
         this.scene.projectileManager.fire(
             this.x, this.y, target.x, target.y,
-            this.getTotalMAtk(), 'laser', true, this.targetGroup, this, null, false, element
+            finalDmg, 'laser', true, this.targetGroup, this, null, false, element, isCritical
         );
         return true;
     }

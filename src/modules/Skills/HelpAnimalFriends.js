@@ -76,12 +76,12 @@ export default class HelpAnimalFriends {
                 }
             };
             case 'emoji_cat': return (target, owner, scene) => {
-                const evaBoost = Math.ceil(target.eva * 0.1);
+                const evaBoost = Math.ceil(target.getTotalEva() * 0.1);
                 scene.buffManager.applyBuff(target, owner, 'Animal_Evasion', 5000, 0, 0, 0, { bonusEva: evaBoost });
                 scene.fxManager.showDamageText(target, 'EVA UP!', '#55ff55');
             };
             case 'emoji_horse': return (target, owner, scene) => {
-                const speedBoost = Math.ceil(target.speed * 0.1);
+                const speedBoost = Math.ceil(target.getTotalSpeed() * 0.1);
                 scene.buffManager.applyBuff(target, owner, 'Animal_Speed', 5000, 0, 0, 0, { bonusSpeed: speedBoost });
                 scene.fxManager.showDamageText(target, 'SPEED UP!', '#55ff55');
             };

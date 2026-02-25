@@ -113,7 +113,7 @@ export default class SkillIceBall {
                         speed: 250,
                         onHit: (hitT) => {
                             if (scene.aoeManager) {
-                                scene.aoeManager.triggerAoe(hitT.x, hitT.y, 60, miniDamage, caster, caster.targetGroup, true, false, 'ice', true);
+                                scene.aoeManager.triggerAoe(hitT.x, hitT.y, 60, miniDamage, caster, caster.targetGroup, true, false, 'ice', false);
                             }
                             if (scene.ccManager) {
                                 scene.ccManager.applyFreeze(hitT, 1500);

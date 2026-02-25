@@ -139,7 +139,7 @@ export default function applyMeleeAI(agent, targetListGetter, initialState = 'AG
             });
 
             // Calculate and Apply Damage
-            let damage = a.getTotalAtk ? a.getTotalAtk() : a.atk;
+            let damage = a.getTotalAtk ? a.getTotalAtk() : (a.atk || 10);
             const currentCrit = a.getTotalCrit ? a.getTotalCrit() : (a.crit || 0);
             const isCritical = Math.random() * 100 < currentCrit;
             if (isCritical) {
@@ -149,7 +149,7 @@ export default function applyMeleeAI(agent, targetListGetter, initialState = 'AG
             if (target.takeDamage) {
                 // Pass weapon prefix element if available
                 const prefix = a.getWeaponPrefix ? a.getWeaponPrefix() : null;
-                const element = prefix ? prefix.id : null;
+                const element = prefix ? prefix.element : null;
 
                 // Pass a so the kill is attributed correctly and Miss works
                 target.takeDamage(damage, a, false, element, isCritical);

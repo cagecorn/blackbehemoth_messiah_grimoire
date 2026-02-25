@@ -192,18 +192,14 @@ export default class Warrior extends Mercenary {
 
         if (isSurrounded && !this.isFortitudeActive) {
             this.isFortitudeActive = true;
-            this._baseDef = this.def;
-            this.def = Math.round(this.def * 1.10);
-            console.log(`[Perk] ${this.unitName}: 강건함 발동! 방어력 10% 상승 (${this._baseDef} → ${this.def})`);
+            this.bonusDef += Math.round(this.def * 0.10);
+            console.log(`[Perk] ${this.unitName}: 강건함 발동! 방어력 10% 상승`);
             this.syncStatusUI();
         } else if (!isSurrounded && this.isFortitudeActive) {
             this.isFortitudeActive = false;
-            if (this._baseDef !== null) {
-                this.def = this._baseDef;
-                console.log(`[Perk] ${this.unitName}: 강건함 해제. 방어력 복구 (→ ${this.def})`);
-                this._baseDef = null;
-                this.syncStatusUI();
-            }
+            this.bonusDef -= Math.round(this.def * 0.10);
+            console.log(`[Perk] ${this.unitName}: 강건함 해제.`);
+            this.syncStatusUI();
         }
     }
 
@@ -224,32 +220,24 @@ export default class Warrior extends Mercenary {
 
         if (isAlone && !this.isLoneWolfActive) {
             this.isLoneWolfActive = true;
-            this._loneWolfBaseStats = {
-                atk: this.atk, def: this.def, mAtk: this.mAtk,
-                mDef: this.mDef, speed: this.speed, maxHp: this.maxHp
-            };
-            this.atk = Math.round(this.atk * 1.05);
-            this.def = Math.round(this.def * 1.05);
-            this.mAtk = Math.round(this.mAtk * 1.05);
-            this.mDef = Math.round(this.mDef * 1.05);
-            this.speed = Math.round(this.speed * 1.05);
-            this.maxHp = Math.round(this.maxHp * 1.05);
-            console.log(`[Perk] ${this.unitName}: 론 울프 발동! 모든 스탯 5% 상승`);
+            this.bonusAtk += Math.round(this.atk * 0.05);
+            this.bonusDef += Math.round(this.def * 0.05);
+            this.bonusMAtk += Math.round(this.mAtk * 0.05);
+            this.bonusMDef += Math.round(this.mDef * 0.05);
+            this.bonusSpeed += Math.round(this.speed * 0.05);
+            // maxHp is normally not buffed this way as it requires health adjustment too. 
+            // We'll skip maxHp for now or handle it via a separate setter if needed.
+            console.log(`[Perk] ${this.unitName}: 론 울프 발동! 주요 스탯 5% 상승`);
             this.syncStatusUI();
         } else if (!isAlone && this.isLoneWolfActive) {
             this.isLoneWolfActive = false;
-            if (this._loneWolfBaseStats) {
-                const s = this._loneWolfBaseStats;
-                this.atk = s.atk;
-                this.def = s.def;
-                this.mAtk = s.mAtk;
-                this.mDef = s.mDef;
-                this.speed = s.speed;
-                this.maxHp = s.maxHp;
-                console.log(`[Perk] ${this.unitName}: 론 울프 해제. 스탯 복구`);
-                this._loneWolfBaseStats = null;
-                this.syncStatusUI();
-            }
+            this.bonusAtk -= Math.round(this.atk * 0.05);
+            this.bonusDef -= Math.round(this.def * 0.05);
+            this.bonusMAtk -= Math.round(this.mAtk * 0.05);
+            this.bonusMDef -= Math.round(this.mDef * 0.05);
+            this.bonusSpeed -= Math.round(this.speed * 0.05);
+            console.log(`[Perk] ${this.unitName}: 론 울프 해제.`);
+            this.syncStatusUI();
         }
     }
 

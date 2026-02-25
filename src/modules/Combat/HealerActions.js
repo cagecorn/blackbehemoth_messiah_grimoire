@@ -12,7 +12,7 @@ export const HealerActions = {
         console.log(`[HealerActions] castHeal triggered by ${unit.unitName} for ${target.unitName}`);
         unit.lastActionTime = now;
 
-        const mAtk = unit.getTotalMAtk ? unit.getTotalMAtk() : (unit.mAtk || 10);
+        const mAtk = unit.getTotalMAtk();
         let healAmount = mAtk * 1.5;
 
         // Perk: 구원의 손길 (Salvation) — +30% heal on targets at ≤25% HP
@@ -77,7 +77,7 @@ export const HealerActions = {
         console.log(`[HealerActions] castAttack triggered by ${unit.unitName} on ${target.unitName}`);
         unit.lastActionTime = now;
 
-        const mAtk = unit.getTotalMAtk ? unit.getTotalMAtk() : (unit.mAtk || 10);
+        const mAtk = unit.getTotalMAtk();
 
         // Determine target group: 
         // If unit is a Mercenary (in mercenaries group), targetGroup is enemies.
@@ -90,7 +90,7 @@ export const HealerActions = {
         // Magic attack (sparkle projectile)
         if (unit.scene.projectileManager) {
             const prefix = unit.getWeaponPrefix ? unit.getWeaponPrefix() : null;
-            const element = prefix ? prefix.id : null;
+            const element = prefix ? prefix.element : null;
 
             unit.scene.projectileManager.fire(
                 unit.x, unit.y, target.x, target.y,

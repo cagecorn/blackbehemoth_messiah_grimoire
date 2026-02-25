@@ -130,8 +130,7 @@ export default class Archer extends Mercenary {
         this.syncStatusUI();
 
         // 1. Phasing & Speed Buff
-        const originalSpeed = this.speed;
-        this.speed *= 2.5;
+        this.bonusSpeed += Math.round(this.speed * 1.5); // +150% = x2.5 total
 
         // Disable collisions with other units (Phasing)
         // We use checkCollision.none or just rely on them not slowing down
@@ -165,10 +164,12 @@ export default class Archer extends Mercenary {
 
         // 5. Cleanup after duration
         this.scene.time.delayedCall(700, () => {
-            this.speed = originalSpeed;
-            this.isEvasiveManeuversActive = false;
-            this.isPhasing = false;
-            this.syncStatusUI();
+            if (this && this.active) {
+                this.bonusSpeed -= Math.round(this.speed * 1.5);
+                this.isEvasiveManeuversActive = false;
+                this.isPhasing = false;
+                this.syncStatusUI();
+            }
         });
     }
 
@@ -206,7 +207,7 @@ export default class Archer extends Mercenary {
         this.lastFireTime = now;
 
         // Calculate Damage
-        let finalDmg = this.atk;
+        let finalDmg = this.getTotalAtk();
         if (this.activatedPerks.includes('weakness_exploitation')) {
             if (target.hp / target.maxHp <= 0.3) {
                 finalDmg *= 1.2; // 20% bonus vs low HP
@@ -214,10 +215,17 @@ export default class Archer extends Mercenary {
             }
         }
 
-        const prefix = this.getWeaponPrefix();
-        const element = prefix ? prefix.id : null;
+        // Calculate Critical
+        const currentCrit = this.getTotalCrit();
+        const isCritical = Math.random() * 100 < currentCrit;
+        if (isCritical) {
+            finalDmg *= 1.5;
+        }
 
-        this.scene.projectileManager.fire(this.x, this.y, target.x, target.y, finalDmg, 'archer', false, this.targetGroup, this, null, false, element);
+        this.scene.projectileManager.fire(
+            this.x, this.y, target.x, target.y,
+            finalDmg, 'archer', false, this.targetGroup, this, null, false, element, isCritical
+        );
 
         // Perk: Hit and Run
         if (this.activatedPerks.includes('hit_and_run')) {
@@ -237,15 +245,16 @@ export default class Archer extends Mercenary {
         }
         this.syncStatusUI();
 
-        const originalSpeed = this.speed;
-        this.speed *= 1.3; // 30% speed boost
+        this.bonusSpeed += Math.round(this.speed * 0.3); // 30% speed boost
 
         // Short speed boost (2s)
         this.scene.time.delayedCall(2000, () => {
-            this.speed = originalSpeed;
-            this.isHitAndRunActive = false;
-            console.log(`[Perk] ${this.unitName}: 히트 앤 런 효과 종료`);
-            this.syncStatusUI();
+            if (this && this.active) {
+                this.bonusSpeed -= Math.round(this.speed * 0.3);
+                this.isHitAndRunActive = false;
+                console.log(`[Perk] ${this.unitName}: 히트 앤 런 효과 종료`);
+                this.syncStatusUI();
+            }
         });
     }
 

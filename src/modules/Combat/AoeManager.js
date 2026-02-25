@@ -49,27 +49,31 @@ export default class AoeManager {
                 console.log(`[AOE] HIT SUCCESS: ${unit.unitName} at dist ${Math.round(dist)}`);
 
                 // 1. Primary Skill Element inheritance/synergy
-                // If skill has no element, use weapon's element.
-                // If skill has an element AND weapon has a different element, both are applied.
-                const skillElement = element;
-                const activeElements = [];
-                if (skillElement) activeElements.push(skillElement);
-                if (weaponElement && weaponElement !== skillElement) {
-                    activeElements.push(weaponElement);
-                    console.log(`[AoeManager] Weapon synergy detected: adding ${weaponElement} to ${skillElement || 'Neutral'} skill.`);
+                let skillElement = element;
+                let weaponElementHit = null;
+
+                if (weaponElement) {
+                    if (!skillElement) {
+                        // Neutral skill inherits weapon element
+                        skillElement = weaponElement;
+                        console.log(`[AoeManager] Neutral skill inherited weapon element: ${weaponElement}`);
+                    } else {
+                        // Skill has inherent element, weapon adds synergy hit (even if same element)
+                        weaponElementHit = weaponElement;
+                        console.log(`[AoeManager] Weapon synergy: adding ${weaponElement} to ${skillElement} skill.`);
+                    }
                 }
 
                 // Apply Damage
                 if (isMagic && unit.takeMagicDamage) {
                     unit.takeMagicDamage(damage, attacker, isUltimate, skillElement, isCritical, 0);
-                    // Apply secondary element bonus if mixed
-                    if (activeElements.length > 1) {
-                        unit.takeMagicDamage(0, attacker, isUltimate, weaponElement, isCritical, 150);
+                    if (weaponElementHit && unit.active) {
+                        unit.takeMagicDamage(0, attacker, isUltimate, weaponElementHit, isCritical, 150);
                     }
                 } else if (unit.takeDamage) {
                     unit.takeDamage(damage, attacker, isUltimate, skillElement, isCritical, 0);
-                    if (activeElements.length > 1) {
-                        unit.takeDamage(0, attacker, isUltimate, weaponElement, isCritical, 150);
+                    if (weaponElementHit && unit.active) {
+                        unit.takeDamage(0, attacker, isUltimate, weaponElementHit, isCritical, 150);
                     }
                 } else {
                     console.error(`[AoeManager] Unit ${unit.unitName} lacks takeDamage/takeMagicDamage methods!`);
