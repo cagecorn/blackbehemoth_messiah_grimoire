@@ -43,6 +43,23 @@ export default class LootManager {
             const speed = Phaser.Math.Between(lootConfig.SPAWN_VELOCITY_MIN, lootConfig.SPAWN_VELOCITY_MAX);
             item.setVelocity(Math.cos(angle) * speed, Math.sin(angle) * speed);
             item.setDrag(100, 100); // Slow down over time
+
+            // Make interactive for "Clicker" feel
+            item.setInteractive({ useHandCursor: true });
+            item.on('pointerdown', () => {
+                if (item.canBeCollected && !item.isCollected) {
+                    // Visual feedback "Pop"
+                    this.scene.tweens.add({
+                        targets: item,
+                        scale: 1.5,
+                        duration: 80,
+                        yoyo: true,
+                        onComplete: () => {
+                            this.collectLoot(null, item);
+                        }
+                    });
+                }
+            });
         }
     }
 
@@ -68,7 +85,7 @@ export default class LootManager {
 
         // Notify the Global Event Bus
         // Include who collected it for localized UI logs
-        const collectorId = collector.className || 'warrior';
+        const collectorId = collector ? (collector.className || 'warrior') : 'player';
         globalEventBus.emit(globalEventBus.EVENTS.ITEM_COLLECTED, {
             emoji: unicodeEmoji,
             collectorId: collectorId

@@ -178,7 +178,10 @@ export default class UIManager {
 
     setupMobileEvents() {
         if (this.btnInventory) {
-            this.btnInventory.onclick = () => this.showPopup('inventory');
+            this.btnInventory.onclick = () => {
+                this.showPopup('inventory');
+                this.switchInventoryTab('materials'); // Reset to materials on open
+            };
         }
         if (this.btnParty) {
             this.btnParty.onclick = () => this.showPopup('party');
@@ -193,6 +196,31 @@ export default class UIManager {
         }
         if (this.btnFullscreen) {
             this.btnFullscreen.onclick = () => this.toggleFullscreen();
+        }
+
+        // Inventory Tab Listeners
+        const tabMaterials = document.getElementById('tab-materials');
+        const tabGear = document.getElementById('tab-gear');
+        if (tabMaterials) tabMaterials.onclick = () => this.switchInventoryTab('materials');
+        if (tabGear) tabGear.onclick = () => this.switchInventoryTab('gear');
+    }
+
+    switchInventoryTab(tab) {
+        const sectionMaterials = document.getElementById('section-materials');
+        const sectionGear = document.getElementById('section-gear');
+        const tabMaterials = document.getElementById('tab-materials');
+        const tabGear = document.getElementById('tab-gear');
+
+        if (tab === 'materials') {
+            if (sectionMaterials) sectionMaterials.style.display = 'flex';
+            if (sectionGear) sectionGear.style.display = 'none';
+            if (tabMaterials) tabMaterials.classList.add('active');
+            if (tabGear) tabGear.classList.remove('active');
+        } else {
+            if (sectionMaterials) sectionMaterials.style.display = 'none';
+            if (sectionGear) sectionGear.style.display = 'flex';
+            if (tabMaterials) tabMaterials.classList.remove('active');
+            if (tabGear) tabGear.classList.add('active');
         }
     }
 
@@ -210,15 +238,13 @@ export default class UIManager {
 
     showPopup(type) {
         if (!this.popupOverlay || !this.popupInner) return;
-        this.popupInner.innerHTML = '';
+        this.clearPopupSafe();
 
         if (type === 'inventory') {
-            // Move original inventory sections into popup
             const invContent = document.getElementById('sidebar-right');
             if (invContent) {
-                // Clone or move
                 this.popupInner.appendChild(invContent);
-                invContent.style.display = 'flex';
+                invContent.style.setProperty('display', 'flex', 'important');
                 invContent.style.height = '100%';
                 invContent.style.background = 'transparent';
                 invContent.style.border = 'none';
@@ -228,19 +254,40 @@ export default class UIManager {
             const chatContent = document.getElementById('chat-container');
             if (chatContent) {
                 this.popupInner.appendChild(chatContent);
-                chatContent.style.display = 'flex';
+                chatContent.style.setProperty('display', 'flex', 'important');
                 chatContent.style.height = '100%';
                 chatContent.style.background = 'transparent';
             }
-        } else if (type === 'character') {
-            // Detailed character view...
         }
 
         this.popupOverlay.style.display = 'flex';
     }
 
     hidePopup() {
-        if (this.popupOverlay) this.popupOverlay.style.display = 'none';
+        if (this.popupOverlay) {
+            this.clearPopupSafe();
+            this.popupOverlay.style.display = 'none';
+        }
+    }
+
+    clearPopupSafe() {
+        if (!this.popupInner) return;
+        // Move permanent UI elements back to app-container instead of destroying them
+        while (this.popupInner.firstChild) {
+            const child = this.popupInner.firstChild;
+            if (child.id === 'sidebar-right' || child.id === 'chat-container') {
+                child.style.setProperty('display', 'none', 'important');
+                const appContainer = document.getElementById('app-container');
+                if (appContainer) appContainer.appendChild(child);
+            } else if (child.classList && (child.classList.contains('chat-channel') || child.classList.contains('has-unit'))) {
+                // Individual channel view (showCharacterDetail)
+                const chatContainer = document.getElementById('chat-container');
+                if (chatContainer) chatContainer.appendChild(child);
+            } else {
+                this.popupInner.removeChild(child);
+            }
+        }
+        this.popupInner.innerHTML = '';
     }
 
     updateMobileHUD() {
@@ -393,7 +440,7 @@ export default class UIManager {
 
     showCharacterDetail(channel) {
         if (!this.popupOverlay || !this.popupInner) return;
-        this.popupInner.innerHTML = '';
+        this.clearPopupSafe();
         this.popupInner.appendChild(channel.element);
         channel.element.style.display = 'flex';
         channel.element.style.height = '100%';
