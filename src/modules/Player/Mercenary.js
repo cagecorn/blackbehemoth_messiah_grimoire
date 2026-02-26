@@ -5,6 +5,8 @@ import EventBus from '../Events/EventBus.js';
 import SpeechBubble from '../UI/SpeechBubble.js';
 import partyManager from '../Core/PartyManager.js';
 import ItemManager from '../Core/ItemManager.js';
+import CharmManager from '../Core/CharmManager.js';
+import DBManager from '../Database/DBManager.js';
 
 /**
  * Mercenary.js
@@ -93,10 +95,13 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             armor: null,
             accessory: null
         };
+        this.charms = config.charms || Array(9).fill(null);
+        this.charmTimers = Array(9).fill(0); // Tick timers for periodic effects
 
         this.acc = config.acc || 100;
         this.eva = config.eva || 0;
         this.crit = config.crit || 0;
+
 
         // Check for existing state in PartyManager (Only for player team)
         if (this.team === 'player') {
@@ -111,6 +116,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
                 this.perkPoints = savedState.perkPoints !== undefined ? savedState.perkPoints : (this.perkPoints || 1);
                 this.activatedPerks = savedState.activatedPerks || this.activatedPerks || [];
                 this.equipment = savedState.equipment || this.equipment;
+                this.charms = savedState.charms || this.charms;
                 this.expToNextLevel = this.calculateExpToNextLevel(this.level);
             }
         }
@@ -133,10 +139,10 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         const displayHeight = spriteSize * scale;
         this.barYOffset = displayHeight / 2 + 24;
 
-        this.healthBar = new HealthBar(scene, x, y - this.barYOffset, 64, 8);
-        this.cooldownBar = new CooldownBar(scene, x, y - (this.barYOffset - 10), 64, 4); // Placed just below HP
+        this.healthBar = new HealthBar(scene, this, 0, -this.barYOffset, 64, 8);
+        this.cooldownBar = new CooldownBar(scene, this, 0, -(this.barYOffset - 10), 64, 4); // Placed just below HP
         // Ultimate Bar: Purple (0xbb88ff) when charging, Gold (0xffcc00) when ready
-        this.ultBar = new CooldownBar(scene, x, y - (this.barYOffset - 16), 64, 4, 0xbb88ff, 0xffcc00); // Ultimate Bar
+        this.ultBar = new CooldownBar(scene, this, 0, -(this.barYOffset - 16), 64, 4, 0xbb88ff, 0xffcc00); // Ultimate Bar
 
 
 
@@ -193,6 +199,17 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             }
         };
         EventBus.on(EventBus.EVENTS.EQUIP_REQUEST, this.handleEquipRequest);
+
+        this.handleCharmRequest = async (payload) => {
+            if (payload.unitId === this.id) {
+                if (payload.action === 'set') {
+                    await this.setCharm(payload.index, payload.itemId);
+                } else if (payload.action === 'remove') {
+                    await this.removeCharm(payload.index);
+                }
+            }
+        };
+        EventBus.on('CHARM_REQUEST', this.handleCharmRequest);
     }
 
     handleAICommand(cmd) {
@@ -248,12 +265,22 @@ export default class Mercenary extends Phaser.GameObjects.Container {
 
     getEquipmentBonus(statName) {
         let total = 0;
+        // 1. Regular Equipment
         for (const slot in this.equipment) {
             const item = this.equipment[slot];
             if (item && item.stats && item.stats[statName]) {
                 total += item.stats[statName];
             }
         }
+        // 2. Emoji Charms
+        this.charms.forEach(itemId => {
+            if (itemId) {
+                const charm = CharmManager.getCharm(itemId);
+                if (charm && charm.stats && charm.stats[statName]) {
+                    total += charm.stats[statName];
+                }
+            }
+        });
         return total;
     }
 
@@ -374,6 +401,55 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         if (this.equipment.hasOwnProperty(slot)) {
             this.equipment[slot] = null;
             this.syncStatusUI();
+            return true;
+        }
+        return false;
+    }
+
+    async setCharm(index, itemId) {
+        if (index >= 0 && index < 9) {
+            // 1. Consume from inventory
+            const invItem = await DBManager.getInventoryItem(itemId);
+            console.log(`[Mercenary] setCharm check: itemId=${itemId}, invItem=`, invItem);
+
+            if (!invItem || invItem.amount === undefined || invItem.amount <= 0) {
+                console.warn(`[Mercenary] Not enough ${itemId} in inventory to equip. Amount: ${invItem ? invItem.amount : 'N/A'}`);
+                return false;
+            }
+
+            // 2. Return old charm if any
+            const oldId = this.charms[index];
+            if (oldId) {
+                const oldInv = await DBManager.getInventoryItem(oldId);
+                await DBManager.saveInventoryItem(oldId, (oldInv ? oldInv.amount : 0) + 1);
+            }
+
+            // 3. Decrement and save
+            await DBManager.saveInventoryItem(itemId, invItem.amount - 1);
+
+            this.charms[index] = itemId;
+            this.syncStatusUI();
+
+            // Trigger UI inventory refresh
+            EventBus.emit('UI_REFRESH_INVENTORY');
+            return true;
+        }
+        return false;
+    }
+
+    async removeCharm(index) {
+        if (index >= 0 && index < 9 && this.charms[index]) {
+            const itemId = this.charms[index];
+
+            // Return to inventory
+            const invItem = await DBManager.getInventoryItem(itemId);
+            await DBManager.saveInventoryItem(itemId, (invItem ? invItem.amount : 0) + 1);
+
+            this.charms[index] = null;
+            this.syncStatusUI();
+
+            // Trigger UI inventory refresh
+            EventBus.emit('UI_REFRESH_INVENTORY');
             return true;
         }
         return false;
@@ -645,7 +721,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         }
     }
 
-    heal(amount) {
+    heal(amount, isSilent = false) {
         if (!this.active || this.hp <= 0 || amount <= 0) return;
 
         this.hp += amount;
@@ -654,7 +730,10 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         this.updateHealthBar();
 
         if (this.scene.fxManager) {
-            this.scene.fxManager.showDamageText(this, '+' + amount.toFixed(0), '#00ff00');
+            if (!isSilent) {
+                this.scene.fxManager.showDamageText(this, '+' + amount.toFixed(0), '#00ff00');
+            }
+            this.scene.fxManager.showHealEffect(this);
         }
 
         if (this.syncStatusUI) this.syncStatusUI();
@@ -784,6 +863,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         EventBus.off(EventBus.EVENTS.ULT_TOGGLE_AUTO, this.handleUltToggleAuto);
         EventBus.off(EventBus.EVENTS.ULT_TRIGGER, this.handleUltTrigger);
         EventBus.off('PERK_LEARN', this.handlePerkLearn);
+        EventBus.off('CHARM_REQUEST', this.handleCharmRequest);
 
         console.log(`[Mercenary] Cleaned up listeners for ${this.unitName}(${this.characterId})`);
 
@@ -797,43 +877,64 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             return;
         }
 
-        // Burn DOT: 2% Max HP per second
-        if (this.isBurning) {
-            const dotValue = (this.maxHp * 0.02) * (this.scene.game.loop.delta / 1000);
-            this.hp -= dotValue;
-            if (this.hp < 0) this.hp = 0;
-            this.updateHealthBar();
+        // --- Charm Effects ---
+        this.updateCharmEffects(this.scene.game.loop.delta);
 
-            // Subtle damage text or omit to prevent spam? 
-            // Let's do it every 1s visually if needed, but for now just HP reduction.
-            if (this.hp <= 0) this.die();
+        // Burn DOT: 2% Max HP per second
+        if (this.isBurning && this.hp > 0) {
+            this.takeDamage(this.maxHp * 0.02 * (this.scene.game.loop.delta / 1000), 'burn_dot', false, 'fire');
         }
 
         if (this.isAirborne || this.isStunned || this.isAsleep) {
-            // Can't act while CC'd. Keep velocity at 0 unless knocked back (if applicable)
-            this.body.setVelocity(0, 0);
-            return; // Early return to block BT and orientation
+            // Can't act while CC'd. Keep velocity at 0
+            if (this.body && !this.isKnockedBack) {
+                this.body.setVelocity(0, 0);
+            }
+            // Update bars even while CC'd
+            this.updateBars();
+            return;
         } else if (this.btManager) {
             this.btManager.step();
         }
-        if (this.healthBar) {
-            this.healthBar.setPos(this.x, this.y - this.barYOffset);
-        }
+
+        this.updateBars();
+        this.updateVisualOrientation();
+    }
+
+    updateBars() {
         if (this.cooldownBar) {
-            this.cooldownBar.setPos(this.x, this.y - (this.barYOffset - 10));
             if (this.getSkillProgress) {
                 this.cooldownBar.setValue(this.getSkillProgress());
             } else {
-                this.cooldownBar.setValue(0); // Empty if no skill
+                this.cooldownBar.setValue(0);
             }
         }
         if (this.ultBar) {
-            this.ultBar.setPos(this.x, this.y - (this.barYOffset - 16));
             this.ultBar.setValue(this.ultGauge / this.maxUltGauge);
         }
+    }
 
+    updateCharmEffects(delta) {
+        if (!this.active || this.hp <= 0) return;
 
-        this.updateVisualOrientation();
+        this.charms.forEach((itemId, index) => {
+            if (!itemId) return;
+
+            const charm = CharmManager.getCharm(itemId);
+            if (!charm || charm.type !== 'periodic') return;
+
+            this.charmTimers[index] += delta;
+            if (this.charmTimers[index] >= charm.interval) {
+                this.charmTimers[index] = 0;
+
+                // Visual Feedback for Charm Activation
+                if (this.scene.fxManager) {
+                    this.scene.fxManager.showEmojiPopup(this, charm.emoji || '✨');
+                }
+
+                charm.effect(this);
+            }
+        });
     }
 
     updateVisualOrientation() {
@@ -1035,6 +1136,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             agentId: this.id,
             statuses: statuses,
             equipment: this.equipment,
+            charms: this.charms,
             stats: stats
         });
 
@@ -1078,6 +1180,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             perkPoints: this.perkPoints,
             activatedPerks: this.activatedPerks,
             equipment: this.equipment,
+            charms: this.charms,
             // Logic flags
             isAirborne: !!this.isAirborne,
             isStunned: !!this.isStunned,

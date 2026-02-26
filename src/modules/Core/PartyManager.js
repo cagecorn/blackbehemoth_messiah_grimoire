@@ -8,6 +8,7 @@ class PartyManager {
         this.mercenaryStates = {}; // Map of characterId -> state object (runtime stats)
         this.activeParty = [null, null, null, null, null]; // 5 slots for mercenary IDs
         this.roster = []; // 10 candidates
+        this.CHARM_GRID_SIZE = 9;
     }
 
     init(allCharacters) {
@@ -39,6 +40,7 @@ class PartyManager {
         this.mercenaryStates[id] = {
             ...this.mercenaryStates[id],
             ...state,
+            charms: state.charms || this.mercenaryStates[id]?.charms || Array(this.CHARM_GRID_SIZE).fill(null),
             lastUpdate: Date.now()
         };
     }
@@ -49,7 +51,11 @@ class PartyManager {
      * @returns {Object|null}
      */
     getState(id) {
-        return this.mercenaryStates[id] || null;
+        const state = this.mercenaryStates[id];
+        if (state && !state.charms) {
+            state.charms = Array(this.CHARM_GRID_SIZE).fill(null);
+        }
+        return state || null;
     }
 
     /**

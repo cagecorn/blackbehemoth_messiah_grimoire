@@ -7,6 +7,7 @@ import embeddingGemma from '../AI/EmbeddingGemma.js';
 import { MercenaryClasses, Characters } from '../Core/EntityStats.js';
 import partyManager from '../Core/PartyManager.js';
 import ItemManager from '../Core/ItemManager.js';
+import CharmManager from '../Core/CharmManager.js';
 
 export default class UIManager {
     constructor() {
@@ -18,7 +19,10 @@ export default class UIManager {
         this.resizeObserver = null;
         this.inventoryDirty = true; // initially dirty to load first time
         this.isRefreshing = false;
+        this.detailChannel = null; // Track currently focused detail channel
         this.portraits = {}; // unitId -> { element, statusKey, hp, ult }
+        this.lastGold = -1;
+        this.lastGem = -1;
 
         // Mobile HUD Elements
         this.hudGold = document.getElementById('hud-gold');
@@ -30,6 +34,14 @@ export default class UIManager {
         this.btnInventory = document.getElementById('btn-inventory');
         this.btnParty = document.getElementById('btn-party');
         this.btnFullscreen = document.getElementById('btn-fullscreen');
+
+        // Item Detail Panel
+        this.detailPanel = document.getElementById('item-detail-panel');
+        this.detailName = document.getElementById('detail-name');
+        this.detailType = document.getElementById('detail-type');
+        this.detailDesc = document.getElementById('detail-description');
+        this.btnEquipItem = document.getElementById('btn-equip-item');
+        this.selectedItemId = null;
 
         // Bind the RAF loop
         this.rafLoop = this.rafLoop.bind(this);
@@ -56,7 +68,7 @@ export default class UIManager {
                     channel.updateStatuses(payload.statuses);
                 }
                 if (payload.equipment) {
-                    channel.updateEquipment(payload.equipment);
+                    channel.updateEquipment(payload.equipment, payload.charms);
                 }
                 if (payload.stats) {
                     channel.updateStats(payload.stats);
@@ -172,8 +184,19 @@ export default class UIManager {
             this.handleSlotAssigned(payload.slotId, payload.characterId);
         });
 
-        // Sync HUD stats periodically
+        // Listen for UI_REFRESH_INVENTORY
+        EventBus.on('UI_REFRESH_INVENTORY', () => {
+            this.inventoryDirty = true;
+        });
+
+        // Sync HUD stats periodically (Currency every 1s, Portraits every 100ms for smoothness)
         setInterval(() => this.updateMobileHUD(), 1000);
+        setInterval(() => this.updatePortraitBar(), 100);
+
+        // Also update currency immediately on inventory changes
+        EventBus.on(EventBus.EVENTS.INVENTORY_UPDATED, () => {
+            this.updateMobileHUD();
+        });
     }
 
     setupMobileEvents() {
@@ -196,6 +219,38 @@ export default class UIManager {
         }
         if (this.btnFullscreen) {
             this.btnFullscreen.onclick = () => this.toggleFullscreen();
+        }
+
+        if (this.btnEquipItem) {
+            this.btnEquipItem.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('[UIManager] EQUIP BUTTON CLICKED!', {
+                    selectedId: this.selectedItemId,
+                    detailChannel: this.detailChannel ? this.detailChannel.name : 'null',
+                    activeChannels: this.channels.filter(c => c.active).length
+                });
+
+                if (this.selectedItemId) {
+                    this.btnEquipItem.style.opacity = '0.5';
+                    this.btnEquipItem.innerText = '장착 중...';
+
+                    this.executeEquip(this.selectedItemId);
+
+                    setTimeout(() => {
+                        if (this.detailPanel) this.detailPanel.style.display = 'none';
+                        this.btnEquipItem.style.opacity = '1';
+                        this.btnEquipItem.innerText = '장착';
+                        this.selectedItemId = null;
+                    }, 200);
+                }
+            };
+        }
+
+        if (this.detailPanel) {
+            this.detailPanel.onclick = (e) => {
+                e.stopPropagation();
+            };
         }
 
         // Inventory Tab Listeners
@@ -222,6 +277,9 @@ export default class UIManager {
             if (tabMaterials) tabMaterials.classList.remove('active');
             if (tabGear) tabGear.classList.add('active');
         }
+
+        // Keep the detail panel visible unless manually closed
+        // if (this.detailPanel) this.detailPanel.style.display = 'none';
     }
 
     toggleFullscreen() {
@@ -265,6 +323,8 @@ export default class UIManager {
 
     hidePopup() {
         if (this.popupOverlay) {
+            this.detailChannel = null;
+            if (this.detailPanel) this.detailPanel.style.display = 'none';
             this.clearPopupSafe();
             this.hideTooltip(); // Hide any floating item tooltips
             this.popupOverlay.style.display = 'none';
@@ -296,19 +356,24 @@ export default class UIManager {
 
     updateMobileHUD() {
         // Update Gold/Gem from DBManager or similar
-        // For now dummy update
         if (this.hudGold) {
             DBManager.getInventoryItem('emoji_coin').then(item => {
-                this.hudGold.textContent = item ? item.amount : 0;
+                const amount = item ? item.amount : 0;
+                if (this.lastGold !== amount) {
+                    this.hudGold.textContent = amount;
+                    this.lastGold = amount;
+                }
             });
         }
         if (this.hudGem) {
             DBManager.getInventoryItem('emoji_gem').then(item => {
-                this.hudGem.textContent = item ? item.amount : 0;
+                const amount = item ? item.amount : 0;
+                if (this.lastGem !== amount) {
+                    this.hudGem.textContent = amount;
+                    this.lastGem = amount;
+                }
             });
         }
-
-        this.updatePortraitBar();
     }
 
     updatePortraitBar() {
@@ -372,11 +437,16 @@ export default class UIManager {
                     element: portrait,
                     statusKey: '',
                     hp: -1,
-                    ult: -1
+                    ult: -1,
+                    dom: {
+                        hpRing: portrait.querySelector('.portrait-hp-ring'),
+                        ultRing: portrait.querySelector('.portrait-ult-ring'),
+                        orbit: portrait.querySelector('.portrait-status-orbit')
+                    }
                 };
             }
 
-            const { element } = cache;
+            const { element, dom } = cache;
 
             // 1. Update overall status (Grayscale if dead)
             if (merc.hp <= 0) {
@@ -387,7 +457,7 @@ export default class UIManager {
 
             // 2. Update HP Ring
             if (Math.abs(cache.hp - hpPercent) > 0.1) {
-                const hpRing = element.querySelector('.portrait-hp-ring');
+                const hpRing = dom.hpRing;
                 if (hpRing) {
                     hpRing.style.borderColor = this.getHPColor(hpPercent);
                     hpRing.style.clipPath = `inset(${100 - hpPercent}% 0 0 0)`;
@@ -397,7 +467,7 @@ export default class UIManager {
 
             // 3. Update Ult Ring
             if (Math.abs(cache.ult - ultPercent) > 0.1) {
-                const ultRing = element.querySelector('.portrait-ult-ring');
+                const ultRing = dom.ultRing;
                 if (ultRing) {
                     ultRing.style.clipPath = `inset(${100 - ultPercent}% 0 0 0)`;
                 }
@@ -406,7 +476,7 @@ export default class UIManager {
 
             // 4. Update Status Icons (Only if they changed!)
             if (cache.statusKey !== statusKey) {
-                const orbit = element.querySelector('.portrait-status-orbit');
+                const orbit = dom.orbit;
                 if (orbit) {
                     orbit.innerHTML = ''; // Clear old icons
                     const statusCount = statuses.length;
@@ -444,6 +514,7 @@ export default class UIManager {
 
     showCharacterDetail(channel) {
         if (!this.popupOverlay || !this.popupInner) return;
+        this.detailChannel = channel;
         this.clearPopupSafe();
         this.popupInner.appendChild(channel.element);
         channel.element.style.display = 'flex';
@@ -662,6 +733,7 @@ export default class UIManager {
     }
 
     showTooltip(itemId) {
+        console.warn('[UIManager] showTooltip CALLED! (This should be disabled)', { itemId });
         const item = ItemManager.getItem(itemId);
         if (!item || !this.tooltipEl) return;
 
@@ -701,13 +773,15 @@ export default class UIManager {
         try {
             const testItems = [
                 'test_sword_fire', 'test_sword_ice', 'test_sword_lightning',
-                'test_staff_fire', 'test_staff_ice', 'test_staff_lightning'
+                'test_staff_fire', 'test_staff_ice', 'test_staff_lightning',
+                'emoji_burger' // Ensure burger is always there
             ];
 
             for (const id of testItems) {
                 const item = await DBManager.getInventoryItem(id);
-                if (!item) {
-                    await DBManager.saveInventoryItem(id, 1);
+                if (!item || item.amount < 10) {
+                    await DBManager.saveInventoryItem(id, 10);
+                    console.log(`[UIManager] Injected/Fixed ${id} x10`);
                 }
             }
 
@@ -719,6 +793,7 @@ export default class UIManager {
 
     async refreshInventory() {
         this.isRefreshing = true;
+        // removed global hiding of detailPanel here to prevent 0.1s vanishing bug
         try {
             const items = await DBManager.getAllInventory();
 
@@ -754,13 +829,21 @@ export default class UIManager {
                     e.dataTransfer.effectAllowed = 'copyMove';
                 };
 
-                div.onmouseenter = () => this.showTooltip(item.id);
-                div.onmouseleave = () => this.hideTooltip();
-
-                if (itemData.type === 'equipment') {
+                if (itemData && itemData.type === 'equipment') {
                     div.classList.add('is-gear');
-                    div.onclick = () => this.handleItemClick(item.id);
+                    div.onclick = (e) => {
+                        e.stopPropagation();
+                        this.handleItemClick(item.id);
+                    };
                     this.gearList.appendChild(div);
+                } else if (CharmManager.getCharm(item.id)) {
+                    // It's a charm! Add click handler for easy equipping
+                    div.classList.add('is-charm');
+                    div.onclick = (e) => {
+                        e.stopPropagation();
+                        this.handleItemClick(item.id);
+                    };
+                    this.materialList.appendChild(div);
                 } else {
                     this.materialList.appendChild(div);
                 }
@@ -773,36 +856,78 @@ export default class UIManager {
     }
 
     handleItemClick(itemId) {
-        // Equip to the currently "active" or first applicable mercenary
-        // For now, let's find a channel that is focused or just the first one
-        const activeChannel = this.channels.find(c => c.active);
-        if (activeChannel && activeChannel.boundUnitId) {
+        if (this.tooltipEl) this.tooltipEl.style.display = 'none'; // Kill legacy tooltip
+        this.showItemDetail(itemId);
+    }
+
+    showItemDetail(itemId) {
+        const item = ItemManager.getItem(itemId);
+        const charm = CharmManager.getCharm(itemId);
+
+        // Prioritize charm data because it's richer for charms (it has description)
+        const targetItem = charm || item;
+
+        console.log(`[UIManager] showItemDetail: itemId=${itemId}`, { hasItem: !!item, hasCharm: !!charm });
+
+        if (!targetItem || !this.detailPanel) return;
+
+        this.selectedItemId = itemId;
+        if (this.detailName) this.detailName.textContent = targetItem.name;
+        if (this.detailType) this.detailType.textContent = (targetItem.slot || (charm ? 'CHARM' : 'ITEM')).toUpperCase();
+        if (this.detailDesc) this.detailDesc.textContent = targetItem.description || (item ? '재료 아이템입니다.' : '');
+
+        this.detailPanel.style.display = 'flex';
+    }
+
+    executeEquip(itemId) {
+        const item = ItemManager.getItem(itemId);
+        const charm = CharmManager.getCharm(itemId);
+
+        console.log(`[UIManager] executeEquip: itemId=${itemId}, isItem=${!!item}, isCharm=${!!charm}`);
+
+        // Find the appropriate target channel
+        // 1. Current detail view (mercenary info is open)
+        // 2. Focused channel (last interacted)
+        // 3. Fallback to first bound channel
+        const targetChannel = this.detailChannel || this.channels.find(c => c.active) || this.channels.find(c => c.boundUnitId);
+
+        if (!targetChannel || !targetChannel.linkedUnitId) {
+            console.error('[UIManager] executeEquip FAILED: No target character found.', {
+                detailChannel: !!this.detailChannel,
+                anyActive: !!this.channels.find(c => c.active),
+                anyBound: !!this.channels.find(c => c.boundUnitId),
+                channels: this.channels.map(c => ({ id: c.id, unit: c.linkedUnitId }))
+            });
+            return;
+        }
+
+        console.log(`[UIManager] executeEquip SUCCESS: Targeting ${targetChannel.name} (${targetChannel.linkedUnitId})`);
+
+        if (item && item.type === 'equipment') {
+            console.log(`[UIManager] Equipping gear: ${itemId}`);
             EventBus.emit(EventBus.EVENTS.EQUIP_REQUEST, {
-                unitId: activeChannel.boundUnitId,
+                unitId: targetChannel.linkedUnitId,
                 itemId: itemId
             });
-        } else {
-            console.log('[UIManager] No active/focused character to equip to.');
-            // Fallback: try to find any bound channel
-            const firstBound = this.channels.find(c => c.boundUnitId);
-            if (firstBound) {
-                EventBus.emit(EventBus.EVENTS.EQUIP_REQUEST, {
-                    unitId: firstBound.boundUnitId,
-                    itemId: itemId
+        } else if (charm) {
+            // It's a charm click! Find first empty slot
+            const emptySlot = targetChannel.findEmptyCharmSlot();
+            console.log(`[UIManager] Found empty charm slot: ${emptySlot}`);
+            if (emptySlot !== -1) {
+                EventBus.emit('CHARM_REQUEST', {
+                    unitId: targetChannel.linkedUnitId,
+                    itemId: itemId,
+                    index: emptySlot,
+                    action: 'set'
                 });
+            } else {
+                console.log('[UIManager] No empty charm slots available for', targetChannel.name);
             }
         }
     }
 
     getSVGFilename(key) {
-        const map = {
-            'emoji_coin': '1fa99.svg',
-            'emoji_gem': '1f48e.svg',
-            'emoji_meat': '1f356.svg',
-            'emoji_wood': '1fab5.svg',
-            'emoji_herb': '1f33f.svg'
-        };
-        return map[key] || 'unknown.svg';
+        return ItemManager.getSVGFilename(key);
     }
 
     showStatusTooltip(status, anchorEl) {

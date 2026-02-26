@@ -5,8 +5,17 @@ import Phaser from 'phaser';
  * A visual component attached to a unit to show their current HP.
  */
 export default class HealthBar {
-    constructor(scene, x, y, width = 64, height = 8) {
+    constructor(scene, parentContainer, x, y, width = 64, height = 8) {
         this.bar = scene.add.graphics();
+        this.parentContainer = parentContainer;
+
+        if (this.parentContainer) {
+            this.parentContainer.add(this.bar);
+            this.bar.setDepth(10); // Above sprite within container
+        } else {
+            this.bar.setDepth(9999); // Always on top
+        }
+
         this.x = x;
         this.y = y;
         this.width = width;
@@ -15,24 +24,34 @@ export default class HealthBar {
         this.shieldValue = 0; // Shield amount as a percentage of maxHp
         this.p = width / 100;
 
-        this.bar.setDepth(9999); // Always on top
+        // Dirty flags
+        this.lastValue = -1;
+        this.lastShieldValue = -1;
+
         this.draw();
     }
 
     setPos(x, y) {
-        this.x = x;
-        this.y = y;
-        this.draw();
+        // Only necessary if not attached to a container
+        if (!this.parentContainer) {
+            this.x = x;
+            this.y = y;
+            this.draw();
+        }
     }
 
     setValue(amount, shieldAmount = 0) {
-        this.value = amount;
-        if (this.value < 0) this.value = 0;
+        const validatedValue = Math.max(0, amount);
+        const validatedShield = Math.max(0, shieldAmount);
 
-        this.shieldValue = shieldAmount;
-        if (this.shieldValue < 0) this.shieldValue = 0;
-
-        this.draw();
+        // Only redraw if values have changed
+        if (this.lastValue !== validatedValue || this.lastShieldValue !== validatedShield) {
+            this.value = validatedValue;
+            this.shieldValue = validatedShield;
+            this.lastValue = validatedValue;
+            this.lastShieldValue = validatedShield;
+            this.draw();
+        }
     }
 
     draw() {

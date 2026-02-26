@@ -83,7 +83,7 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
         const displayHeight = spriteSize * scale;
         this.barYOffset = displayHeight / 2 + 20;
 
-        this.healthBar = new HealthBar(scene, x, y - this.barYOffset, 48, 6);
+        this.healthBar = new HealthBar(scene, this, 0, -this.barYOffset, 48, 6);
 
         // AI Debug Text
 
@@ -447,7 +447,6 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
             this.btManager.step();
             this.handleAttack();
         }
-        this.healthBar.setPos(this.x, this.y - this.barYOffset);
 
         this.updateVisualOrientation();
     }

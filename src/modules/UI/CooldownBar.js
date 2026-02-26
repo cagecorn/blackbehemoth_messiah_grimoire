@@ -1,6 +1,14 @@
 export default class CooldownBar {
-    constructor(scene, x, y, width = 64, height = 4, color = 0xffaa00, readyColor = 0xffff00) {
+    constructor(scene, parentContainer, x, y, width = 64, height = 4, color = 0xffaa00, readyColor = 0xffff00) {
         this.bar = scene.add.graphics();
+        this.parentContainer = parentContainer;
+
+        if (this.parentContainer) {
+            this.parentContainer.add(this.bar);
+            this.bar.setDepth(10); // Above sprite within container
+        } else {
+            this.bar.setDepth(9999); // Always on top
+        }
 
         this.x = x;
         this.y = y;
@@ -10,20 +18,31 @@ export default class CooldownBar {
         this.readyColor = readyColor;
         this.value = 0; // expected from 0 to 1
 
-        this.bar.setDepth(9999); // Always on top
+        // Dirty flag
+        this.lastValue = -1;
+
         this.draw();
     }
 
     setPos(x, y) {
-        this.x = x;
-        this.y = y;
-        this.draw();
+        // Only necessary if not attached to a container
+        if (!this.parentContainer) {
+            this.x = x;
+            this.y = y;
+            this.draw();
+        }
     }
 
     setValue(value) {
         // value is between 0 and 1
-        this.value = Math.max(0, Math.min(1, value));
-        this.draw();
+        const validatedValue = Math.max(0, Math.min(1, value));
+
+        // Only redraw if value changed
+        if (this.lastValue !== validatedValue) {
+            this.value = validatedValue;
+            this.lastValue = validatedValue;
+            this.draw();
+        }
     }
 
     draw() {

@@ -407,4 +407,122 @@ export default class FXManager {
         target.orbitEndTime = this.scene.time.now + duration;
         this.scene.events.on('update', followListener);
     }
+
+    /**
+     * Show a popping emoji animation above the target.
+     * @param {Phaser.GameObjects.GameObject} target 
+     * @param {string} emoji - The emoji string (e.g., '🍔')
+     */
+    showEmojiPopup(target, emoji) {
+        if (!target || !target.active) return;
+
+        const scale = (target.config && target.config.scale) || 1;
+        const initialYOffset = 70 * scale;
+
+        const text = this.scene.add.text(target.x, target.y - initialYOffset, emoji, {
+            fontSize: '44px',
+            resolution: 2
+        }).setOrigin(0.5).setScale(0).setAlpha(0);
+
+        text.setDepth(20002);
+
+        // Tracking state
+        let currentYOffset = initialYOffset;
+        let wobbleX = 0;
+
+        // Follow listener to keep emoji attached to moving unit
+        const followListener = () => {
+            if (!target.active || !text.active) {
+                this.scene.events.off('postupdate', followListener);
+                return;
+            }
+            text.x = target.x + wobbleX;
+            text.y = target.y - currentYOffset;
+        };
+        this.scene.events.on('postupdate', followListener);
+
+        // Primary animation: Pop up and fade to 50% opacity
+        this.scene.tweens.add({
+            targets: text,
+            scale: 1,
+            alpha: 0.5,
+            duration: 600,
+            ease: 'Back.easeOut'
+        });
+
+        // Floating animation via currentYOffset
+        this.scene.tweens.add({
+            targets: { y: initialYOffset },
+            y: initialYOffset + 80,
+            duration: 1800,
+            ease: 'Sine.easeIn',
+            onUpdate: (tween) => {
+                currentYOffset = tween.getValue();
+            },
+            onComplete: () => {
+                this.scene.events.off('postupdate', followListener);
+                text.destroy();
+            }
+        });
+
+        // Slow fade out
+        this.scene.tweens.add({
+            targets: text,
+            alpha: 0,
+            duration: 1000,
+            delay: 800
+        });
+
+        // Subtle horizontal wobble
+        this.scene.tweens.add({
+            targets: { x: 0 },
+            x: 10,
+            duration: 800,
+            yoyo: true,
+            repeat: 1,
+            ease: 'Sine.easeInOut',
+            onUpdate: (tween) => {
+                wobbleX = tween.getValue();
+            }
+        });
+    }
+
+    /**
+     * Show green healing particles around the target.
+     * @param {Phaser.GameObjects.GameObject} target 
+     */
+    showHealEffect(target) {
+        if (!target || !target.active) return;
+
+        // Use the existing sparkle technique but with green tint
+        if (!this.scene.textures.exists('sparkle_fx')) {
+            const graphics = this.scene.add.graphics();
+            graphics.fillStyle(0xffffff, 1);
+            graphics.fillCircle(4, 4, 4);
+            graphics.generateTexture('sparkle_fx', 8, 8);
+            graphics.destroy();
+        }
+
+        const emitter = this.scene.add.particles(0, 0, 'sparkle_fx', {
+            x: target.x,
+            y: target.y,
+            speed: { min: 30, max: 100 },
+            angle: { min: 0, max: 360 },
+            scale: { start: 0.8, end: 0 },
+            alpha: { start: 1, end: 0 },
+            lifespan: 1000,
+            gravityY: -100,
+            tint: [0x55ff55, 0x00ff00, 0xaaffaa], // Green shades
+            blendMode: 'ADD',
+            quantity: 10,
+            emitting: false
+        });
+
+        emitter.setDepth(target.depth + 1);
+        emitter.explode(15);
+
+        this.scene.time.delayedCall(1500, () => {
+            if (emitter) emitter.destroy();
+        });
+    }
 }

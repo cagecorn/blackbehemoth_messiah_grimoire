@@ -102,6 +102,7 @@ export default class BootScene extends Phaser.Scene {
         this.load.svg('emoji_snowball', 'assets/emojis/2744.svg', { width: 64, height: 64 });
         this.load.svg('emoji_snowman', 'assets/emojis/26c4.svg', { width: 64, height: 64 });
         this.load.svg('emoji_snowcloud', 'assets/emojis/1f328.svg', { width: 128, height: 128 });
+        this.load.svg('emoji_burger', 'assets/emojis/1f354.svg', { width: 64, height: 64 });
 
         this.load.on('loaderror', (file) => {
             console.error(`[BootScene] Error loading asset: ${file.key} from ${file.src}`);
@@ -172,8 +173,21 @@ export default class BootScene extends Phaser.Scene {
         this.load.image('bg_arena', 'assets/background/battle-stage-arena.png');
     }
 
-    create() {
+    async create() {
         console.log('BootScene assets loaded. Transitioning to game world.');
+
+        // Initialize 10 burgers if not present (Tutorial/Starter items)
+        try {
+            const DBManager = (await import('../modules/Database/DBManager.js')).default;
+            const existingBurger = await DBManager.getInventoryItem('emoji_burger');
+            if (!existingBurger) {
+                console.log('[BootScene] Initializing starter 🍔 x10');
+                await DBManager.saveInventoryItem('emoji_burger', 10);
+            }
+        } catch (e) {
+            console.error('[BootScene] Failed to initialize starter items', e);
+        }
+
         this.scene.start('TerritoryScene');
     }
 }

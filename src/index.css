@@ -814,6 +814,11 @@ body {
     /* Anchor for elemental badges */
 }
 
+.inv-item.is-gear,
+.inv-item.is-charm {
+    cursor: pointer;
+}
+
 .inv-item:hover {
     background: rgba(255, 255, 255, 0.15);
     transform: translateY(-2px);
@@ -831,6 +836,95 @@ body {
     font-weight: bold;
     color: #e0e0e0;
     pointer-events: none;
+}
+
+/* Item Detail Panel - Detailed Equipping Flow */
+#item-detail-panel {
+    background: rgba(30, 30, 30, 0.6);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 24px;
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.detail-header {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+#detail-name {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 800;
+    color: #bb88ff;
+    /* Purple header */
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+#detail-type {
+    font-size: 12px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.5);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.detail-divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.1);
+    width: 100%;
+    margin: 4px 0;
+}
+
+#detail-description {
+    font-size: 14px;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.8);
+    min-height: 40px;
+}
+
+.equip-btn {
+    margin-top: 8px;
+    background: linear-gradient(135deg, #bb88ff, #9955ff);
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-weight: bold;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 10px rgba(187, 136, 255, 0.3);
+}
+
+.equip-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(187, 136, 255, 0.5);
+    filter: brightness(1.1);
+}
+
+.equip-btn:active {
+    transform: translateY(0);
 }
 
 /* Custom CSS Tooltips for Status Icons */
@@ -1766,5 +1860,80 @@ body {
     100% {
         opacity: 1;
         transform: translateY(0) scale(1);
+    }
+}
+
+/* --- Emoji Charm Grid --- */
+.charm-inventory-label {
+    font-size: 13px;
+    font-weight: bold;
+    color: #bb88ff;
+    margin-top: 20px;
+    margin-bottom: 10px;
+    text-align: center;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding-top: 15px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.charm-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    gap: 12px;
+    width: 180px;
+    margin: 0 auto 20px auto;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.charm-slot {
+    width: 44px;
+    height: 44px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1.5px dashed rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    cursor: pointer;
+}
+
+.charm-slot:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(0, 255, 204, 0.5);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.charm-slot.drag-over {
+    background: rgba(0, 255, 204, 0.15);
+    border-color: #00ffcc;
+    border-style: solid;
+    transform: scale(1.05);
+}
+
+.charm-icon {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+    animation: charm-appear 0.3s ease-out;
+}
+
+@keyframes charm-appear {
+    from {
+        transform: scale(0.5);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
     }
 }

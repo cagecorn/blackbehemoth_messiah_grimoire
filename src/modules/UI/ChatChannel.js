@@ -2,6 +2,8 @@
  * ChatChannel
  * Represents a single chat interface for a party member.
  */
+import ItemManager from '../Core/ItemManager.js';
+
 export default class ChatChannel {
     constructor(id, classId, characters, name, spritePath, parentElement, onCommand, onSwap, uiManager) {
         this.uiManager = uiManager;
@@ -20,6 +22,21 @@ export default class ChatChannel {
         this.element.className = 'chat-channel empty'; // Start as empty
         this.linkedUnitId = null;
         this.classId = null;
+        this.charms = Array(9).fill(null); // Track charms for quick lookup
+        this.renderedCharms = Array(9).fill(undefined); // Dirty flag for UI performance
+
+        // Performance Optimization: DOM Caching & Dirty Flags
+        this.domCache = {
+            stats: {},
+            gear: {},
+            perks: null
+        };
+        this.lastState = {
+            stats: {},
+            equipment: {},
+            statuses: "",
+            perks: ""
+        };
 
         // Generate character options for the dropdown
         let optionsHtml = '';
@@ -91,6 +108,12 @@ export default class ChatChannel {
                 <div class="gear-slot" data-slot="armor"><span class="slot-label">[방어구]</span> <span class="slot-value">Empty</span></div>
                 <div class="gear-slot" data-slot="necklace"><span class="slot-label">[목걸이]</span> <span class="slot-value">Empty</span></div>
                 <div class="gear-slot" data-slot="ring"><span class="slot-label">[반지]</span> <span class="slot-value">Empty</span></div>
+                
+                <div class="charm-inventory-label">이모지 참 (Emoji Charms)</div>
+                <div class="charm-grid" id="charms-${id}">
+                    ${Array(9).fill(0).map((_, i) => `<div class="charm-slot" data-index="${i}"></div>`).join('')}
+                </div>
+
                 <button class="dash-back-btn">돌아가기</button>
             </div>
             <div class="chat-status-view" id="stats-${id}" style="display: none;">
@@ -161,6 +184,7 @@ export default class ChatChannel {
         this.narrativeView = this.element.querySelector('.chat-narrative-view');
         this.currentView = 'dashboard'; // Default view
         this.setupGearDragDrop();
+        this.setupCharmDragDrop();
 
         // Bind dashboard grid items
         this.dashboardView.querySelectorAll('.dash-item').forEach(btn => {
@@ -295,6 +319,10 @@ export default class ChatChannel {
     updateStatuses(statuses) {
         if (!this.statusContainer || !this.buffContainer) return;
 
+        const statusKey = statuses.map(s => s.id + s.emoji).join('|');
+        if (this.lastState.statuses === statusKey) return;
+        this.lastState.statuses = statusKey;
+
         this.statusContainer.innerHTML = '';
         this.buffContainer.innerHTML = '';
 
@@ -334,7 +362,8 @@ export default class ChatChannel {
         }
     }
 
-    updateEquipment(equipment) {
+    updateEquipment(equipment, charms) {
+        this.charms = charms || Array(9).fill(null);
         if (!equipment || !this.gearView) return;
 
         const slots = {
@@ -345,12 +374,48 @@ export default class ChatChannel {
         };
 
         Object.keys(slots).forEach(key => {
-            const slotEl = this.gearView.querySelector(`.gear-slot[data-slot="${key}"] .slot-value`);
+            const item = slots[key];
+            const displayName = (item && item.name) ? item.name : (typeof item === 'string' ? item : 'Empty');
+
+            // Dirty flag check
+            if (this.lastState.equipment[key] === displayName) return;
+            this.lastState.equipment[key] = displayName;
+
+            // Cache-aware selector
+            if (!this.domCache.gear[key]) {
+                this.domCache.gear[key] = this.gearView.querySelector(`.gear-slot[data-slot="${key}"] .slot-value`);
+            }
+
+            const slotEl = this.domCache.gear[key];
             if (slotEl) {
-                const item = slots[key];
-                const displayName = (item && item.name) ? item.name : (typeof item === 'string' ? item : 'Empty');
                 slotEl.textContent = displayName;
                 slotEl.style.color = displayName === 'Empty' ? '#666' : '#fff';
+            }
+        });
+
+        if (charms) {
+            this.updateCharmGrid(charms);
+        }
+    }
+
+    updateCharmGrid(charms) {
+        const charmSlots = this.gearView.querySelectorAll('.charm-slot');
+        charms.forEach((itemId, index) => {
+            // Optimized: Skip re-rendering if the charm ID hasn't changed.
+            // This prevents flickering during frequent state updates.
+            if (this.renderedCharms[index] === itemId) return;
+            this.renderedCharms[index] = itemId;
+
+            const slot = charmSlots[index];
+            if (!slot) return;
+            slot.innerHTML = '';
+            if (itemId) {
+                const filename = ItemManager.getSVGFilename(itemId);
+                const img = document.createElement('img');
+                img.src = `assets/emojis/${filename}`;
+                img.className = 'charm-icon';
+                img.dataset.itemId = itemId;
+                slot.appendChild(img);
             }
         });
     }
@@ -382,7 +447,16 @@ export default class ChatChannel {
 
         statMappings.forEach(entry => {
             if (entry.val !== undefined) {
-                const el = this.statusView.querySelector(`[data-stat="${entry.key}"]`);
+                // Performance Check: Skip if value hasn't changed
+                if (this.lastState.stats[entry.key] === entry.val) return;
+                this.lastState.stats[entry.key] = entry.val;
+
+                // Performance Check: Cache-aware selector
+                if (!this.domCache.stats[entry.key]) {
+                    this.domCache.stats[entry.key] = this.statusView.querySelector(`[data-stat="${entry.key}"]`);
+                }
+
+                const el = this.domCache.stats[entry.key];
                 if (el) el.textContent = entry.val;
             }
         });
@@ -421,6 +495,10 @@ export default class ChatChannel {
 
     updatePerks(perkPoints, activatedPerks) {
         if (!this.perkView) return;
+
+        const perkKey = `${perkPoints}|${activatedPerks.sort().join(',')}`;
+        if (this.lastState.perks === perkKey) return;
+        this.lastState.perks = perkKey;
 
         const ptsEl = this.perkView.querySelector('.perk-points');
         if (ptsEl) ptsEl.textContent = `Available: ${perkPoints}`;
@@ -605,6 +683,74 @@ export default class ChatChannel {
                 }
             });
         });
+    }
+
+    setupCharmDragDrop() {
+        if (!this.gearView) return;
+
+        const charmSlots = this.gearView.querySelectorAll('.charm-slot');
+        charmSlots.forEach(slot => {
+            const index = parseInt(slot.dataset.index);
+
+            slot.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                slot.classList.add('drag-over');
+            });
+
+            slot.addEventListener('dragleave', (e) => {
+                e.stopPropagation();
+                slot.classList.remove('drag-over');
+            });
+
+            // Click to open inventory
+            slot.addEventListener('click', () => {
+                if (this.uiManager) {
+                    this.uiManager.showPopup('inventory');
+                    if (this.uiManager.switchInventoryTab) {
+                        this.uiManager.switchInventoryTab('materials');
+                    }
+                }
+            });
+
+            slot.addEventListener('drop', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                slot.classList.remove('drag-over');
+
+                const itemId = e.dataTransfer.getData('itemId');
+                if (itemId && this.linkedUnitId) {
+                    import('../Events/EventBus.js').then(module => {
+                        const EventBus = module.default;
+                        EventBus.emit('CHARM_REQUEST', {
+                            unitId: this.linkedUnitId,
+                            itemId: itemId,
+                            index: index,
+                            action: 'set'
+                        });
+                    });
+                }
+            });
+
+            // Right-click to remove
+            slot.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                if (this.linkedUnitId) {
+                    import('../Events/EventBus.js').then(module => {
+                        const EventBus = module.default;
+                        EventBus.emit('CHARM_REQUEST', {
+                            unitId: this.linkedUnitId,
+                            index: index,
+                            action: 'remove'
+                        });
+                    });
+                }
+            });
+        });
+    }
+
+    findEmptyCharmSlot() {
+        return this.charms.findIndex(c => c === null);
     }
 
     clear() {
