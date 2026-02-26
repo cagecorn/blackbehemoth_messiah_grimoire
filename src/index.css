@@ -1408,17 +1408,19 @@ body {
 
 #portrait-bar {
     display: flex;
-    gap: 15px;
+    gap: clamp(5px, 2vw, 15px);
     background: rgba(0, 0, 0, 0.4);
-    padding: 10px 20px;
+    padding: 10px clamp(10px, 3vw, 20px);
     border-radius: 40px;
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.1);
+    max-width: 95vw;
+    box-sizing: border-box;
 }
 
 .unit-portrait {
-    width: 65px;
-    height: 65px;
+    width: clamp(45px, 12vw, 65px);
+    height: clamp(45px, 12vw, 65px);
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.1);
     position: relative;
@@ -1426,6 +1428,7 @@ body {
     transition: transform 0.2s;
     border: 2px solid rgba(255, 255, 255, 0.2);
     overflow: visible;
+    flex-shrink: 0;
 }
 
 .unit-portrait:hover {
