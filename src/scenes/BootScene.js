@@ -76,53 +76,53 @@ export default class BootScene extends Phaser.Scene {
         });
 
         // Load common emoji assets (Twemoji SVGs)
-        this.load.svg('emoji_coin', 'assets/emojis/1fa99.svg', { width: 32, height: 32 });
-        this.load.svg('emoji_gem', 'assets/emojis/1f48e.svg', { width: 32, height: 32 });
-        this.load.svg('emoji_meat', 'assets/emojis/1f356.svg', { width: 32, height: 32 });
-        this.load.svg('emoji_wood', 'assets/emojis/1fab5.svg', { width: 32, height: 32 });
-        this.load.svg('emoji_sparkle', 'assets/emojis/2728.svg', { width: 32, height: 32 });
-        this.load.svg('emoji_herb', 'assets/emojis/1f33f.svg', { width: 32, height: 32 });
-        this.load.svg('emoji_note', 'assets/emojis/1f3b5.svg', { width: 32, height: 32 });
-        this.load.svg('emoji_buff', 'assets/emojis/1f4aa.svg', { width: 32, height: 32 });
-        this.load.svg('emoji_fire', 'assets/emojis/1f525.svg', { width: 32, height: 32 });
-        this.load.svg('emoji_lightning', 'assets/emojis/26a1.svg', { width: 32, height: 32 });
-        this.load.svg('emoji_bomb', 'assets/emojis/1f4a3.svg', { width: 32, height: 32 });
-        this.load.svg('emoji_blood_drop', 'assets/emojis/1fa78.svg', { width: 32, height: 32 });
-        this.load.svg('emoji_sparkles', 'assets/emojis/2728.svg', { width: 32, height: 32 });
-        this.load.svg('emoji_megaphone', 'assets/emojis/1f4e3.svg', { width: 32, height: 32 });
-        this.load.svg('emoji_star', 'assets/emojis/2b50.svg', { width: 32, height: 32 });
-        this.load.svg('emoji_wind', 'assets/emojis/1f4a8.svg', { width: 32, height: 32 });
-        this.load.svg('emoji_sleep', 'assets/emojis/1f4a4.svg', { width: 32, height: 32 });
-        this.load.svg('emoji_plane', 'assets/emojis/2708.svg', { width: 64, height: 64 });
-        this.load.svg('emoji_cloud', 'assets/emojis/2601.svg', { width: 64, height: 64 });
-        this.load.svg('emoji_smoke', 'assets/emojis/1f4ad.svg', { width: 32, height: 32 });
-        this.load.svg('emoji_sweat', 'assets/emojis/1f4a6.svg', { width: 32, height: 32 });
-        this.load.svg('emoji_cry', 'assets/emojis/1f62d.svg', { width: 32, height: 32 });
-        this.load.svg('emoji_heart', 'assets/emojis/2764.svg', { width: 32, height: 32 });
-        this.load.svg('emoji_snowball', 'assets/emojis/2744.svg', { width: 32, height: 32 });
-        this.load.svg('emoji_snowman', 'assets/emojis/26c4.svg', { width: 32, height: 32 });
-        this.load.svg('emoji_snowcloud', 'assets/emojis/1f328.svg', { width: 64, height: 64 });
+        this.load.svg('emoji_coin', 'assets/emojis/1fa99.svg', { width: 96, height: 96 });
+        this.load.svg('emoji_gem', 'assets/emojis/1f48e.svg', { width: 96, height: 96 });
+        this.load.svg('emoji_meat', 'assets/emojis/1f356.svg', { width: 96, height: 96 });
+        this.load.svg('emoji_wood', 'assets/emojis/1fab5.svg', { width: 96, height: 96 });
+        this.load.svg('emoji_sparkle', 'assets/emojis/2728.svg', { width: 96, height: 96 });
+        this.load.svg('emoji_herb', 'assets/emojis/1f33f.svg', { width: 96, height: 96 });
+        this.load.svg('emoji_note', 'assets/emojis/1f3b5.svg', { width: 96, height: 96 });
+        this.load.svg('emoji_buff', 'assets/emojis/1f4aa.svg', { width: 96, height: 96 });
+        this.load.svg('emoji_fire', 'assets/emojis/1f525.svg', { width: 96, height: 96 });
+        this.load.svg('emoji_lightning', 'assets/emojis/26a1.svg', { width: 96, height: 96 });
+        this.load.svg('emoji_bomb', 'assets/emojis/1f4a3.svg', { width: 96, height: 96 });
+        this.load.svg('emoji_blood_drop', 'assets/emojis/1fa78.svg', { width: 96, height: 96 });
+        this.load.svg('emoji_sparkles', 'assets/emojis/2728.svg', { width: 96, height: 96 });
+        this.load.svg('emoji_megaphone', 'assets/emojis/1f4e3.svg', { width: 96, height: 96 });
+        this.load.svg('emoji_star', 'assets/emojis/2b50.svg', { width: 96, height: 96 });
+        this.load.svg('emoji_wind', 'assets/emojis/1f4a8.svg', { width: 96, height: 96 });
+        this.load.svg('emoji_sleep', 'assets/emojis/1f4a4.svg', { width: 96, height: 96 });
+        this.load.svg('emoji_plane', 'assets/emojis/2708.svg', { width: 192, height: 192 });
+        this.load.svg('emoji_cloud', 'assets/emojis/2601.svg', { width: 192, height: 192 });
+        this.load.svg('emoji_smoke', 'assets/emojis/1f4ad.svg', { width: 96, height: 96 });
+        this.load.svg('emoji_sweat', 'assets/emojis/1f4a6.svg', { width: 96, height: 96 });
+        this.load.svg('emoji_cry', 'assets/emojis/1f62d.svg', { width: 96, height: 96 });
+        this.load.svg('emoji_heart', 'assets/emojis/2764.svg', { width: 96, height: 96 });
+        this.load.svg('emoji_snowball', 'assets/emojis/2744.svg', { width: 96, height: 96 });
+        this.load.svg('emoji_snowman', 'assets/emojis/26c4.svg', { width: 96, height: 96 });
+        this.load.svg('emoji_snowcloud', 'assets/emojis/1f328.svg', { width: 192, height: 192 });
 
         this.load.on('loaderror', (file) => {
             console.error(`[BootScene] Error loading asset: ${file.key} from ${file.src}`);
         });
 
         // Noah's Animals
-        this.load.svg('emoji_dog', 'assets/emojis/1f415.svg', { width: 32, height: 32 });
-        this.load.svg('emoji_cat', 'assets/emojis/1f408.svg', { width: 32, height: 32 });
-        this.load.svg('emoji_horse', 'assets/emojis/1f40e.svg', { width: 32, height: 32 });
-        this.load.svg('emoji_pig', 'assets/emojis/1f416.svg', { width: 32, height: 32 });
-        this.load.svg('emoji_tiger', 'assets/emojis/1f405.svg', { width: 32, height: 32 });
-        this.load.svg('emoji_bison', 'assets/emojis/1f9ac.svg', { width: 32, height: 32 });
-        this.load.svg('emoji_sheep', 'assets/emojis/1f411.svg', { width: 32, height: 32 });
+        this.load.svg('emoji_dog', 'assets/emojis/1f415.svg', { width: 96, height: 96 });
+        this.load.svg('emoji_cat', 'assets/emojis/1f408.svg', { width: 96, height: 96 });
+        this.load.svg('emoji_horse', 'assets/emojis/1f40e.svg', { width: 96, height: 96 });
+        this.load.svg('emoji_pig', 'assets/emojis/1f416.svg', { width: 96, height: 96 });
+        this.load.svg('emoji_tiger', 'assets/emojis/1f405.svg', { width: 96, height: 96 });
+        this.load.svg('emoji_bison', 'assets/emojis/1f9ac.svg', { width: 96, height: 96 });
+        this.load.svg('emoji_sheep', 'assets/emojis/1f411.svg', { width: 96, height: 96 });
 
         // Noel's Plants
-        this.load.svg('emoji_kiwi', 'assets/emojis/1f95d.svg', { width: 32, height: 32 });
-        this.load.svg('emoji_grapes', 'assets/emojis/1f347.svg', { width: 32, height: 32 });
-        this.load.svg('emoji_watermelon', 'assets/emojis/1f349.svg', { width: 32, height: 32 });
-        this.load.svg('emoji_pineapple', 'assets/emojis/1f34d.svg', { width: 32, height: 32 });
-        this.load.svg('emoji_banana', 'assets/emojis/1f34c.svg', { width: 32, height: 32 });
-        this.load.svg('emoji_strawberry', 'assets/emojis/1f353.svg', { width: 32, height: 32 });
+        this.load.svg('emoji_kiwi', 'assets/emojis/1f95d.svg', { width: 96, height: 96 });
+        this.load.svg('emoji_grapes', 'assets/emojis/1f347.svg', { width: 96, height: 96 });
+        this.load.svg('emoji_watermelon', 'assets/emojis/1f349.svg', { width: 96, height: 96 });
+        this.load.svg('emoji_pineapple', 'assets/emojis/1f34d.svg', { width: 96, height: 96 });
+        this.load.svg('emoji_banana', 'assets/emojis/1f34c.svg', { width: 96, height: 96 });
+        this.load.svg('emoji_strawberry', 'assets/emojis/1f353.svg', { width: 96, height: 96 });
 
         // Load Character Sprites
         this.load.image('warrior_sprite', 'assets/characters/party/warrior_sprite.png');
@@ -165,7 +165,7 @@ export default class BootScene extends Phaser.Scene {
         this.load.image('aina_cutscene', 'assets/characters/party/aina_cutscene.png');
 
         // Load effect emojis
-        this.load.svg('emoji_rock', 'assets/emojis/1f5ff.svg', { width: 32, height: 32 });
+        this.load.svg('emoji_rock', 'assets/emojis/1f5ff.svg', { width: 96, height: 96 });
 
         // Load Backgrounds
         this.load.image('bg_cursed_forest', 'assets/background/battle-stage-cursed-forest.png');
