@@ -3,7 +3,8 @@
  * Represents a single chat interface for a party member.
  */
 export default class ChatChannel {
-    constructor(id, classId, characters, name, spritePath, parentElement, onCommand, onSwap) {
+    constructor(id, classId, characters, name, spritePath, parentElement, onCommand, onSwap, uiManager) {
+        this.uiManager = uiManager;
         this.onCommand = onCommand;
         this.onSwap = onSwap;
         this.name = name;
@@ -304,18 +305,22 @@ export default class ChatChannel {
             if (status.name.includes('NanaCrit')) hasNanaBuff = true;
 
             const span = document.createElement('span');
-            span.className = 'status-icon tooltip';
+            span.className = 'status-icon';
             span.textContent = status.emoji;
+            span.style.cursor = 'pointer';
+            span.style.fontSize = '18px';
+            span.style.marginLeft = '6px';
+            span.style.transition = 'transform 0.2s';
 
-            const tooltipText = document.createElement('span');
-            tooltipText.className = 'tooltiptext';
-            const titleColor = status.category === 'buff' ? '#00ffcc' : '#ff5555';
-            tooltipText.innerHTML = `<strong style="color:${titleColor}">${status.name}</strong><br/>${status.description}`;
-            span.appendChild(tooltipText);
+            span.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (this.uiManager && this.uiManager.showStatusTooltip) {
+                    this.uiManager.showStatusTooltip(status, span);
+                }
+            });
 
-            span.style.cursor = 'help';
-            span.style.fontSize = '14px';
-            span.style.marginLeft = '4px';
+            span.addEventListener('mouseenter', () => span.style.transform = 'scale(1.2)');
+            span.addEventListener('mouseleave', () => span.style.transform = 'scale(1)');
 
             if (status.category === 'buff') {
                 this.buffContainer.appendChild(span);

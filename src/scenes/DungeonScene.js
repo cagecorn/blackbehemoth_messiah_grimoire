@@ -317,7 +317,6 @@ export default class DungeonScene extends Phaser.Scene {
             this.mercenaries.getChildren().forEach(mercenary => {
                 mercenary.update();
                 mercenary.setDepth(mercenary.y);
-                this.clampToCamera(mercenary);
             });
         }
 
@@ -325,7 +324,6 @@ export default class DungeonScene extends Phaser.Scene {
             this.enemies.getChildren().forEach(enemy => {
                 enemy.update();
                 enemy.setDepth(enemy.y);
-                this.clampToCamera(enemy);
             });
         }
 
@@ -489,28 +487,5 @@ export default class DungeonScene extends Phaser.Scene {
         return null;
     }
 
-    clampToCamera(unit) {
-        if (!unit.active || !unit.body) return;
-        const cam = this.cameras.main.worldView;
-        const buffer = 16; // Small padding to keep them fully on-screen
 
-        // If camera hasn't fully initialized its dimensions, skip
-        if (cam.width === 0 || cam.height === 0) return;
-
-        if (unit.x < cam.left + buffer) {
-            unit.x = cam.left + buffer;
-            if (unit.body.velocity.x < 0) unit.body.velocity.x = 0;
-        } else if (unit.x > cam.right - buffer) {
-            unit.x = cam.right - buffer;
-            if (unit.body.velocity.x > 0) unit.body.velocity.x = 0;
-        }
-
-        if (unit.y < cam.top + buffer) {
-            unit.y = cam.top + buffer;
-            if (unit.body.velocity.y < 0) unit.body.velocity.y = 0;
-        } else if (unit.y > cam.bottom - buffer) {
-            unit.y = cam.bottom - buffer;
-            if (unit.body.velocity.y > 0) unit.body.velocity.y = 0;
-        }
-    }
 }

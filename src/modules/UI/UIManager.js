@@ -357,7 +357,7 @@ export default class UIManager {
             if (cache.statusKey !== statusKey) {
                 const orbit = element.querySelector('.portrait-status-orbit');
                 if (orbit) {
-                    let statusIconsHtml = '';
+                    orbit.innerHTML = ''; // Clear old icons
                     const statusCount = statuses.length;
                     const spacing = 20;
                     statuses.forEach((status, index) => {
@@ -469,12 +469,16 @@ export default class UIManager {
                     this.handlePlayerCommand(channel.linkedUnitId || id, text);
                 },
                 (swapClassId, newCharacterId) => {
-                    EventBus.emit(EventBus.EVENTS.DEBUG_SWAP_CHARACTER, {
-                        classId: channel.classId,
-                        unitId: channel.linkedUnitId,
-                        characterId: newCharacterId
+                    import('../Events/EventBus.js').then(module => {
+                        const EventBus = module.default;
+                        EventBus.emit(EventBus.EVENTS.DEBUG_SWAP_CHARACTER, {
+                            classId: channel.classId,
+                            unitId: channel.linkedUnitId,
+                            characterId: newCharacterId
+                        });
                     });
-                }
+                },
+                this // Pass UIManager instance
             );
             channel.clear(); // Ensure it starts empty
             this.channels.push(channel);
