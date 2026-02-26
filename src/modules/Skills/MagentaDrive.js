@@ -114,25 +114,27 @@ export default class MagentaDrive {
         const startExt = x1;
         const endExt = x2;
 
+        graphics.y = y1; // Set graphics origin Y to the slash Y
+
         // Outer Glow (Thick Red)
         graphics.lineStyle(60, 0xaa0000, 0.6);
         graphics.beginPath();
-        graphics.moveTo(startExt, y1);
-        graphics.lineTo(endExt, y2);
+        graphics.moveTo(startExt, 0);
+        graphics.lineTo(endExt, 0);
         graphics.strokePath();
 
         // Inner Beam (Bright Red/Magenta)
         graphics.lineStyle(20, 0xff0055, 1);
         graphics.beginPath();
-        graphics.moveTo(startExt, y1);
-        graphics.lineTo(endExt, y2);
+        graphics.moveTo(startExt, 0);
+        graphics.lineTo(endExt, 0);
         graphics.strokePath();
 
         // Core Beam (White)
         graphics.lineStyle(6, 0xffffff, 1);
         graphics.beginPath();
-        graphics.moveTo(startExt, y1);
-        graphics.lineTo(endExt, y2);
+        graphics.moveTo(startExt, 0);
+        graphics.lineTo(endExt, 0);
         graphics.strokePath();
 
         graphics.setDepth(100);
@@ -154,7 +156,6 @@ export default class MagentaDrive {
             targets: graphics,
             alpha: 0,
             scaleY: 3, // Expand vertically as it fades
-            y: y1 - (y1 * 3 - y1), // Keep centered
             duration: 500,
             ease: 'Expo.easeOut',
             onComplete: () => graphics.destroy()
