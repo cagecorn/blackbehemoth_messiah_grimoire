@@ -60,6 +60,21 @@ export default class LootManager {
                     });
                 }
             });
+
+            // Touch-Drag Collection
+            item.on('pointerover', (pointer) => {
+                if (pointer.isDown && item.canBeCollected && !item.isCollected) {
+                    this.scene.tweens.add({
+                        targets: item,
+                        scale: 1.5,
+                        duration: 80,
+                        yoyo: true,
+                        onComplete: () => {
+                            this.collectLoot(null, item);
+                        }
+                    });
+                }
+            });
         }
     }
 
