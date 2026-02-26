@@ -1,11 +1,13 @@
 export default class CooldownBar {
-    constructor(scene, x, y, width = 64, height = 4) {
+    constructor(scene, x, y, width = 64, height = 4, color = 0xffaa00, readyColor = 0xffff00) {
         this.bar = scene.add.graphics();
 
         this.x = x;
         this.y = y;
         this.width = width;
         this.height = height;
+        this.color = color;
+        this.readyColor = readyColor;
         this.value = 0; // expected from 0 to 1
 
         this.bar.setDepth(9999); // Always on top
@@ -35,10 +37,10 @@ export default class CooldownBar {
         this.bar.lineStyle(1, 0x555555);
         this.bar.strokeRect(this.x - this.width / 2, this.y, this.width, this.height);
 
-        // Foreground (orange/yellow for cooldown)
+        // Foreground
         if (this.value > 0) {
-            // If ready, make it bright yellow, else orange
-            const color = this.value >= 1 ? 0xffff00 : 0xffaa00;
+            // If ready, make it bright yellow, else orange (defaults)
+            const color = this.value >= 1 ? this.readyColor : this.color;
             this.bar.fillStyle(color);
 
             const displayWidth = Math.max(1, this.width * this.value);

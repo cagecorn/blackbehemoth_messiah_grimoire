@@ -18,6 +18,7 @@ export default class UIManager {
         this.resizeObserver = null;
         this.inventoryDirty = true; // initially dirty to load first time
         this.isRefreshing = false;
+        this.portraits = {}; // unitId -> { element, statusKey, hp, ult }
 
         // Mobile HUD Elements
         this.hudGold = document.getElementById('hud-gold');
@@ -262,7 +263,6 @@ export default class UIManager {
     updatePortraitBar() {
         if (!this.portraitBar) return;
 
-        // Ensure we have correct number of portraits
         let activeMercs = [];
         try {
             if (this.scene && this.scene.mercenaries && typeof this.scene.mercenaries.getChildren === 'function') {
@@ -272,41 +272,116 @@ export default class UIManager {
             console.warn('[UIManager] Error getting active mercenaries:', e);
         }
 
-        // Clear and rebuild for simplicity or keep track
-        // Rebuilding is safer for dynamic scaling
-        this.portraitBar.innerHTML = '';
-        activeMercs.forEach(merc => {
+        // Clean up portraits for units no longer active
+        const activeIds = activeMercs.map(m => m.id);
+        Object.keys(this.portraits).forEach(id => {
+            if (!activeIds.includes(id)) {
+                this.portraits[id].element.remove();
+                delete this.portraits[id];
+            }
+        });
+
+        activeMercs.forEach((merc, index) => {
             if (!merc) return;
 
-            let charConfig = merc;
-            try {
-                if (Characters && typeof Characters === 'object') {
-                    charConfig = Object.values(Characters).find(c => c && c.id === merc.characterId) || merc;
+            const hpPercent = (merc.hp / merc.maxHp) * 100;
+            const ultPercent = (merc.ultGauge / merc.maxUltGauge) * 100;
+            const statuses = (typeof merc.getStatuses === 'function') ? merc.getStatuses() : [];
+            const statusKey = statuses.map(s => s.emoji).join(',');
+
+            let cache = this.portraits[merc.id];
+
+            if (!cache) {
+                // Create new portrait element
+                let charConfig = merc;
+                try {
+                    if (Characters && typeof Characters === 'object') {
+                        charConfig = Object.values(Characters).find(c => c && c.id === merc.characterId) || merc;
+                    }
+                } catch (e) {
+                    console.warn('[UIManager] Error finding character config:', e);
                 }
-            } catch (e) {
-                console.warn('[UIManager] Error finding character config:', e);
+
+                const portrait = document.createElement('div');
+                portrait.className = 'unit-portrait';
+                portrait.innerHTML = `
+                    <img src="assets/characters/party/${charConfig.sprite}.png" alt="${merc.unitName}">
+                    <div class="portrait-hp-ring" style="border-width: 3px;"></div>
+                    <div class="portrait-ult-ring" style="border-width: 3px;"></div>
+                    <div class="portrait-status-orbit"></div>
+                `;
+
+                portrait.onclick = () => {
+                    const channel = this.unitToChannel[merc.id];
+                    if (channel) this.showCharacterDetail(channel);
+                };
+
+                this.portraitBar.appendChild(portrait);
+                cache = this.portraits[merc.id] = {
+                    element: portrait,
+                    statusKey: '',
+                    hp: -1,
+                    ult: -1
+                };
             }
 
-            const portrait = document.createElement('div');
-            portrait.className = 'unit-portrait';
-            if (merc.hp !== undefined && merc.hp <= 0) portrait.style.filter = 'grayscale(100%) opacity(0.5)';
+            const { element } = cache;
 
-            const hpPercent = (merc.hp / merc.maxHp) * 100;
+            // 1. Update overall status (Grayscale if dead)
+            if (merc.hp <= 0) {
+                element.style.filter = 'grayscale(100%) opacity(0.5)';
+            } else {
+                element.style.filter = '';
+            }
 
-            portrait.innerHTML = `
-                <img src="assets/characters/party/${charConfig.sprite}.png" alt="${merc.unitName}">
-                <div class="portrait-hp-ring" style="border-top-color: ${this.getHPColor(hpPercent)}; border-width: 3px; clip-path: inset(0 0 ${100 - hpPercent}% 0);"></div>
-            `;
-
-            portrait.onclick = () => {
-                // Show character detail or select
-                const channel = this.unitToChannel[merc.id];
-                if (channel) {
-                    this.showCharacterDetail(channel);
+            // 2. Update HP Ring
+            if (Math.abs(cache.hp - hpPercent) > 0.1) {
+                const hpRing = element.querySelector('.portrait-hp-ring');
+                if (hpRing) {
+                    hpRing.style.borderColor = this.getHPColor(hpPercent);
+                    hpRing.style.clipPath = `inset(${100 - hpPercent}% 0 0 0)`;
                 }
-            };
+                cache.hp = hpPercent;
+            }
 
-            this.portraitBar.appendChild(portrait);
+            // 3. Update Ult Ring
+            if (Math.abs(cache.ult - ultPercent) > 0.1) {
+                const ultRing = element.querySelector('.portrait-ult-ring');
+                if (ultRing) {
+                    ultRing.style.clipPath = `inset(${100 - ultPercent}% 0 0 0)`;
+                }
+                cache.ult = ultPercent;
+            }
+
+            // 4. Update Status Icons (Only if they changed!)
+            if (cache.statusKey !== statusKey) {
+                const orbit = element.querySelector('.portrait-status-orbit');
+                if (orbit) {
+                    let statusIconsHtml = '';
+                    const statusCount = statuses.length;
+                    const spacing = 20;
+                    statuses.forEach((status, index) => {
+                        const angle = (index - (statusCount - 1) / 2) * spacing;
+                        const iconEl = document.createElement('div');
+                        iconEl.className = 'portrait-status-mini';
+                        iconEl.style.setProperty('--angle', `${angle}deg`);
+                        iconEl.innerHTML = status.emoji;
+
+                        iconEl.onclick = (e) => {
+                            e.stopPropagation(); // Prevents portrait click
+                            this.showStatusTooltip(status, iconEl);
+                        };
+
+                        orbit.appendChild(iconEl);
+                    });
+                }
+                cache.statusKey = statusKey;
+            }
+
+            // Ensure order matches activeMercs order (optional but good for consistency)
+            if (this.portraitBar.children[index] !== element) {
+                this.portraitBar.insertBefore(element, this.portraitBar.children[index]);
+            }
         });
     }
 
@@ -656,6 +731,45 @@ export default class UIManager {
             'emoji_herb': '1f33f.svg'
         };
         return map[key] || 'unknown.svg';
+    }
+
+    showStatusTooltip(status, anchorEl) {
+        if (!this.statusTooltip) {
+            this.statusTooltip = document.createElement('div');
+            this.statusTooltip.id = 'status-tooltip';
+            this.statusTooltip.className = 'status-popup-tab';
+            document.body.appendChild(this.statusTooltip);
+        }
+
+        const rect = anchorEl.getBoundingClientRect();
+
+        this.statusTooltip.innerHTML = `
+            <div class="status-popup-header">
+                <span class="status-popup-emoji">${status.emoji}</span>
+                <span class="status-popup-title">${status.name}</span>
+            </div>
+            <div class="status-popup-desc">${status.description}</div>
+        `;
+
+        this.statusTooltip.style.display = 'block';
+
+        // Position above the icon
+        const tooltipRect = this.statusTooltip.getBoundingClientRect();
+        this.statusTooltip.style.left = Math.max(10, Math.min(window.innerWidth - tooltipRect.width - 10, rect.left + rect.width / 2 - tooltipRect.width / 2)) + 'px';
+        this.statusTooltip.style.top = (rect.top - tooltipRect.height - 12) + 'px';
+
+        // Auto-hide after 3 seconds
+        if (this.statusTooltipTimer) clearTimeout(this.statusTooltipTimer);
+        this.statusTooltipTimer = setTimeout(() => {
+            this.statusTooltip.style.display = 'none';
+        }, 3000);
+
+        // Click anywhere to hide immediately
+        const hideMe = () => {
+            this.statusTooltip.style.display = 'none';
+            document.removeEventListener('mousedown', hideMe);
+        };
+        setTimeout(() => document.addEventListener('mousedown', hideMe), 100);
     }
 
     destroy() {

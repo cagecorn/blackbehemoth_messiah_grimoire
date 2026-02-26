@@ -86,13 +86,7 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
         this.healthBar = new HealthBar(scene, x, y - this.barYOffset, 48, 6);
 
         // AI Debug Text
-        this.aiDebugText = this.scene.add.text(0, -(this.barYOffset + 12), '', {
-            fontSize: '11px',
-            fill: '#ffcccc',
-            backgroundColor: '#000000aa',
-            padding: { x: 2, y: 1 }
-        }).setOrigin(0.5);
-        this.add(this.aiDebugText);
+
 
         // Store base scale for relative flipping
         this.baseScaleX = this.sprite.scaleX;
@@ -454,11 +448,7 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
             this.handleAttack();
         }
         this.healthBar.setPos(this.x, this.y - this.barYOffset);
-        if (this.btManager && this.aiDebugText) {
-            this.aiDebugText.setText(this.btManager.lastActiveNodeName || 'No Name');
-        } else if (this.aiDebugText) {
-            this.aiDebugText.setText('NO BT');
-        }
+
         this.updateVisualOrientation();
     }
 

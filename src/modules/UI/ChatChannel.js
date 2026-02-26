@@ -40,18 +40,14 @@ export default class ChatChannel {
                 </select>
                 <span class="nameplate-buff-icon" id="nameplate-buff-${id}" style="display:none; font-size: 16px; margin-left: 4px;" title="나나의 음악 버프 활성화!">🎵</span>
                 <button class="ult-toggle-btn auto" id="ult-toggle-${id}" title="궁극기 사용 모드">AUTO</button>
-                <div class="header-toggles">
-                    <button class="chat-dashboard-btn" id="dash-btn-${id}" title="메뉴 열기">⚙️</button>
-                </div>
             </div>
             <div class="status-row-second">
                 <div class="status-container buffs" id="buffs-${id}"></div>
                 <div class="status-container status-effects" id="status-${id}"></div>
             </div>
-            <div class="chat-log" id="log-${id}"></div>
 
-            <!-- Dashboard Menu View -->
-            <div class="chat-dashboard-view" id="dashboard-${id}" style="display: none;">
+            <!-- Dashboard Menu View (Always Visible) -->
+            <div class="chat-dashboard-view" id="dashboard-${id}" style="display: flex;">
                 <div class="dashboard-grid">
                     <button class="dash-item" data-view="gear">
                         <span class="dash-icon">⚔️</span>
@@ -74,10 +70,9 @@ export default class ChatChannel {
                         <span class="dash-label">퍽 [PERK]</span>
                     </button>
                 </div>
-                <button class="dash-back-btn">돌아가기</button>
             </div>
 
-            <!-- Perk View (Placeholder) -->
+            <!-- Perk View -->
             <div class="chat-perk-view" id="perk-${id}" style="display: none;">
                 <div class="perk-container">
                     <div class="perk-header">
@@ -95,6 +90,7 @@ export default class ChatChannel {
                 <div class="gear-slot" data-slot="armor"><span class="slot-label">[방어구]</span> <span class="slot-value">Empty</span></div>
                 <div class="gear-slot" data-slot="necklace"><span class="slot-label">[목걸이]</span> <span class="slot-value">Empty</span></div>
                 <div class="gear-slot" data-slot="ring"><span class="slot-label">[반지]</span> <span class="slot-value">Empty</span></div>
+                <button class="dash-back-btn">돌아가기</button>
             </div>
             <div class="chat-status-view" id="stats-${id}" style="display: none;">
                 <div class="stat-grid">
@@ -118,6 +114,7 @@ export default class ChatChannel {
                     <div class="stat-item"><span class="stat-label">EVA</span><span class="stat-value" data-stat="eva">0</span></div>
                     <div class="stat-item"><span class="stat-label">CRIT</span><span class="stat-value" data-stat="crit">0</span></div>
                 </div>
+                <button class="dash-back-btn">돌아가기</button>
             </div>
             <div class="chat-skill-view" id="skill-${id}" style="display: none;">
                 <div class="skill-info-container">
@@ -140,39 +137,29 @@ export default class ChatChannel {
                         </div>
                     </div>
                 </div>
+                <button class="dash-back-btn">돌아가기</button>
             </div>
             <div class="chat-narrative-view" id="narrative-${id}" style="display: none;">
-                <!-- Narrative blocks will be injected here -->
+                <!-- Narrative blocks injected here -->
+                <button class="dash-back-btn">돌아가기</button>
             </div>
-            <form class="chat-form" id="form-${id}">
-                <input type="text" placeholder="${name}에게 지시... (e.g. 공격!)" />
-            </form>
         `;
 
         parentElement.appendChild(this.element);
 
-        this.log = this.element.querySelector('.chat-log');
-        this.form = this.element.querySelector('.chat-form');
-        this.input = this.element.querySelector('input');
-        this.buffContainer = this.element.querySelector('.status-container.buffs');
         this.setupDragDrop();
         this.statusContainer = this.element.querySelector('.status-container.status-effects');
+        this.buffContainer = this.element.querySelector('.status-container.buffs');
         this.statusRow = this.element.querySelector('.status-row-second');
         this.characterSelect = this.element.querySelector('.chat-name-select');
-        this.dashboardBtn = this.element.querySelector('.chat-dashboard-btn');
         this.dashboardView = this.element.querySelector('.chat-dashboard-view');
         this.perkView = this.element.querySelector('.chat-perk-view');
         this.gearView = this.element.querySelector('.chat-gear-view');
         this.skillView = this.element.querySelector('.chat-skill-view');
         this.statusView = this.element.querySelector('.chat-status-view');
         this.narrativeView = this.element.querySelector('.chat-narrative-view');
-        this.currentView = 'chat'; // 'chat', 'dashboard', 'gear', 'skill', 'status', 'narrative', 'perk'
+        this.currentView = 'dashboard'; // Default view
         this.setupGearDragDrop();
-
-        // Bind dashboard button
-        this.dashboardBtn.addEventListener('click', () => {
-            this.toggleView('dashboard');
-        });
 
         // Bind dashboard grid items
         this.dashboardView.querySelectorAll('.dash-item').forEach(btn => {
@@ -184,41 +171,35 @@ export default class ChatChannel {
 
         // Bind back buttons
         this.element.querySelectorAll('.dash-back-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                if (this.currentView === 'dashboard') {
-                    this.toggleView('chat');
-                } else {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.toggleView('dashboard');
+            });
+        });
+
+        // Add context menu or "Back to Menu" logic for sub-views
+        [this.perkView, this.gearView, this.skillView, this.statusView, this.narrativeView].forEach(view => {
+            view.addEventListener('click', (e) => {
+                // If clicking the view background (not its children), go back to dashboard
+                if (e.target === view) {
                     this.toggleView('dashboard');
                 }
             });
         });
 
-        this.characterSelect.addEventListener('change', (e) => {
-            if (this.onSwap) {
-                this.onSwap(this.classId, e.target.value);
-            }
-        });
-
-        this.form.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const text = this.input.value.trim();
-            if (text) {
-                this.addLog(`지휘: ${text}`, '#ffffff');
-                this.onCommand(text);
-                this.input.value = '';
-            }
-        });
-
-        // Prevent Phaser from capturing keyboard input while typing
-        this.input.addEventListener('keydown', (e) => {
-            e.stopPropagation();
-        });
+        if (this.characterSelect) {
+            this.characterSelect.addEventListener('change', (e) => {
+                if (this.onSwap) {
+                    this.onSwap(this.classId, e.target.value);
+                }
+            });
+        }
 
         // Manual Ultimate Trigger (Clicking the channel itself)
         this.element.addEventListener('click', (e) => {
-            // Avoid triggering if clicking on UI buttons or inputs
-            if (e.target.closest('.chat-header') || e.target.closest('.header-toggles') ||
-                e.target.closest('.chat-form') || e.target.closest('.chat-view-toggle')) return;
+            // Avoid triggering if clicking on UI buttons or interactive areas
+            if (e.target.closest('.chat-header') || e.target.closest('.chat-dashboard-view') ||
+                e.target.closest('.chat-view-toggle')) return;
 
             if (this.element.classList.contains('ult-ready-glow')) {
                 import('../Events/EventBus.js').then(eb => {
@@ -263,18 +244,10 @@ export default class ChatChannel {
     }
 
     toggleView(target) {
-        if (this.currentView === target) {
-            this.currentView = 'chat';
-        } else {
-            this.currentView = target;
-        }
+        if (!target) target = 'dashboard';
+        this.currentView = target;
 
         // Sync Visuals
-        const isChat = this.currentView === 'chat';
-        this.log.style.display = isChat ? 'flex' : 'none';
-        this.form.style.display = isChat ? 'block' : 'none';
-        this.statusRow.style.display = isChat ? 'flex' : 'none';
-
         this.dashboardView.style.display = (this.currentView === 'dashboard') ? 'flex' : 'none';
         this.gearView.style.display = (this.currentView === 'gear') ? 'flex' : 'none';
         this.skillView.style.display = (this.currentView === 'skill') ? 'flex' : 'none';
@@ -282,11 +255,7 @@ export default class ChatChannel {
         this.narrativeView.style.display = (this.currentView === 'narrative') ? 'block' : 'none';
         this.perkView.style.display = (this.currentView === 'perk') ? 'flex' : 'none';
 
-        // Update Dashboard Button Icon
-        this.dashboardBtn.textContent = (this.currentView !== 'chat') ? '💬' : '⚙️';
-        this.dashboardBtn.title = (this.currentView !== 'chat') ? '채팅 보러가기' : '메뉴 열기';
-
-        if (this.currentView !== 'chat') {
+        if (this.currentView !== 'dashboard') {
             this.element.classList.add('view-overlay');
         } else {
             this.element.classList.remove('view-overlay');
@@ -319,36 +288,7 @@ export default class ChatChannel {
     }
 
     addLog(text, color = '#e0e0e0') {
-        const entry = document.createElement('div');
-        entry.style.color = color;
-
-        if (text.includes('[깊은 사고]')) {
-            const lines = text.split('\n');
-            const thoughtLine = lines[0]; // e.g. "[깊은 사고] I should..."
-            const speechLine = lines.slice(1).join('\n'); // Everything else
-
-            const thoughtSpan = document.createElement('span');
-            thoughtSpan.style.fontStyle = 'italic';
-            thoughtSpan.style.color = '#888';
-            thoughtSpan.textContent = thoughtLine;
-
-            const speechText = document.createElement('div');
-            speechText.textContent = speechLine;
-            speechText.style.marginTop = '2px';
-
-            entry.appendChild(document.createTextNode('> '));
-            entry.appendChild(thoughtSpan);
-            entry.appendChild(speechText);
-        } else {
-            entry.textContent = `> ${text}`;
-        }
-
-        this.log.appendChild(entry);
-
-        if (this.log.children.length > 50) {
-            this.log.removeChild(this.log.firstElementChild);
-        }
-        this.log.scrollTop = this.log.scrollHeight;
+        // No-op as chat is removed from detailed view
     }
 
     updateStatuses(statuses) {
@@ -577,9 +517,6 @@ export default class ChatChannel {
         this.updateVisuals(unitName, spritePath, this.characterId);
         if (skillData) this.updateSkill(skillData);
         if (narrativeUnlocks) this.updateNarrative(narrativeUnlocks, 1);
-
-        this.log.innerHTML = '';
-        this.addLog(`[System] ${unitName} 가 연결되었습니다.`, '#ffff00');
     }
 
     populateDropdown() {
@@ -677,8 +614,5 @@ export default class ChatChannel {
 
         const select = this.element.querySelector('.chat-name-select');
         if (select) select.innerHTML = '<option value="none">Empty Slot (배치 전)</option>';
-
-        if (this.input) this.input.placeholder = '배치 전';
-        this.log.innerHTML = '';
     }
 }

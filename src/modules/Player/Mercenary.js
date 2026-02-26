@@ -135,15 +135,10 @@ export default class Mercenary extends Phaser.GameObjects.Container {
 
         this.healthBar = new HealthBar(scene, x, y - this.barYOffset, 64, 8);
         this.cooldownBar = new CooldownBar(scene, x, y - (this.barYOffset - 10), 64, 4); // Placed just below HP
-        this.ultBar = new CooldownBar(scene, x, y - (this.barYOffset - 16), 64, 4); // Ultimate Bar
+        // Ultimate Bar: Purple (0xbb88ff) when charging, Gold (0xffcc00) when ready
+        this.ultBar = new CooldownBar(scene, x, y - (this.barYOffset - 16), 64, 4, 0xbb88ff, 0xffcc00); // Ultimate Bar
 
-        this.aiDebugText = this.scene.add.text(0, -(this.barYOffset + 14), '', {
-            fontSize: '12px',
-            fill: '#ffffff',
-            backgroundColor: '#000000aa',
-            padding: { x: 2, y: 1 }
-        }).setOrigin(0.5);
-        this.add(this.aiDebugText);
+
 
         // Store base scale for relative flipping (important for high-res sprites)
         this.baseScaleX = this.sprite.scaleX;
@@ -836,11 +831,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             this.ultBar.setPos(this.x, this.y - (this.barYOffset - 16));
             this.ultBar.setValue(this.ultGauge / this.maxUltGauge);
         }
-        if (this.btManager && this.aiDebugText) {
-            this.aiDebugText.setText(this.btManager.lastActiveNodeName || 'No Name');
-        } else if (this.aiDebugText) {
-            this.aiDebugText.setText('NO BT');
-        }
+
 
         this.updateVisualOrientation();
     }
@@ -877,9 +868,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         // To be overridden by subclasses (e.g. Wizard for Arcane Surge)
     }
 
-    syncStatusUI() {
-        if (!this.active || this.hp <= 0) return;
-
+    getStatuses() {
         const statuses = [];
 
         // 1. Check Crowd Control
@@ -964,7 +953,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             });
         }
 
-        // 1.1 Custom Character Statuses (like Perks or Transformation)
+        // 1.1 Custom Character Statuses
         const customStatuses = this.getCustomStatuses();
         if (customStatuses && customStatuses.length > 0) {
             statuses.push(...customStatuses);
@@ -994,9 +983,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
                 }
 
                 let emoji = '💪';
-                if (buff.type === 'Stone Skin') {
-                    emoji = '🪨';
-                }
+                if (buff.type === 'Stone Skin') emoji = '🪨';
 
                 statuses.push({
                     name: `${buff.type} (버프)`,
@@ -1006,6 +993,15 @@ export default class Mercenary extends Phaser.GameObjects.Container {
                 });
             });
         }
+
+        return statuses;
+    }
+
+    syncStatusUI() {
+        if (!this.active || this.hp <= 0) return;
+
+        const statuses = this.getStatuses();
+
 
         // 3. Check Debuffs (Future-proofing)
         // ...
