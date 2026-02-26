@@ -25,7 +25,6 @@ export default class LootManager {
             const item = this.lootGroup.create(x, y, randomDrop);
             item.setDisplaySize(32, 32); // Set explicitly
             item.setOrigin(0.5, 0.5); // Ensure center is anchored
-            item.refreshBody(); // Ensure physics body matches the new scaled size
             item.emojiId = randomDrop;   // Store the id for the DB
 
             // Physics properties for a "pop" out effect
