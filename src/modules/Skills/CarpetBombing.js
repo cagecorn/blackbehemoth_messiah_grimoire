@@ -63,7 +63,7 @@ export default class CarpetBombing {
 
             const plane = this.scene.add.image(startX, startY, 'emoji_plane')
                 .setDepth(5000)
-                .setScale(1.2)
+                .setScale(0.6)
                 .setFlipX(true);
 
             plane.setTint(0x888888); // Darken for silhouette look
@@ -84,7 +84,7 @@ export default class CarpetBombing {
                     if (!plane.active) return;
                     const trail = this.scene.add.image(plane.x + 20, plane.y, 'emoji_cloud')
                         .setDepth(4999)
-                        .setScale(0.3)
+                        .setScale(0.15)
                         .setAlpha(0.6);
 
                     this.scene.tweens.add({
@@ -102,7 +102,7 @@ export default class CarpetBombing {
     dropBomb(x, y, targetGroup) {
         const bomb = this.scene.add.image(x, -50, 'emoji_bomb')
             .setDepth(3000)
-            .setScale(0.8);
+            .setScale(0.4);
 
         this.scene.tweens.add({
             targets: bomb,
@@ -142,7 +142,7 @@ export default class CarpetBombing {
                 targets: smoke,
                 y: smokeY - 40,
                 alpha: 0,
-                scale: 1.2,
+                scale: 0.6,
                 duration: 1000 + Phaser.Math.Between(0, 500),
                 onComplete: () => smoke.destroy()
             });

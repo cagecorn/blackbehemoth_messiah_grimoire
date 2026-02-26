@@ -70,7 +70,7 @@ export default class BloodRage {
         const emitter = this.scene.add.particles(0, 0, 'emoji_blood_drop', {
             speed: { min: 20, max: 60 },
             angle: { min: 0, max: 360 }, // Burst out slightly
-            scale: { start: 0.5, end: 0 },
+            scale: { start: 0.25, end: 0 },
             alpha: { start: 1, end: 0 },
             lifespan: 800,
             frequency: 200, // Emit regularly

@@ -114,7 +114,7 @@ export default class FXManager {
 
         for (let i = 0; i < count; i++) {
             const particle = this.scene.add.image(x, y, texture);
-            particle.setDisplaySize(16, 16);
+            particle.setDisplaySize(8, 8);
             particle.setAlpha(0.5); // 50% opacity for subtle glow
             particle.setBlendMode('ADD'); // Linear Dodge effect
 
@@ -298,7 +298,7 @@ export default class FXManager {
 
         for (let i = 0; i < starCount; i++) {
             const star = this.scene.add.image(target.x, target.y - 40, 'emoji_star');
-            star.setDisplaySize(16, 16);
+            star.setDisplaySize(8, 8);
             star.setDepth(target.depth + 1);
             stars.push(star);
 

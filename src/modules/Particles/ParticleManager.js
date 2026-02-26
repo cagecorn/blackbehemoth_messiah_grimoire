@@ -19,7 +19,7 @@ export default class ParticleManager {
     createSparkle(x, y, texture = 'emoji_sparkle') {
         const emitter = this.scene.add.particles(x, y, texture, {
             speed: { min: 50, max: 150 },
-            scale: { start: 0.4, end: 0 },
+            scale: { start: 0.2, end: 0 },
             alpha: { start: 1, end: 0 },
             lifespan: 800,
             blendMode: 'ADD',
@@ -42,7 +42,7 @@ export default class ParticleManager {
     createAura(target, texture = 'emoji_sparkle', tint = 0x55ff55) {
         const emitter = this.scene.add.particles(0, 0, texture, {
             speed: { min: 20, max: 40 },
-            scale: { start: 0.3, end: 0 },
+            scale: { start: 0.15, end: 0 },
             alpha: { start: 0.6, end: 0 },
             lifespan: 1000,
             gravityY: -20,
@@ -61,7 +61,7 @@ export default class ParticleManager {
         const emitter = this.scene.add.particles(x, y, texture, {
             speed: { min: 200, max: 400 },
             angle: { min: Phaser.Math.RadToDeg(angleRad) - 20, max: Phaser.Math.RadToDeg(angleRad) + 20 },
-            scale: { start: 0.5, end: 0 },
+            scale: { start: 0.25, end: 0 },
             alpha: { start: 0.8, end: 0 },
             lifespan: 300,
             blendMode: 'ADD',

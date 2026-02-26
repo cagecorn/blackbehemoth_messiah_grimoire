@@ -152,7 +152,7 @@ export default class CCManager {
         // 3. Particle Effect
         target._shockEmitter = this.scene.add.particles(0, 0, 'emoji_lightning', {
             speed: { min: 20, max: 80 },
-            scale: { start: 0.6, end: 0.2 },
+            scale: { start: 0.3, end: 0.1 },
             alpha: { start: 1, end: 0 },
             lifespan: 500,
             frequency: 100,
@@ -218,7 +218,7 @@ export default class CCManager {
             y: -40,
             speed: { min: 10, max: 30 },
             angle: { min: -100, max: -80 },
-            scale: { start: 0.4, end: 0.8 },
+            scale: { start: 0.2, end: 0.4 },
             alpha: { start: 1, end: 0 },
             lifespan: 2000,
             frequency: 800,
@@ -279,7 +279,7 @@ export default class CCManager {
         target._burnEmitter = this.scene.add.particles(0, 0, 'emoji_fire', {
             speed: { min: 20, max: 60 },
             angle: { min: -110, max: -70 },
-            scale: { start: 0.4, end: 0.8 },
+            scale: { start: 0.2, end: 0.4 },
             alpha: { start: 0.8, end: 0 },
             lifespan: 800,
             frequency: 150,
@@ -350,7 +350,7 @@ export default class CCManager {
         target._freezeEmitter = this.scene.add.particles(0, 0, 'emoji_snowball', {
             speedY: { min: 50, max: 100 },
             speedX: { min: -20, max: 20 },
-            scale: { start: 0.3, end: 0.1 },
+            scale: { start: 0.15, end: 0.05 },
             alpha: { start: 0.8, end: 0 },
             lifespan: 1000,
             frequency: 200,
