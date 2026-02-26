@@ -48,7 +48,8 @@ body {
 
 /* Hide desktop sidebars/containers by default */
 #sidebar-right,
-#minimap-container {
+#minimap-container,
+#chat-container {
     display: none !important;
 }
 
