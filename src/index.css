@@ -1619,7 +1619,8 @@ body {
     width: 100%;
     height: 100%;
     overflow-y: auto;
-    padding: 0;
+    padding-top: 55px;
+    box-sizing: border-box;
 }
 
 /* Pretty Inventory Tooltip */

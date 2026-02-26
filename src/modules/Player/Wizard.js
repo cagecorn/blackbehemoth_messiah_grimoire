@@ -106,12 +106,14 @@ export default class Wizard extends Mercenary {
         if (this.restoreSpriteTint) this.restoreSpriteTint(); // Ensure no leftover hit tints
         this.scene.tweens.killTweensOf(this.sprite);
         this.sprite.x = 0;
+        this.sprite.y = 0; // Ensure Y is also reset in case a levitation tween was interrupted
         this.scene.tweens.add({
             targets: this.sprite,
             x: this.lastScaleX * 10,
             duration: 50,
             yoyo: true,
-            onComplete: () => this.restoreSpriteTint ? this.restoreSpriteTint() : this.sprite.clearTint()
+            onComplete: () => this.restoreSpriteTint ? this.restoreSpriteTint() : this.sprite.clearTint(),
+            onStop: () => { this.sprite.x = 0; }
         });
 
         const prefix = this.getWeaponPrefix();

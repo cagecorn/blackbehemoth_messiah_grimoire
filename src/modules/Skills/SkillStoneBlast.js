@@ -62,7 +62,9 @@ export default class SkillStoneBlast {
             y: -100,
             duration: 400,
             yoyo: true,
-            ease: 'Power2'
+            ease: 'Power2',
+            onComplete: () => { if (caster && caster.sprite) caster.sprite.y = 0; },
+            onStop: () => { if (caster && caster.sprite) caster.sprite.y = 0; }
         });
         scene.tweens.add({
             targets: rock,

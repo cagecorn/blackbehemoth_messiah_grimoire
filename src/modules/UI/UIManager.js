@@ -266,6 +266,7 @@ export default class UIManager {
     hidePopup() {
         if (this.popupOverlay) {
             this.clearPopupSafe();
+            this.hideTooltip(); // Hide any floating item tooltips
             this.popupOverlay.style.display = 'none';
         }
     }
@@ -281,6 +282,9 @@ export default class UIManager {
                 if (appContainer) appContainer.appendChild(child);
             } else if (child.classList && (child.classList.contains('chat-channel') || child.classList.contains('has-unit'))) {
                 // Individual channel view (showCharacterDetail)
+                child.style.removeProperty('display');
+                child.style.removeProperty('height');
+
                 const chatContainer = document.getElementById('chat-container');
                 if (chatContainer) chatContainer.appendChild(child);
             } else {
@@ -634,8 +638,25 @@ export default class UIManager {
 
         document.addEventListener('mousemove', (e) => {
             if (this.tooltipEl.style.display === 'flex') {
-                this.tooltipEl.style.left = e.clientX + 'px';
-                this.tooltipEl.style.top = e.clientY + 'px';
+                const rect = this.tooltipEl.getBoundingClientRect();
+                let left = e.clientX + 15; // Offset from cursor by 15px
+                let top = e.clientY + 15;
+
+                // Adjust if passing right edge
+                if (left + rect.width > window.innerWidth) {
+                    left = e.clientX - rect.width - 15;
+                }
+                // Adjust if passing bottom edge
+                if (top + rect.height > window.innerHeight) {
+                    top = e.clientY - rect.height - 15;
+                }
+
+                // Final safety clamp to prevent it from going off-screen entirely
+                left = Math.max(0, Math.min(left, window.innerWidth - rect.width));
+                top = Math.max(0, Math.min(top, window.innerHeight - rect.height));
+
+                this.tooltipEl.style.left = left + 'px';
+                this.tooltipEl.style.top = top + 'px';
             }
         });
     }
