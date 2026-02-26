@@ -26,6 +26,8 @@ const config = {
     resolution: window.devicePixelRatio,
     antialias: true,
     roundPixels: true,
+    render: { powerPreference: 'high-performance' },
+    fps: { target: 60, forceSetTimeOut: true },
     parent: 'game-container',
     backgroundColor: '#000000',
     scene: [BootScene, TerritoryScene, DungeonScene, ArenaScene, RaidScene],
