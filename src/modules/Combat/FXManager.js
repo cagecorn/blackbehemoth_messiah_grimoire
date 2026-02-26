@@ -174,47 +174,33 @@ export default class FXManager {
         });
     }
 
-    /**
-     * Create an elliptical shadow for a unit.
-     * @param {Phaser.GameObjects.GameObject} target - The unit to follow
-     * @param {number} scale - Base scale multiplier
-     */
     createShadow(target, scale = 1) {
         if (!target || !target.active) return null;
 
-        // Position at feet: target is centered, so feet are at target.y + half height
-        // Adjusted for high-res sprites that might have different base offsets
+        // Position at feet: relative to the container center (0, 0)
         const yOffset = target.shadowOffset !== undefined ? target.shadowOffset : (25 * scale);
-        const shadow = this.scene.add.ellipse(target.x, target.y + yOffset, 40 * scale, 20 * scale, 0x000000, 0.5);
-        shadow.setDepth(target.depth - 1); // Stay behind
+        const shadow = this.scene.add.ellipse(0, yOffset, 40 * scale, 20 * scale, 0x000000, 0.5);
 
-        // Store ground height for airborne support
-        shadow.groundY = target.y + yOffset;
+        // Add shadow directly into the unit's container
+        target.add(shadow);
+        shadow.setDepth(-10); // Stay behind the sprite which is at depth 0
 
-        // Simple follow logic
+        // Simple scale/alpha logic for airborne state (sprite.y moves up/negative)
         const updateListener = () => {
             if (!target.active || !shadow.active) {
                 this.scene.events.off('postupdate', updateListener);
-                shadow.destroy();
+                if (shadow.active) shadow.destroy();
                 return;
             }
 
-            shadow.x = target.x;
-
-            if (target.isAirborne) {
-                shadow.y = shadow.groundY;
-                const height = Math.abs(target.y + yOffset - shadow.y);
+            if (target.isAirborne && target.sprite) {
+                const height = Math.abs(target.sprite.y);
                 shadow.alpha = Math.max(0.1, 0.5 - (height / 500));
                 shadow.setScale(Math.max(0.5, 1 - (height / 400)));
             } else {
-                shadow.y = target.y + yOffset;
-                shadow.groundY = shadow.y;
                 shadow.alpha = 0.5;
                 shadow.setScale(1);
             }
-
-            // Sync depth with unit's current depth
-            shadow.setDepth(target.depth - 1);
         };
 
         this.scene.events.on('postupdate', updateListener);
