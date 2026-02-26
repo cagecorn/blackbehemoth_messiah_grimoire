@@ -173,6 +173,7 @@ export default class RaidScene extends Phaser.Scene {
 
         // Trigger UI binding
         EventBus.emit(EventBus.EVENTS.PARTY_DEPLOYED, {
+            scene: this,
             mercenaries: this.mercenaries.getChildren().map(m => m.getState())
         });
     }

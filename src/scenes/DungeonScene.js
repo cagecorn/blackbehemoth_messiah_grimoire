@@ -269,6 +269,7 @@ export default class DungeonScene extends Phaser.Scene {
 
             // Re-emit PARTY_DEPLOYED
             EventBus.emit(EventBus.EVENTS.PARTY_DEPLOYED, {
+                scene: this,
                 mercenaries: this.mercenaries.getChildren()
                     .filter(m => !m.config.hideInUI)
                     .map(m => m.getState())

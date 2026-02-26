@@ -61,7 +61,10 @@ export default class UIManager {
                     channel.updateStats(payload.stats);
                     if (payload.stats.level !== undefined) {
                         channel.lastLevel = payload.stats.level;
-                        const charConfig = Object.values(Characters).find(c => c.id === channel.characterId);
+                        let charConfig = null;
+                        if (Characters && typeof Characters === 'object') {
+                            charConfig = Object.values(Characters).find(c => c && c.id === channel.characterId);
+                        }
                         if (charConfig && charConfig.narrativeUnlocks) {
                             channel.updateNarrative(charConfig.narrativeUnlocks, payload.stats.level);
                         }
@@ -74,7 +77,9 @@ export default class UIManager {
         });
 
         EventBus.on(EventBus.EVENTS.PARTY_DEPLOYED, (payload) => {
-            this.scene = payload.scene; // Store scene reference
+            if (payload.scene) {
+                this.scene = payload.scene; // Store scene reference
+            }
 
             const sceneKey = this.scene?.scene?.key || this.scene?.sys?.settings?.key;
             console.log(`[UIManager] Party deployed in scene: ${sceneKey}`);
@@ -258,17 +263,33 @@ export default class UIManager {
         if (!this.portraitBar) return;
 
         // Ensure we have correct number of portraits
-        const activeMercs = this.scene && this.scene.mercenaries && typeof this.scene.mercenaries.getChildren === 'function' ?
-            this.scene.mercenaries.getChildren().filter(m => !m.hideInUI) : [];
+        let activeMercs = [];
+        try {
+            if (this.scene && this.scene.mercenaries && typeof this.scene.mercenaries.getChildren === 'function') {
+                activeMercs = this.scene.mercenaries.getChildren().filter(m => m && !m.hideInUI);
+            }
+        } catch (e) {
+            console.warn('[UIManager] Error getting active mercenaries:', e);
+        }
 
         // Clear and rebuild for simplicity or keep track
         // Rebuilding is safer for dynamic scaling
         this.portraitBar.innerHTML = '';
         activeMercs.forEach(merc => {
-            const charConfig = Object.values(Characters).find(c => c.id === merc.characterId) || merc;
+            if (!merc) return;
+
+            let charConfig = merc;
+            try {
+                if (Characters && typeof Characters === 'object') {
+                    charConfig = Object.values(Characters).find(c => c && c.id === merc.characterId) || merc;
+                }
+            } catch (e) {
+                console.warn('[UIManager] Error finding character config:', e);
+            }
+
             const portrait = document.createElement('div');
             portrait.className = 'unit-portrait';
-            if (merc.hp <= 0) portrait.style.filter = 'grayscale(100%) opacity(0.5)';
+            if (merc.hp !== undefined && merc.hp <= 0) portrait.style.filter = 'grayscale(100%) opacity(0.5)';
 
             const hpPercent = (merc.hp / merc.maxHp) * 100;
 
@@ -405,9 +426,10 @@ export default class UIManager {
                 args: result.action.arguments
             });
 
+            const args = result.action.arguments || {};
             const actionDesc = result.action.name === 'attack_priority'
-                ? `${result.action.arguments.role} 우선 공격`
-                : `${result.action.name}(${Object.entries(result.action.arguments).map(([key, value]) => `${key}: ${value}`).join(', ')})`;
+                ? `${args.role || 'target'} 우선 공격`
+                : `${result.action.name}(${Object.entries(args).map(([key, value]) => `${key}: ${value}`).join(', ')})`;
             this.addLog(agentId, `[AI] 전술 행동: ${actionDesc}`, '#bb88ff');
         } else {
             this.addLog(agentId, `[System] 대화 모드 (맥락 분석 중...)`, '#aaaaaa');
@@ -419,11 +441,14 @@ export default class UIManager {
                 const charId = channel ? channel.characterId : agentId;
 
                 // Find character config by name or id
-                const charConfig = Object.values(Characters).find(c =>
-                    (charId && c.id === charId.toLowerCase()) ||
-                    c.name.includes(charName) ||
-                    c.id === charName.toLowerCase()
-                );
+                let charConfig = null;
+                if (Characters && typeof Characters === 'object') {
+                    charConfig = Object.values(Characters).find(c =>
+                        c && ((charId && c.id === charId.toLowerCase()) ||
+                            c.name.includes(charName) ||
+                            c.id === charName.toLowerCase())
+                    );
+                }
 
                 if (!channel.chatHistory) channel.chatHistory = [];
 
@@ -494,7 +519,7 @@ export default class UIManager {
         if (!item || !this.tooltipEl) return;
 
         let statsHtml = '';
-        if (item.stats) {
+        if (item && item.stats && typeof item.stats === 'object') {
             Object.entries(item.stats).forEach(([key, val]) => {
                 const label = key.toUpperCase();
                 statsHtml += `<div class="stat-line"><span class="stat-label">${label}</span><span class="stat-value">+${val}</span></div>`;

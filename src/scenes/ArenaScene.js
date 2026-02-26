@@ -233,6 +233,7 @@ export default class ArenaScene extends Phaser.Scene {
 
                 // Re-emit PARTY_DEPLOYED
                 EventBus.emit(EventBus.EVENTS.PARTY_DEPLOYED, {
+                    scene: this,
                     mercenaries: this.mercenaries.getChildren().map(m => m.getState())
                 });
             }
