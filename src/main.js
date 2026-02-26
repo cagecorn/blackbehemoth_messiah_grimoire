@@ -22,6 +22,10 @@ const config = {
         width: 600,
         height: 1067
     },
+    // High DPI Support
+    resolution: window.devicePixelRatio,
+    antialias: true,
+    roundPixels: true,
     parent: 'game-container',
     backgroundColor: '#000000',
     scene: [BootScene, TerritoryScene, DungeonScene, ArenaScene, RaidScene],
