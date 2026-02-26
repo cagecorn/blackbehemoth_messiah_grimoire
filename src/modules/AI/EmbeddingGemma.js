@@ -16,6 +16,7 @@ class EmbeddingGemmaManager {
         // Since it's a web build, we'll keep it disabled for now as per user request
         console.log('[EmbeddingGemma] Resource-heavy AI Worker is disabled for stability.');
         this.isReady = true; // Set to ready so dependents don't wait forever
+        console.log('[EmbeddingGemma] Manager initialized (Static Mode).');
 
         /* 
         console.log('[EmbeddingGemma] Initializing...');

@@ -173,31 +173,7 @@ export default class BootScene extends Phaser.Scene {
     }
 
     create() {
-        console.log('BootScene assets loaded. Waiting for AI...');
-        localLLM.checkStatus(); // Start checking LM Studio
-        this.checkAIReadiness();
-    }
-
-    async checkAIReadiness() {
-        const check = async () => {
-            const intentReady = intentRouter.isReady;
-            const gemmaReady = embeddingGemma.isReady;
-            const llmReady = localLLM.isReady;
-
-            let status = 'AI Status: ';
-            status += intentReady ? 'Intent OK | ' : 'Intent... | ';
-            status += gemmaReady ? 'Embedding OK | ' : 'Embedding... | ';
-            status += llmReady ? 'Dialogue OK' : 'Dialogue...';
-
-            this.loadingText.setText(status);
-
-            if (intentReady && gemmaReady && llmReady) {
-                console.log('All AI Systems Ready. Transitioning.');
-                this.scene.start('TerritoryScene');
-            } else {
-                setTimeout(check, 800);
-            }
-        };
-        check();
+        console.log('BootScene assets loaded. Transitioning to game world.');
+        this.scene.start('TerritoryScene');
     }
 }

@@ -49,8 +49,8 @@ logManager.init();
 
 // Boot up Global Managers
 globalBlackboard.init();
-embeddingGemma.init();
-intentRouter.init();
+// embeddingGemma.init(); // Disabled as per user request
+// intentRouter.init();  // Disabled as per user request
 partyManager.init(Object.values(Characters));
 
 function preload() {

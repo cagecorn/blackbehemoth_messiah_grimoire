@@ -21,15 +21,16 @@ class IntentRouter {
     }
 
     async init() {
+        console.log('[IntentRouter] Initializing...');
         // Wait for EmbeddingGemma to be ready
         await this.waitForEmbeddingGemma();
+        console.log('[IntentRouter] EmbeddingGemma is ready.');
 
         if (!embeddingGemma.worker) {
             console.log('[IntentRouter] EmbeddingGemma worker is not available. Running in basic CHAT mode.');
             this.isReady = true;
             return;
         }
-
         // Listen to EmbeddingGemma for vector results
         embeddingGemma.worker.addEventListener('message', (event) => {
             const { type, payload } = event.data;
