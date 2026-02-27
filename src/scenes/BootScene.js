@@ -211,7 +211,7 @@ export default class BootScene extends Phaser.Scene {
 
         // 1. Ambient Bloom Tint (Warm Golden Glow)
         const bloom = document.createElement('div');
-        bloom.className = 'fake-bloom-tint';
+        bloom.className = 'hd2d-fx-layer soft-bloom'; // Re-mapped to CSS
         wrapper.appendChild(bloom);
 
         // 2. The Balanced "Screenshot 2" Chromatic Overlays
@@ -220,8 +220,29 @@ export default class BootScene extends Phaser.Scene {
 
         // 3. Deep Cinematic Vignette
         const vignette = document.createElement('div');
-        vignette.className = 'fake-vignette-overlay';
+        vignette.className = 'hd2d-fx-layer vignette'; // Re-mapped to CSS
         wrapper.appendChild(vignette);
+
+        // 4. Tilt-Shift (Miniature Effect)
+        const tiltShift = document.createElement('div');
+        tiltShift.className = 'hd2d-fx-layer tilt-shift';
+        const tiltTop = document.createElement('div');
+        tiltTop.className = 'tilt-shift-top';
+        const tiltBottom = document.createElement('div');
+        tiltBottom.className = 'tilt-shift-bottom';
+        tiltShift.appendChild(tiltTop);
+        tiltShift.appendChild(tiltBottom);
+        wrapper.appendChild(tiltShift);
+
+        // 5. Film Grain (Octopath Texture)
+        const filmGrain = document.createElement('div');
+        filmGrain.className = 'hd2d-fx-layer film-grain';
+        wrapper.appendChild(filmGrain);
+
+        // 6. Scanlines (Retro Feel)
+        const scanlines = document.createElement('div');
+        scanlines.className = 'hd2d-fx-layer scanlines';
+        wrapper.appendChild(scanlines);
 
         gameContainer.appendChild(wrapper);
         console.log('[Visuals] Global Cinematic Engine Active! 🎬🚀 (Screenshot 2 Aesthetic)');
