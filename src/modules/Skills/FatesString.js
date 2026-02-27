@@ -103,20 +103,32 @@ export default class FatesString {
         const lineCount = 12; // Increased from 8 for more coverage
 
         for (let i = 0; i < lineCount; i++) {
-            // Pick random start and end points on edges of the world-view
             let startX, startY, endX, endY;
 
+            // Pick a random starting edge
             const side = Phaser.Math.Between(0, 3); // 0:Left, 1:Right, 2:Top, 3:Bottom
             if (side === 0) { startX = view.left - padding; startY = Phaser.Math.Between(view.top, view.bottom); }
             else if (side === 1) { startX = view.right + padding; startY = Phaser.Math.Between(view.top, view.bottom); }
             else if (side === 2) { startX = Phaser.Math.Between(view.left, view.right); startY = view.top - padding; }
             else { startX = Phaser.Math.Between(view.left, view.right); startY = view.bottom + padding; }
 
-            const oppositeSide = (side + 2) % 4; // Roughly opposite
-            if (oppositeSide === 0) { endX = view.left - padding; endY = Phaser.Math.Between(view.top, view.bottom); }
-            else if (oppositeSide === 1) { endX = view.right + padding; endY = Phaser.Math.Between(view.top, view.bottom); }
-            else if (oppositeSide === 2) { endX = Phaser.Math.Between(view.left, view.right); endY = view.top - padding; }
-            else { endX = Phaser.Math.Between(view.left, view.right); endY = view.bottom + padding; }
+            // 70% chance to target an enemy, otherwise random crisscross
+            const enemies = caster.targetGroup.getChildren().filter(e => e.active && e.hp > 0);
+            if (Math.random() < 0.7 && enemies.length > 0) {
+                const target = Phaser.Utils.Array.GetRandom(enemies);
+                // Extend the line through the target
+                const angle = Phaser.Math.Angle.Between(startX, startY, target.x, target.y);
+                const length = 2500; // Long enough to cross screen
+                endX = startX + Math.cos(angle) * length;
+                endY = startY + Math.sin(angle) * length;
+            } else {
+                // Original random logic
+                const oppositeSide = (side + 2) % 4; // Roughly opposite
+                if (oppositeSide === 0) { endX = view.left - padding; endY = Phaser.Math.Between(view.top, view.bottom); }
+                else if (oppositeSide === 1) { endX = view.right + padding; endY = Phaser.Math.Between(view.top, view.bottom); }
+                else if (oppositeSide === 2) { endX = Phaser.Math.Between(view.left, view.right); endY = view.top - padding; }
+                else { endX = Phaser.Math.Between(view.left, view.right); endY = view.bottom + padding; }
+            }
 
             // Stagger the lines
             scene.time.delayedCall(i * 150, () => {
