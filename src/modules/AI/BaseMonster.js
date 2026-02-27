@@ -212,6 +212,13 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
 
         this.playHitEffect();
 
+        // Bourne Identity Shake: Stronger shake for critical hits or high damage
+        if (this.scene && EventBus) {
+            let shakeIntensity = isCritical ? 8 : 3;
+            if (finalDamage > this.maxHp * 0.1) shakeIntensity += 5; // Extra shake for big hits
+            EventBus.emit(EventBus.EVENTS.CAMERA_SHAKE, { intensity: shakeIntensity });
+        }
+
         if (this.hp <= 0) {
             this.die(attackerId);
         }
@@ -303,6 +310,13 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
         );
 
         this.playHitEffect();
+
+        // Bourne Identity Shake for Magic Damage
+        if (this.scene && EventBus) {
+            let shakeIntensity = isCritical ? 10 : 4; // Magic impacts feel "heavier"
+            if (finalDamage > this.maxHp * 0.1) shakeIntensity += 6;
+            EventBus.emit(EventBus.EVENTS.CAMERA_SHAKE, { intensity: shakeIntensity });
+        }
 
         if (this.hp <= 0) {
             this.die(attackerId);

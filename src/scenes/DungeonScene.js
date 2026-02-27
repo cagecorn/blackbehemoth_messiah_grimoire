@@ -26,6 +26,7 @@ import { MercenaryClasses, MonsterClasses, StageConfigs, Characters, scaleStats 
 import SeparationManager from '../modules/Core/SeparationManager.js';
 import BuffManager from '../modules/Core/BuffManager.js';
 import StageManager from '../modules/Environment/StageManager.js';
+import DynamicCameraManager from '../modules/Core/DynamicCameraManager.js';
 import EventBus from '../modules/Events/EventBus.js';
 import BarkManager from '../modules/AI/BarkManager.js';
 import partyManager from '../modules/Core/PartyManager.js';
@@ -173,7 +174,10 @@ export default class DungeonScene extends Phaser.Scene {
 
         // Initialize Camera Target (follows centroid of party)
         this.cameraTarget = this.add.container(startPos.x, startPos.y);
-        this.cameras.main.startFollow(this.cameraTarget, true, 0.1, 0.1);
+
+        // Initialize Dynamic Camera Manager
+        this.dynamicCamera = new DynamicCameraManager(this, this.cameras.main);
+        this.dynamicCamera.setTarget(this.cameraTarget);
 
         // If no leader was found (e.g. no warrior selected), just pick the first one
         if (!this.player && this.mercenaries.countActive(true) > 0) {
@@ -371,6 +375,10 @@ export default class DungeonScene extends Phaser.Scene {
 
 
         this.updateCameraFollow();
+
+        if (this.dynamicCamera) {
+            this.dynamicCamera.update(time, delta);
+        }
     }
 
     updateCameraFollow() {
