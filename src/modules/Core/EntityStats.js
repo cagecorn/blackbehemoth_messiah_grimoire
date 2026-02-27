@@ -862,7 +862,10 @@ export const StageConfigs = {
     CURSED_FOREST: {
         id: 'cursed_forest',
         name: '저주받은 숲',
-        background: 'bg_cursed_forest'
+        background: 'bg_cursed_forest',
+        // 옥토패스 스타일 앰비언트 분위기: 보라-청록 그림자 오버레이
+        ambientColor: 0x1a003a,  // 깊은 보라 (저주받은 숲 분위기)
+        ambientAlpha: 0.22       // 22% 불투명도 (배경을 완전히 가리지 않음)
     }
 };
 

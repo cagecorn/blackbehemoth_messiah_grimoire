@@ -176,6 +176,9 @@ export default class BootScene extends Phaser.Scene {
     async create() {
         console.log('BootScene assets loaded. Transitioning to game world.');
 
+        // Initialize Global Cinematic Filters (Persistent across all scenes)
+        this.setupFakeAestheticOverlays();
+
         // Initialize 10 burgers if not present (Tutorial/Starter items)
         try {
             const DBManager = (await import('../modules/Database/DBManager.js')).default;
@@ -189,5 +192,44 @@ export default class BootScene extends Phaser.Scene {
         }
 
         this.scene.start('TerritoryScene');
+    }
+
+    /**
+     * Re-using our premium aesthetic system globally.
+     * Appends the filter system to #game-container which persists across scene changes.
+     */
+    setupFakeAestheticOverlays() {
+        const gameContainer = document.getElementById('game-container');
+        if (!gameContainer) return;
+
+        // Cleanup if already present (to prevent duplicates during dev/reloads)
+        const existing = gameContainer.querySelectorAll('.fake-filter-system');
+        existing.forEach(el => el.remove());
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'fake-filter-system';
+
+        // 1. Ambient Bloom Tint (Warm Golden Glow)
+        const bloom = document.createElement('div');
+        bloom.className = 'fake-bloom-tint';
+        wrapper.appendChild(bloom);
+
+        // 2. The Balanced "Screenshot 2" Chromatic Overlays
+        wrapper.appendChild(this.createFilterLayer('cinematic-layer rgb-red-shift'));
+        wrapper.appendChild(this.createFilterLayer('cinematic-layer rgb-blue-shift'));
+
+        // 3. Deep Cinematic Vignette
+        const vignette = document.createElement('div');
+        vignette.className = 'fake-vignette-overlay';
+        wrapper.appendChild(vignette);
+
+        gameContainer.appendChild(wrapper);
+        console.log('[Visuals] Global Cinematic Engine Active! 🎬🚀 (Screenshot 2 Aesthetic)');
+    }
+
+    createFilterLayer(className) {
+        const div = document.createElement('div');
+        div.className = className;
+        return div;
     }
 }

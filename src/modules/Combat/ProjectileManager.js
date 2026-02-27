@@ -52,6 +52,11 @@ export default class ProjectileManager {
             projectile.setScale(1);
             projectile.setRotation(0);
             projectile.setTint(0xffffff); // Reset tint
+
+            // Route to Global Bloom Layer if available
+            if (this.scene.skillFxLayer) {
+                this.scene.skillFxLayer.add(projectile);
+            }
         }
         return projectile;
     }
@@ -97,6 +102,11 @@ export default class ProjectileManager {
         if (type === 'laser') {
             // Draw an instant laser beam using Graphics
             const graphics = this.scene.add.graphics();
+
+            // Route to Global Bloom Layer
+            if (this.scene.skillFxLayer) {
+                this.scene.skillFxLayer.add(graphics);
+            }
 
             // Dynamic laser color based on element
             let laserColor = 0x00ffff; // Default Cyan

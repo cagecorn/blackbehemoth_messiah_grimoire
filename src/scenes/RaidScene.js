@@ -68,6 +68,15 @@ export default class RaidScene extends Phaser.Scene {
         this.shieldManager = new ShieldManager(this);
         this.barkManager = new BarkManager(this);
 
+        // ⚔️ Premium Skill FX Layer (with Global Bloom)
+        this.skillFxLayer = this.add.container(0, 0);
+        this.skillFxLayer.setDepth(15000);
+
+        if (this.skillFxLayer.postFX) {
+            this.skillFxLayer.postFX.addBloom(0xffffff, 1, 1, 1.2, 3);
+            console.log('[Raid] Skill FX Bloom Pipeline Active! ✨');
+        }
+
         // UI
         this.statusText = this.add.text(this.cameras.main.width / 2, 50, `레이드 단계 #${this.raidCount}`, {
             fontSize: '32px',

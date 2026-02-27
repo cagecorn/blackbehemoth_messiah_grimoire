@@ -10,6 +10,33 @@ export default class AoeManager {
     }
 
     /**
+     * Shows a visual indicator for an AOE effect.
+     */
+    showAreaIndicator(x, y, radius, color = 0xff0000, duration = 500) {
+        const indicator = this.scene.add.circle(x, y, radius, color, 0.3);
+        indicator.setStrokeStyle(2, color, 1);
+        indicator.setDepth(1000); // Ensure it's on top
+
+        this.scene.add.existing(indicator);
+
+        // Route to Global Bloom Layer for that "glowing magic circle" feel
+        if (this.scene.skillFxLayer) {
+            this.scene.skillFxLayer.add(indicator);
+        }
+
+        this.scene.tweens.add({
+            targets: indicator,
+            alpha: { from: 1, to: 0 },
+            scale: { from: 0.5, to: 1.2 },
+            ease: 'Cubic.easeOut',
+            duration: duration,
+            onComplete: () => {
+                indicator.destroy();
+            }
+        });
+    }
+
+    /**
      * Triggers AOE damage originating from (x, y) within a radius.
      */
     triggerAoe(x, y, radius, damage, attacker = null, targetGroup = null, isMagic = true, isUltimate = false, element = null, isCritical = false) {

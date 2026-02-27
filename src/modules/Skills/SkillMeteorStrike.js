@@ -47,15 +47,24 @@ export default class SkillMeteorStrike {
         const meteor = scene.add.image(startX, startY, 'emoji_fire');
         const scale = Phaser.Math.FloatBetween(2.0, 4.5); // Even bigger!
         meteor.setDisplaySize(32 * scale, 32 * scale);
-        meteor.setDepth(20000);
-        meteor.setTint(0xff3300); // More intense red
         meteor.setBlendMode('ADD');
         meteor.setAlpha(0.9);
 
+        if (scene.skillFxLayer) {
+            scene.skillFxLayer.add(meteor);
+        } else {
+            meteor.setDepth(20000);
+        }
+
         // 1.1 Gradient Aura for each meteor
         const auraGraphic = scene.add.graphics();
-        auraGraphic.setDepth(meteor.depth - 1);
         auraGraphic.setBlendMode('ADD');
+
+        if (scene.skillFxLayer) {
+            scene.skillFxLayer.add(auraGraphic);
+        } else {
+            auraGraphic.setDepth(meteor.depth - 1);
+        }
 
         const steps = 8;
         const auraColor = 0xff3300;
@@ -79,7 +88,12 @@ export default class SkillMeteorStrike {
             tint: 0xff5500,
             follow: meteor
         });
-        trailEmitter.setDepth(meteor.depth - 2);
+
+        if (scene.skillFxLayer) {
+            scene.skillFxLayer.add(trailEmitter);
+        } else {
+            trailEmitter.setDepth(meteor.depth - 2);
+        }
 
         const duration = 600;
 
@@ -146,6 +160,10 @@ export default class SkillMeteorStrike {
             tint: [0xff0000, 0xffaa00, 0xffff00],
             quantity: 15
         });
+
+        if (scene.skillFxLayer) {
+            scene.skillFxLayer.add(emitter);
+        }
 
         emitter.explode(15);
         scene.time.delayedCall(800, () => {

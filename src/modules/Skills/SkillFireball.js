@@ -67,14 +67,24 @@ export default class SkillFireball {
 
         const meteor = scene.add.image(startX, startY, 'emoji_fire');
         meteor.setDisplaySize(96, 96); // huge!
-        meteor.setDepth(target.depth + 1000); // render way above
-        meteor.setTint(0xff3300); // More intense red
         meteor.setBlendMode('ADD'); // Glow effect
+
+        // Route to Global Bloom Layer
+        if (scene.skillFxLayer) {
+            scene.skillFxLayer.add(meteor);
+        } else {
+            meteor.setDepth(target.depth + 1000);
+        }
 
         // 1.5 Gradient Aura (Intense core glow)
         const auraGraphic = scene.add.graphics();
-        auraGraphic.setDepth(meteor.depth - 1);
         auraGraphic.setBlendMode('ADD');
+
+        if (scene.skillFxLayer) {
+            scene.skillFxLayer.add(auraGraphic);
+        } else {
+            auraGraphic.setDepth(meteor.depth - 1);
+        }
 
         const steps = 10;
         const auraColor = 0xff3300;
@@ -98,7 +108,12 @@ export default class SkillFireball {
             tint: 0xff5500, // Slightly brighter red-orange
             follow: meteor
         });
-        trailEmitter.setDepth(meteor.depth - 2);
+
+        if (scene.skillFxLayer) {
+            scene.skillFxLayer.add(trailEmitter);
+        } else {
+            trailEmitter.setDepth(meteor.depth - 2);
+        }
 
         const duration = 600;
 
@@ -179,6 +194,10 @@ export default class SkillFireball {
             tint: [0xff0000, 0xffaa00, 0xffff00], // dynamic colors
             quantity: 30 // number of sparks
         });
+
+        if (scene.skillFxLayer) {
+            scene.skillFxLayer.add(emitter);
+        }
 
         // Emitters run continuously unless configured to burst or stopped
         emitter.explode(30);

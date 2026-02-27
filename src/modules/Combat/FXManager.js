@@ -1,77 +1,176 @@
 import Phaser from 'phaser';
 
-/**
- * FXManager.js
- * Centralized manager for floating text and visual feedback in combat.
- */
+// ============================================================
+//  FXManager.js
+//  Centralized manager for floating text and visual feedback.
+//
+//  📌 Object Pooling Architecture:
+//   - _damageTextPool  : 30개의 Text 객체를 초기에 생성해두고 재사용.
+//   - _elementalEmitters: 원소별 ParticleEmitter를 최초 1회만 생성해 캐싱.
+//  이 방식은 전투 중 GC 스파이크와 메모리 파편화를 원천 차단합니다.
+// ============================================================
 export default class FXManager {
+
+    // 데미지 텍스트 풀 크기 (하이 트래픽 전투 대비)
+    static DAMAGE_TEXT_POOL_SIZE = 30;
+    // 원소 파티클 개수
+    static ELEMENTAL_PARTICLE_COUNT = 6;
+
     constructor(scene) {
         this.scene = scene;
+
+        // ── 1. Damage Text Object Pool ──────────────────────────
+        this._damageTextPool = [];
+        this._initDamageTextPool();
+
+        // ── 2. Elemental Particle Emitter Cache ─────────────────
+        this._elementalEmitters = {};
+
+        console.log(`[FXPool] 초기화 완료. DamageText Pool: ${FXManager.DAMAGE_TEXT_POOL_SIZE}개 사전 생성. ✅`);
+    }
+
+    // ============================================================
+    //  POOL INITIALIZATION
+    // ============================================================
+
+    /**
+     * 데미지 텍스트 풀을 미리 생성합니다. 게임 시작 시 1회만 실행.
+     */
+    _initDamageTextPool() {
+        for (let i = 0; i < FXManager.DAMAGE_TEXT_POOL_SIZE; i++) {
+            const text = this.scene.add.text(0, 0, '', {
+                fontSize: '32px',
+                fill: '#ff0000',
+                fontStyle: 'bold',
+                stroke: '#000',
+                strokeThickness: 5,
+                resolution: 2
+            }).setOrigin(0.5).setScale(0.5).setActive(false).setVisible(false);
+            text.setDepth(20000);
+            this._damageTextPool.push(text);
+        }
+        console.log(`[FXPool] DamageText Pool ${this._damageTextPool.length}개 생성 완료.`);
     }
 
     /**
+     * 풀에서 비활성화된 텍스트 객체를 꺼냅니다.
+     * @returns {Phaser.GameObjects.Text | null}
+     */
+    _getPooledDamageText() {
+        const obj = this._damageTextPool.find(t => !t.active);
+        if (!obj) {
+            // 풀이 가득 찼을 경우 경고 (전투 강도 상승 시 POOL_SIZE 조절 필요)
+            console.warn('[FXPool] ⚠️ DamageText Pool 소진! 텍스트를 임시 생성합니다. Pool 크기 증가를 고려하세요.');
+            const fallback = this.scene.add.text(0, 0, '', {
+                fontSize: '32px', fill: '#ff0000', fontStyle: 'bold',
+                stroke: '#000', strokeThickness: 5, resolution: 2
+            }).setOrigin(0.5).setScale(0.5);
+            fallback.setDepth(20000);
+            fallback._isPoolFallback = true;
+            return fallback;
+        }
+        obj.setActive(true).setVisible(true);
+        return obj;
+    }
+
+    /**
+     * 텍스트 객체를 풀에 반납합니다.
+     * @param {Phaser.GameObjects.Text} text
+     */
+    _returnToPool(text) {
+        if (text._isPoolFallback) {
+            text.destroy();
+            return;
+        }
+        this.scene.tweens.killTweensOf(text);
+        text.setActive(false).setVisible(false).setScale(0.5).setAlpha(1);
+    }
+
+    /**
+     * 원소별 Particle Emitter를 캐싱하여 반환합니다. 최초 1회만 생성.
+     * @param {string} textureKey
+     * @param {number} tint
+     * @returns {Phaser.GameObjects.Particles.ParticleEmitter}
+     */
+    _getOrCreateElementalEmitter(textureKey, tint) {
+        if (!this._elementalEmitters[textureKey]) {
+            if (!this.scene.textures.exists(textureKey)) {
+                console.warn(`[FXPool] 텍스처 '${textureKey}' 없음. 원소 파티클 스킵.`);
+                return null;
+            }
+            const emitter = this.scene.add.particles(0, 0, textureKey, {
+                speed: { min: 40, max: 120 },
+                scale: { start: 0.15, end: 0.05 },
+                alpha: { start: 0.75, end: 0 },
+                angle: { min: 0, max: 360 },
+                lifespan: { min: 400, max: 700 },
+                blendMode: 'ADD',
+                quantity: FXManager.ELEMENTAL_PARTICLE_COUNT,
+                emitting: false,
+            });
+            if (tint !== undefined) emitter.setParticleTint(tint);
+            emitter.setDepth(15000);
+            this._elementalEmitters[textureKey] = emitter;
+            console.log(`[FXPool] Elemental Emitter '${textureKey}' 최초 생성 (캐싱됨).`);
+        }
+        return this._elementalEmitters[textureKey];
+    }
+
+    // ============================================================
+    //  PUBLIC API
+    // ============================================================
+
+    /**
      * Get hex color for a specific element.
-     * @param {string} element 
-     * @returns {string} Hex color string
      */
     getElementColor(element) {
         switch (element) {
-            case 'fire': return '#ff3300'; // Pure Red/Orange Red
-            case 'ice': return '#00bbff';  // Blue
-            case 'lightning': return '#ffff00'; // Yellow
+            case 'fire': return '#ff3300';
+            case 'ice': return '#00bbff';
+            case 'lightning': return '#ffff00';
             default: return null;
         }
     }
 
     /**
-     * Show high-resolution floating damage text.
-     * @param {Phaser.GameObjects.GameObject} target 
-     * @param {number} amount 
-     * @param {string} color - Hex color string (e.g., '#ff0000')
-     * @param {boolean} isCritical - Whether this is a critical hit
-     * @param {number} offsetX - Optional horizontal offset for dual text
-     * @param {number} delay - Delay before showing the text (ms)
+     * 풀 기반 고해상도 데미지 플로팅 텍스트 표시.
      */
     showDamageText(target, amount, color = '#ff0000', isCritical = false, offsetX = 0, delay = 0) {
         if (!target || !target.active) return;
-
-        // Prevent showing 0 damage texts if it's just for a secondary effect (unless it's an intentional text)
         if (typeof amount === 'number' && amount <= 0 && offsetX === 0) return;
 
         let displayAmount = typeof amount === 'number' ? `-${amount.toFixed(1)}` : amount;
 
-        // Dynamic offset based on unit scale
         const scale = (target.config && target.config.scale) || 1;
         const yOffset = 40 * scale;
-
-        // Add a tiny random jitter to the position so overlapping texts are visible
         const jitterX = (Math.random() - 0.5) * 10;
         const jitterY = (Math.random() - 0.5) * 10;
 
-        // High-Resolution crisp text rendering technique:
-        const fontSize = isCritical ? '48px' : '32px';
-        const text = this.scene.add.text(target.x + offsetX + jitterX, target.y - yOffset + jitterY, displayAmount, {
-            fontSize: fontSize,
-            fill: color,
-            fontStyle: 'bold',
-            stroke: '#000',
-            strokeThickness: isCritical ? 7 : 5,
-            resolution: 2
-        }).setOrigin(0.5).setScale(0.5).setAlpha(0);
+        const text = this._getPooledDamageText();
+        if (!text) return;
+
+        // 텍스트 내용/스타일 업데이트
+        text.setText(displayAmount);
+        text.setColor(color);
+        text.setFontSize(isCritical ? '48px' : '32px');
+        text.setStroke('#000', isCritical ? 7 : 5);
+        text.setPosition(target.x + offsetX + jitterX, target.y - yOffset + jitterY);
+        text.setAlpha(isCritical ? 0 : 1);
+        text.setScale(0.5);
 
         if (delay > 0) {
             this.scene.time.delayedCall(delay, () => {
-                if (text && text.active) this.animateDamageText(text, target, yOffset, isCritical);
+                if (text && text.active) this._animateDamageText(text, yOffset, isCritical);
             });
         } else {
-            this.animateDamageText(text, target, yOffset, isCritical);
+            this._animateDamageText(text, yOffset, isCritical);
         }
     }
 
-    animateDamageText(text, target, yOffset, isCritical) {
+    _animateDamageText(text, yOffset, isCritical) {
         text.setAlpha(1);
+
         if (isCritical) {
-            // Give critical hits a little "pop" animation
             this.scene.tweens.add({
                 targets: text,
                 scale: 0.8,
@@ -81,72 +180,252 @@ export default class FXManager {
             });
         }
 
-        // Ensure damage numbers are always on top of sprites
-        text.setDepth(20000);
-
         this.scene.tweens.add({
             targets: text,
-            y: '-=40',
+            y: `-=${40}`,
             alpha: 0,
             duration: 800,
             ease: 'Power2',
-            onComplete: () => text.destroy()
+            onComplete: () => this._returnToPool(text)
         });
     }
 
     /**
-     * Spawn elemental particles on hit.
-     * @param {number} x 
-     * @param {number} y 
-     * @param {string} element - 'fire', 'ice', 'lightning'
+     * 원소 파티클 효과 (캐싱된 Emitter 재사용).
      */
     spawnElementalParticles(x, y, element) {
         if (!element) return;
 
         const textureMap = {
-            'fire': 'emoji_fire',
-            'ice': 'emoji_snowball',
-            'lightning': 'emoji_lightning'
+            'fire': { key: 'emoji_fire', tint: 0xff3300 },
+            'ice': { key: 'emoji_snowball', tint: undefined },
+            'lightning': { key: 'emoji_lightning', tint: undefined }
         };
 
-        const texture = textureMap[element] || 'emoji_sparkle';
-        const count = 6;
+        const config = textureMap[element];
+        if (!config) return;
 
-        for (let i = 0; i < count; i++) {
-            const particle = this.scene.add.image(x, y, texture);
-            particle.setDisplaySize(8, 8);
-            particle.setAlpha(0.5); // 50% opacity for subtle glow
-            particle.setBlendMode('ADD'); // Linear Dodge effect
+        const emitter = this._getOrCreateElementalEmitter(config.key, config.tint);
+        if (!emitter) return;
 
-            // Apply red tint to fire to distinguish from lightning
-            if (element === 'fire') {
-                particle.setTint(0xff3300);
-            }
-
-            const angle = Math.random() * Math.PI * 2;
-            const speed = 40 + Math.random() * 80;
-
-            this.scene.physics.add.existing(particle);
-            particle.body.setVelocity(Math.cos(angle) * speed, Math.sin(angle) * speed);
-            particle.body.setDrag(80);
-            particle.setRotation(Math.random() * Math.PI * 2);
-
-            this.scene.tweens.add({
-                targets: particle,
-                alpha: 0,
-                scale: 0.2,
-                angle: '+=90',
-                duration: 500 + Math.random() * 500,
-                onComplete: () => particle.destroy()
-            });
-        }
+        emitter.setPosition(x, y);
+        emitter.explode(FXManager.ELEMENTAL_PARTICLE_COUNT);
     }
 
     /**
-     * Show floating heal text.
-     * @param {Phaser.GameObjects.GameObject} target 
-     * @param {string} message - e.g., 'HEAL!' or '+20'
-     * @param {string} color 
+     * 그림자 생성 (캐릭터 발 밑 blob shadow).
+     */
+    createShadow(target, scale = 1) {
+        if (!target || !target.active) return null;
+
+        const yOffset = target.shadowOffset !== undefined ? target.shadowOffset : (25 * scale);
+        const shadow = this.scene.add.ellipse(0, yOffset, 40 * scale, 20 * scale, 0x000000, 0.75);
+
+        target.add(shadow);
+        shadow.setDepth(-10);
+
+        const updateListener = () => {
+            if (!target.active || !shadow.active) {
+                this.scene.events.off('postupdate', updateListener);
+                if (shadow.active) shadow.destroy();
+                return;
+            }
+            if (target.isAirborne && target.sprite) {
+                const height = Math.abs(target.sprite.y);
+                shadow.alpha = Math.max(0.15, 0.75 - (height / 500));
+                shadow.setScale(Math.max(0.5, 1 - (height / 400)));
+            } else {
+                shadow.alpha = 0.75;
+                shadow.setScale(1);
+            }
+        };
+
+        this.scene.events.on('postupdate', updateListener);
+        return shadow;
+    }
+
+    /**
+     * 잔상(Afterimage) 효과 - 고속 이동 유닛 전용.
+     */
+    createAfterimage(target, duration = 300, alphaStart = 0.5) {
+        if (!target || !target.sprite || !target.active) return;
+        if (this.scene && this.scene.isUltimateActive) return;
+
+        const image = this.scene.add.image(target.x, target.y, target.sprite.texture.key);
+        image.setDisplaySize(target.sprite.displayWidth, target.sprite.displayHeight);
+        image.scaleX = target.sprite.scaleX;
+        image.scaleY = target.sprite.scaleY;
+        image.setDepth(target.depth - 2);
+        image.setAlpha(alphaStart);
+        image.setTint(0x88ccff);
+
+        this.scene.tweens.add({
+            targets: image,
+            alpha: 0,
+            duration: duration,
+            ease: 'Linear',
+            onComplete: () => image.destroy()
+        });
+    }
+
+    /**
+     * 버프 스파클 이펙트.
+     */
+    createSparkleEffect(target) {
+        if (!target || !target.active) return;
+
+        if (!this.scene.textures.exists('sparkle_fx')) {
+            const graphics = this.scene.add.graphics();
+            graphics.fillStyle(0xffffff, 1);
+            graphics.fillCircle(4, 4, 4);
+            graphics.generateTexture('sparkle_fx', 8, 8);
+            graphics.destroy();
+        }
+
+        const emitter = this.scene.add.particles(0, 0, 'sparkle_fx', {
+            x: target.x,
+            y: target.y - 30,
+            speed: { min: 20, max: 50 },
+            angle: { min: 240, max: 300 },
+            scale: { start: 1, end: 0 },
+            alpha: { start: 1, end: 0 },
+            lifespan: 800,
+            gravityY: -50,
+            tint: [0xffff00, 0xffa500, 0xffffff],
+            blendMode: 'ADD',
+            quantity: 2,
+            frequency: 50,
+            duration: 500
+        });
+
+        this.scene.time.delayedCall(1500, () => {
+            if (emitter) emitter.destroy();
+        });
+    }
+
+    /**
+     * 스턴 효과 (회전하는 별).
+     */
+    createStunEffect(target, duration) {
+        if (!target || !target.active) return;
+
+        const stars = [];
+        const starCount = 3;
+        const radius = 25;
+
+        for (let i = 0; i < starCount; i++) {
+            const star = this.scene.add.image(target.x, target.y - 40, 'emoji_star');
+            star.setDisplaySize(8, 8);
+            star.setDepth(target.depth + 1);
+            stars.push(star);
+        }
+
+        // 단일 update 리스너로 통합 (이전 패턴의 리스너 누적 문제 해결)
+        const stunStartTime = this.scene.time.now;
+        const followListener = () => {
+            const elapsed = this.scene.time.now - stunStartTime;
+            if (!target.active || elapsed >= duration) {
+                this.scene.events.off('update', followListener);
+                stars.forEach(s => { if (s.active) s.destroy(); });
+                if (target.active) target.isStunned = false;
+                return;
+            }
+            const time = this.scene.time.now / 1000;
+            stars.forEach((star, idx) => {
+                const angle = time * Math.PI * 2 + (idx / starCount) * Math.PI * 2;
+                star.x = target.x + Math.cos(angle) * radius;
+                star.y = target.y - 45 + Math.sin(angle) * (radius / 3);
+                star.setDepth(target.depth + (Math.sin(angle) > 0 ? 1 : -1));
+            });
+        };
+        this.scene.events.on('update', followListener);
+    }
+
+    /**
+     * 궤도 공전 이펙트.
+     */
+    createOrbitEffect(target, textures, duration) {
+        if (!target || !target.active) return;
+
+        const objects = [];
+        const count = textures.length;
+        const radius = 40;
+
+        for (let i = 0; i < count; i++) {
+            const obj = this.scene.add.image(target.x, target.y - 20, textures[i]);
+            obj.setDisplaySize(24, 24);
+            obj.setDepth(target.depth + 1);
+            objects.push(obj);
+        }
+
+        const orbitEndTime = this.scene.time.now + duration;
+        const followListener = () => {
+            if (!target.active || this.scene.time.now > orbitEndTime) {
+                this.scene.events.off('update', followListener);
+                objects.forEach(o => { if (o.active) o.destroy(); });
+                return;
+            }
+            objects.forEach((obj, idx) => {
+                const time = this.scene.time.now / 1000;
+                const angle = time * 3 + (idx / count) * Math.PI * 2;
+                obj.x = target.x + Math.cos(angle) * radius;
+                obj.y = target.y - 20 + Math.sin(angle) * (radius / 2);
+                obj.setDepth(target.depth + (Math.sin(angle) > 0 ? 1 : -1));
+            });
+        };
+        this.scene.events.on('update', followListener);
+    }
+
+    /**
+     * 이모지 팝업 애니메이션 (전투 이벤트 리액션 등에 사용).
+     */
+    showEmojiPopup(target, emoji) {
+        if (!target || !target.active) return;
+
+        const scale = (target.config && target.config.scale) || 1;
+        const initialYOffset = 70 * scale;
+
+        const text = this.scene.add.text(target.x, target.y - initialYOffset, emoji, {
+            fontSize: '44px',
+            resolution: 2
+        }).setOrigin(0.5).setScale(0).setAlpha(0);
+
+        text.setDepth(20002);
+
+        let currentYOffset = initialYOffset;
+        let wobbleX = 0;
+
+        const followListener = () => {
+            if (!target.active || !text.active) {
+                this.scene.events.off('postupdate', followListener);
+                return;
+            }
+            text.x = target.x + wobbleX;
+            text.y = target.y - currentYOffset;
+        };
+        this.scene.events.on('postupdate', followListener);
+
+        this.scene.tweens.add({ targets: text, scale: 1, alpha: 0.5, duration: 600, ease: 'Back.easeOut' });
+        this.scene.tweens.add({
+            targets: { y: initialYOffset },
+            y: initialYOffset + 80,
+            duration: 1800,
+            ease: 'Sine.easeIn',
+            onUpdate: (tween) => { currentYOffset = tween.getValue(); },
+            onComplete: () => {
+                this.scene.events.off('postupdate', followListener);
+                text.destroy();
+            }
+        });
+        this.scene.tweens.add({ targets: text, alpha: 0, duration: 1000, delay: 800 });
+        this.scene.tweens.add({
+            targets: { x: 0 }, x: 10, duration: 800, yoyo: true, repeat: 1, ease: 'Sine.easeInOut',
+            onUpdate: (tween) => { wobbleX = tween.getValue(); }
+        });
+    }
+
+    /**
+     * 힐 텍스트 표시 (풀 미사용 - 빈도 낮음).
      */
     showHealText(target, message, color = '#00ff00') {
         if (!target || !target.active) return;
@@ -174,313 +453,12 @@ export default class FXManager {
         });
     }
 
-    createShadow(target, scale = 1) {
-        if (!target || !target.active) return null;
-
-        // Position at feet: relative to the container center (0, 0)
-        const yOffset = target.shadowOffset !== undefined ? target.shadowOffset : (25 * scale);
-        const shadow = this.scene.add.ellipse(0, yOffset, 40 * scale, 20 * scale, 0x000000, 0.5);
-
-        // Add shadow directly into the unit's container
-        target.add(shadow);
-        shadow.setDepth(-10); // Stay behind the sprite which is at depth 0
-
-        // Simple scale/alpha logic for airborne state (sprite.y moves up/negative)
-        const updateListener = () => {
-            if (!target.active || !shadow.active) {
-                this.scene.events.off('postupdate', updateListener);
-                if (shadow.active) shadow.destroy();
-                return;
-            }
-
-            if (target.isAirborne && target.sprite) {
-                const height = Math.abs(target.sprite.y);
-                shadow.alpha = Math.max(0.1, 0.5 - (height / 500));
-                shadow.setScale(Math.max(0.5, 1 - (height / 400)));
-            } else {
-                shadow.alpha = 0.5;
-                shadow.setScale(1);
-            }
-        };
-
-        this.scene.events.on('postupdate', updateListener);
-        return shadow;
-    }
-
     /**
-     * Create an afterimage effect trailing behind a fast moving unit.
-     */
-    createAfterimage(target, duration = 300, alphaStart = 0.5) {
-        if (!target || !target.sprite || !target.active) return;
-        if (this.scene && this.scene.isUltimateActive) return;
-
-        const image = this.scene.add.image(target.x, target.y, target.sprite.texture.key);
-        image.setDisplaySize(target.sprite.displayWidth, target.sprite.displayHeight);
-        image.scaleX = target.sprite.scaleX; // inherit flip
-        image.scaleY = target.sprite.scaleY;
-        image.setDepth(target.depth - 2); // behind the character and shadow
-        image.setAlpha(alphaStart);
-        image.setTint(0x88ccff); // slight wind/blue tint
-
-        this.scene.tweens.add({
-            targets: image,
-            alpha: 0,
-            duration: duration,
-            ease: 'Linear',
-            onComplete: () => image.destroy()
-        });
-    }
-
-    /**
-     * Create a rising sparkle particle effect over the target (e.g., for buffs).
-     */
-    createSparkleEffect(target) {
-        if (!target || !target.active) return;
-
-        // Since we don't have a specific sparkle texture defined yet, 
-        // we can use a small graphics object or a default white particle.
-        // For now, let's create a temporary graphics texture if it doesn't exist.
-        if (!this.scene.textures.exists('sparkle_fx')) {
-            const graphics = this.scene.add.graphics();
-            graphics.fillStyle(0xffffff, 1);
-            graphics.fillCircle(4, 4, 4);
-            graphics.generateTexture('sparkle_fx', 8, 8);
-            graphics.destroy();
-        }
-
-        const emitter = this.scene.add.particles(0, 0, 'sparkle_fx', {
-            x: target.x,
-            y: target.y - 30, // Start slightly above the center
-            speed: { min: 20, max: 50 },
-            angle: { min: 240, max: 300 }, // Shooting upwards
-            scale: { start: 1, end: 0 },
-            alpha: { start: 1, end: 0 },
-            lifespan: 800,
-            gravityY: -50,
-            tint: [0xffff00, 0xffa500, 0xffffff], // Gold/yellow sparkles
-            blendMode: 'ADD',
-            quantity: 2,
-            frequency: 50,
-            duration: 500 // Stop emitting after 500ms
-        });
-
-        // Cleanup after emission finishes
-        this.scene.time.delayedCall(1500, () => {
-            if (emitter) emitter.destroy();
-        });
-    }
-
-    /**
-     * Create a stun effect (spinning stars) above the target.
-     * @param {Phaser.GameObjects.GameObject} target 
-     * @param {number} duration 
-     */
-    createStunEffect(target, duration) {
-        if (!target || !target.active) return;
-
-        const stars = [];
-        const starCount = 3;
-        const radius = 25;
-
-        for (let i = 0; i < starCount; i++) {
-            const star = this.scene.add.image(target.x, target.y - 40, 'emoji_star');
-            star.setDisplaySize(8, 8);
-            star.setDepth(target.depth + 1);
-            stars.push(star);
-
-            // Orbit and spin animation
-            this.scene.tweens.add({
-                targets: star,
-                interpolation: 'bezier',
-                props: {
-                    x: {
-                        value: {
-                            getEnd: (target, key, value) => target.x,
-                            getStart: (target, key, value) => target.x,
-                        },
-                        duration: 1000,
-                        repeat: -1,
-                        ease: (t) => Math.cos(t * Math.PI * 2 + (i / starCount) * Math.PI * 2) * radius
-                    },
-                    y: {
-                        value: {
-                            getEnd: (target, key, value) => target.y - 40,
-                            getStart: (target, key, value) => target.y - 40,
-                        },
-                        duration: 1000,
-                        repeat: -1,
-                        ease: (t) => Math.sin(t * Math.PI * 2 + (i / starCount) * Math.PI * 2) * (radius / 3)
-                    }
-                }
-            });
-
-            // Self rotation
-            this.scene.tweens.add({
-                targets: star,
-                angle: 360,
-                duration: 800,
-                repeat: -1
-            });
-        }
-
-        // Cleanup listener to keep stars following the target
-        const followListener = () => {
-            if (!target.active || !target.isStunned) {
-                this.scene.events.off('update', followListener);
-                stars.forEach(s => s.destroy());
-                return;
-            }
-            stars.forEach((star, idx) => {
-                const time = this.scene.time.now / 1000;
-                const angle = time * Math.PI * 2 + (idx / starCount) * Math.PI * 2;
-                star.x = target.x + Math.cos(angle) * radius;
-                star.y = target.y - 45 + Math.sin(angle) * (radius / 3);
-                star.setDepth(target.depth + (Math.sin(angle) > 0 ? 1 : -1));
-            });
-        };
-        this.scene.events.on('update', followListener);
-
-        // Auto-disable stun after duration
-        this.scene.time.delayedCall(duration, () => {
-            if (target.active) {
-                target.isStunned = false;
-            }
-        });
-    }
-
-    /**
-     * Create an orbiting effect with specific textures.
-     * @param {Phaser.GameObjects.GameObject} target 
-     * @param {string[]} textures 
-     * @param {number} duration 
-     */
-    createOrbitEffect(target, textures, duration) {
-        if (!target || !target.active) return;
-
-        const objects = [];
-        const count = textures.length;
-        const radius = 40;
-
-        for (let i = 0; i < count; i++) {
-            const obj = this.scene.add.image(target.x, target.y - 20, textures[i]);
-            obj.setDisplaySize(24, 24);
-            obj.setDepth(target.depth + 1);
-            objects.push(obj);
-
-            // Orbit tween
-            this.scene.tweens.add({
-                targets: obj,
-                angle: 360,
-                duration: 2000,
-                repeat: -1
-            });
-        }
-
-        const followListener = () => {
-            if (!target.active || (this.scene.time.now > (target.orbitEndTime || 0))) {
-                this.scene.events.off('update', followListener);
-                objects.forEach(o => o.destroy());
-                return;
-            }
-            objects.forEach((obj, idx) => {
-                const time = this.scene.time.now / 1000;
-                const angle = time * 3 + (idx / count) * Math.PI * 2;
-                obj.x = target.x + Math.cos(angle) * radius;
-                obj.y = target.y - 20 + Math.sin(angle) * (radius / 2);
-                obj.setDepth(target.depth + (Math.sin(angle) > 0 ? 1 : -1));
-            });
-        };
-        target.orbitEndTime = this.scene.time.now + duration;
-        this.scene.events.on('update', followListener);
-    }
-
-    /**
-     * Show a popping emoji animation above the target.
-     * @param {Phaser.GameObjects.GameObject} target 
-     * @param {string} emoji - The emoji string (e.g., '🍔')
-     */
-    showEmojiPopup(target, emoji) {
-        if (!target || !target.active) return;
-
-        const scale = (target.config && target.config.scale) || 1;
-        const initialYOffset = 70 * scale;
-
-        const text = this.scene.add.text(target.x, target.y - initialYOffset, emoji, {
-            fontSize: '44px',
-            resolution: 2
-        }).setOrigin(0.5).setScale(0).setAlpha(0);
-
-        text.setDepth(20002);
-
-        // Tracking state
-        let currentYOffset = initialYOffset;
-        let wobbleX = 0;
-
-        // Follow listener to keep emoji attached to moving unit
-        const followListener = () => {
-            if (!target.active || !text.active) {
-                this.scene.events.off('postupdate', followListener);
-                return;
-            }
-            text.x = target.x + wobbleX;
-            text.y = target.y - currentYOffset;
-        };
-        this.scene.events.on('postupdate', followListener);
-
-        // Primary animation: Pop up and fade to 50% opacity
-        this.scene.tweens.add({
-            targets: text,
-            scale: 1,
-            alpha: 0.5,
-            duration: 600,
-            ease: 'Back.easeOut'
-        });
-
-        // Floating animation via currentYOffset
-        this.scene.tweens.add({
-            targets: { y: initialYOffset },
-            y: initialYOffset + 80,
-            duration: 1800,
-            ease: 'Sine.easeIn',
-            onUpdate: (tween) => {
-                currentYOffset = tween.getValue();
-            },
-            onComplete: () => {
-                this.scene.events.off('postupdate', followListener);
-                text.destroy();
-            }
-        });
-
-        // Slow fade out
-        this.scene.tweens.add({
-            targets: text,
-            alpha: 0,
-            duration: 1000,
-            delay: 800
-        });
-
-        // Subtle horizontal wobble
-        this.scene.tweens.add({
-            targets: { x: 0 },
-            x: 10,
-            duration: 800,
-            yoyo: true,
-            repeat: 1,
-            ease: 'Sine.easeInOut',
-            onUpdate: (tween) => {
-                wobbleX = tween.getValue();
-            }
-        });
-    }
-
-    /**
-     * Show green healing particles around the target.
-     * @param {Phaser.GameObjects.GameObject} target 
+     * 힐 파티클 효과 (녹색 스파클).
      */
     showHealEffect(target) {
         if (!target || !target.active) return;
 
-        // Use the existing sparkle technique but with green tint
         if (!this.scene.textures.exists('sparkle_fx')) {
             const graphics = this.scene.add.graphics();
             graphics.fillStyle(0xffffff, 1);
@@ -498,11 +476,15 @@ export default class FXManager {
             alpha: { start: 1, end: 0 },
             lifespan: 1000,
             gravityY: -100,
-            tint: [0x55ff55, 0x00ff00, 0xaaffaa], // Green shades
+            tint: [0x55ff55, 0x00ff00, 0xaaffaa],
             blendMode: 'ADD',
             quantity: 10,
             emitting: false
         });
+
+        if (this.scene.skillFxLayer) {
+            this.scene.skillFxLayer.add(emitter);
+        }
 
         emitter.setDepth(target.depth + 1);
         emitter.explode(15);
@@ -513,10 +495,7 @@ export default class FXManager {
     }
 
     /**
-     * Create a pulsing magic circle effect under a target.
-     * @param {Phaser.GameObjects.GameObject} target 
-     * @param {number} color 
-     * @param {number} duration 
+     * 마법진 이펙트 생성.
      */
     createMagicCircle(target, color = 0xffffff, duration = 1000) {
         if (!target || !target.active) return;
@@ -526,11 +505,8 @@ export default class FXManager {
         graphics.setDepth(target.depth - 1);
         graphics.setBlendMode('ADD');
 
-        // Draw the circle
         graphics.lineStyle(2, color, 0.8);
         graphics.strokeCircle(0, 0, radius);
-
-        // Add some "runes" or extra detail
         graphics.lineStyle(1, color, 0.4);
         graphics.strokeCircle(0, 0, radius * 0.8);
 
@@ -540,10 +516,8 @@ export default class FXManager {
             graphics.lineTo(Math.cos(angle) * radius, Math.sin(angle) * radius);
         }
         graphics.strokePath();
-
         graphics.setPosition(target.x, target.y);
 
-        // Follow target
         const followListener = () => {
             if (!target.active || !graphics.active) {
                 this.scene.events.off('update', followListener);
@@ -555,7 +529,6 @@ export default class FXManager {
         };
         this.scene.events.on('update', followListener);
 
-        // Pulsing animation
         this.scene.tweens.add({
             targets: graphics,
             scale: 1.2,

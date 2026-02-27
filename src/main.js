@@ -22,12 +22,17 @@ const config = {
         width: 600,
         height: 1067
     },
-    // High DPI Support
-    resolution: window.devicePixelRatio,
+    // Locked resolution for maximum stability and performance
+    resolution: 1,
     antialias: true,
     roundPixels: true,
     render: { powerPreference: 'high-performance' },
-    fps: { target: 60, forceSetTimeOut: true },
+    fps: {
+        target: 60,
+        forceSetTimeOut: false, // Use requestAnimationFrame for mobile efficiency
+        panicMax: 10,           // To prevent spiral of death
+        smoothStep: true        // Ensure consistent frame timing
+    },
     parent: 'game-container',
     backgroundColor: '#000000',
     scene: [BootScene, TerritoryScene, DungeonScene, ArenaScene, RaidScene],
