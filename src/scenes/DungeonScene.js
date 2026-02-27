@@ -332,6 +332,20 @@ export default class DungeonScene extends Phaser.Scene {
             this.mercenaries.getChildren().forEach(mercenary => {
                 mercenary.update();
                 mercenary.setDepth(mercenary.y);
+
+                // ── Idle Bob 자동 제어 ─────────────────────────────────────
+                // body.speed: 실시간 물리 이동 속도(px/s). 5 이하면 정지 상태로 판단.
+                if (mercenary.body && mercenary.startIdleBob) {
+                    const isMoving = mercenary.body.speed > 5;
+                    const isBlocked = mercenary.isAirborne || mercenary.isKnockedBack || mercenary.hp <= 0;
+
+                    if ((isMoving || isBlocked) && mercenary._idleBobTween) {
+                        mercenary.stopIdleBob(false); // 이동 중 — 부드럽게 현재 위치 유지
+                    } else if (!isMoving && !isBlocked && !mercenary._idleBobTween) {
+                        mercenary.startIdleBob();     // 정지 복귀 — bob 재시작
+                    }
+                }
+                // ──────────────────────────────────────────────────────────
             });
         }
 
@@ -339,8 +353,22 @@ export default class DungeonScene extends Phaser.Scene {
             this.enemies.getChildren().forEach(enemy => {
                 enemy.update();
                 enemy.setDepth(enemy.y);
+
+                // ── Idle Bob 자동 제어 (적 유닛도 동일) ─────────────────────
+                if (enemy.body && enemy.startIdleBob) {
+                    const isMoving = enemy.body.speed > 5;
+                    const isBlocked = enemy.isAirborne || enemy.isKnockedBack || enemy.hp <= 0;
+
+                    if ((isMoving || isBlocked) && enemy._idleBobTween) {
+                        enemy.stopIdleBob(false);
+                    } else if (!isMoving && !isBlocked && !enemy._idleBobTween) {
+                        enemy.startIdleBob();
+                    }
+                }
+                // ──────────────────────────────────────────────────────────
             });
         }
+
 
         this.updateCameraFollow();
     }

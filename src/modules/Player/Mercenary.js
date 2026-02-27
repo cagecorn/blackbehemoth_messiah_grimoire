@@ -158,7 +158,60 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             this.shadow = this.scene.fxManager.createShadow(this);
         }
 
+        // ── Idle Bob Animation ───────────────────────────────────
+        // 각 유닛마다 위상(phase offset)을 랜덤으로 달리해서
+        // 화면 속 캐릭터들이 다같이 오르내리지 않고 자연스럽게.
+        this._idleBobTween = null;
+        this._idleBobPhaseOffset = Math.random() * 1200; // 0~1200ms 랜덤 지연
+        this.scene.time.delayedCall(this._idleBobPhaseOffset, () => {
+            if (this.active) this.startIdleBob();
+        });
+        // ─────────────────────────────────────────────────────────
+
         this.setupBaseEventListeners();
+    }
+
+    // ================================================================
+    //  Idle Bob: 살아있는 숨 쉬는 느낌의 스프라이트 상하 움직임.
+    //  옥토패스 트래블러 스타일 -- 아이들 상태에서만 동작.
+    //  ● 이동 중 / 공중 상태 / 스킬 시전 중에는 자동으로 멈춤.
+    //  ● sprite.y만 움직이므로 HealthBar, Shadow 위치에 영향 없음.
+    // ================================================================
+
+    /**
+     * Idle Bob 시작. 이미 실행 중이면 무시.
+     */
+    startIdleBob() {
+        if (!this.sprite || !this.active || this._idleBobTween) return;
+        if (this.isAirborne || this.isKnockedBack) return;
+
+        const bobAmount = 3;    // ±3px (너무 크면 허전한 느낌)
+        const bobDuration = 900; // 한 사이클 900ms = 1.1회/초
+
+        this._idleBobTween = this.scene.tweens.add({
+            targets: this.sprite,
+            y: { from: 0, to: -bobAmount },
+            duration: bobDuration,
+            ease: 'Sine.easeInOut',
+            yoyo: true,
+            repeat: -1,
+        });
+
+        console.log(`[IdleBob] ${this.unitName} 아이들 밥 시작 ✨`);
+    }
+
+    /**
+     * Idle Bob 정지 후 sprite.y를 원위치로 복귀.
+     * @param {boolean} [snapBack=true] - sprite.y를 즉시 0으로 복귀할지 여부
+     */
+    stopIdleBob(snapBack = true) {
+        if (this._idleBobTween) {
+            this._idleBobTween.stop();
+            this._idleBobTween = null;
+        }
+        if (snapBack && this.sprite) {
+            this.sprite.y = 0;
+        }
     }
 
     setupBaseEventListeners() {
