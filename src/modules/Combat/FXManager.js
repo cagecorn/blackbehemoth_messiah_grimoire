@@ -511,4 +511,61 @@ export default class FXManager {
             if (emitter) emitter.destroy();
         });
     }
+
+    /**
+     * Create a pulsing magic circle effect under a target.
+     * @param {Phaser.GameObjects.GameObject} target 
+     * @param {number} color 
+     * @param {number} duration 
+     */
+    createMagicCircle(target, color = 0xffffff, duration = 1000) {
+        if (!target || !target.active) return;
+
+        const radius = 50;
+        const graphics = this.scene.add.graphics();
+        graphics.setDepth(target.depth - 1);
+        graphics.setBlendMode('ADD');
+
+        // Draw the circle
+        graphics.lineStyle(2, color, 0.8);
+        graphics.strokeCircle(0, 0, radius);
+
+        // Add some "runes" or extra detail
+        graphics.lineStyle(1, color, 0.4);
+        graphics.strokeCircle(0, 0, radius * 0.8);
+
+        for (let i = 0; i < 4; i++) {
+            const angle = (i * Math.PI) / 2;
+            graphics.moveTo(Math.cos(angle) * (radius - 10), Math.sin(angle) * (radius - 10));
+            graphics.lineTo(Math.cos(angle) * radius, Math.sin(angle) * radius);
+        }
+        graphics.strokePath();
+
+        graphics.setPosition(target.x, target.y);
+
+        // Follow target
+        const followListener = () => {
+            if (!target.active || !graphics.active) {
+                this.scene.events.off('update', followListener);
+                if (graphics.active) graphics.destroy();
+                return;
+            }
+            graphics.setPosition(target.x, target.y);
+            graphics.setDepth(target.depth - 1);
+        };
+        this.scene.events.on('update', followListener);
+
+        // Pulsing animation
+        this.scene.tweens.add({
+            targets: graphics,
+            scale: 1.2,
+            alpha: 0,
+            duration: duration,
+            ease: 'Sine.easeOut',
+            onComplete: () => {
+                this.scene.events.off('update', followListener);
+                graphics.destroy();
+            }
+        });
+    }
 }
