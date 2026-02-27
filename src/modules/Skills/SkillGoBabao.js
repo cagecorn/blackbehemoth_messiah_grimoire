@@ -86,6 +86,7 @@ export default class SkillGoBabao {
                 // Find nearest enemy from targetGroup
                 let nearestEnemy = null;
                 let minDist = Infinity;
+                if (!babao.targetGroup || !babao.targetGroup.getChildren) return;
                 const enemies = babao.targetGroup.getChildren();
 
                 enemies.forEach(enemy => {

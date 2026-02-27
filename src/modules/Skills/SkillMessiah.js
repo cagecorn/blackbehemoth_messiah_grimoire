@@ -74,6 +74,7 @@ export default class SkillMessiah {
     }
 
     findDensestEnemyArea(scene, caster) {
+        if (!caster || !caster.targetGroup) return { x: caster.x, y: caster.y };
         const enemies = caster.targetGroup.getChildren().filter(e => e.active && e.hp > 0);
         if (enemies.length === 0) return { x: caster.x, y: caster.y };
 
@@ -139,6 +140,7 @@ export default class SkillMessiah {
         // Logical Impact: AOE
         const damage = caster.getTotalAtk() * 4.0;
         const radius = 180;
+        if (!caster.targetGroup) return;
         const targets = caster.targetGroup.getChildren().filter(e => e.active && e.hp > 0);
 
         // Check for weapon element

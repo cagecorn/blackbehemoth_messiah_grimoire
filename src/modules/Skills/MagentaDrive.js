@@ -196,7 +196,9 @@ export default class MagentaDrive {
         const minY = y1 - 100;
         const maxY = y1 + 100;
 
-        const targets = caster.targetGroup ? caster.targetGroup.getChildren().filter(e => e.active && e.hp > 0) : [];
+        const targetGroup = caster.targetGroup;
+        if (!targetGroup || !targetGroup.getChildren) return;
+        const targets = targetGroup.getChildren().filter(e => e.active && e.hp > 0);
         let hitCount = 0;
 
         // Check for weapon element

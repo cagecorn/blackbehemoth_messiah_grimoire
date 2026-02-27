@@ -126,6 +126,7 @@ export default class ProveExistence {
         const damage = mAtk * this.smiteDamageMultiplier;
 
         const targetGroup = this.caster.targetGroup;
+        if (!targetGroup || !targetGroup.getChildren) return;
         const enemies = targetGroup.getChildren();
 
         // Check for weapon element

@@ -74,7 +74,7 @@ export default class SkillIceBall {
 
         // Apply Freeze to all in AOE
         const targetGroup = caster.targetGroup;
-        if (targetGroup) {
+        if (targetGroup && targetGroup.getChildren) {
             const targets = targetGroup.getChildren();
             for (const t of targets) {
                 if (t.active && t.hp > 0) {
@@ -106,7 +106,7 @@ export default class SkillIceBall {
 
             // Simple "tracking" projectile: find a new target or use current cluster
             const targetGroup = caster.targetGroup;
-            if (!targetGroup) continue;
+            if (!targetGroup || !targetGroup.getChildren) continue;
 
             const targets = targetGroup.getChildren().filter(t => t.active && t.hp > 0);
             let miniTarget = targets[Math.floor(Math.random() * targets.length)];

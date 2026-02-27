@@ -25,7 +25,7 @@ export default class CarpetBombing {
         let targetY = 300;
 
         const targetGroup = caster.targetGroup;
-        if (!targetGroup) return;
+        if (!targetGroup || !targetGroup.getChildren) return;
 
         const enemies = targetGroup.getChildren().filter(e => e.active && e.hp > 0);
         if (enemies.length > 0) {

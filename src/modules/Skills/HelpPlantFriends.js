@@ -41,7 +41,7 @@ export default class HelpPlantFriends {
         for (let i = 0; i < count; i++) {
             const plant = Phaser.Utils.Array.GetRandom(this.plantPool);
             const targetGroup = plant.type === 'ally' ? caster.allyGroup : caster.targetGroup;
-            if (!targetGroup) continue;
+            if (!targetGroup || !targetGroup.getChildren) continue;
 
             const children = targetGroup.getChildren().filter(c => c.active && c.hp > 0);
             if (children.length === 0) continue;

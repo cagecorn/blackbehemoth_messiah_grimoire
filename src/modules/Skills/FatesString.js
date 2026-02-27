@@ -165,6 +165,8 @@ export default class FatesString {
     }
 
     applyLineDamage(scene, caster, x1, y1, x2, y2) {
+        if (!caster || !caster.active || !caster.targetGroup) return;
+
         const targets = caster.targetGroup.getChildren().filter(e => e.active && e.hp > 0);
         const damage = caster.getTotalAtk() * this.damageMultiplier;
 

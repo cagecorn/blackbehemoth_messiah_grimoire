@@ -40,6 +40,7 @@ export default class MusicalMagicalCritical {
         this.playVisuals(scene, bestTarget.x, bestTarget.y);
 
         // Apply effects
+        if (!caster.allyGroup || !caster.allyGroup.getChildren) return false;
         const allies = caster.allyGroup.getChildren().filter(a => a.active && a.hp > 0);
 
         allies.forEach(ally => {
@@ -63,6 +64,8 @@ export default class MusicalMagicalCritical {
 
     findBestTarget(caster) {
         // Priority: 1. Ally + Enemy clump, 2. Enemy clump, 3. Ally clump
+        if (!caster.allyGroup || !caster.allyGroup.getChildren) return null;
+        if (!caster.targetGroup || !caster.targetGroup.getChildren) return null;
         const allies = caster.allyGroup.getChildren().filter(a => a.active && a.hp > 0);
         const enemies = caster.targetGroup.getChildren().filter(e => e.active && e.hp > 0);
 

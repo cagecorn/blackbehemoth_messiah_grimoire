@@ -134,7 +134,9 @@ export default class ImSorry {
 
     checkHit(scene, caster, emoji) {
         const radius = 100;
-        const targets = caster.targetGroup.getChildren().filter(e => e.active && e.hp > 0);
+        const targetGroup = caster.targetGroup;
+        if (!targetGroup || !targetGroup.getChildren) return;
+        const targets = targetGroup.getChildren().filter(e => e.active && e.hp > 0);
         const damage = caster.getTotalAtk() * this.damageMultiplier;
 
         // Check for weapon element synergy

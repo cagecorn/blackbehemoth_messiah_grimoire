@@ -42,7 +42,7 @@ export default class HelpAnimalFriends {
         for (let i = 0; i < count; i++) {
             const animal = Phaser.Utils.Array.GetRandom(this.animalPool);
             const targetGroup = animal.type === 'ally' ? caster.allyGroup : caster.targetGroup;
-            if (!targetGroup) continue;
+            if (!targetGroup || !targetGroup.getChildren) continue;
 
             const children = targetGroup.getChildren().filter(c => c.active && c.hp > 0);
             if (children.length === 0) continue;

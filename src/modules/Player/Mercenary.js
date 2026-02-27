@@ -358,17 +358,19 @@ export default class Mercenary extends Phaser.GameObjects.Container {
      */
     get targetGroup() {
         if (!this.scene || !this.scene.scene || !this.scene.scene.isActive()) {
-            return null;
+            return { getChildren: () => [] };
         }
-        return (this.team === 'player') ? this.scene.enemies : this.scene.mercenaries;
+        const group = (this.team === 'player') ? this.scene.enemies : this.scene.mercenaries;
+        return group || { getChildren: () => [] };
     }
 
     /**
      * Returns the Phaser group that contains allies for this unit.
      */
     get allyGroup() {
-        if (!this.scene) return null;
-        return (this.team === 'player') ? this.scene.mercenaries : this.scene.enemies;
+        if (!this.scene) return { getChildren: () => [] };
+        const group = (this.team === 'player') ? this.scene.mercenaries : this.scene.enemies;
+        return group || { getChildren: () => [] };
     }
 
     /**
