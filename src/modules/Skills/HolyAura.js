@@ -113,6 +113,10 @@ export default class HolyAura {
             if (caster && caster.active) {
                 auraGraphic.setPosition(caster.x, caster.y);
                 emitter.setPosition(caster.x, caster.y);
+
+                // Keep depth in sync with caster (especially important for Arena/Dungeon Y-sorting)
+                auraGraphic.setDepth(caster.depth - 1);
+                emitter.setDepth(caster.depth + 1);
             }
         };
         this.scene.events.on('update', onUpdate);
