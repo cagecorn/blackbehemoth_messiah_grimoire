@@ -26,8 +26,8 @@ export default class TerritoryScene extends Phaser.Scene {
         // [DOM UI Wrapper]
         this.createDOMNavigation();
 
-        // Initialize Party Selection if not set
-        this.checkPartyStatus();
+        // Initialize Party Selection if not set (이제 자동 생성 안 함, 유저가 직접 아이콘을 눌러야 함)
+        // this.checkPartyStatus();
     }
 
     createDOMNavigation() {
