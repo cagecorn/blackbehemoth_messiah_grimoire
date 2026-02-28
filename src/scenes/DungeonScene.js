@@ -649,8 +649,14 @@ export default class DungeonScene extends Phaser.Scene {
             const randomNodeCharm = nodeCharmsList[Math.floor(Math.random() * nodeCharmsList.length)];
             unit.nodeCharms[0] = randomNodeCharm;
 
+            // Convert node charm back to readable emoji for Log
+            let nodeEmoji = 'None';
+            if (randomNodeCharm === 'node_hater') nodeEmoji = '😠 [Hater]';
+            if (randomNodeCharm === 'node_blood') nodeEmoji = '😡 [Blood Scent]';
+            if (randomNodeCharm === 'node_guard') nodeEmoji = '😎 [Bodyguard]';
+
             this.enemies.add(unit);
-            console.log(`[Dungeon] Spawned Shadow ${config.name} (ID: ${unit.id}) with HP: ${unit.hp}/${unit.maxHp}, AI Node: ${randomNodeCharm} and novas: ${unit.charms}`);
+            console.log(`[Dungeon] Spawned Shadow ${config.name} (ID: ${unit.id}) with HP: ${unit.hp}/${unit.maxHp}, Node Charm: ${nodeEmoji} and novas: ${unit.charms}`);
 
             if (unit.setElite) unit.setElite(true);
 

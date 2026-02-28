@@ -159,7 +159,12 @@ export default class NodeCharmManager {
             if (distToAlly > 150) {
                 // Too far! Override target to the ally temporarily, but skip attack Action
                 const currentSpeed = a.getTotalSpeed ? a.getTotalSpeed() : a.speed;
-                a.scene.physics.moveToObject(a, lowestHpAlly, currentSpeed);
+
+                // Add Safety limit
+                const maxAllowedSpeed = 500;
+                const safeSpeed = Math.min(currentSpeed, maxAllowedSpeed);
+
+                a.scene.physics.moveToObject(a, lowestHpAlly, safeSpeed);
                 // Return RUNNING so we keep moving and skip the actual attack/move sequences below
                 return 1;
             }

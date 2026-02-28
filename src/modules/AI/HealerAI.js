@@ -127,10 +127,14 @@ export default function applyHealerAI(unit, getAllyGroup, getEnemyGroup) {
 
         const angle = Phaser.Math.Angle.Between(targetObj.x, targetObj.y, unit.x, unit.y);
         const currentSpeed = unit.getTotalSpeed ? unit.getTotalSpeed() : unit.speed;
-        unit.body.setVelocity(
-            Math.cos(angle) * currentSpeed,
-            Math.sin(angle) * currentSpeed
-        );
+        const vx = Math.cos(angle) * currentSpeed;
+        const vy = Math.sin(angle) * currentSpeed;
+
+        if (Math.abs(vx) > 500 || Math.abs(vy) > 500) {
+            console.error(`[HealerAI] Warning: Flee speed glitch detected! currentSpeed: ${currentSpeed}, vx: ${vx}, vy: ${vy}`);
+        }
+
+        unit.body.setVelocity(vx, vy);
         return 1; // RUNNING
     }, "Kiting (Flee)");
 

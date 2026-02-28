@@ -34,6 +34,62 @@ export default class TerritoryScene extends Phaser.Scene {
 
         // Initialize Party Selection if not set (이제 자동 생성 안 함, 유저가 직접 아이콘을 눌러야 함)
         // this.checkPartyStatus();
+
+        this.createSparkleParticles();
+    }
+
+    createSparkleParticles() {
+        const particles = this.add.particles(0, 0, 'emoji_sparkles', {
+            x: { min: 0, max: this.cameras.main.width },
+            y: { min: 0, max: this.cameras.main.height },
+            lifespan: { min: 2000, max: 4000 },
+            speedY: { min: -10, max: -30 }, // Drift upwards slowly
+            speedX: { min: -10, max: 10 },  // Slight horizontal drift
+            scale: { start: 0.1, end: 0.8 },
+            alpha: {
+                onEmit: () => 0,
+                onUpdate: (particle, key, t) => {
+                    // Fast fade in for 20%, slow fade out for remaining 80%
+                    if (t < 0.2) return t * 5;
+                    return 1 - ((t - 0.2) / 0.8);
+                }
+            },
+            blendMode: 'ADD',
+            frequency: 300, // Spawn a new particle every 300ms
+            tint: 0xffffff  // White sparkles
+        });
+
+        // Effect for Sparkles
+        if (particles.postFX) {
+            particles.postFX.addBlur(1, 1, 1);
+            particles.postFX.addGlow(0xffffff, 2.5, 0, false, 0.1, 10);
+        }
+
+        // Add a secondary subtle glowing orb effect
+        const orbs = this.add.particles(0, 0, 'emoji_crystal_ball', {
+            x: { min: 0, max: this.cameras.main.width },
+            y: { min: 0, max: this.cameras.main.height },
+            lifespan: { min: 4000, max: 8000 },
+            speedY: { min: -5, max: -15 },
+            speedX: { min: -20, max: 20 },
+            scale: { start: 0.05, end: 0.3 },
+            alpha: {
+                onEmit: () => 0,
+                onUpdate: (particle, key, t) => {
+                    // Slower fade in, smooth fade out, max opacity 0.4
+                    return Math.sin(t * Math.PI) * 0.4;
+                }
+            },
+            blendMode: 'SCREEN',
+            frequency: 800,
+            tint: 0xddffff // Slight cyan tint for magical feel
+        });
+
+        // Effect for Orbs
+        if (orbs.postFX) {
+            orbs.postFX.addBlur(2, 1, 1);
+            orbs.postFX.addGlow(0xddffff, 3.0, 0, false, 0.1, 12);
+        }
     }
 
     createDOMNavigation() {
