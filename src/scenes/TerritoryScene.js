@@ -16,12 +16,18 @@ export default class TerritoryScene extends Phaser.Scene {
         const bg = this.add.image(0, 0, 'bg_territory').setOrigin(0, 0);
         bg.setDisplaySize(width, height);
 
-        // Title
-        // this.add.text(width / 2, 80, '영지 (Territory)', {
-        //     fontSize: '48px',
-        //     fill: '#e2e8f0',
-        //     fontStyle: 'bold'
-        // }).setOrigin(0.5);
+        // Logo
+        const logo = this.add.image(width / 2, height * 0.22, 'logo_icon').setOrigin(0.5);
+        // Optional: Animate the logo slightly for a nice intro effect
+        logo.setAlpha(0);
+        logo.setScale(0.8);
+        this.tweens.add({
+            targets: logo,
+            alpha: 1,
+            scale: 1,
+            duration: 1000,
+            ease: 'Back.easeOut'
+        });
 
         // [DOM UI Wrapper]
         this.createDOMNavigation();
