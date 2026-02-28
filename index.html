@@ -36,7 +36,22 @@
     <div id="app-container">
         <!-- Phaser renders here (Top-Left) -->
         <div id="game-container">
-            <!-- HD-2D Visual Enhancements are now injected dynamically by BootScene.js -->
+            <!-- HD-2D Visual Enhancements (Octopath Traveler Style) -->
+            <div class="hd2d-fx-layer vignette"></div>
+            <div class="hd2d-fx-layer tilt-shift">
+                <div class="tilt-shift-top"></div>
+                <div class="tilt-shift-bottom"></div>
+            </div>
+            <div class="hd2d-fx-layer soft-bloom"></div>
+            <div class="hd2d-fx-layer color-grading"></div>
+            <div class="hd2d-fx-layer scanlines"></div>
+            <!-- Film Grain: SVG feTurbulence noise (Octopath signature texture) -->
+            <div class="hd2d-fx-layer film-grain"></div>
+            <!-- Chromatic Aberration: subtle RGB channel split -->
+            <div class="hd2d-fx-layer chromatic-aberration">
+                <div class="hd2d-fx-layer chromatic-r"></div>
+                <div class="hd2d-fx-layer chromatic-b"></div>
+            </div>
         </div>
 
         <!-- Inventory Sidebar (Top-Right) -->
