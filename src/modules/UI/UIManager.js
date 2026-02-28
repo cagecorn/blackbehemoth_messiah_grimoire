@@ -24,6 +24,10 @@ export default class UIManager {
         this.lastGold = -1;
         this.lastGem = -1;
 
+        // Dirty Flags for Performance (Replacing Polling)
+        this.hudDirty = true;
+        this.portraitsDirty = true;
+
         // Mobile HUD Elements
         this.hudGold = document.getElementById('hud-gold');
         this.hudGem = document.getElementById('hud-gem');
@@ -62,6 +66,9 @@ export default class UIManager {
             this.inventoryDirty = true;
         });
         EventBus.on(EventBus.EVENTS.STATUS_UPDATED, (payload) => {
+            // Signal portraits update
+            this.portraitsDirty = true;
+
             const channel = this.unitToChannel[payload.agentId];
             if (channel) {
                 if (payload.statuses) {
@@ -189,13 +196,13 @@ export default class UIManager {
             this.inventoryDirty = true;
         });
 
-        // Sync HUD stats periodically (Currency every 1s, Portraits every 100ms for smoothness)
-        setInterval(() => this.updateMobileHUD(), 1000);
-        setInterval(() => this.updatePortraitBar(), 100);
+        // Initial HUD sync
+        this.updateMobileHUD();
+        this.updatePortraitBar();
 
         // Also update currency immediately on inventory changes
         EventBus.on(EventBus.EVENTS.INVENTORY_UPDATED, () => {
-            this.updateMobileHUD();
+            this.hudDirty = true;
         });
     }
 
@@ -566,6 +573,16 @@ export default class UIManager {
         if (this.inventoryDirty && !this.isRefreshing) {
             this.inventoryDirty = false;
             this.refreshInventory();
+        }
+
+        if (this.hudDirty) {
+            this.hudDirty = false;
+            this.updateMobileHUD();
+        }
+
+        if (this.portraitsDirty) {
+            this.portraitsDirty = false;
+            this.updatePortraitBar();
         }
 
         // Only loop if not destroyed

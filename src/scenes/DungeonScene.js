@@ -31,7 +31,6 @@ import EventBus from '../modules/Events/EventBus.js';
 import BarkManager from '../modules/AI/BarkManager.js';
 import partyManager from '../modules/Core/PartyManager.js';
 import VfxManager from '../modules/Core/VfxManager.js';
-import AtmosphereManager from '../modules/Environment/AtmosphereManager.js';
 
 
 export default class DungeonScene extends Phaser.Scene {
@@ -49,7 +48,6 @@ export default class DungeonScene extends Phaser.Scene {
         this.killExp = 25;
         this.roundClearExp = 500;
         this.vfxManager = null;
-        this.atmosphereManager = null;
     }
 
     init() {
@@ -239,9 +237,6 @@ export default class DungeonScene extends Phaser.Scene {
         // ✨ Premium Vfx Manager (Chromatic Aberration)
         this.vfxManager = new VfxManager(this);
 
-        // ☁️ Atmospheric Dust (Parallax)
-        this.atmosphereManager = new AtmosphereManager(this);
-
         EventBus.on(EventBus.EVENTS.DEBUG_SWAP_CHARACTER, this.handleDebugSwap, this);
     }
 
@@ -391,9 +386,7 @@ export default class DungeonScene extends Phaser.Scene {
             this.dynamicCamera.update(time, delta);
         }
 
-        if (this.vfxManager) {
-            this.vfxManager.update();
-        }
+        if (this.vfxManager) this.vfxManager.update();
     }
 
     updateCameraFollow() {
