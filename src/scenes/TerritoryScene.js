@@ -91,7 +91,7 @@ export default class TerritoryScene extends Phaser.Scene {
                 cell.style.boxShadow = '0 4px 10px rgba(0,0,0,0.5)';
 
                 const img = document.createElement('img');
-                img.src = \`assets/icon/\${btn.icon}\`;
+                img.src = `assets/icon/${btn.icon}`;
                 img.alt = btn.label;
                 img.style.cssText = 'width: 70%; height: 70%; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8));';
                 cell.appendChild(img);
@@ -153,15 +153,15 @@ export default class TerritoryScene extends Phaser.Scene {
         let candidatesHtml = '';
         Object.values(Characters).forEach(char => {
             candidatesHtml += `
-                    < div class="mercenary-card" draggable = "true" data - id="${char.id}" >
-                        <img src="assets/characters/party/${char.sprite}.png" alt="${char.name}">
-                            <div class="merc-name">${char.name.split(' (')[0]}</div>
-                        </div>
-                `;
+                <div class="mercenary-card" draggable="true" data-id="${char.id}">
+                    <img src="assets/characters/party/${char.sprite}.png" alt="${char.name}">
+                    <div class="merc-name">${char.name.split(' (')[0]}</div>
+                </div>
+            `;
         });
 
         this.partyOverlay.innerHTML = `
-                    < div class="party-selection-title" > 원정대 편성(슬롯에 드래그하거나 클릭하여 배치)</div >
+            <div class="party-selection-title">원정대 편성 (슬롯에 드래그하거나 클릭하여 배치)</div>
             
             <div class="party-slots">
                 <div class="party-slot" data-slot="0">1</div>
@@ -193,7 +193,7 @@ export default class TerritoryScene extends Phaser.Scene {
                 slotEl.innerHTML = `< img src = "assets/characters/party/${char.sprite}.png" alt = "${char.name}" > `;
                 slotEl.classList.add('filled');
             } else {
-                slotEl.innerHTML = `${ index + 1 } `;
+                slotEl.innerHTML = `${index + 1} `;
                 slotEl.classList.remove('filled');
             }
         };
@@ -252,7 +252,7 @@ export default class TerritoryScene extends Phaser.Scene {
                     .map(id => {
                         const char = Object.values(Characters).find(c => c.id === id);
                         return {
-                            id: `init - ${ id } `,
+                            id: `init - ${id} `,
                             characterId: id,
                             unitName: char.name,
                             sprite: char.sprite,
