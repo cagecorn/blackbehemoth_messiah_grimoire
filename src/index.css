@@ -1681,7 +1681,8 @@ body {
 }
 
 #hud-top {
-    padding: 10px 20px;
+    padding: 6px 12px;
+    /* 상하 여백 대폭 축소 */
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -1694,31 +1695,37 @@ body {
 .hud-stat {
     display: flex;
     align-items: center;
-    gap: 8px;
-    font-size: 22px;
+    gap: 6px;
+    /* 간격 축소 */
+    font-size: 16px;
+    /* 폰트 축소 (22px -> 16px) */
     font-family: var(--font-vt);
     color: var(--retro-gold);
     text-shadow: 0 0 8px var(--retro-gold);
 }
 
 .hud-stat img {
-    width: 22px;
-    height: 22px;
+    width: 16px;
+    /* 아이콘 축소 (22px -> 16px) */
+    height: 16px;
     image-rendering: pixelated;
 }
 
 #hud-menu-btns {
     display: flex;
-    gap: 10px;
+    gap: 6px;
+    /* 10px -> 6px 축소 */
 }
 
 #hud-menu-btns button {
     background: var(--retro-panel2);
     border: 2px solid var(--retro-border2);
     border-radius: 0px;
-    width: 46px;
-    height: 46px;
-    font-size: 20px;
+    width: 34px;
+    /* 46px -> 34px 축소 */
+    height: 34px;
+    font-size: 16px;
+    /* 20px -> 16px 축소 */
     cursor: pointer;
     transition: border-color 0.1s;
     display: flex;
