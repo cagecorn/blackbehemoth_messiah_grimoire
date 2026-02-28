@@ -99,9 +99,11 @@ export default class NodeCharmManager {
 
             if (bestTarget) {
                 bb.set('target', bestTarget);
-                // Speed boost applied passively via buff or directly during move
-                a.bonusSpeed = (a.bonusSpeed || 0) + 50;
-                bb.set('blood_speed_buffed', true);
+                // Apply speed boost only ONCE while buffed
+                if (!bb.get('blood_speed_buffed')) {
+                    a.bonusSpeed = (a.bonusSpeed || 0) + 50;
+                    bb.set('blood_speed_buffed', true);
+                }
                 return 0; // SUCCESS
             }
 
