@@ -487,6 +487,7 @@ export default class DungeonScene extends Phaser.Scene {
         // Elite Settings
         const eliteChance = Math.min(0.5, 0.1 + (this.currentRound - 1) * 0.05);
         const novaCharms = ['emoji_fireworks', 'emoji_sparkler', 'emoji_koinobori'];
+        const nodeCharmsList = ['node_hater', 'node_blood', 'node_guard'];
 
         const applyEliteLogic = (monster) => {
             if (Math.random() < eliteChance) {
@@ -498,11 +499,16 @@ export default class DungeonScene extends Phaser.Scene {
 
                 // Assign 1-2 random nova charms
                 const charmCount = Phaser.Math.Between(1, 2);
-                const shuffled = [...novaCharms].sort(() => 0.5 - Math.random());
-                monster.charms = shuffled.slice(0, charmCount);
+                const shuffledNova = [...novaCharms].sort(() => 0.5 - Math.random());
+                monster.charms[0] = shuffledNova[0];
+                if (charmCount > 1) monster.charms[1] = shuffledNova[1];
+
+                // Assign 1 random node charm (Gambit AI)
+                const randomNodeCharm = nodeCharmsList[Math.floor(Math.random() * nodeCharmsList.length)];
+                monster.nodeCharms[0] = randomNodeCharm;
 
                 if (monster.setElite) monster.setElite(true);
-                console.log(`[Spawn] Elite ${monster.unitName} spawned with charms:`, monster.charms);
+                console.log(`[Spawn] Elite ${monster.unitName} spawned with AI Node: ${randomNodeCharm} & novas:`, monster.charms);
             }
         };
 
@@ -633,11 +639,18 @@ export default class DungeonScene extends Phaser.Scene {
 
             const novaCharms = ['emoji_fireworks', 'emoji_sparkler', 'emoji_koinobori'];
             const charmCount = Phaser.Math.Between(1, 3);
-            const shuffled = [...novaCharms].sort(() => 0.5 - Math.random());
-            unit.charms = shuffled.slice(0, charmCount);
+            const shuffledNova = [...novaCharms].sort(() => 0.5 - Math.random());
+            unit.charms[0] = shuffledNova[0];
+            if (charmCount > 1) unit.charms[1] = shuffledNova[1];
+            if (charmCount > 2) unit.charms[2] = shuffledNova[2];
+
+            // Assign 1 random node charm (Gambit AI)
+            const nodeCharmsList = ['node_hater', 'node_blood', 'node_guard'];
+            const randomNodeCharm = nodeCharmsList[Math.floor(Math.random() * nodeCharmsList.length)];
+            unit.nodeCharms[0] = randomNodeCharm;
 
             this.enemies.add(unit);
-            console.log(`[Dungeon] Spawned Shadow ${config.name} (ID: ${unit.id}) with HP: ${unit.hp}/${unit.maxHp} and charms: ${unit.charms}`);
+            console.log(`[Dungeon] Spawned Shadow ${config.name} (ID: ${unit.id}) with HP: ${unit.hp}/${unit.maxHp}, AI Node: ${randomNodeCharm} and novas: ${unit.charms}`);
 
             if (unit.setElite) unit.setElite(true);
 

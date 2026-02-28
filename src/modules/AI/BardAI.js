@@ -1,6 +1,7 @@
 import Blackboard from './Blackboard.js';
 import { Action, Sequence, Selector, Condition } from './BehaviorTreeManager.js';
 import BehaviorTreeManager from './BehaviorTreeManager.js';
+import NodeCharmManager from './NodeCharmManager.js';
 import Phaser from 'phaser';
 
 /**
@@ -191,7 +192,10 @@ export default function applyBardAI(unit, getAllyGroup, getEnemyGroup) {
     const attackSequence = new Sequence([hasEnemyTarget, isAtIdealAttackRange, attackAction], "Attack Logic");
     const approachSequence = new Sequence([moveToRange], "Move Logic"); // Relies on buff/enemy targets being set
 
+    const nodeCharmBehaviors = NodeCharmManager.getBehaviors(unit, moveToRange, attackAction);
+
     const root = new Selector([
+        ...nodeCharmBehaviors,
         fleeSequence,     // Always prioritize self-preservation
         buffSequence,     // Then prioritize buffing unbuffed allies
         attackSequence,   // Then attack if everyone is buffed

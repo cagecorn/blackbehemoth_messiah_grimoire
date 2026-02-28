@@ -25,6 +25,9 @@ export default class ChatChannel {
         this.charms = Array(9).fill(null); // Track charms for quick lookup
         this.renderedCharms = Array(9).fill(undefined); // Dirty flag for UI performance
 
+        this.nodeCharms = Array(3).fill(null); // 1x3 Tactical Node Charms
+        this.renderedNodeCharms = Array(3).fill(undefined);
+
         // Performance Optimization: DOM Caching & Dirty Flags
         this.domCache = {
             stats: {},
@@ -46,6 +49,7 @@ export default class ChatChannel {
             statuses: null,
             equipment: null,
             charms: null,
+            nodeCharms: null,
             stats: null,
             skill: null,
             perkPoints: null,
@@ -130,6 +134,11 @@ export default class ChatChannel {
                     ${Array(9).fill(0).map((_, i) => `<div class="charm-slot" data-index="${i}"></div>`).join('')}
                 </div>
 
+                <div class="charm-inventory-label tactical-label" style="color: #ffaa00; margin-top: 10px;">전술 참 (Tactical Node)</div>
+                <div class="charm-grid tactical-grid" id="node-charms-${id}" style="grid-template-columns: repeat(3, 40px); justify-content: center;">
+                    ${Array(3).fill(0).map((_, i) => `<div class="charm-slot node-charm-slot" data-node-index="${i}"></div>`).join('')}
+                </div>
+
                 <button class="dash-back-btn">돌아가기</button>
             </div>
             <div class="chat-status-view" id="stats-${id}" style="display: none;">
@@ -201,6 +210,7 @@ export default class ChatChannel {
         this.currentView = 'dashboard'; // Default view
         this.setupGearDragDrop();
         this.setupCharmDragDrop();
+        this.setupNodeCharmDragDrop();
 
         // Bind dashboard grid items
         this.dashboardView.querySelectorAll('.dash-item').forEach(btn => {
@@ -383,14 +393,16 @@ export default class ChatChannel {
         }
     }
 
-    updateEquipment(equipment, charms) {
+    updateEquipment(equipment, charms, nodeCharms) {
         if (equipment) this.pendingData.equipment = equipment;
         if (charms) this.pendingData.charms = charms;
+        if (nodeCharms) this.pendingData.nodeCharms = nodeCharms;
         this.dirty = true;
     }
 
-    _applyEquipment(equipment, charms) {
+    _applyEquipment(equipment, charms, nodeCharms) {
         this.charms = charms || Array(9).fill(null);
+        this.nodeCharms = nodeCharms || Array(3).fill(null);
         if (!equipment || !this.gearView) return;
 
         const slots = {
@@ -423,6 +435,9 @@ export default class ChatChannel {
         if (charms) {
             this.updateCharmGrid(charms);
         }
+        if (nodeCharms) {
+            this.updateNodeCharmGrid(nodeCharms);
+        }
     }
 
     updateCharmGrid(charms) {
@@ -441,6 +456,26 @@ export default class ChatChannel {
                 const img = document.createElement('img');
                 img.src = `assets/emojis/${filename}`;
                 img.className = 'charm-icon';
+                img.dataset.itemId = itemId;
+                slot.appendChild(img);
+            }
+        });
+    }
+
+    updateNodeCharmGrid(nodeCharms) {
+        const charmSlots = this.gearView.querySelectorAll('.node-charm-slot');
+        nodeCharms.forEach((itemId, index) => {
+            if (this.renderedNodeCharms[index] === itemId) return;
+            this.renderedNodeCharms[index] = itemId;
+
+            const slot = charmSlots[index];
+            if (!slot) return;
+            slot.innerHTML = '';
+            if (itemId) {
+                const filename = ItemManager.getSVGFilename(itemId);
+                const img = document.createElement('img');
+                img.src = `assets/emojis/${filename}`;
+                img.className = 'charm-icon node-charm-icon';
                 img.dataset.itemId = itemId;
                 slot.appendChild(img);
             }
@@ -656,7 +691,7 @@ export default class ChatChannel {
 
         const d = this.pendingData;
         if (d.statuses) this._applyStatuses(d.statuses);
-        if (d.equipment || d.charms) this._applyEquipment(d.equipment, d.charms);
+        if (d.equipment || d.charms || d.nodeCharms) this._applyEquipment(d.equipment, d.charms, d.nodeCharms);
         if (d.stats) this._applyStats(d.stats);
         if (d.skill) this._applySkill(d.skill);
         if (d.perkPoints !== null && d.activatedPerks !== null) {
@@ -829,8 +864,76 @@ export default class ChatChannel {
         });
     }
 
+    setupNodeCharmDragDrop() {
+        if (!this.gearView) return;
+
+        const nodeSlots = this.gearView.querySelectorAll('.node-charm-slot');
+        nodeSlots.forEach(slot => {
+            const index = parseInt(slot.dataset.nodeIndex);
+
+            slot.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                slot.classList.add('drag-over');
+            });
+
+            slot.addEventListener('dragleave', (e) => {
+                e.stopPropagation();
+                slot.classList.remove('drag-over');
+            });
+
+            // Click to open inventory
+            slot.addEventListener('click', () => {
+                if (this.uiManager) {
+                    this.uiManager.showPopup('inventory');
+                    if (this.uiManager.switchInventoryTab) {
+                        this.uiManager.switchInventoryTab('materials');
+                    }
+                }
+            });
+
+            slot.addEventListener('drop', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                slot.classList.remove('drag-over');
+
+                const itemId = e.dataTransfer.getData('itemId');
+                if (itemId && this.linkedUnitId) {
+                    import('../Events/EventBus.js').then(module => {
+                        const EventBus = module.default;
+                        EventBus.emit('NODE_CHARM_REQUEST', {
+                            unitId: this.linkedUnitId,
+                            itemId: itemId,
+                            index: index,
+                            action: 'set'
+                        });
+                    });
+                }
+            });
+
+            // Right-click to remove
+            slot.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                if (this.linkedUnitId) {
+                    import('../Events/EventBus.js').then(module => {
+                        const EventBus = module.default;
+                        EventBus.emit('NODE_CHARM_REQUEST', {
+                            unitId: this.linkedUnitId,
+                            index: index,
+                            action: 'remove'
+                        });
+                    });
+                }
+            });
+        });
+    }
+
     findEmptyCharmSlot() {
         return this.charms.findIndex(c => c === null);
+    }
+
+    findEmptyNodeCharmSlot() {
+        return this.nodeCharms.findIndex(c => c === null);
     }
 
     clear() {

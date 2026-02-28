@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import HealthBar from '../UI/HealthBar.js';
 import EventBus from '../Events/EventBus.js';
+import CharmManager from '../Core/CharmManager.js';
 
 /**
  * BaseMonster.js
@@ -66,6 +67,7 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
         this.isElite = config.isElite || false;
         this.charms = config.charms || Array(9).fill(null);
         this.charmTimers = Array(9).fill(0);
+        this.nodeCharms = config.nodeCharms || Array(3).fill(null); // Tactical AI Slots
 
         // Combat Timers
         this.lastAttackTime = 0;
@@ -475,7 +477,7 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
         }
     }
 
-    update() {
+    update(time, delta) {
         if (this.isAirborne || this.isStunned || this.isAsleep) {
             // Can't act while CC'd. Keep velocity at 0 unless knocked back.
             this.body.setVelocity(0, 0);

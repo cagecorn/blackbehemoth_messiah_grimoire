@@ -1,5 +1,6 @@
 import Blackboard from './Blackboard.js';
 import BehaviorTreeManager, { Selector, Sequence, Condition, Action } from './BehaviorTreeManager.js';
+import NodeCharmManager from './NodeCharmManager.js';
 import Phaser from 'phaser';
 
 /**
@@ -170,8 +171,15 @@ export default function applyMeleeAI(agent, targetListGetter, initialState = 'AG
     // Sequence: Must be AGGRESSIVE -> Find Target -> Move to Target -> Attack
     const huntSequence = new Sequence([checkStateAggressive, findTarget, chaseTarget, attackTarget], "Hunt Logic");
 
+    // Extract behaviors from NodeCharms (Gambit Style Injection)
+    const nodeCharmBehaviors = NodeCharmManager.getBehaviors(agent, chaseTarget, attackTarget);
+
     // Root Selector — falls back to idle if no targets
-    const rootSelector = new Selector([huntSequence, stopAction], "Melee Root");
+    const rootSelector = new Selector([
+        ...nodeCharmBehaviors,
+        huntSequence,
+        stopAction
+    ], "Melee Root");
 
     agent.btManager = new BehaviorTreeManager(agent, agent.blackboard, rootSelector);
 }

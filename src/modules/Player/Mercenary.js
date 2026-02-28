@@ -98,6 +98,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         };
         this.charms = config.charms || Array(9).fill(null);
         this.charmTimers = Array(9).fill(0); // Tick timers for periodic effects
+        this.nodeCharms = config.nodeCharms || Array(3).fill(null); // Node Charm DB (Tactical AI Slots)
 
         this.acc = config.acc || 100;
         this.eva = config.eva || 0;
@@ -118,6 +119,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
                 this.activatedPerks = savedState.activatedPerks || this.activatedPerks || [];
                 this.equipment = savedState.equipment || this.equipment;
                 this.charms = savedState.charms || this.charms;
+                this.nodeCharms = savedState.nodeCharms || this.nodeCharms;
                 this.expToNextLevel = this.calculateExpToNextLevel(this.level);
             }
         }
@@ -264,6 +266,17 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             }
         };
         EventBus.on('CHARM_REQUEST', this.handleCharmRequest);
+
+        this.handleNodeCharmRequest = async (payload) => {
+            if (payload.unitId === this.id) {
+                if (payload.action === 'set') {
+                    await this.equipNodeCharm(payload.itemId, payload.index);
+                } else if (payload.action === 'remove') {
+                    await this.removeNodeCharm(payload.index);
+                }
+            }
+        };
+        EventBus.on('NODE_CHARM_REQUEST', this.handleNodeCharmRequest);
     }
 
     handleAICommand(cmd) {
@@ -509,6 +522,74 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             return true;
         }
         return false;
+    }
+
+    /**
+     * Equips a Tactical Node Charm to the 1x3 nodeCharms slots
+     */
+    async equipNodeCharm(itemId, index) {
+        if (!itemId || index < 0 || index > 2) return false;
+
+        const DBManager = (await import('../Database/DBManager.js')).default;
+        const ItemManager = (await import('../Core/ItemManager.js')).default;
+
+        const itemData = ItemManager.getItem(itemId);
+        if (!itemData || itemData.type !== 'node_charm') return false;
+
+        // Deduct from DB First
+        const invItem = await DBManager.getInventoryItem(itemId);
+        if (!invItem || invItem.amount <= 0) {
+            this.scene.fxManager?.showDamageText(this, 'Not enough items!', '#ff0000');
+            return false;
+        }
+        await DBManager.saveInventoryItem(itemId, invItem.amount - 1);
+
+        // If replacing an existing node charm, return the old one back to inventory
+        if (this.nodeCharms[index]) {
+            const oldItemId = this.nodeCharms[index];
+            const oldInvItem = await DBManager.getInventoryItem(oldItemId);
+            await DBManager.saveInventoryItem(oldItemId, (oldInvItem ? oldInvItem.amount : 0) + 1);
+        }
+
+        // Equip the new one
+        this.nodeCharms[index] = itemId;
+
+        // Apply visual logic
+        this.scene.fxManager?.showEmojiPopup(this, '🧠');
+        console.log(`[Mercenary] ${this.unitName} equipped Node Charm: ${itemId} at slot ${index}`);
+
+        // Re-inject AI Node Charms into BT dynamically
+        if (this.initAI) {
+            this.initAI(); // Re-build the tree with new node logic
+        }
+
+        this.syncStatusUI();
+        EventBus.emit('UI_REFRESH_INVENTORY');
+        return true;
+    }
+
+    /**
+     * Removes a Tactical Node Charm and returns it to inventory
+     */
+    async removeNodeCharm(index) {
+        if (index < 0 || index > 2 || !this.nodeCharms[index]) return false;
+
+        const DBManager = (await import('../Database/DBManager.js')).default;
+        const itemId = this.nodeCharms[index];
+
+        const invItem = await DBManager.getInventoryItem(itemId);
+        await DBManager.saveInventoryItem(itemId, (invItem ? invItem.amount : 0) + 1);
+
+        this.nodeCharms[index] = null;
+
+        // Re-inject AI Node Charms
+        if (this.initAI) {
+            this.initAI();
+        }
+
+        this.syncStatusUI();
+        EventBus.emit('UI_REFRESH_INVENTORY');
+        return true;
     }
 
     takeDamage(amount, attacker = null, isUltimate = false, element = null, isCritical = false, delay = 0) {
@@ -923,6 +1004,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         EventBus.off(EventBus.EVENTS.ULT_TRIGGER, this.handleUltTrigger);
         EventBus.off('PERK_LEARN', this.handlePerkLearn);
         EventBus.off('CHARM_REQUEST', this.handleCharmRequest);
+        EventBus.off('NODE_CHARM_REQUEST', this.handleNodeCharmRequest);
 
         console.log(`[Mercenary] Cleaned up listeners for ${this.unitName}(${this.characterId})`);
 
@@ -1196,6 +1278,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             statuses: statuses,
             equipment: this.equipment,
             charms: this.charms,
+            nodeCharms: this.nodeCharms,
             stats: stats
         });
 
@@ -1240,6 +1323,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             activatedPerks: this.activatedPerks,
             equipment: this.equipment,
             charms: this.charms,
+            nodeCharms: this.nodeCharms,
             // Logic flags
             isAirborne: !!this.isAirborne,
             isStunned: !!this.isStunned,

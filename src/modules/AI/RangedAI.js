@@ -1,6 +1,7 @@
 import Blackboard from './Blackboard.js';
 import { Action, Sequence, Selector, Condition } from './BehaviorTreeManager.js';
 import BehaviorTreeManager from './BehaviorTreeManager.js';
+import NodeCharmManager from './NodeCharmManager.js';
 import Phaser from 'phaser';
 
 /**
@@ -159,7 +160,12 @@ export default function applyRangedAI(unit, skillNode = null) {
 
     const autoBehavior = new Selector(combatBehaviors, "Combat Selector");
 
+    // Extract behaviors from NodeCharms (Gambit Style Injection)
+    // Note: Ranged uses approachSequence (moveToIdealRange) and attackAction (fireProjectile)
+    const nodeCharmBehaviors = NodeCharmManager.getBehaviors(unit, approachSequence, attackAction);
+
     const root = new Selector([
+        ...nodeCharmBehaviors,
         new Sequence([hasTarget, autoBehavior], "Main Loop"),
         stopAction
     ], "Ranged Root");

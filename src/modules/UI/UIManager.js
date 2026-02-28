@@ -75,7 +75,7 @@ export default class UIManager {
                     channel.updateStatuses(payload.statuses);
                 }
                 if (payload.equipment) {
-                    channel.updateEquipment(payload.equipment, payload.charms);
+                    channel.updateEquipment(payload.equipment, payload.charms, payload.nodeCharms);
                 }
                 if (payload.stats) {
                     channel.updateStats(payload.stats);
@@ -922,8 +922,8 @@ export default class UIManager {
                         this.handleItemClick(item.id);
                     };
                     this.gearList.appendChild(div);
-                } else if (CharmManager.getCharm(item.id)) {
-                    // It's a charm! Add click handler for easy equipping
+                } else if (CharmManager.getCharm(item.id) || itemData.type === 'node_charm') {
+                    // It's a charm or tactical node! Add click handler for easy equipping
                     div.classList.add('is-charm');
                     div.onclick = (e) => {
                         e.stopPropagation();
@@ -995,6 +995,20 @@ export default class UIManager {
                 unitId: targetChannel.linkedUnitId,
                 itemId: itemId
             });
+        } else if (item && item.type === 'node_charm') {
+            // It's a Node Charm click! Find first empty tactical slot
+            const emptySlot = targetChannel.findEmptyNodeCharmSlot();
+            console.log(`[UIManager] Found empty node charm slot: ${emptySlot}`);
+            if (emptySlot !== -1) {
+                EventBus.emit('NODE_CHARM_REQUEST', {
+                    unitId: targetChannel.linkedUnitId,
+                    itemId: itemId,
+                    index: emptySlot,
+                    action: 'set'
+                });
+            } else {
+                console.log('[UIManager] No empty node charm slots available for', targetChannel.name);
+            }
         } else if (charm) {
             // It's a charm click! Find first empty slot
             const emptySlot = targetChannel.findEmptyCharmSlot();

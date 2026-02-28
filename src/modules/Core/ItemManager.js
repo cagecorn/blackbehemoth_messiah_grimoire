@@ -33,6 +33,11 @@ const ITEM_DATABASE = {
     'emoji_sparkler': { name: 'Spark Nova (🎇)', type: ITEM_TYPES.MATERIAL, icon: 'emoji_sparkler' },
     'emoji_koinobori': { name: 'Ice Nova (🎏)', type: ITEM_TYPES.MATERIAL, icon: 'emoji_koinobori' },
 
+    // --- Tactical Node Charms ---
+    'emoji_pouting_face': { name: 'Hater Node (😠)', type: 'node_charm', icon: 'emoji_pouting_face', description: '서포터(힐러/바드)를 최우선으로 노리며 피해량이 10% 증가합니다.' },
+    'emoji_enraged_face': { name: 'Blood Scent Node (😡)', type: 'node_charm', icon: 'emoji_enraged_face', description: '체력이 30% 이하인 적을 최우선으로 노리며 이동속도가 증가합니다.' },
+    'emoji_smiling_face_with_sunglasses': { name: 'Bodyguard Node (😎)', type: 'node_charm', icon: 'emoji_smiling_face_with_sunglasses', description: '가장 체력이 낮은 아군 근처를 배회하며 다가오는 적을 요격합니다.' },
+
     // --- Equipment ---
     'test_sword_fire': {
         name: '화염의 테스트 소드',
@@ -111,6 +116,9 @@ export default class ItemManager {
             'emoji_staff': '1fa84.svg',
             'emoji_rock': '1f5ff.svg',
             'emoji_bison': '1f9ac.svg',
+            'emoji_pouting_face': '1f620.svg',
+            'emoji_enraged_face': '1f621.svg',
+            'emoji_smiling_face_with_sunglasses': '1f60e.svg',
             'test_sword_fire': '1f5e1.svg',
             'test_sword_ice': '1f5e1.svg',
             'test_sword_lightning': '1f5e1.svg',

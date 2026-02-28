@@ -107,6 +107,11 @@ export default class BootScene extends Phaser.Scene {
         this.load.svg('emoji_sparkler', 'assets/emojis/1f387.svg', { width: 64, height: 64 });
         this.load.svg('emoji_koinobori', 'assets/emojis/1f38f.svg', { width: 64, height: 64 });
 
+        // Tactical Node Charms Emojis
+        this.load.svg('emoji_pouting_face', 'assets/emojis/1f620.svg', { width: 64, height: 64 }); // 😠
+        this.load.svg('emoji_enraged_face', 'assets/emojis/1f621.svg', { width: 64, height: 64 }); // 😡
+        this.load.svg('emoji_smiling_face_with_sunglasses', 'assets/emojis/1f60e.svg', { width: 64, height: 64 }); // 😎
+
         this.load.on('loaderror', (file) => {
             console.error(`[BootScene] Error loading asset: ${file.key} from ${file.src}`);
         });
@@ -217,6 +222,25 @@ export default class BootScene extends Phaser.Scene {
             if (!existingIceNova) {
                 console.log('[BootScene] Initializing starter 🎏 x10');
                 await DBManager.saveInventoryItem('emoji_koinobori', 10);
+            }
+
+            // --- Tactical Node Charms ---
+            const existingHater = await DBManager.getInventoryItem('emoji_pouting_face');
+            if (!existingHater) {
+                console.log('[BootScene] Initializing Node Charm: 😠 x10');
+                await DBManager.saveInventoryItem('emoji_pouting_face', 10);
+            }
+
+            const existingBlood = await DBManager.getInventoryItem('emoji_enraged_face');
+            if (!existingBlood) {
+                console.log('[BootScene] Initializing Node Charm: 😡 x10');
+                await DBManager.saveInventoryItem('emoji_enraged_face', 10);
+            }
+
+            const existingGuard = await DBManager.getInventoryItem('emoji_smiling_face_with_sunglasses');
+            if (!existingGuard) {
+                console.log('[BootScene] Initializing Node Charm: 😎 x10');
+                await DBManager.saveInventoryItem('emoji_smiling_face_with_sunglasses', 10);
             }
 
             // Developer Cheat: Give 99999 diamonds for testing

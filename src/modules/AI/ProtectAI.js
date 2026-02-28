@@ -1,5 +1,6 @@
 import Blackboard from './Blackboard.js';
 import BehaviorTreeManager, { Selector, Sequence, Condition, Action } from './BehaviorTreeManager.js';
+import NodeCharmManager from './NodeCharmManager.js';
 import Phaser from 'phaser';
 
 /**
@@ -182,7 +183,10 @@ export default function applyProtectAI(agent, allyGroupGetter, enemyGroupGetter)
     // Priority 4: Position properly if idle
     const idleSequence = new Sequence([findProtectTarget, moveNearAlly], "Idle Positioning");
 
+    const nodeCharmBehaviors = NodeCharmManager.getBehaviors(agent, chaseThreat, attackThreat);
+
     const root = new Selector([
+        ...nodeCharmBehaviors,
         skillSequence,
         followSequence,
         defendSequence,
