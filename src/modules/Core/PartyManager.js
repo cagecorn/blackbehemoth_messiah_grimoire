@@ -25,10 +25,14 @@ class PartyManager {
     }
 
     getHighestStar(charId) {
-        if (!this.playerRoster || !this.playerRoster[charId]) {
+        const key = charId.toUpperCase();
+        if (!this.playerRoster || (!this.playerRoster[key] && !this.playerRoster[charId])) {
             return charId.toLowerCase() === 'aren' ? 1 : 0; // 주인공 Aren은 기본 1성 지급
         }
-        const stars = Object.keys(this.playerRoster[charId]).map(Number);
+
+        // 데이터가 key(대문자)로 들어갔는지 charId(원형)로 들어갔는지 안전하게 체크
+        const rosterData = this.playerRoster[key] || this.playerRoster[charId];
+        const stars = Object.keys(rosterData).map(Number);
         return stars.length > 0 ? Math.max(...stars) : 1;
     }
 
