@@ -135,12 +135,26 @@ body {
     opacity: 0.2;
 }
 
-/* 4. Color Grading: 2-tone 색온도 (warm 하이라이트 + cool 섀도우) */
+/* 4. Color Grading: 레트로 분위기 그라데이션 오버레이
+   앰버(좌상단) → 투명(중앙) → 딥 바이올렛(우하단)
+   CRT/SNES 필름 질감과 어우러지도록 soft-light 합성
+*/
 .color-grading {
-    background: linear-gradient(160deg,
-            rgba(255, 200, 100, 0.05) 0%,
-            transparent 40%,
-            rgba(80, 40, 120, 0.06) 100%);
+    background:
+        /* 좌상단: 따뜻한 앰버/세피아 (레트로 하이라이트) */
+        radial-gradient(ellipse at 15% 15%,
+            rgba(255, 176, 60, 0.13) 0%,
+            transparent 55%),
+        /* 우하단: 딥 바이올렛/인디고 (레트로 섀도우) */
+        radial-gradient(ellipse at 85% 85%,
+            rgba(70, 30, 110, 0.16) 0%,
+            transparent 55%),
+        /* 전체 대각선: 세피아→쿨 블루 흐름 */
+        linear-gradient(145deg,
+            rgba(200, 140, 60, 0.06) 0%,
+            transparent 35%,
+            transparent 65%,
+            rgba(50, 20, 90, 0.08) 100%);
     mix-blend-mode: soft-light;
 }
 

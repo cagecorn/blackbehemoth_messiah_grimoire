@@ -17,11 +17,11 @@ export default class TerritoryScene extends Phaser.Scene {
         bg.setDisplaySize(width, height);
 
         // Title
-        this.add.text(width / 2, 80, '영지 (Territory)', {
-            fontSize: '48px',
-            fill: '#e2e8f0',
-            fontStyle: 'bold'
-        }).setOrigin(0.5);
+        // this.add.text(width / 2, 80, '영지 (Territory)', {
+        //     fontSize: '48px',
+        //     fill: '#e2e8f0',
+        //     fontStyle: 'bold'
+        // }).setOrigin(0.5);
 
         // [DOM UI Wrapper]
         this.createDOMNavigation();

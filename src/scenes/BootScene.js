@@ -169,6 +169,7 @@ export default class BootScene extends Phaser.Scene {
         this.load.svg('emoji_rock', 'assets/emojis/1f5ff.svg', { width: 32, height: 32 });
 
         // Load Backgrounds
+        this.load.image('bg_territory', 'assets/background/terretory_background.png');
         this.load.image('bg_cursed_forest', 'assets/background/battle-stage-cursed-forest.png');
         this.load.image('bg_arena', 'assets/background/battle-stage-arena.png');
 

@@ -26,6 +26,7 @@ import { MercenaryClasses, MonsterClasses, StageConfigs, Characters, scaleStats 
 import SeparationManager from '../modules/Core/SeparationManager.js';
 import BuffManager from '../modules/Core/BuffManager.js';
 import StageManager from '../modules/Environment/StageManager.js';
+import WeatherManager from '../modules/Environment/WeatherManager.js';
 import DynamicCameraManager from '../modules/Core/DynamicCameraManager.js';
 import EventBus from '../modules/Events/EventBus.js';
 import BarkManager from '../modules/AI/BarkManager.js';
@@ -42,6 +43,7 @@ export default class DungeonScene extends Phaser.Scene {
         this.enemies = null;
         this.currentRound = 1;
         this.isResting = false;
+        this.weatherManager = null;
 
         // Reward values
         this.killExp = 25;
@@ -181,7 +183,8 @@ export default class DungeonScene extends Phaser.Scene {
         this.events.once('shutdown', () => {
             EventBus.off(EventBus.EVENTS.DEBUG_SWAP_CHARACTER, this.handleDebugSwapListener);
             EventBus.off(EventBus.EVENTS.MONSTER_KILLED, this.handleMonsterKilledListener);
-            console.log('[DungeonScene] Cleaned up EventBus listeners');
+            if (this.weatherManager) this.weatherManager.destroy();
+            console.log('[DungeonScene] Cleaned up EventBus listeners + WeatherManager.');
         });
 
         // Spawn Party from PartyManager
@@ -266,7 +269,7 @@ export default class DungeonScene extends Phaser.Scene {
             this.scene.start('TerritoryScene');
         });
 
-        this.add.text(10, 10, 'WASD to Move, ESC to Return', { fontSize: '16px', fill: '#fff' }).setScrollFactor(0).setDepth(100);
+        // this.add.text(10, 10, 'WASD to Move, ESC to Return', { fontSize: '16px', fill: '#fff' }).setScrollFactor(0).setDepth(100);
 
         // 1. Mercenaries collect Loot
         this.physics.add.overlap(this.mercenaries, this.lootManager.lootGroup, (mercenary, item) => {
@@ -292,6 +295,13 @@ export default class DungeonScene extends Phaser.Scene {
         });
 
         // --- 'Fake Aesthetic'        this.setupEntities();
+
+        // ── 날씨 시스템 초기화 ────────────────────────────────
+        this.weatherManager = new WeatherManager(this);
+        // 씬 로드 후 2초 뒤 자연스럽게 비 시작 (현재 비활성화 처리)
+        // this.time.delayedCall(2000, () => {
+        //    this.weatherManager.setWeather('rain', { fadeDuration: 3000 });
+        // });
 
         console.log('[Visuals] Fake Aesthetic (Zero-Shader) Overlays Initialized. 🚀🎬');
 
@@ -442,6 +452,9 @@ export default class DungeonScene extends Phaser.Scene {
 
         if (this.dynamicCamera) {
             this.dynamicCamera.update(time, delta);
+        }
+        if (this.weatherManager) {
+            this.weatherManager.update(time, delta);
         }
     }
 
