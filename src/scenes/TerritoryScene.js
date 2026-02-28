@@ -153,12 +153,17 @@ export default class TerritoryScene extends Phaser.Scene {
         const { default: partyManager } = await import('../modules/Core/PartyManager.js');
         const { default: EventBus } = await import('../modules/Events/EventBus.js');
 
+        // 가챠 씬에서 변경된 Roster 갱신
+        await partyManager.reloadRoster();
+
         this.partyOverlay = document.createElement('div');
         this.partyOverlay.className = 'party-selection-overlay';
 
         let candidatesHtml = '';
         Object.values(Characters).forEach(char => {
             const star = partyManager.getHighestStar(char.id);
+            if (star === 0) return; // 미보유 상태인 영웅은 후보군에서 제외
+
             const starHtml = star > 0 ? `<div style="position:absolute; top:4px; right:4px; font-size:12px; font-weight:bold; color:#fbbf24; text-shadow:0 1px 2px #000;">★${star}</div>` : '';
             candidatesHtml += `
                 <div class="mercenary-card" draggable="true" data-id="${char.id}" style="position:relative;">

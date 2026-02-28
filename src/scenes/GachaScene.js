@@ -72,14 +72,14 @@ export default class GachaScene extends Phaser.Scene {
         this.uiContainer.appendChild(topBar);
 
         // Title Element
-        const titleArea = document.createElement('div');
-        titleArea.innerHTML = `
+        this.titleArea = document.createElement('div');
+        this.titleArea.innerHTML = `
             <div style="font-size: 36px; font-weight: 900; color: #fbbf24; text-shadow: 0 4px 6px rgba(0,0,0,0.8); letter-spacing: 2px;">
                 용병 5연속 영입
             </div>
         `;
-        titleArea.style.cssText = "margin-top: -60px; text-align: center;";
-        this.uiContainer.appendChild(titleArea);
+        this.titleArea.style.cssText = "margin-top: -60px; text-align: center; transition: opacity 0.3s;";
+        this.uiContainer.appendChild(this.titleArea);
 
         // Bottom Action Area
         const bottomArea = document.createElement('div');
@@ -131,6 +131,8 @@ export default class GachaScene extends Phaser.Scene {
         this.pullBtn.style.opacity = '0.5';
         this.pullBtn.style.pointerEvents = 'none';
 
+        if (this.titleArea) this.titleArea.style.opacity = '0';
+
         // Clear previous cards if any
         this.cardsContainer.removeAll(true);
         if (this.resultModal) {
@@ -158,6 +160,9 @@ export default class GachaScene extends Phaser.Scene {
             this.pullBtn.disabled = false;
             this.pullBtn.style.opacity = '1';
             this.pullBtn.style.pointerEvents = 'auto';
+        }
+        if (this.titleArea) {
+            this.titleArea.style.opacity = '1';
         }
     }
 

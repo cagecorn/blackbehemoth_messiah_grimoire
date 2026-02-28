@@ -197,6 +197,9 @@ export default class BootScene extends Phaser.Scene {
                 console.log('[BootScene] Initializing starter 🍔 x10');
                 await DBManager.saveInventoryItem('emoji_burger', 10);
             }
+
+            // Developer Cheat: Give 99999 diamonds for testing
+            await DBManager.saveInventoryItem('emoji_gem', 99999);
         } catch (e) {
             console.error('[BootScene] Failed to initialize starter items', e);
         }

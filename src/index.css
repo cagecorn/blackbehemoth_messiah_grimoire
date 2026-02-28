@@ -1501,6 +1501,9 @@ body {
     margin-bottom: 25px;
     text-shadow: 0 0 10px var(--retro-amber);
     letter-spacing: 2px;
+    text-align: center;
+    line-height: 1.5;
+    word-break: keep-all;
 }
 
 .mercenary-candidates {
