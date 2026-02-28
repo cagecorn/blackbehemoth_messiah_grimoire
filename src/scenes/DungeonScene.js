@@ -57,6 +57,16 @@ export default class DungeonScene extends Phaser.Scene {
         console.log('DungeonScene started');
         this.cameras.main.setBackgroundColor('#2d2d2d');
 
+        // Play Random BGM
+        const bgms = ['main_battle_bgm_1', 'main_battle_bgm_2', 'main_battle_bgm_3'];
+        const randomBgm = Phaser.Utils.Array.GetRandom(bgms);
+        if (this.sound.get(randomBgm)) {
+            // Already initialized, don't re-add unless needed, but stopAll gives fresh start
+        }
+        this.sound.stopAll();
+        this.bgm = this.sound.add(randomBgm, { volume: 0.3, loop: true });
+        this.bgm.play();
+
         // Initialize Managers
         this.dungeonManager = new DungeonManager(this);
         this.dungeonManager.generateDungeon();
