@@ -190,7 +190,7 @@ export default class TerritoryScene extends Phaser.Scene {
             const slotEl = slotEls[index];
             if (charId) {
                 const char = Object.values(Characters).find(c => c.id === charId);
-                slotEl.innerHTML = `< img src = "assets/characters/party/${char.sprite}.png" alt = "${char.name}" > `;
+                slotEl.innerHTML = `<img src="assets/characters/party/${char.sprite}.png" alt="${char.name}">`;
                 slotEl.classList.add('filled');
             } else {
                 slotEl.innerHTML = `${index + 1} `;
