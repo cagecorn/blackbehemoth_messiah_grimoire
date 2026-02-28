@@ -29,13 +29,29 @@ export default class ChatChannel {
         this.domCache = {
             stats: {},
             gear: {},
-            perks: null
+            perks: null,
+            skill: {}
         };
         this.lastState = {
             stats: {},
             equipment: {},
             statuses: "",
-            perks: ""
+            perks: "",
+            ultProgress: -1,
+            narrativeKey: ""
+        };
+
+        this.dirty = false;
+        this.pendingData = {
+            statuses: null,
+            equipment: null,
+            charms: null,
+            stats: null,
+            skill: null,
+            perkPoints: null,
+            activatedPerks: null,
+            narrative: { unlocks: null, level: null },
+            ultProgress: null
         };
 
         // Generate character options for the dropdown
@@ -317,6 +333,11 @@ export default class ChatChannel {
     }
 
     updateStatuses(statuses) {
+        this.pendingData.statuses = statuses;
+        this.dirty = true;
+    }
+
+    _applyStatuses(statuses) {
         if (!this.statusContainer || !this.buffContainer) return;
 
         const statusKey = statuses.map(s => s.id + s.emoji).join('|');
@@ -363,6 +384,12 @@ export default class ChatChannel {
     }
 
     updateEquipment(equipment, charms) {
+        if (equipment) this.pendingData.equipment = equipment;
+        if (charms) this.pendingData.charms = charms;
+        this.dirty = true;
+    }
+
+    _applyEquipment(equipment, charms) {
         this.charms = charms || Array(9).fill(null);
         if (!equipment || !this.gearView) return;
 
@@ -421,6 +448,11 @@ export default class ChatChannel {
     }
 
     updateStats(stats) {
+        this.pendingData.stats = stats;
+        this.dirty = true;
+    }
+
+    _applyStats(stats) {
         if (!stats || !this.statusView) return;
 
         const statMappings = [
@@ -468,6 +500,11 @@ export default class ChatChannel {
     }
 
     updateSkill(skillData) {
+        this.pendingData.skill = skillData;
+        this.dirty = true;
+    }
+
+    _applySkill(skillData) {
         if (!skillData || !this.skillView) return;
 
         const nameEl = this.skillView.querySelector('.skill-name');
@@ -494,6 +531,12 @@ export default class ChatChannel {
     }
 
     updatePerks(perkPoints, activatedPerks) {
+        this.pendingData.perkPoints = perkPoints;
+        this.pendingData.activatedPerks = activatedPerks;
+        this.dirty = true;
+    }
+
+    _applyPerks(perkPoints, activatedPerks) {
         if (!this.perkView) return;
 
         const perkKey = `${perkPoints}|${activatedPerks.sort().join(',')}`;
@@ -556,8 +599,17 @@ export default class ChatChannel {
         });
     }
 
-    updateNarrative(unlocks, currentLevel) {
+    updateNarrative(unlocks, level) {
+        this.pendingData.narrative = { unlocks, level };
+        this.dirty = true;
+    }
+
+    _applyNarrative(unlocks, currentLevel) {
         if (!unlocks || !this.narrativeView) return;
+
+        const narrativeKey = `${currentLevel}|${unlocks.length}`;
+        if (this.lastState.narrativeKey === narrativeKey) return;
+        this.lastState.narrativeKey = narrativeKey;
 
         let html = '<div class="narrative-container">';
         unlocks.forEach(unlock => {
@@ -578,7 +630,15 @@ export default class ChatChannel {
     }
 
     updateUltGauge(progress) {
+        this.pendingData.ultProgress = progress;
+        this.dirty = true;
+    }
+
+    _applyUltGauge(progress) {
         if (!this.ultGaugeOverlay) return;
+
+        if (this.lastState.ultProgress === progress) return;
+        this.lastState.ultProgress = progress;
 
         // progress is 0 to 100
         this.ultGaugeOverlay.style.height = `${progress}%`;
@@ -588,6 +648,26 @@ export default class ChatChannel {
         } else {
             this.element.classList.remove('ult-ready-glow');
         }
+    }
+
+    update() {
+        if (!this.dirty) return;
+        this.dirty = false;
+
+        const d = this.pendingData;
+        if (d.statuses) this._applyStatuses(d.statuses);
+        if (d.equipment || d.charms) this._applyEquipment(d.equipment, d.charms);
+        if (d.stats) this._applyStats(d.stats);
+        if (d.skill) this._applySkill(d.skill);
+        if (d.perkPoints !== null && d.activatedPerks !== null) {
+            this._applyPerks(d.perkPoints, d.activatedPerks);
+        }
+        if (d.narrative.unlocks) this._applyNarrative(d.narrative.unlocks, d.narrative.level);
+        if (d.ultProgress !== null) this._applyUltGauge(d.ultProgress);
+
+        // Reset some critical pending flags to null if they aren't 'cumulative'
+        this.pendingData.stats = null;
+        this.pendingData.statuses = null;
     }
 
     bindUnit(unitId, unitName, spritePath, skillData, narrativeUnlocks, characterId) {

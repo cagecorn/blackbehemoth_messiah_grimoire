@@ -79,12 +79,10 @@ export default class UIManager {
                 }
                 if (payload.stats) {
                     channel.updateStats(payload.stats);
+                    // Handle narrative and ult gauge if they are in stats
                     if (payload.stats.level !== undefined) {
                         channel.lastLevel = payload.stats.level;
-                        let charConfig = null;
-                        if (Characters && typeof Characters === 'object') {
-                            charConfig = Object.values(Characters).find(c => c && c.id === channel.characterId);
-                        }
+                        const charConfig = Object.values(Characters).find(c => c && c.id === channel.characterId);
                         if (charConfig && charConfig.narrativeUnlocks) {
                             channel.updateNarrative(charConfig.narrativeUnlocks, payload.stats.level);
                         }
@@ -583,6 +581,11 @@ export default class UIManager {
         if (this.portraitsDirty) {
             this.portraitsDirty = false;
             this.updatePortraitBar();
+        }
+
+        // Batch update all channels at once per frame
+        for (let i = 0; i < this.channels.length; i++) {
+            this.channels[i].update();
         }
 
         // Only loop if not destroyed
