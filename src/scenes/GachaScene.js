@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import GachaManager from '../modules/Core/GachaManager.js';
 import DBManager from '../modules/Database/DBManager.js';
+import EventBus from '../modules/Events/EventBus.js';
 
 export default class GachaScene extends Phaser.Scene {
     constructor() {
@@ -45,7 +46,7 @@ export default class GachaScene extends Phaser.Scene {
         this.uiContainer.style.cssText = `
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             pointer-events: none; display: flex; flex-direction: column;
-            align-items: center; justify-content: space-between; padding: 20px; box-sizing: border-box;
+            align-items: center; justify-content: space-between; padding: 60px 20px 20px 20px; box-sizing: border-box;
             z-index: 1000;
         `;
 
@@ -67,17 +68,6 @@ export default class GachaScene extends Phaser.Scene {
         backBtn.onmouseover = () => { backBtn.style.background = 'rgba(167, 139, 250, 0.4)'; };
         backBtn.onmouseout = () => { backBtn.style.background = 'rgba(0,0,0,0.6)'; };
         topBar.appendChild(backBtn);
-
-        const gemDisplay = document.createElement('div');
-        gemDisplay.style.cssText = `
-            font-size: 20px; font-weight: bold; color: #60a5fa; text-shadow: 0 2px 4px rgba(0,0,0,0.8);
-            display: flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.5); padding: 5px 15px; border-radius: 20px;
-        `;
-        const gemData = await DBManager.getInventoryItem('emoji_gem');
-        const gems = gemData ? gemData.amount : 0;
-        gemDisplay.innerHTML = `<img src="assets/emojis/1f48e.svg" style="width: 24px; height: 24px;"> ${gems}`;
-        this.gemDisplay = gemDisplay; // save reference for updates
-        topBar.appendChild(gemDisplay);
 
         this.uiContainer.appendChild(topBar);
 
@@ -131,11 +121,9 @@ export default class GachaScene extends Phaser.Scene {
         });
     }
 
-    async updateGemsDisplay() {
-        if (!this.gemDisplay) return;
-        const gemData = await DBManager.getInventoryItem('emoji_gem');
-        const gems = gemData ? gemData.amount : 0;
-        this.gemDisplay.innerHTML = `<img src="assets/emojis/1f48e.svg" style="width: 24px; height: 24px;"> ${gems}`;
+    updateGemsDisplay() {
+        // Now fully handled by the global UIManager HUD
+        EventBus.emit(EventBus.EVENTS.INVENTORY_UPDATED);
     }
 
     async executeGacha() {
