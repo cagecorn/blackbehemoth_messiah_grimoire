@@ -37,45 +37,87 @@ export default class TerritoryScene extends Phaser.Scene {
         this.navContainer.className = 'territory-nav-container';
         this.navContainer.style.cssText = `
             position: absolute;
-            top: 50%;
+            top: 55%;
             left: 50%;
             transform: translate(-50%, -50%);
-            display: flex;
-            gap: 20px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 15px;
             z-index: 1000;
+            width: min(90vw, 420px);
+            aspect-ratio: 1 / 1;
+            pointer-events: none;
         `;
 
+        const handleSceneChange = (targetScene) => {
+            if (this.navContainer) this.navContainer.remove();
+            this.navContainer = null;
+            this.scene.start(targetScene);
+        };
+
         const buttons = [
-            { label: '🏰 던전 입장', color: '#3b82f6', scene: 'DungeonScene' },
-            { label: '⚔️ 아레나 입장', color: '#ef4444', scene: 'ArenaScene' },
-            { label: '👺 레이드 입장', color: '#9333ea', scene: 'RaidScene' }
+            // Row 1
+            { id: 'gacha', icon: 'gacha_icon.png', label: '용병 뽑기', action: () => alert('용병 뽑기는 아직 준비중입니다! (미구현)') },
+            { id: 'party', icon: 'party_management_icon.png', label: '파티 편성', action: () => this.showPartySelection() },
+            null,
+            // Row 2
+            { id: 'dungeon', icon: 'dungeon_icon.png', label: '던전 입장', action: () => handleSceneChange('DungeonScene') },
+            { id: 'arena', icon: 'arena_icon.png', label: '아레나 입장', action: () => handleSceneChange('ArenaScene') },
+            { id: 'raid', icon: 'raid_icon.png', label: '레이드 입장', action: () => handleSceneChange('RaidScene') },
+            // Row 3
+            null, null, null
         ];
 
-        buttons.forEach(btn => {
-            const el = document.createElement('button');
-            el.innerText = btn.label;
-            el.className = 'territory-btn';
-            el.style.cssText = `
-                padding: 15px 30px;
-                font-size: 20px;
-                font-weight: bold;
-                color: white;
-                background: ${btn.color};
-                border: none;
-                border-radius: 12px;
-                cursor: pointer;
-                transition: transform 0.2s, box-shadow 0.2s;
-                text-shadow: 0 2px 4px rgba(0,0,0,0.5);
-                box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        buttons.forEach((btn, index) => {
+            const cell = document.createElement('div');
+            cell.style.cssText = `
+                width: 100%;
+                height: 100%;
+                border-radius: 16px;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                position: relative;
+                transition: all 0.2s;
             `;
-            el.onmouseover = () => { el.style.transform = 'scale(1.05)'; };
-            el.onmouseout = () => { el.style.transform = 'scale(1)'; };
-            el.onclick = () => {
-                if (this.navContainer) this.navContainer.remove();
-                this.navContainer = null;
-                this.scene.start(btn.scene);
-            };
-            this.navContainer.appendChild(el);
+
+            if (btn) {
+                // 활성화된 버튼 셀
+                cell.style.background = 'rgba(0, 0, 0, 0.4)';
+                cell.style.border = '2px solid rgba(255, 255, 255, 0.3)';
+                cell.style.pointerEvents = 'auto';
+                cell.style.cursor = 'pointer';
+                cell.style.boxShadow = '0 4px 10px rgba(0,0,0,0.5)';
+
+                const img = document.createElement('img');
+                img.src = \`assets/icon/\${btn.icon}\`;
+                img.alt = btn.label;
+                img.style.cssText = 'width: 70%; height: 70%; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8));';
+                cell.appendChild(img);
+
+                // Tooltip (Optional, shows on hover)
+                cell.title = btn.label;
+
+                cell.onmouseover = () => {
+                    cell.style.transform = 'scale(1.05) translateY(-2px)';
+                    cell.style.borderColor = 'rgba(255, 255, 255, 0.8)';
+                    cell.style.background = 'rgba(0, 0, 0, 0.6)';
+                    cell.style.boxShadow = '0 6px 15px rgba(0,0,0,0.7)';
+                };
+                cell.onmouseout = () => {
+                    cell.style.transform = 'scale(1) translateY(0)';
+                    cell.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+                    cell.style.background = 'rgba(0, 0, 0, 0.4)';
+                    cell.style.boxShadow = '0 4px 10px rgba(0,0,0,0.5)';
+                };
+                cell.onclick = btn.action;
+            } else {
+                // 빈 그리드 셀 (투명도 더 낮게)
+                cell.style.background = 'rgba(0, 0, 0, 0.15)';
+                cell.style.border = '1px dashed rgba(255, 255, 255, 0.1)';
+            }
+            this.navContainer.appendChild(cell);
         });
 
         document.body.appendChild(this.navContainer);
@@ -111,15 +153,15 @@ export default class TerritoryScene extends Phaser.Scene {
         let candidatesHtml = '';
         Object.values(Characters).forEach(char => {
             candidatesHtml += `
-                <div class="mercenary-card" draggable="true" data-id="${char.id}">
-                    <img src="assets/characters/party/${char.sprite}.png" alt="${char.name}">
-                    <div class="merc-name">${char.name.split(' (')[0]}</div>
-                </div>
-            `;
+                    < div class="mercenary-card" draggable = "true" data - id="${char.id}" >
+                        <img src="assets/characters/party/${char.sprite}.png" alt="${char.name}">
+                            <div class="merc-name">${char.name.split(' (')[0]}</div>
+                        </div>
+                `;
         });
 
         this.partyOverlay.innerHTML = `
-            <div class="party-selection-title">원정대 편성 (슬롯에 드래그하거나 클릭하여 배치)</div>
+                    < div class="party-selection-title" > 원정대 편성(슬롯에 드래그하거나 클릭하여 배치)</div >
             
             <div class="party-slots">
                 <div class="party-slot" data-slot="0">1</div>
@@ -135,7 +177,7 @@ export default class TerritoryScene extends Phaser.Scene {
             </div>
             
             <button class="party-confirm-btn">편성 완료</button>
-        `;
+                `;
 
         document.body.appendChild(this.partyOverlay);
 
@@ -148,10 +190,10 @@ export default class TerritoryScene extends Phaser.Scene {
             const slotEl = slotEls[index];
             if (charId) {
                 const char = Object.values(Characters).find(c => c.id === charId);
-                slotEl.innerHTML = `<img src="assets/characters/party/${char.sprite}.png" alt="${char.name}">`;
+                slotEl.innerHTML = `< img src = "assets/characters/party/${char.sprite}.png" alt = "${char.name}" > `;
                 slotEl.classList.add('filled');
             } else {
-                slotEl.innerHTML = `${index + 1}`;
+                slotEl.innerHTML = `${ index + 1 } `;
                 slotEl.classList.remove('filled');
             }
         };
@@ -210,7 +252,7 @@ export default class TerritoryScene extends Phaser.Scene {
                     .map(id => {
                         const char = Object.values(Characters).find(c => c.id === id);
                         return {
-                            id: `init-${id}`,
+                            id: `init - ${ id } `,
                             characterId: id,
                             unitName: char.name,
                             sprite: char.sprite,
