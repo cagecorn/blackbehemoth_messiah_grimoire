@@ -119,19 +119,38 @@ export default class NodeCharmManager {
     static createGuardBehavior(agent, moveAction, attackAction) {
         const findTargetToGuard = new Action((a, bb) => {
             const allies = a.allyGroup ? a.allyGroup.getChildren() : [];
-            let lowestHpAlly = null;
-            let lowestHpPercent = 1.0;
+
+            // Priority: healer (player) / shaman (monster) > bard > wizard > archer
+            const priorities = ['healer', 'shaman', 'bard', 'wizard', 'archer'];
+            let bestTarget = null;
+            let highestPriorityIdx = -1;
 
             for (const ally of allies) {
-                if (!ally.active || ally.hp <= 0) continue;
-                if (ally === a) continue; // Dont guard self in this logic
+                if (!ally.active || ally.hp <= 0 || ally === a) continue;
 
-                const hpPercent = ally.hp / ally.maxHp;
-                if (hpPercent < lowestHpPercent) {
-                    lowestHpPercent = hpPercent;
-                    lowestHpAlly = ally;
+                const className = ally.className || (ally.config ? ally.config.id : '');
+                const pIdx = priorities.indexOf(className);
+
+                if (pIdx > highestPriorityIdx) {
+                    highestPriorityIdx = pIdx;
+                    bestTarget = ally;
                 }
             }
+
+            // Fallback: If no priority targets found, guard lowest HP ally
+            if (!bestTarget) {
+                let lowestHpPercent = 1.0;
+                for (const ally of allies) {
+                    if (!ally.active || ally.hp <= 0 || ally === a) continue;
+                    const hpPercent = ally.hp / ally.maxHp;
+                    if (hpPercent < lowestHpPercent) {
+                        lowestHpPercent = hpPercent;
+                        bestTarget = ally;
+                    }
+                }
+            }
+
+            const lowestHpAlly = bestTarget;
 
             if (!lowestHpAlly) return 2; // Failed, no one to guard
 

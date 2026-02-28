@@ -24,8 +24,8 @@ export default function applyProtectAI(agent, allyGroupGetter, enemyGroupGetter)
         const allies = allyGroupGetter(a);
         const children = allies.getChildren ? allies.getChildren() : allies;
 
-        // Priority: healer > bard > wizard > archer
-        const priorities = ['healer', 'bard', 'wizard', 'archer'];
+        // Priority: healer (player) / shaman (monster) > bard > wizard > archer
+        const priorities = ['healer', 'shaman', 'bard', 'wizard', 'archer'];
         let bestTarget = null;
         let highestPriorityIdx = -1;
 
