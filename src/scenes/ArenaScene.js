@@ -136,7 +136,7 @@ export default class ArenaScene extends Phaser.Scene {
             if (!config) return;
 
             const x = centerX - 250;
-            const y = centerY - 150 + (i * 75);
+            const y = centerY - 150 + (i * 65); // Reduced spacing from 75 to 65 for 6 units
             const unit = this.spawnUnit(config, x, y, 'player', null);
             if (unit) {
                 this.mercenaries.add(unit);
@@ -149,10 +149,10 @@ export default class ArenaScene extends Phaser.Scene {
         const availableCharacters = [...Object.values(Characters)];
         Phaser.Utils.Array.Shuffle(availableCharacters);
 
-        for (let i = 0; i < 5; i++) {
+        for (let i = 0; i < 6; i++) { // Increased to 6 enemies
             const randomChar = availableCharacters[i % availableCharacters.length];
             const x = centerX + 250;
-            const y = centerY - 150 + (i * 75);
+            const y = centerY - 150 + (i * 65); // Reduced spacing to 65
 
             const enemyConfig = {
                 ...randomChar,

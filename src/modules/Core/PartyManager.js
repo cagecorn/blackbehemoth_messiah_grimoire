@@ -6,7 +6,7 @@
 class PartyManager {
     constructor() {
         this.mercenaryStates = {}; // Map of characterId -> state object (runtime stats)
-        this.activeParty = [null, null, null, null, null]; // 5 slots for mercenary IDs
+        this.activeParty = [null, null, null, null, null, null]; // 6 slots for mercenary IDs
         this.roster = []; // 10 candidates
         this.CHARM_GRID_SIZE = 9;
     }
@@ -18,7 +18,7 @@ class PartyManager {
     }
 
     setPartySlot(index, characterId) {
-        if (index >= 0 && index < 5) {
+        if (index >= 0 && index < 6) {
             this.activeParty[index] = characterId;
         }
     }

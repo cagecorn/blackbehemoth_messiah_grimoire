@@ -102,12 +102,14 @@ export default class UIManager {
             const sceneKey = this.scene?.scene?.key || this.scene?.sys?.settings?.key;
             console.log(`[UIManager] Party deployed in scene: ${sceneKey}`);
 
-            // Hide portrait bar in TerritoryScene to reduce clutter
+            // Manage portrait bar visibility without overriding display: grid 
             if (this.portraitBar) {
                 if (sceneKey === 'TerritoryScene') {
-                    this.portraitBar.style.display = 'none';
+                    this.portraitBar.classList.add('hidden');
+                    this.portraitBar.classList.remove('active');
                 } else {
-                    this.portraitBar.style.display = 'flex';
+                    this.portraitBar.classList.remove('hidden');
+                    this.portraitBar.classList.add('active');
                 }
             }
 
@@ -413,7 +415,7 @@ export default class UIManager {
             let cache = this.portraits[merc.id];
 
             if (!cache) {
-                // Create new portrait element
+                // ── 초상화 생성 ──────────────────────────────────────────────
                 let charConfig = merc;
                 try {
                     if (Characters && typeof Characters === 'object') {
@@ -423,13 +425,25 @@ export default class UIManager {
                     console.warn('[UIManager] Error finding character config:', e);
                 }
 
+                const HP_SEGMENTS = 10;
+                let segmentsHtml = '';
+                for (let i = 0; i < HP_SEGMENTS; i++) {
+                    segmentsHtml += `<div class="portrait-hp-segment" data-seg="${i}"></div>`;
+                }
+
                 const portrait = document.createElement('div');
                 portrait.className = 'unit-portrait';
                 portrait.innerHTML = `
-                    <img src="assets/characters/party/${charConfig.sprite}.png" alt="${merc.unitName}">
-                    <div class="portrait-hp-ring" style="border-width: 3px;"></div>
-                    <div class="portrait-ult-ring" style="border-width: 3px;"></div>
-                    <div class="portrait-status-orbit"></div>
+                    <div class="portrait-img-box">
+                        <img src="assets/characters/party/${charConfig.sprite}.png" alt="${merc.unitName}">
+                    </div>
+                    <div class="portrait-info">
+                        <div class="portrait-name-chip">${merc.unitName || merc.name || '???'}</div>
+                        <div class="portrait-hp-bar">${segmentsHtml}</div>
+                        <div class="portrait-ult-bar"><div class="portrait-ult-fill"></div></div>
+                        <div class="portrait-ult-label">ULT 0%</div>
+                        <div class="portrait-status-row"></div>
+                    </div>
                 `;
 
                 portrait.onclick = () => {
@@ -443,68 +457,116 @@ export default class UIManager {
                     statusKey: '',
                     hp: -1,
                     ult: -1,
+                    lastHpCount: -1,
+                    lastHpClass: '',
+                    isDead: null,
                     dom: {
-                        hpRing: portrait.querySelector('.portrait-hp-ring'),
-                        ultRing: portrait.querySelector('.portrait-ult-ring'),
-                        orbit: portrait.querySelector('.portrait-status-orbit')
+                        segments: portrait.querySelectorAll('.portrait-hp-segment'),
+                        ultFill: portrait.querySelector('.portrait-ult-fill'),
+                        ultLabel: portrait.querySelector('.portrait-ult-label'),
+                        statusRow: portrait.querySelector('.portrait-status-row'),
                     }
                 };
+                console.log(`[UIManager] Portrait created (retro-arcade): ${merc.unitName} id=${merc.id}`);
             }
 
             const { element, dom } = cache;
+            const isDead = merc.hp <= 0;
 
-            // 1. Update overall status (Grayscale if dead)
-            if (merc.hp <= 0) {
-                element.style.filter = 'grayscale(100%) opacity(0.5)';
-            } else {
-                element.style.filter = '';
+            // ── 1. 사망/생존 처리 ──────────────────────────────────────────
+            if (cache.isDead !== isDead) {
+                cache.isDead = isDead;
+                const existingOverlay = element.querySelector('.portrait-dead-overlay');
+                if (existingOverlay) existingOverlay.remove();
+
+                if (isDead) {
+                    element.style.filter = 'grayscale(85%) brightness(0.45)';
+                    const overlay = document.createElement('div');
+                    overlay.className = 'portrait-dead-overlay';
+                    overlay.innerHTML = '<span class="portrait-dead-label">DEAD</span>';
+                    element.appendChild(overlay);
+                    console.log(`[UIManager] Portrait DEAD: ${merc.unitName}`);
+                } else {
+                    element.style.filter = '';
+                }
             }
 
-            // 2. Update HP Ring
-            if (Math.abs(cache.hp - hpPercent) > 0.1) {
-                const hpRing = dom.hpRing;
-                if (hpRing) {
-                    hpRing.style.borderColor = this.getHPColor(hpPercent);
-                    hpRing.style.clipPath = `inset(${100 - hpPercent}% 0 0 0)`;
+            // ── 2. HP 세그먼트 업데이트 ──────────────────────────────────
+            if (Math.abs(cache.hp - hpPercent) > 0.5 && dom.segments.length > 0) {
+                const segCount = dom.segments.length;
+                const activeCount = Math.round((hpPercent / 100) * segCount);
+
+                let activeClass;
+                if (hpPercent > 60) {
+                    activeClass = 'active-hp';         // CRT 시안
+                } else if (hpPercent > 30) {
+                    activeClass = 'active-hp-warn';    // 오렌지 앤버
+                } else {
+                    activeClass = 'active-hp-danger';  // 빨간 점멸
+                }
+
+                if (cache.lastHpCount !== activeCount || cache.lastHpClass !== activeClass) {
+                    dom.segments.forEach((seg, i) => {
+                        seg.className = 'portrait-hp-segment';
+                        if (i < activeCount) seg.classList.add(activeClass);
+                    });
+                    cache.lastHpCount = activeCount;
+                    cache.lastHpClass = activeClass;
                 }
                 cache.hp = hpPercent;
             }
 
-            // 3. Update Ult Ring
-            if (Math.abs(cache.ult - ultPercent) > 0.1) {
-                const ultRing = dom.ultRing;
-                if (ultRing) {
-                    ultRing.style.clipPath = `inset(${100 - ultPercent}% 0 0 0)`;
+            // ── 3. ULT 바 업데이트 ────────────────────────────────────
+            if (Math.abs(cache.ult - ultPercent) > 0.5 && dom.ultFill) {
+                const clampedUlt = Math.min(100, Math.max(0, ultPercent));
+                dom.ultFill.style.width = `${clampedUlt}%`;
+
+                const isReady = clampedUlt >= 100;
+
+                // 더티 플래그 캐싱 (클래스 토글 최소화)
+                if (cache.lastUltReady !== isReady) {
+                    dom.ultFill.classList.toggle('ult-ready', isReady);
+                    if (dom.ultLabel) {
+                        if (isReady) {
+                            dom.ultLabel.textContent = 'READY!';
+                            dom.ultLabel.classList.add('ult-ready-label');
+                        } else {
+                            dom.ultLabel.classList.remove('ult-ready-label');
+                        }
+                    }
+                    cache.lastUltReady = isReady;
                 }
+
+                // 텍스트는 퍼센트 갱신 시에만 업데이트
+                if (dom.ultLabel && !isReady) {
+                    const ultText = `ULT ${Math.round(clampedUlt)}%`;
+                    if (cache.lastUltText !== ultText) {
+                        dom.ultLabel.textContent = ultText;
+                        cache.lastUltText = ultText;
+                    }
+                }
+
                 cache.ult = ultPercent;
             }
 
-            // 4. Update Status Icons (Only if they changed!)
-            if (cache.statusKey !== statusKey) {
-                const orbit = dom.orbit;
-                if (orbit) {
-                    orbit.innerHTML = ''; // Clear old icons
-                    const statusCount = statuses.length;
-                    const spacing = 20;
-                    statuses.forEach((status, index) => {
-                        const angle = (index - (statusCount - 1) / 2) * spacing;
-                        const iconEl = document.createElement('div');
-                        iconEl.className = 'portrait-status-mini';
-                        iconEl.style.setProperty('--angle', `${angle}deg`);
-                        iconEl.innerHTML = status.emoji;
-
-                        iconEl.onclick = (e) => {
-                            e.stopPropagation(); // Prevents portrait click
-                            this.showStatusTooltip(status, iconEl);
-                        };
-
-                        orbit.appendChild(iconEl);
-                    });
-                }
+            // ── 4. 상태이상 아이콘 (변경 시에만) ─────────────────────────────
+            if (cache.statusKey !== statusKey && dom.statusRow) {
+                dom.statusRow.innerHTML = '';
+                statuses.forEach((status) => {
+                    const iconEl = document.createElement('span');
+                    iconEl.className = 'portrait-status-mini';
+                    iconEl.textContent = status.emoji;
+                    iconEl.title = status.name || '';
+                    iconEl.onclick = (e) => {
+                        e.stopPropagation();
+                        this.showStatusTooltip(status, iconEl);
+                    };
+                    dom.statusRow.appendChild(iconEl);
+                });
                 cache.statusKey = statusKey;
             }
 
-            // Ensure order matches activeMercs order (optional but good for consistency)
+            // Ensure order matches activeMercs order
             if (this.portraitBar.children[index] !== element) {
                 this.portraitBar.insertBefore(element, this.portraitBar.children[index]);
             }
@@ -597,8 +659,8 @@ export default class UIManager {
     setupChatChannels() {
         if (!this.chatContainer) return;
 
-        // Create 5 fixed chat channels
-        for (let i = 0; i < 5; i++) {
+        // Create 6 fixed chat channels
+        for (let i = 0; i < 6; i++) {
             const id = `slot${i}`;
             const channel = new ChatChannel(
                 id,

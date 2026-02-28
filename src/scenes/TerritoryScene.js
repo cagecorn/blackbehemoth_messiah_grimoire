@@ -127,6 +127,7 @@ export default class TerritoryScene extends Phaser.Scene {
                 <div class="party-slot" data-slot="2">3</div>
                 <div class="party-slot" data-slot="3">4</div>
                 <div class="party-slot" data-slot="4">5</div>
+                <div class="party-slot" data-slot="5">6</div>
             </div>
 
             <div class="mercenary-candidates">

@@ -67,6 +67,59 @@ export default class DungeonScene extends Phaser.Scene {
         this.bgm = this.sound.add(randomBgm, { volume: 0.3, loop: true });
         this.bgm.play();
 
+        // --- Retro Bitcrusher & Lowpass Filter for BGM ---
+        if (this.sound.context && this.bgm.gainNode) {
+            try {
+                const ctx = this.sound.context;
+
+                // 1. Bitcrusher (WaveShaper)
+                const bitCrusher = ctx.createWaveShaper();
+                const bitDepth = 4; // 4-bit crunch
+                const step = Math.pow(0.5, bitDepth);
+                const size = 4096;
+                const curve = new Float32Array(size);
+                for (let i = 0; i < size; i++) {
+                    const x = (i * 2 / size) - 1;
+                    curve[i] = Math.round(x / step) * step;
+                }
+                bitCrusher.curve = curve;
+
+                // 2. Lowpass Filter (Lo-Fi muffled sound)
+                const lowpass = ctx.createBiquadFilter();
+                lowpass.type = 'lowpass';
+                lowpass.frequency.value = 2000;
+
+                // 3. Distortion for crunchiness
+                const distNode = ctx.createWaveShaper();
+                function makeDistortionCurve(amount) {
+                    let k = typeof amount === 'number' ? amount : 50;
+                    let n_samples = 44100;
+                    let c = new Float32Array(n_samples);
+                    let deg = Math.PI / 180;
+                    for (let i = 0; i < n_samples; ++i) {
+                        let x = i * 2 / n_samples - 1;
+                        c[i] = (3 + k) * x * 20 * deg / (Math.PI + k * Math.abs(x));
+                    }
+                    return c;
+                }
+                distNode.curve = makeDistortionCurve(20); // Mild distortion
+                distNode.oversample = '4x';
+
+                // Disconnect Phaser's default routing
+                this.bgm.gainNode.disconnect();
+
+                // Route: Gain -> Bitcrusher -> Distortion -> Lowpass -> Master Destination
+                this.bgm.gainNode.connect(bitCrusher);
+                bitCrusher.connect(distNode);
+                distNode.connect(lowpass);
+                lowpass.connect(this.sound.destination);
+
+                console.log('[Audio] 8-Bit BGM Filter Activated');
+            } catch (e) {
+                console.warn('[Audio] Failed to apply BGM Bitcrusher:', e);
+            }
+        }
+
         // Initialize Managers
         this.dungeonManager = new DungeonManager(this);
         this.dungeonManager.generateDungeon();
