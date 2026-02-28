@@ -27,6 +27,7 @@ import SeparationManager from '../modules/Core/SeparationManager.js';
 import BuffManager from '../modules/Core/BuffManager.js';
 import StageManager from '../modules/Environment/StageManager.js';
 import WeatherManager from '../modules/Environment/WeatherManager.js';
+import AmbientMoteManager from '../modules/Environment/AmbientMoteManager.js';
 import DynamicCameraManager from '../modules/Core/DynamicCameraManager.js';
 import EventBus from '../modules/Events/EventBus.js';
 import BarkManager from '../modules/AI/BarkManager.js';
@@ -44,6 +45,7 @@ export default class DungeonScene extends Phaser.Scene {
         this.currentRound = 1;
         this.isResting = false;
         this.weatherManager = null;
+        this.ambientMoteManager = null;
 
         // Reward values
         this.killExp = 25;
@@ -184,7 +186,8 @@ export default class DungeonScene extends Phaser.Scene {
             EventBus.off(EventBus.EVENTS.DEBUG_SWAP_CHARACTER, this.handleDebugSwapListener);
             EventBus.off(EventBus.EVENTS.MONSTER_KILLED, this.handleMonsterKilledListener);
             if (this.weatherManager) this.weatherManager.destroy();
-            console.log('[DungeonScene] Cleaned up EventBus listeners + WeatherManager.');
+            if (this.ambientMoteManager) this.ambientMoteManager.destroy();
+            console.log('[DungeonScene] Cleaned up EventBus listeners + WeatherManager + AmbientMotes.');
         });
 
         // Spawn Party from PartyManager
@@ -302,6 +305,9 @@ export default class DungeonScene extends Phaser.Scene {
         // this.time.delayedCall(2000, () => {
         //    this.weatherManager.setWeather('rain', { fadeDuration: 3000 });
         // });
+
+        // ── 환경 부유 먼지 (3레이어 Parallax) ──
+        this.ambientMoteManager = new AmbientMoteManager(this);
 
         this.setupFakeAestheticOverlays();
 
@@ -452,6 +458,9 @@ export default class DungeonScene extends Phaser.Scene {
         }
         if (this.weatherManager) {
             this.weatherManager.update(time, delta);
+        }
+        if (this.ambientMoteManager) {
+            this.ambientMoteManager.update();
         }
     }
 
@@ -728,6 +737,13 @@ export default class DungeonScene extends Phaser.Scene {
             // Re-apply ignore rules when new units spawn
             this.events.on('unit-spawned', (unit) => {
                 bgCamera.ignore(unit);
+            });
+        }
+
+        // Ambient Mote 파티클도 bgCamera에서 제외 (블러 방지)
+        if (this.ambientMoteManager) {
+            this.ambientMoteManager.getEmittersForCameraIgnore().forEach(emitter => {
+                bgCamera.ignore(emitter);
             });
         }
 
