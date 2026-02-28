@@ -29,6 +29,9 @@ const ITEM_DATABASE = {
     'emoji_wood': { name: 'Wood Log', type: ITEM_TYPES.MATERIAL, icon: 'emoji_wood' },
     'emoji_herb': { name: 'Magic Herb', type: ITEM_TYPES.MATERIAL, icon: 'emoji_herb' },
     'emoji_burger': { name: 'Hamburger', type: ITEM_TYPES.MATERIAL, icon: 'emoji_burger' },
+    'emoji_fireworks': { name: 'Fire Nova (🎆)', type: ITEM_TYPES.MATERIAL, icon: 'emoji_fireworks' },
+    'emoji_sparkler': { name: 'Spark Nova (🎇)', type: ITEM_TYPES.MATERIAL, icon: 'emoji_sparkler' },
+    'emoji_koinobori': { name: 'Ice Nova (🎏)', type: ITEM_TYPES.MATERIAL, icon: 'emoji_koinobori' },
 
     // --- Equipment ---
     'test_sword_fire': {
@@ -101,6 +104,9 @@ export default class ItemManager {
             'emoji_wood': '1fab5.svg',
             'emoji_herb': '1f33f.svg',
             'emoji_burger': '1f354.svg',
+            'emoji_fireworks': '1f386.svg',
+            'emoji_sparkler': '1f387.svg',
+            'emoji_koinobori': '1f38f.svg',
             'emoji_sword': '1f5e1.svg',
             'emoji_staff': '1fa84.svg',
             'emoji_rock': '1f5ff.svg',

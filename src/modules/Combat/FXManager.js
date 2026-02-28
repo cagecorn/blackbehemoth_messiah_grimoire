@@ -639,4 +639,110 @@ export default class FXManager {
             }
         });
     }
+    /**
+     * 원소별 노바 시각 효과 통합 (Fire, Ice, Spark)
+     */
+    showElementalNovaEffect(target, element = 'fire') {
+        if (!target || !target.active) return;
+
+        const configMap = {
+            'fire': { emoji: 'emoji_fire', color: 0xffaa00, sparkle: [0xff4400, 0xffaa00] },
+            'ice': { emoji: 'emoji_snowball', color: 0x00ccff, sparkle: [0x88ffff, 0x00ccff] },
+            'lightning': { emoji: 'emoji_lightning', color: 0xffff00, sparkle: [0xffffff, 0xffff00] }
+        };
+
+        const config = configMap[element] || configMap['fire'];
+        const count = 12;
+        const radius = 150;
+
+        // 1. 이모지 확산 효과
+        for (let i = 0; i < count; i++) {
+            const angle = (i / count) * Math.PI * 2;
+            const x = target.x + Math.cos(angle) * 20;
+            const y = target.y + Math.sin(angle) * 20;
+
+            const part = this.scene.add.image(x, y, config.emoji);
+            part.setDepth(target.depth + 10);
+            part.setBlendMode('ADD');
+            part.setScale(0.8);
+            part.setAlpha(0.9);
+
+            this.scene.tweens.add({
+                targets: part,
+                x: target.x + Math.cos(angle) * radius,
+                y: target.y + Math.sin(angle) * radius,
+                scale: 1.8,
+                alpha: 0,
+                rotation: angle + Math.PI / 2,
+                duration: 900,
+                ease: 'Cubic.easeOut',
+                onComplete: () => part.destroy()
+            });
+
+            // 2. 스파클 파티클 추가 (나나의 기술 참조)
+            if (this.scene.time.now % 2 === 0) { // 성능을 위해 절반만 생성
+                this.scene.time.delayedCall(Phaser.Math.Between(0, 300), () => {
+                    if (target.active) {
+                        const sx = target.x + Math.cos(angle) * (radius * 0.5);
+                        const sy = target.y + Math.sin(angle) * (radius * 0.5);
+                        this.createSparkleEffect({ x: sx, y: sy, active: true }, config.sparkle);
+                    }
+                });
+            }
+        }
+
+        // 3. 중앙 플래시 효과
+        const flash = this.scene.add.circle(target.x, target.y, 15, config.color, 0.8);
+        flash.setDepth(target.depth + 5);
+        flash.setBlendMode('ADD');
+        this.scene.tweens.add({
+            targets: flash,
+            scale: 20,
+            alpha: 0,
+            duration: 500,
+            ease: 'Expo.easeOut',
+            onComplete: () => flash.destroy()
+        });
+    }
+
+    /**
+     * 버프 스파클 이펙트 (색상 커스텀 지원 버전)
+     */
+    createSparkleEffect(target, colors = [0xffff00, 0xffa500, 0xffffff]) {
+        if (!target || !target.active) return;
+
+        if (!this.scene.textures.exists('sparkle_fx')) {
+            const graphics = this.scene.add.graphics();
+            graphics.fillStyle(0xffffff, 1);
+            graphics.fillCircle(4, 4, 4);
+            graphics.generateTexture('sparkle_fx', 8, 8);
+            graphics.destroy();
+        }
+
+        const emitter = this.scene.add.particles(0, 0, 'sparkle_fx', {
+            x: target.x,
+            y: target.y,
+            speed: { min: 40, max: 100 },
+            angle: { min: 0, max: 360 },
+            scale: { start: 1, end: 0 },
+            alpha: { start: 1, end: 0 },
+            lifespan: 600,
+            tint: colors,
+            blendMode: 'ADD',
+            quantity: 5,
+            emitting: false
+        });
+
+        emitter.setDepth(20000);
+        emitter.explode(5);
+
+        this.scene.time.delayedCall(800, () => {
+            if (emitter) emitter.destroy();
+        });
+    }
+
+    // Deprecated but kept for compatibility
+    showFireNovaEffect(target) {
+        this.showElementalNovaEffect(target, 'fire');
+    }
 }

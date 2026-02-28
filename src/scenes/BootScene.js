@@ -103,6 +103,9 @@ export default class BootScene extends Phaser.Scene {
         this.load.svg('emoji_snowman', 'assets/emojis/26c4.svg', { width: 64, height: 64 });
         this.load.svg('emoji_snowcloud', 'assets/emojis/1f328.svg', { width: 128, height: 128 });
         this.load.svg('emoji_burger', 'assets/emojis/1f354.svg', { width: 64, height: 64 });
+        this.load.svg('emoji_fireworks', 'assets/emojis/1f386.svg', { width: 64, height: 64 });
+        this.load.svg('emoji_sparkler', 'assets/emojis/1f387.svg', { width: 64, height: 64 });
+        this.load.svg('emoji_koinobori', 'assets/emojis/1f38f.svg', { width: 64, height: 64 });
 
         this.load.on('loaderror', (file) => {
             console.error(`[BootScene] Error loading asset: ${file.key} from ${file.src}`);
@@ -196,6 +199,24 @@ export default class BootScene extends Phaser.Scene {
             if (!existingBurger) {
                 console.log('[BootScene] Initializing starter 🍔 x10');
                 await DBManager.saveInventoryItem('emoji_burger', 10);
+            }
+
+            const existingFireNova = await DBManager.getInventoryItem('emoji_fireworks');
+            if (!existingFireNova) {
+                console.log('[BootScene] Initializing starter 🎆 x10');
+                await DBManager.saveInventoryItem('emoji_fireworks', 10);
+            }
+
+            const existingSparkNova = await DBManager.getInventoryItem('emoji_sparkler');
+            if (!existingSparkNova) {
+                console.log('[BootScene] Initializing starter 🎇 x10');
+                await DBManager.saveInventoryItem('emoji_sparkler', 10);
+            }
+
+            const existingIceNova = await DBManager.getInventoryItem('emoji_koinobori');
+            if (!existingIceNova) {
+                console.log('[BootScene] Initializing starter 🎏 x10');
+                await DBManager.saveInventoryItem('emoji_koinobori', 10);
             }
 
             // Developer Cheat: Give 99999 diamonds for testing
