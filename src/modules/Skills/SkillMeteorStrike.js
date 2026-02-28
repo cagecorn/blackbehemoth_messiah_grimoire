@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import soundEffects from '../Core/SoundEffects.js';
 
 /**
  * SkillMeteorStrike.js
@@ -140,6 +141,7 @@ export default class SkillMeteorStrike {
                 );
                 // Shake camera slightly on hit for impact
                 scene.cameras.main.shake(100, 0.002);
+                soundEffects.playFireballSound();
             }
         } else {
             console.warn(`[Ultimate: ${this.name}] No AoeManager or TargetGroup for ${caster.unitName}!`);

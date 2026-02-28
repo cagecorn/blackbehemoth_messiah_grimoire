@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import soundEffects from '../Core/SoundEffects.js';
 
 /**
  * MassHeal.js
@@ -46,6 +47,7 @@ export default class MassHeal {
         this.lastCastTime = now;
 
         console.log(`[Skill] ${caster.unitName} uses Mass Heal!`);
+        soundEffects.playHealSound();
 
         // Determine the allied group dynamically
         const alliedGroup = caster.allyGroup;

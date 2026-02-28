@@ -7,6 +7,7 @@ import EventBus from '../Events/EventBus.js';
 import { MercenaryClasses } from '../Core/EntityStats.js';
 import SongOfProtection from '../Skills/SongOfProtection.js';
 import PlaceholderSkill from '../Skills/PlaceholderSkill.js';
+import soundEffects from '../Core/SoundEffects.js';
 
 /**
  * Bard.js
@@ -179,6 +180,7 @@ export default class Bard extends Mercenary {
         const x = this.x;
         const y = this.y - 100;
 
+        soundEffects.playHarpSound();
         // Visual effect
         this.createSummonEffect(x, y);
 

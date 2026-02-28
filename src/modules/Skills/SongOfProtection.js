@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import soundEffects from '../Core/SoundEffects.js';
 
 /**
  * SongOfProtection.js
@@ -47,6 +48,7 @@ export default class SongOfProtection {
         this.lastCastTime = now;
 
         console.log(`[Skill] ${caster.unitName} uses Song of Protection!`);
+        soundEffects.playHarpSound();
 
         // Determine the allied group dynamically
         const alliedGroup = caster.allyGroup;

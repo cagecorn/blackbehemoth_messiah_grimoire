@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { Action, Condition, Sequence } from '../AI/BehaviorTreeManager.js';
 import EventBus from '../Events/EventBus.js';
+import soundEffects from '../Core/SoundEffects.js';
 
 /**
  * SkillFireball.js
@@ -60,6 +61,7 @@ export default class SkillFireball {
         //     caster.showSpeechBubble("Meteor... Strike!!");
         // }
         EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, `[스킬] ${caster.unitName || '누군가'}가 파이어볼을 시전했습니다! 🔥`);
+        soundEffects.playFireballSound();
 
         // 1. Create the meteor high up and diagonally offset
         const startX = target.x - 400;

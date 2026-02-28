@@ -7,6 +7,7 @@ import partyManager from '../Core/PartyManager.js';
 import ItemManager from '../Core/ItemManager.js';
 import CharmManager from '../Core/CharmManager.js';
 import DBManager from '../Database/DBManager.js';
+import soundEffects from '../Core/SoundEffects.js';
 
 /**
  * Mercenary.js
@@ -827,6 +828,9 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             agentId: this.id,
             stats: { ultGauge: this.ultGauge }
         });
+
+        // 콰창~ 브라우저 오디오 시스템 재생 (Web Audio API)
+        soundEffects.playUltimateSound();
 
         // Trigger the skill logic
         if (this.executeUltimate) {

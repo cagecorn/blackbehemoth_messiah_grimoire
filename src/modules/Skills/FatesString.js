@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import soundEffects from '../Core/SoundEffects.js';
 
 /**
  * FatesString.js
@@ -88,6 +89,7 @@ export default class FatesString {
         const endX = direction === -1 ? view.left - 200 : view.right + 200;
         const endY = startY;
 
+        soundEffects.playWhipSound();
         this.createTrajectoryLine(scene, startX, startY, endX, endY, 600);
         this.applyLineDamage(scene, caster, startX, startY, endX, endY);
 
@@ -132,6 +134,7 @@ export default class FatesString {
 
             // Stagger the lines
             scene.time.delayedCall(i * 150, () => {
+                soundEffects.playWhipSound();
                 this.createTrajectoryLine(scene, startX, startY, endX, endY, 400);
                 this.applyLineDamage(scene, caster, startX, startY, endX, endY);
                 scene.cameras.main.shake(100, 0.005);

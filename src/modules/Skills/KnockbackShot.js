@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import soundEffects from '../Core/SoundEffects.js';
 
 /**
  * KnockbackShot.js
@@ -51,6 +52,7 @@ export default class KnockbackShot {
         this.lastCastTime = now;
 
         console.log(`[Skill] ${caster.unitName} uses Knockback Shot!`);
+        soundEffects.playGunshotSound();
 
         const startX = caster.x;
         const startY = caster.y;

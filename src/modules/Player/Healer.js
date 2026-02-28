@@ -8,6 +8,7 @@ import EventBus from '../Events/EventBus.js';
 import MassHeal from '../Skills/MassHeal.js';
 import PlaceholderSkill from '../Skills/PlaceholderSkill.js';
 import GuardianAngel from './GuardianAngel.js';
+import soundEffects from '../Core/SoundEffects.js';
 
 /**
  * Healer.js
@@ -146,6 +147,7 @@ export default class Healer extends Mercenary {
         const x = this.x;
         const y = this.y - 100;
 
+        soundEffects.playAngelSound();
         // Visual effect: Light descending
         this.createSummonEffect(x, y);
 
