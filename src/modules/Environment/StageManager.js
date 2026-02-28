@@ -52,40 +52,5 @@ export default class StageManager {
 
             console.log(`[StageManager] 앰비언트 오버레이 적용: 색상 0x${this.config.ambientColor.toString(16).toUpperCase()}, 불투명도 ${alpha * 100}%`);
         }
-
-        // ── 3. 대기 입자 (Atmospheric Particles) ─────────────────
-        // 공기 중에 떠다니는 먼지/포자를 표현하여 공간감과 밀도감을 높입니다.
-        this.createDustParticles(worldWidth, worldHeight);
-    }
-
-    createDustParticles(width, height) {
-        // 1. 먼지 텍스처 생성 (작고 흐릿한 원)
-        if (!this.scene.textures.exists('atmos_dust')) {
-            const dustGraphics = this.scene.make.graphics({ x: 0, y: 0, add: false });
-            dustGraphics.fillStyle(0xffffff, 1);
-            dustGraphics.fillCircle(4, 4, 4);
-            dustGraphics.generateTexture('atmos_dust', 8, 8);
-        }
-
-        // 2. 파티클 이미터 설정
-        const dustEmitter = this.scene.add.particles(0, 0, 'atmos_dust', {
-            x: { min: 0, max: width },
-            y: { min: 0, max: height },
-            lifespan: { min: 4000, max: 8000 },
-            speedX: { min: -10, max: 10 },
-            speedY: { min: -5, max: 5 },
-            scale: { start: 0.5, end: 0 },
-            alpha: { start: 0, end: 0.4, ease: 'Sine.easeInOut' }, // 서서히 나타났다 사라짐
-            tint: [0xffffff, 0xffffdd, 0xaaccff], // 약간의 색상 변조
-            blendMode: 'ADD',
-            quantity: 2,           // 한 번에 생성되는 수
-            frequency: 100,        // 생성 주기 (ms)
-            maxParticles: 300      // 화면 내 최대 유지 개수
-        });
-
-        dustEmitter.setDepth(20000); // UI 아래, 캐릭터 위 (혹은 앰비언트 위)
-        // dustEmitter.setScrollFactor(1); // 카메라 따라가게 하려면 scrollFactor 설정 필요 (여기선 월드 좌표계 사용)
-
-        console.log('[StageManager] 대기 입자(Dust Particles) 활성화 ✨');
     }
 }
