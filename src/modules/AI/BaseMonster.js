@@ -62,6 +62,11 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
         this.isAsleep = false; // Sleep CC
         this.isFrozen = false; // Freeze CC
 
+        // Elite & Charm System
+        this.isElite = config.isElite || false;
+        this.charms = config.charms || Array(9).fill(null);
+        this.charmTimers = Array(9).fill(0);
+
         // Combat Timers
         this.lastAttackTime = 0;
 
@@ -103,10 +108,28 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
 
         // Set team for monsters (defaults to 'enemy')
         this.team = config.team || 'enemy';
+
+        if (this.isElite) {
+            this.setElite(true);
+        }
+    }
+
+    setElite(isElite) {
+        this.isElite = isElite;
+        if (isElite) {
+            // Visual Indicator: Gold Tint + Larger Scale
+            this.sprite.setTint(0xffcc00);
+            this.setScale(1.2);
+            if (this.unitName && !this.unitName.includes('✦')) {
+                this.unitName = `✦ ${this.unitName} ✦`;
+            }
+            // Stats are scaled in DungeonScene.js before creation normally, 
+            // but we can add secondary bonus here if needed.
+        }
     }
 
     get targetGroup() {
-        if (!this.scene || !this.scene.scene || !this.scene.scene.isActive()) return null;
+        if (!this.scene) return null;
         return (this.team === 'player') ? this.scene.enemies : this.scene.mercenaries;
     }
 
@@ -462,7 +485,29 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
             this.handleAttack();
         }
 
+        // --- Update Charm Effects ---
+        this.updateCharmEffects(delta);
+
         this.updateVisualOrientation();
+    }
+
+    updateCharmEffects(delta) {
+        if (!this.charms || this.charms.length === 0) return;
+
+        this.charms.forEach((charmId, index) => {
+            if (!charmId) return;
+
+            const charm = CharmManager.getCharm(charmId);
+            if (!charm) return;
+
+            if (charm.type === 'periodic' && charm.effect) {
+                this.charmTimers[index] += delta;
+                if (this.charmTimers[index] >= charm.interval) {
+                    this.charmTimers[index] = 0;
+                    charm.effect(this);
+                }
+            }
+        });
     }
 
     updateVisualOrientation() {

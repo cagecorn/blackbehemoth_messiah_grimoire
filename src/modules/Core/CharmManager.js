@@ -51,7 +51,7 @@ export const CHARM_DATABASE = {
                 150,
                 damage,
                 unit,
-                null,
+                unit.targetGroup,
                 baseMAtk >= baseAtk, // 마법 공격력이 더 높으면 마법 판정
                 false,
                 'fire'
@@ -78,7 +78,7 @@ export const CHARM_DATABASE = {
                 unit.scene.fxManager.showElementalNovaEffect(unit, 'lightning');
             }
 
-            unit.scene.aoeManager.triggerAoe(unit.x, unit.y, 150, damage, unit, null, baseMAtk >= baseAtk, false, 'lightning');
+            unit.scene.aoeManager.triggerAoe(unit.x, unit.y, 150, damage, unit, unit.targetGroup, baseMAtk >= baseAtk, false, 'lightning');
             console.log(`[Charm] ${unit.unitName} triggered Spark Nova 🎇`);
         },
         description: '15초마다 주변에 강력한 전격 노바(공격력 120%)를 발산합니다.'
@@ -100,7 +100,7 @@ export const CHARM_DATABASE = {
                 unit.scene.fxManager.showElementalNovaEffect(unit, 'ice');
             }
 
-            unit.scene.aoeManager.triggerAoe(unit.x, unit.y, 150, damage, unit, null, baseMAtk >= baseAtk, false, 'ice');
+            unit.scene.aoeManager.triggerAoe(unit.x, unit.y, 150, damage, unit, unit.targetGroup, baseMAtk >= baseAtk, false, 'ice');
             console.log(`[Charm] ${unit.unitName} triggered Ice Nova 🎏`);
         },
         description: '15초마다 주변에 강력한 냉기 노바(공격력 120%)를 발산합니다.'

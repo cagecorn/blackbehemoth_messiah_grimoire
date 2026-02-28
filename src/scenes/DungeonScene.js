@@ -408,28 +408,26 @@ export default class DungeonScene extends Phaser.Scene {
 
         if (this.mercenaries) {
             this.mercenaries.getChildren().forEach(mercenary => {
-                mercenary.update();
+                mercenary.update(time, delta);
                 mercenary.setDepth(mercenary.y);
 
                 // ── Idle Bob 자동 제어 ─────────────────────────────────────
-                // body.speed: 실시간 물리 이동 속도(px/s). 5 이하면 정지 상태로 판단.
                 if (mercenary.body && mercenary.startIdleBob) {
                     const isMoving = mercenary.body.speed > 5;
                     const isBlocked = mercenary.isAirborne || mercenary.isKnockedBack || mercenary.hp <= 0;
 
                     if ((isMoving || isBlocked) && mercenary._idleBobTween) {
-                        mercenary.stopIdleBob(false); // 이동 중 — 부드럽게 현재 위치 유지
+                        mercenary.stopIdleBob(false);
                     } else if (!isMoving && !isBlocked && !mercenary._idleBobTween) {
-                        mercenary.startIdleBob();     // 정지 복귀 — bob 재시작
+                        mercenary.startIdleBob();
                     }
                 }
-                // ──────────────────────────────────────────────────────────
             });
         }
 
         if (this.enemies) {
             this.enemies.getChildren().forEach(enemy => {
-                enemy.update();
+                enemy.update(time, delta);
                 enemy.setDepth(enemy.y);
 
                 // ── Idle Bob 자동 제어 (적 유닛도 동일) ─────────────────────
@@ -443,7 +441,6 @@ export default class DungeonScene extends Phaser.Scene {
                         enemy.startIdleBob();
                     }
                 }
-                // ──────────────────────────────────────────────────────────
             });
         }
 
@@ -487,6 +484,28 @@ export default class DungeonScene extends Phaser.Scene {
         // Monster scaling: Increases every 5 rounds
         const monsterLevel = Math.floor((this.currentRound - 1) / 5) + 1;
 
+        // Elite Settings
+        const eliteChance = Math.min(0.5, 0.1 + (this.currentRound - 1) * 0.05);
+        const novaCharms = ['emoji_fireworks', 'emoji_sparkler', 'emoji_koinobori'];
+
+        const applyEliteLogic = (monster) => {
+            if (Math.random() < eliteChance) {
+                monster.maxHp *= 2.5;
+                monster.hp = monster.maxHp;
+                monster.atk *= 1.5;
+                monster.mAtk *= 1.5;
+                monster.isElite = true;
+
+                // Assign 1-2 random nova charms
+                const charmCount = Phaser.Math.Between(1, 2);
+                const shuffled = [...novaCharms].sort(() => 0.5 - Math.random());
+                monster.charms = shuffled.slice(0, charmCount);
+
+                if (monster.setElite) monster.setElite(true);
+                console.log(`[Spawn] Elite ${monster.unitName} spawned with charms:`, monster.charms);
+            }
+        };
+
         // Spawn Goblins (Base 12 + 1 per round)
         const goblinConfig = MonsterClasses.GOBLIN;
         const goblinCount = 12 + (this.currentRound - 1) * 1;
@@ -494,6 +513,7 @@ export default class DungeonScene extends Phaser.Scene {
             const offsetX = (i % 4) * 60;
             const offsetY = Math.floor(i / 4) * 60;
             const goblin = new Goblin(this, startPos.x + 150 + offsetX, startPos.y + offsetY - 80, this.player, monsterLevel);
+            applyEliteLogic(goblin);
             this.enemies.add(goblin);
         }
 
@@ -502,6 +522,7 @@ export default class DungeonScene extends Phaser.Scene {
         const shamanCount = 2 + Math.floor((this.currentRound - 1) / 2);
         for (let i = 0; i < shamanCount; i++) {
             const shaman = new MonsterHealer(this, startPos.x + 200 + (i * 80), startPos.y + 120, shamanConfig, this.player, monsterLevel);
+            applyEliteLogic(shaman);
             this.enemies.add(shaman);
         }
 
@@ -511,6 +532,7 @@ export default class DungeonScene extends Phaser.Scene {
             const offsetX = (i % 2) * 80;
             const offsetY = Math.floor(i / 2) * 80;
             const orc = new Orc(this, startPos.x + 400 + offsetX, startPos.y + offsetY - 40, this.player, monsterLevel);
+            applyEliteLogic(orc);
             this.enemies.add(orc);
         }
 
@@ -602,8 +624,22 @@ export default class DungeonScene extends Phaser.Scene {
         }
 
         if (unit) {
+            // Shadow Mercenaries are always Elite with extra charms
+            unit.maxHp *= 3;
+            unit.hp = unit.maxHp;
+            unit.atk *= 1.8;
+            unit.mAtk *= 1.8;
+            unit.isElite = true;
+
+            const novaCharms = ['emoji_fireworks', 'emoji_sparkler', 'emoji_koinobori'];
+            const charmCount = Phaser.Math.Between(1, 3);
+            const shuffled = [...novaCharms].sort(() => 0.5 - Math.random());
+            unit.charms = shuffled.slice(0, charmCount);
+
             this.enemies.add(unit);
-            console.log(`[Dungeon] Spawned Shadow ${config.name} (ID: ${unit.id}) with HP: ${unit.hp}/${unit.maxHp}, Team: ${unit.team}`);
+            console.log(`[Dungeon] Spawned Shadow ${config.name} (ID: ${unit.id}) with HP: ${unit.hp}/${unit.maxHp} and charms: ${unit.charms}`);
+
+            if (unit.setElite) unit.setElite(true);
 
             // Re-initialize AI targets to be sure it targets the player party
             if (unit.initAI) {

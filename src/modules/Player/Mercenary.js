@@ -929,7 +929,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         super.destroy(fromScene);
     }
 
-    update() {
+    update(time, delta) {
         if (!this.scene || !this.scene.scene || !this.scene.scene.isActive()) {
             console.warn(`[ZombieKiller] Destroying ${this.unitName} (Scene inactive)`);
             this.destroy();
@@ -937,11 +937,11 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         }
 
         // --- Charm Effects ---
-        this.updateCharmEffects(this.scene.game.loop.delta);
+        this.updateCharmEffects(delta);
 
         // Burn DOT: 2% Max HP per second
         if (this.isBurning && this.hp > 0) {
-            this.takeDamage(this.maxHp * 0.02 * (this.scene.game.loop.delta / 1000), 'burn_dot', false, 'fire');
+            this.takeDamage(this.maxHp * 0.02 * (delta / 1000), 'burn_dot', false, 'fire');
         }
 
         if (this.isAirborne || this.isStunned || this.isAsleep) {
