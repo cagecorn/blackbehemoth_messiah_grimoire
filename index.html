@@ -20,7 +20,7 @@
 </head>
 
 <body>
-    <!-- Hidden SVG: Film Grain Noise Filter (zero rendering cost) -->
+    <!-- Hidden SVG Filters -->
     <svg class="hd2d-film-grain-filter" xmlns="http://www.w3.org/2000/svg">
         <defs>
             <filter id="hd2d-noise" x="0%" y="0%" width="100%" height="100%" color-interpolation-filters="linearRGB">
@@ -30,6 +30,7 @@
                 <feBlend in="SourceGraphic" in2="grayNoise" mode="overlay" result="blend" />
                 <feComposite in="blend" in2="SourceGraphic" operator="in" />
             </filter>
+
         </defs>
     </svg>
 

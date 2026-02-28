@@ -9,6 +9,95 @@ import Phaser from 'phaser';
 //   - _elementalEmitters: 원소별 ParticleEmitter를 최초 1회만 생성해 캐싱.
 //  이 방식은 전투 중 GC 스파이크와 메모리 파편화를 원천 차단합니다.
 // ============================================================
+
+// --- 8-bit Hit Sound Generator (Web Audio API) ---
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+function play8BitHitSound(isCritical, amount) {
+    if (!audioCtx) return;
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+
+        let startFreq = 200 + Math.random() * 100;
+        let endFreq = 50 + Math.random() * 50;
+        let duration = 0.1;
+        let vol = 0.08;
+
+        const isMiss = amount === 'MISS!';
+        const isHeal = typeof amount === 'string' && amount.startsWith('+');
+
+        if (isHeal) return; // Use separate heal effect if needed
+
+        if (isMiss) {
+            osc.type = 'triangle';
+            startFreq = 800 + Math.random() * 100;
+            endFreq = 800; // No drop
+            duration = 0.05;
+            vol = 0.03;
+        } else if (isCritical) {
+            osc.type = 'sawtooth';
+            startFreq = 400 + Math.random() * 200;
+            endFreq = 80;
+            duration = 0.2;
+            vol = 0.12;
+
+            // Add slight overdrive mapping for crit
+            const dist = audioCtx.createWaveShaper();
+            function makeDistortionCurve(amount) {
+                let k = typeof amount === 'number' ? amount : 50,
+                    n_samples = 44100,
+                    curve = new Float32Array(n_samples),
+                    deg = Math.PI / 180,
+                    i = 0,
+                    x;
+                for (; i < n_samples; ++i) {
+                    x = i * 2 / n_samples - 1;
+                    curve[i] = (3 + k) * x * 20 * deg / (Math.PI + k * Math.abs(x));
+                }
+                return curve;
+            }
+            dist.curve = makeDistortionCurve(50);
+            dist.oversample = '4x';
+
+            osc.connect(dist);
+            dist.connect(gain);
+        } else {
+            // Normal hit
+            osc.type = 'square';
+            if (typeof amount === 'number' && amount > 100) {
+                // Heavy hit
+                startFreq = 150 + Math.random() * 50;
+                endFreq = 40;
+                duration = 0.15;
+                vol = 0.1;
+            } else if (typeof amount === 'number' && amount <= 5) {
+                // Block / minor scratch
+                startFreq = 600 + Math.random() * 100;
+                endFreq = 400;
+                duration = 0.06;
+                vol = 0.05;
+            }
+            osc.connect(gain);
+        }
+
+        osc.frequency.setValueAtTime(startFreq, audioCtx.currentTime);
+        if (!isMiss) {
+            osc.frequency.exponentialRampToValueAtTime(endFreq, audioCtx.currentTime + duration);
+        }
+
+        gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+    } catch (e) {
+        // Ignored
+    }
+}
+
 export default class FXManager {
 
     // 데미지 텍스트 풀 크기 (하이 트래픽 전투 대비)
@@ -140,6 +229,15 @@ export default class FXManager {
         if (typeof amount === 'number' && amount <= 0 && offsetX === 0) return;
 
         let displayAmount = typeof amount === 'number' ? `-${amount.toFixed(1)}` : amount;
+
+        // --- Play 8-bit hit sound ---
+        if (delay > 0) {
+            this.scene.time.delayedCall(delay, () => {
+                play8BitHitSound(isCritical, amount);
+            });
+        } else {
+            play8BitHitSound(isCritical, amount);
+        }
 
         const scale = (target.config && target.config.scale) || 1;
         const yOffset = 40 * scale;

@@ -1,5 +1,27 @@
 import Phaser from 'phaser';
 
+// Initialize Web Audio API for 8-bit beeps
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+function play8BitBeep(pitch = 600) {
+    if (!audioCtx) return;
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'square';
+        // Randomize pitch slightly for organic typing feel
+        osc.frequency.setValueAtTime(pitch + (Math.random() * 50 - 25), audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.04);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.05);
+    } catch (e) {
+        // Ignore audio errors if blocked
+    }
+}
+
 /**
  * SpeechBubble
  * A visual component that renders a comic-style bubble with text.
@@ -49,24 +71,40 @@ export default class SpeechBubble extends Phaser.GameObjects.Container {
 
             const thoughtBounds = this.thoughtTextObj.getBounds();
 
-            // Create Main Text below thought
-            this.textObj = this.scene.add.text(0, thoughtBounds.height + 6, mainText, {
+            // Create Main Text below thought (Init empty for typewriter)
+            this.textObj = this.scene.add.text(0, thoughtBounds.height + 6, '', {
                 fontSize,
                 fill: '#000',
                 align: 'center',
                 wordWrap: { width: maxWidth - padding * 2 }
             });
 
-            textContainer.add([this.thoughtTextObj, this.textObj]);
+            // We need a dummy text to calculate full dimensions
+            const dummyText = this.scene.add.text(0, thoughtBounds.height + 6, mainText, {
+                fontSize,
+                wordWrap: { width: maxWidth - padding * 2 }
+            });
+            textContainer.add([this.thoughtTextObj, this.textObj, dummyText]);
+            this.dummyText = dummyText; // Store to calculate bounds, hide it later
+            dummyText.setVisible(false);
+
         } else {
-            // Create Normal Text
-            this.textObj = this.scene.add.text(0, 0, text, {
+            // Create Normal Text (Init empty for typewriter)
+            this.textObj = this.scene.add.text(0, 0, '', {
                 fontSize,
                 fill: '#000',
                 align: 'center',
                 wordWrap: { width: maxWidth - padding * 2 }
             });
-            textContainer.add(this.textObj);
+
+            // Dummy text for bounds calculation
+            const dummyText = this.scene.add.text(0, 0, mainText, {
+                fontSize,
+                wordWrap: { width: maxWidth - padding * 2 }
+            });
+            textContainer.add([this.textObj, dummyText]);
+            this.dummyText = dummyText;
+            dummyText.setVisible(false);
         }
 
         // Calculate dimensions
@@ -109,8 +147,31 @@ export default class SpeechBubble extends Phaser.GameObjects.Container {
             ease: 'Power2'
         });
 
-        // Auto-destruction timer
-        this.scene.time.delayedCall(duration, () => {
+        // Typewriter Effect
+        let typeIndex = 0;
+        const typeSpeed = 40; // ms per char
+        this.typewriterTimer = this.scene.time.addEvent({
+            delay: typeSpeed,
+            callback: () => {
+                if (typeIndex < mainText.length) {
+                    this.textObj.text += mainText[typeIndex];
+                    // Play beep for non-space characters
+                    if (mainText[typeIndex] !== ' ' && mainText[typeIndex] !== '\n') {
+                        // Pitch mapping: higher pitch for higher characters (just random flavor)
+                        play8BitBeep(600 + (Math.random() * 200 - 100));
+                    }
+                    typeIndex++;
+                } else {
+                    this.typewriterTimer.remove();
+                }
+            },
+            callbackScope: this,
+            loop: true
+        });
+
+        // Auto-destruction timer (start after typewriter finishes roughly)
+        const totalDuration = duration + (mainText.length * 40);
+        this.destroyTimer = this.scene.time.delayedCall(totalDuration, () => {
             if (this.scene && this.active) {
                 this.scene.tweens.add({
                     targets: this,
@@ -122,6 +183,12 @@ export default class SpeechBubble extends Phaser.GameObjects.Container {
                 });
             }
         });
+    }
+
+    destroy(fromScene) {
+        if (this.typewriterTimer) this.typewriterTimer.remove();
+        if (this.destroyTimer) this.destroyTimer.remove();
+        super.destroy(fromScene);
     }
 
     /**
