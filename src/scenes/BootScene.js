@@ -214,8 +214,9 @@ export default class BootScene extends Phaser.Scene {
         bloom.className = 'fake-bloom-tint';
         wrapper.appendChild(bloom);
 
-        // 2. Setup true DOM-based Chromatic Aberration by cloning the Game Canvas
-        this.setupCanvasClones(wrapper);
+        // 2. The Balanced "Screenshot 2" Chromatic Overlays
+        wrapper.appendChild(this.createFilterLayer('cinematic-layer rgb-red-shift'));
+        wrapper.appendChild(this.createFilterLayer('cinematic-layer rgb-blue-shift'));
 
         // 3. Deep Cinematic Vignette
         const vignette = document.createElement('div');
@@ -230,90 +231,5 @@ export default class BootScene extends Phaser.Scene {
         const div = document.createElement('div');
         div.className = className;
         return div;
-    }
-
-    /**
-     * Injects an SVG filter used to extract Red and Blue channels for the chromatic clones
-     */
-    injectSVGFilters() {
-        if (document.getElementById('ca-svg-filters')) return;
-        const svgHTML = `
-            <svg id="ca-svg-filters" width="0" height="0" style="position: absolute; display: none;">
-                <filter id="ca-red-extract" color-interpolation-filters="sRGB">
-                    <feColorMatrix type="matrix" values="
-                        1 0 0 0 0
-                        0 0 0 0 0
-                        0 0 0 0 0
-                        0 0 0 1 0" />
-                </filter>
-                <filter id="ca-blue-extract" color-interpolation-filters="sRGB">
-                    <feColorMatrix type="matrix" values="
-                        0 0 0 0 0
-                        0 0 0 0 0
-                        0 0 1 0 0
-                        0 0 0 1 0" />
-                </filter>
-            </svg>
-        `;
-        document.body.insertAdjacentHTML('beforeend', svgHTML);
-    }
-
-    /**
-     * Physically duplicates the Phaser canvas into two new canvases that are offset/blurred with CSS
-     */
-    setupCanvasClones(wrapper) {
-        this.injectSVGFilters();
-
-        const mainCanvas = this.game.canvas;
-        if (!mainCanvas) return;
-
-        const redCanvas = document.createElement('canvas');
-        redCanvas.id = 'ca-clone-red';
-        redCanvas.className = 'cinematic-canvas-clone ca-red';
-        redCanvas.width = mainCanvas.width;
-        redCanvas.height = mainCanvas.height;
-
-        const blueCanvas = document.createElement('canvas');
-        blueCanvas.id = 'ca-clone-blue';
-        blueCanvas.className = 'cinematic-canvas-clone ca-blue';
-        blueCanvas.width = mainCanvas.width;
-        blueCanvas.height = mainCanvas.height;
-
-        wrapper.appendChild(redCanvas);
-        wrapper.appendChild(blueCanvas);
-
-        const redCtx = redCanvas.getContext('2d');
-        const blueCtx = blueCanvas.getContext('2d');
-
-        // Stop any existing sync loop if we re-init
-        if (window._caSyncLoopId) {
-            cancelAnimationFrame(window._caSyncLoopId);
-        }
-
-        // Remove existing clones if scene restarts
-        const existingRed = document.getElementById('ca-clone-red');
-        if (existingRed) existingRed.remove();
-        const existingBlue = document.getElementById('ca-clone-blue');
-        if (existingBlue) existingBlue.remove();
-
-        const syncLoop = () => {
-            // Re-check width/height in case of resize
-            if (redCanvas.width !== mainCanvas.width) {
-                redCanvas.width = mainCanvas.width;
-                redCanvas.height = mainCanvas.height;
-                blueCanvas.width = mainCanvas.width;
-                blueCanvas.height = mainCanvas.height;
-            }
-
-            // Draw current game frame
-            redCtx.clearRect(0, 0, redCanvas.width, redCanvas.height);
-            redCtx.drawImage(mainCanvas, 0, 0);
-
-            blueCtx.clearRect(0, 0, blueCanvas.width, blueCanvas.height);
-            blueCtx.drawImage(mainCanvas, 0, 0);
-
-            window._caSyncLoopId = requestAnimationFrame(syncLoop);
-        };
-        syncLoop();
     }
 }

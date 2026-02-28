@@ -2184,33 +2184,22 @@ body {
     mask-image: radial-gradient(circle, transparent 50%, black 95%);
 }
 
-/*
-  Physical Canvas Clones for true CSS-based Chromatic Aberration
-  This duplicates the rendered frame, applies an SVG color matrix, and shifts/blurs the edges.
-*/
-.cinematic-canvas-clone {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
+.rgb-red-shift {
+    backdrop-filter: blur(15px) brightness(1.05) saturate(1.2);
+    -webkit-backdrop-filter: blur(15px) brightness(1.05) saturate(1.2);
     mix-blend-mode: screen;
-    z-index: 10001;
-    /* Only apply at the edges */
-    -webkit-mask-image: radial-gradient(circle, transparent 30%, black 85%);
-    mask-image: radial-gradient(circle, transparent 30%, black 85%);
-    opacity: 0.75;
+    background-color: rgba(255, 30, 30, 0.02);
+    transform: translate(8px, 4px) translateZ(0);
+    /* Hardware Accelerated */
 }
 
-.ca-red {
-    transform: translate(4px, 2px) scale(1.005);
-    filter: url(#ca-red-extract) blur(2px);
-}
-
-.ca-blue {
-    transform: translate(-4px, -2px) scale(1.005);
-    filter: url(#ca-blue-extract) blur(2px);
+.rgb-blue-shift {
+    backdrop-filter: blur(15px) contrast(1.05) saturate(1.2);
+    -webkit-backdrop-filter: blur(15px) contrast(1.05) saturate(1.2);
+    mix-blend-mode: screen;
+    background-color: rgba(30, 30, 255, 0.02);
+    transform: translate(-8px, -4px) translateZ(0);
+    /* Hardware Accelerated */
 }
 
 .fake-vignette-overlay {
