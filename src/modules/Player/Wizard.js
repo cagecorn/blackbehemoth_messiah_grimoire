@@ -56,8 +56,8 @@ export default class Wizard extends Mercenary {
         applyRangedAI(this, skillNode);
     }
 
-    update() {
-        super.update();
+    update(time, delta) {
+        super.update(time, delta);
 
         // Check for Perk: Teleport
         if (this.activatedPerks.includes('teleport')) {

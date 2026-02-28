@@ -110,12 +110,12 @@ export default class Babao extends Mercenary {
         super.die();
     }
 
-    update() {
+    update(time, delta) {
         if (this.isSpinning) {
             // Ultimate logic handles movement/spin visuals
             // but we might want to block regular AI here
             return;
         }
-        super.update();
+        super.update(time, delta);
     }
 }

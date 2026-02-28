@@ -34,13 +34,13 @@ export default class Nana extends Bard {
         return this.specialSkill.getCooldownProgress(this.scene.time.now, this.castSpd);
     }
 
-    update() {
+    update(time, delta) {
         if (this.isBerserk) {
-            super.update(); // Calls Bard.update -> Mercenary.update
+            super.update(time, delta); // Calls Bard.update -> Mercenary.update
             this.handleBerserkVisuals();
             return;
         }
-        super.update();
+        super.update(time, delta);
 
         // Special skill auto-cast (Normal mode only)
         if (!this.isAirborne && !this.isStunned && !this.isKnockedBack && !this.isBerserk) {

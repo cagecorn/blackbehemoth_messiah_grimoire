@@ -52,8 +52,8 @@ export default class Siren extends Mercenary {
         applyRangedAI(this);
     }
 
-    update() {
-        super.update();
+    update(time, delta) {
+        super.update(time, delta);
         if (this.hp > 0) {
             this.findNearestEnemy();
         }

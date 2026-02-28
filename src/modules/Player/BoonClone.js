@@ -76,4 +76,8 @@ export default class BoonClone extends Mercenary {
         }
         super.die();
     }
+
+    update(time, delta) {
+        super.update(time, delta);
+    }
 }

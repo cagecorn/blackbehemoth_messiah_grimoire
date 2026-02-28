@@ -62,8 +62,8 @@ export default class Healer extends Mercenary {
         );
     }
 
-    update() {
-        super.update();
+    update(time, delta) {
+        super.update(time, delta);
 
         // Auto-cast Mass Heal when off cooldown
         if (!this.isAirborne && !this.isStunned && !this.isKnockedBack && this.skill) {

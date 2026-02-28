@@ -90,4 +90,8 @@ export default class GuardianAngel extends Mercenary {
         }
         super.die();
     }
+
+    update(time, delta) {
+        super.update(time, delta);
+    }
 }

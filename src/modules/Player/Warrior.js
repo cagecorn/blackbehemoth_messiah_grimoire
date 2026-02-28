@@ -110,8 +110,8 @@ export default class Warrior extends Mercenary {
         }
     }
 
-    update() {
-        super.update();
+    update(time, delta) {
+        super.update(time, delta);
 
         // Handle Manual Movement Override
         let isMovingManually = false;

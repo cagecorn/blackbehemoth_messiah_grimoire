@@ -82,8 +82,8 @@ export default class Archer extends Mercenary {
         applyRangedAI(this);
     }
 
-    update() {
-        super.update();
+    update(time, delta) {
+        super.update(time, delta);
 
         // Auto-cast Skill when Aggressive
         if (this.blackboard && this.blackboard.get('ai_state') === 'AGGRESSIVE') {

@@ -127,8 +127,8 @@ export default class Bard extends Mercenary {
         return true;
     }
 
-    update() {
-        super.update();
+    update(time, delta) {
+        super.update(time, delta);
 
         // Auto-cast Song of Protection when off cooldown
         if (!this.isAirborne && !this.isStunned && !this.isKnockedBack && this.skill) {
