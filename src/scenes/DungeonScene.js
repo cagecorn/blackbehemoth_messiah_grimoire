@@ -294,7 +294,7 @@ export default class DungeonScene extends Phaser.Scene {
             // We no longer trigger hardcoded debug swaps here
         });
 
-        // --- 'Fake Aesthetic'        this.setupEntities();
+        // --- 'Fake Aesthetic'
 
         // ── 날씨 시스템 초기화 ────────────────────────────────
         this.weatherManager = new WeatherManager(this);
@@ -303,7 +303,7 @@ export default class DungeonScene extends Phaser.Scene {
         //    this.weatherManager.setWeather('rain', { fadeDuration: 3000 });
         // });
 
-        console.log('[Visuals] Fake Aesthetic (Zero-Shader) Overlays Initialized. 🚀🎬');
+        this.setupFakeAestheticOverlays();
 
         EventBus.on(EventBus.EVENTS.DEBUG_SWAP_CHARACTER, this.handleDebugSwap, this);
     }
@@ -671,10 +671,73 @@ export default class DungeonScene extends Phaser.Scene {
     }
 
     /**
-     * Setup cinematic filters using hardware-accelerated CSS backdrop-filters.
-     * This provides "real" silk-like blur and atmospheric lighting with zero performance cost.
+     * Setup cinematic filters using hardware-accelerated dual cameras.
+     * This provides a "real" silk-like blur and atmospheric lighting with much lower performance cost than PostFX.
      */
     setupFakeAestheticOverlays() {
-        console.log('[Dungeon] Game logic initialized. Global filters inherited.');
+        // Remove the expensive PostFX TiltShift
+        if (this.cameras.main.postFX) {
+            this.cameras.main.postFX.clear();
+        }
+
+        // ==========================================
+        // DUAL CAMERA DEPTH OF FIELD (Aesthetic 2.5D)
+        // ==========================================
+        // 1. We keep the Main Camera (Sharp, Foreground)
+        // 2. We add a Background Camera (Blurred, rendered behind)
+
+        // Only create it once
+        if (this.cameras.getCamera('bgCamera')) return;
+
+        // Create the background camera exactly matching the main camera
+        const bgCamera = this.cameras.add(0, 0, this.scale.width, this.scale.height, false, 'bgCamera');
+
+        // Phaser 3 Cameras don't use setDepth.
+        // We must reposition it so bgCamera renders first (behind main camera)
+        this.cameras.cameras.splice(this.cameras.cameras.indexOf(bgCamera), 1);
+        this.cameras.cameras.unshift(bgCamera);
+
+        // Make the main camera transparent so we can see the background camera behind it
+        this.cameras.main.setBackgroundColor('rgba(0,0,0,0)');
+
+        // The background camera renders the actual dark background
+        bgCamera.setBackgroundColor('#2d2d2d');
+
+        // Apply a simple, cheap Blur to the background camera
+        // This makes everything rendered by this camera look out of focus
+        if (bgCamera.postFX) {
+            bgCamera.postFX.addBlur(2, 0, 1, 1, 0xffffff); // low-cost blur
+        }
+
+        // --- CAMERA CULLING (The Magic) ---
+        // Main Camera: Renders ONLY Units, Foreground objects, and UI. Ignores the ground/tiles.
+        // Background Camera: Renders ONLY the ground/tiles. Ignores units.
+
+        if (this.stageManager && this.stageManager.groundLayer) {
+            // Main camera ignores the background
+            this.cameras.main.ignore(this.stageManager.groundLayer);
+            if (this.stageManager.shadowLayer) this.cameras.main.ignore(this.stageManager.shadowLayer);
+        }
+
+        if (this.mercenaries && this.enemies) {
+            // Background camera ignores all the units (so they don't get blurred)
+            bgCamera.ignore(this.mercenaries.getChildren());
+            bgCamera.ignore(this.enemies.getChildren());
+            if (this.player) bgCamera.ignore(this.player);
+
+            // Re-apply ignore rules when new units spawn
+            this.events.on('unit-spawned', (unit) => {
+                bgCamera.ignore(unit);
+            });
+        }
+
+        // Sync the background camera to always look exactly where the main camera looks
+        this.events.on('postupdate', () => {
+            bgCamera.scrollX = this.cameras.main.scrollX;
+            bgCamera.scrollY = this.cameras.main.scrollY;
+            bgCamera.zoom = this.cameras.main.zoom;
+        });
+
+        console.log('[디버그] Dual-Camera 파이프라인 활성화 (배경 렌즈 블러 적용 완료)');
     }
 }

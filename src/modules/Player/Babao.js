@@ -117,5 +117,6 @@ export default class Babao extends Mercenary {
             return;
         }
         super.update(time, delta);
+        if (!this.active || !this.scene) return;
     }
 }

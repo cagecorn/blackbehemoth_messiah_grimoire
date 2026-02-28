@@ -1038,6 +1038,8 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             this.btManager.step();
         }
 
+        if (!this.active || !this.scene) return;
+
         this.updateBars();
         this.updateVisualOrientation();
     }

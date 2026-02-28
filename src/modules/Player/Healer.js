@@ -43,7 +43,7 @@ export default class Healer extends Mercenary {
     }
 
     getSkillProgress() {
-        if (!this.skill) return 0;
+        if (!this.skill || !this.scene || !this.scene.time) return 0;
         return this.skill.getCooldownProgress(this.scene.time.now, this.castSpd);
     }
 
@@ -64,6 +64,7 @@ export default class Healer extends Mercenary {
 
     update(time, delta) {
         super.update(time, delta);
+        if (!this.active || !this.scene) return;
 
         // Auto-cast Mass Heal when off cooldown
         if (!this.isAirborne && !this.isStunned && !this.isKnockedBack && this.skill) {

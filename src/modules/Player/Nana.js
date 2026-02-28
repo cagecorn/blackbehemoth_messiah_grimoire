@@ -36,11 +36,13 @@ export default class Nana extends Bard {
 
     update(time, delta) {
         if (this.isBerserk) {
-            super.update(time, delta); // Calls Bard.update -> Mercenary.update
+            super.update(time, delta);
+        if (!this.active || !this.scene) return; // Calls Bard.update -> Mercenary.update
             this.handleBerserkVisuals();
             return;
         }
         super.update(time, delta);
+        if (!this.active || !this.scene) return;
 
         // Special skill auto-cast (Normal mode only)
         if (!this.isAirborne && !this.isStunned && !this.isKnockedBack && !this.isBerserk) {

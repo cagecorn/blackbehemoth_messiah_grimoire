@@ -54,6 +54,7 @@ export default class Siren extends Mercenary {
 
     update(time, delta) {
         super.update(time, delta);
+        if (!this.active || !this.scene) return;
         if (this.hp > 0) {
             this.findNearestEnemy();
         }
