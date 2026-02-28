@@ -5,6 +5,7 @@ import DungeonScene from './scenes/DungeonScene.js';
 import TerritoryScene from './scenes/TerritoryScene.js';
 import ArenaScene from './scenes/ArenaScene.js';
 import RaidScene from './scenes/RaidScene.js';
+import GachaScene from './scenes/GachaScene.js';
 import UIManager from './modules/UI/UIManager.js';
 import logManager from './modules/UI/LogManager.js';
 import globalBlackboard from './modules/Events/GlobalBlackboard.js';
@@ -35,7 +36,7 @@ const config = {
     },
     parent: 'game-container',
     backgroundColor: '#000000',
-    scene: [BootScene, TerritoryScene, DungeonScene, ArenaScene, RaidScene],
+    scene: [BootScene, TerritoryScene, DungeonScene, ArenaScene, RaidScene, GachaScene],
     physics: {
         default: 'arcade',
         arcade: {

@@ -3,6 +3,8 @@
  * Centralized state management for all mercenaries.
  * Tracks level, exp, hp, and equipment across scenes.
  */
+import DBManager from '../Database/DBManager.js';
+
 class PartyManager {
     constructor() {
         this.mercenaryStates = {}; // Map of characterId -> state object (runtime stats)
@@ -11,10 +13,21 @@ class PartyManager {
         this.CHARM_GRID_SIZE = 9;
     }
 
-    init(allCharacters) {
+    async init(allCharacters) {
         console.log('[PartyManager] Initialized');
         // Roster starts with the 10 available characters
         this.roster = allCharacters || [];
+        this.playerRoster = await DBManager.getMercenaryRoster();
+    }
+
+    async reloadRoster() {
+        this.playerRoster = await DBManager.getMercenaryRoster();
+    }
+
+    getHighestStar(charId) {
+        if (!this.playerRoster || !this.playerRoster[charId]) return 1;
+        const stars = Object.keys(this.playerRoster[charId]).map(Number);
+        return stars.length > 0 ? Math.max(...stars) : 1;
     }
 
     setPartySlot(index, characterId) {

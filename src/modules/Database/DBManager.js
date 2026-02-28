@@ -1,7 +1,7 @@
 import { openDB } from 'idb';
 
 const DB_NAME = 'IsacRPG_DB';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 export default class DBManager {
     static async initDB() {
@@ -26,6 +26,10 @@ export default class DBManager {
                 // Global game settings
                 if (!db.objectStoreNames.contains('settings')) {
                     db.createObjectStore('settings', { keyPath: 'id' });
+                }
+                // Mercenary roster for Gacha System
+                if (!db.objectStoreNames.contains('mercenary_roster')) {
+                    db.createObjectStore('mercenary_roster', { keyPath: 'charId' });
                 }
             },
         });
@@ -73,5 +77,29 @@ export default class DBManager {
     static async save(storeName, id, data) {
         if (!this.db) await this.initDB();
         await this.db.put(storeName, { id, ...data });
+    }
+
+    // --- Mercenary Roster Operations ---
+    static async getMercenaryRoster() {
+        if (!this.db) await this.initDB();
+        try {
+            const all = await this.db.getAll('mercenary_roster');
+            // Convert list to simple lookup Object: { "aren": {"1": 2, "2": 1}, "nickle": {"2": 1} }
+            const roster = {};
+            all.forEach(item => { roster[item.charId] = item.stars; });
+            return roster;
+        } catch (err) {
+            console.error('[DBManager] getMercenaryRoster error', err);
+            return {};
+        }
+    }
+
+    static async saveMercenaryRoster(rosterObj) {
+        if (!this.db) await this.initDB();
+        const tx = this.db.transaction('mercenary_roster', 'readwrite');
+        for (const [charId, stars] of Object.entries(rosterObj)) {
+            tx.store.put({ charId, stars });
+        }
+        await tx.done;
     }
 }

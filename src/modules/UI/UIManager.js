@@ -425,6 +425,10 @@ export default class UIManager {
                     console.warn('[UIManager] Error finding character config:', e);
                 }
 
+                // Add star level UI
+                const starLevel = partyManager.getHighestStar(merc.characterId);
+                const starHtml = starLevel > 0 ? `<span style="color:#fbbf24; font-size:10px; margin-left:4px; text-shadow:0 1px 2px #000;">★${starLevel}</span>` : '';
+
                 const HP_SEGMENTS = 10;
                 let segmentsHtml = '';
                 for (let i = 0; i < HP_SEGMENTS; i++) {
@@ -438,7 +442,7 @@ export default class UIManager {
                         <img src="assets/characters/party/${charConfig.sprite}.png" alt="${merc.unitName}">
                     </div>
                     <div class="portrait-info">
-                        <div class="portrait-name-chip">${merc.unitName || merc.name || '???'}</div>
+                        <div class="portrait-name-chip">${merc.unitName || merc.name || '???'}${starHtml}</div>
                         <div class="portrait-hp-bar">${segmentsHtml}</div>
                         <div class="portrait-ult-bar"><div class="portrait-ult-fill"></div></div>
                         <div class="portrait-ult-label">ULT 0%</div>

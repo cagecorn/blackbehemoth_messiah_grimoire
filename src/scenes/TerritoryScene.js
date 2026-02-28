@@ -58,7 +58,7 @@ export default class TerritoryScene extends Phaser.Scene {
 
         const buttons = [
             // Row 1
-            { id: 'gacha', icon: 'gacha_icon.png', label: '용병 뽑기', action: () => alert('용병 뽑기는 아직 준비중입니다! (미구현)') },
+            { id: 'gacha', icon: 'gacha_icon.png', label: '용병 뽑기', action: () => handleSceneChange('GachaScene') },
             { id: 'party', icon: 'party_management_icon.png', label: '파티 편성', action: () => this.showPartySelection() },
             null,
             // Row 2
@@ -152,8 +152,11 @@ export default class TerritoryScene extends Phaser.Scene {
 
         let candidatesHtml = '';
         Object.values(Characters).forEach(char => {
+            const star = partyManager.getHighestStar(char.id);
+            const starHtml = star > 0 ? `<div style="position:absolute; top:4px; right:4px; font-size:12px; font-weight:bold; color:#fbbf24; text-shadow:0 1px 2px #000;">★${star}</div>` : '';
             candidatesHtml += `
-                <div class="mercenary-card" draggable="true" data-id="${char.id}">
+                <div class="mercenary-card" draggable="true" data-id="${char.id}" style="position:relative;">
+                    ${starHtml}
                     <img src="assets/characters/party/${char.sprite}.png" alt="${char.name}">
                     <div class="merc-name">${char.name.split(' (')[0]}</div>
                 </div>
@@ -190,7 +193,13 @@ export default class TerritoryScene extends Phaser.Scene {
             const slotEl = slotEls[index];
             if (charId) {
                 const char = Object.values(Characters).find(c => c.id === charId);
-                slotEl.innerHTML = `<img src="assets/characters/party/${char.sprite}.png" alt="${char.name}">`;
+                const star = partyManager.getHighestStar(charId);
+                const starHtml = star > 0 ? `<div style="position:absolute; bottom:2px; right:4px; font-size:14px; font-weight:bold; color:#fbbf24; text-shadow:0 1px 2px #000; z-index:10;">★${star}</div>` : '';
+                slotEl.style.position = 'relative';
+                slotEl.innerHTML = `
+                    ${starHtml}
+                    <img src="assets/characters/party/${char.sprite}.png" alt="${char.name}">
+                `;
                 slotEl.classList.add('filled');
             } else {
                 slotEl.innerHTML = `${index + 1} `;

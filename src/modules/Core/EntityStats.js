@@ -891,21 +891,40 @@ export function scaleStats(config, level) {
         ...config
     };
 
+    const newConfig = { ...base };
+
+    // Star scaling: Each star above 1 adds a cumulative 50% multiplier to base stats
+    const starLevel = config.star || 1;
+    const starMultiplier = Math.pow(1.5, starLevel - 1);
+
     if (level <= 1) {
-        return { ...base, level: 1, hp: base.maxHp };
+        newConfig.maxHp = Math.floor(base.maxHp * starMultiplier);
+        newConfig.hp = newConfig.maxHp;
+        newConfig.atk = Math.floor((base.atk || 0) * starMultiplier);
+        newConfig.mAtk = Math.floor((base.mAtk || 0) * starMultiplier);
+        newConfig.def = Math.floor((base.def || 0) * starMultiplier);
+        newConfig.mDef = Math.floor((base.mDef || 0) * starMultiplier);
+        newConfig.level = 1;
+        return newConfig;
     }
 
-    // Strictly linear additive scaling for predictable testing
-    const newConfig = { ...base };
     newConfig.level = level;
 
+    // Apply level scaling first
     const levelFactor = level - 1;
-    newConfig.maxHp = base.maxHp + (levelFactor * 30);
+    const scaledMaxHp = base.maxHp + (levelFactor * 30);
+    const scaledAtk = base.atk + (levelFactor * 3);
+    const scaledMAtk = (base.mAtk || 0) + (levelFactor * 3);
+    const scaledDef = base.def + (levelFactor * 2);
+    const scaledMDef = (base.mDef || 0) + (levelFactor * 2);
+
+    // Then apply star multiplier
+    newConfig.maxHp = Math.floor(scaledMaxHp * starMultiplier);
     newConfig.hp = newConfig.maxHp;
-    newConfig.atk = base.atk + (levelFactor * 3);
-    newConfig.mAtk = (base.mAtk || 0) + (levelFactor * 3);
-    newConfig.def = base.def + (levelFactor * 2);
-    newConfig.mDef = (base.mDef || 0) + (levelFactor * 2);
+    newConfig.atk = Math.floor(scaledAtk * starMultiplier);
+    newConfig.mAtk = Math.floor(scaledMAtk * starMultiplier);
+    newConfig.def = Math.floor(scaledDef * starMultiplier);
+    newConfig.mDef = Math.floor(scaledMDef * starMultiplier);
 
     return newConfig;
 }
