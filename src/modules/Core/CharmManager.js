@@ -1,3 +1,5 @@
+import SoundEffects from './SoundEffects.js';
+
 /**
  * CharmManager.js
  * 
@@ -20,6 +22,7 @@ export const CHARM_DATABASE = {
             const healAmount = Math.floor(unit.maxHp * 0.02);
             if (healAmount > 0) {
                 unit.heal(healAmount);
+                SoundEffects.playBbyorongSound();
                 console.log(`[Charm] ${unit.unitName} healed ${healAmount} by 🍔`);
             }
         },
@@ -43,6 +46,7 @@ export const CHARM_DATABASE = {
             // 시각 효과 재생
             if (unit.scene.fxManager && unit.scene.fxManager.showElementalNovaEffect) {
                 unit.scene.fxManager.showElementalNovaEffect(unit, 'fire');
+                SoundEffects.playPapatSound();
             }
 
             // AOE 데미지 트리거 (반경 150, 불 속성)
@@ -76,6 +80,7 @@ export const CHARM_DATABASE = {
 
             if (unit.scene.fxManager && unit.scene.fxManager.showElementalNovaEffect) {
                 unit.scene.fxManager.showElementalNovaEffect(unit, 'lightning');
+                SoundEffects.playPapatSound();
             }
 
             unit.scene.aoeManager.triggerAoe(unit.x, unit.y, 150, damage, unit, unit.targetGroup, baseMAtk >= baseAtk, false, 'lightning');
@@ -98,6 +103,7 @@ export const CHARM_DATABASE = {
 
             if (unit.scene.fxManager && unit.scene.fxManager.showElementalNovaEffect) {
                 unit.scene.fxManager.showElementalNovaEffect(unit, 'ice');
+                SoundEffects.playPapatSound();
             }
 
             unit.scene.aoeManager.triggerAoe(unit.x, unit.y, 150, damage, unit, unit.targetGroup, baseMAtk >= baseAtk, false, 'ice');
