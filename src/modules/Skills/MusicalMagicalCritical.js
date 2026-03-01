@@ -133,6 +133,9 @@ export default class MusicalMagicalCritical {
         // Circular ripple to show area
         const circle = scene.add.circle(x, y, this.radius, 0xff88ff, 0.15);
         circle.setDepth(x - 1);
+        if (circle.setPreFX) {
+            circle.setPreFX().addBlur(2);
+        }
         scene.tweens.add({
             targets: circle,
             scale: 1.1,
