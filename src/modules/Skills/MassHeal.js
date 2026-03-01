@@ -100,6 +100,9 @@ export default class MassHeal {
 
         // Giant screen-wide central flash (optional, just centered on the caster)
         const flash = caster.scene.add.circle(caster.x, caster.y, 10, 0x55ff55, 0.8);
+        if (flash.postFX) {
+            flash.postFX.addBlur(4, 2, 1);
+        }
         caster.scene.tweens.add({
             targets: flash,
             scale: 50,

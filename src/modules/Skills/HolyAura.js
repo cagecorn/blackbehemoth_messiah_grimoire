@@ -81,6 +81,11 @@ export default class HolyAura {
 
         auraGraphic.setDepth(caster.depth - 1); // Behind the caster
 
+        // Apply blur to soften the concentric circles into a smooth glow
+        if (auraGraphic.postFX) {
+            auraGraphic.postFX.addBlur(2, 2, 2);
+        }
+
         // Pulsing animation for a "breathing" aura effect
         this.scene.tweens.add({
             targets: auraGraphic,

@@ -42,6 +42,9 @@ export default class ImSorry {
 
         // Darken screen slightly locally around Silvi
         const aura = scene.add.circle(caster.x, caster.y, 250, 0x000000, 0.3).setDepth(caster.depth - 1);
+        if (aura.postFX) {
+            aura.postFX.addBlur(8, 2, 2);
+        }
 
         // 2. Jumping and Emoji Scattering Sequence
 

@@ -947,32 +947,42 @@ export default class UIManager {
     handleItemClick(itemId) {
         if (this.tooltipEl) this.tooltipEl.style.display = 'none'; // Kill legacy tooltip
 
+        let autoEquipped = false;
         // If we have a pending Grimoire slot, try to equip immediately on click
         if (this.pendingGrimoireSlot) {
-            const success = this.executeEquip(itemId);
-            if (success) {
-                // If equipped successfully to a pending slot, we don't necessarily need to show the detail panel
-                // unless we want to confirm. Let's skip it to prevent double-triggering.
-                return;
-            }
+            // pass allowFallback = false to only equip to the SPECIFIC slot
+            autoEquipped = this.executeEquip(itemId, false);
         }
 
-        this.showItemDetail(itemId);
+        this.showItemDetail(itemId, autoEquipped);
     }
 
-    showItemDetail(itemId) {
+    showItemDetail(itemId, isAlreadyEquipped = false) {
         const item = ItemManager.getItem(itemId);
         const charm = CharmManager.getCharm(itemId);
 
         // Prioritize charm data because it's richer for charms (it has description)
         const targetItem = charm || item;
 
-        console.log(`[UIManager] showItemDetail: itemId=${itemId}`, { hasItem: !!item, hasCharm: !!charm });
+        console.log(`[UIManager] showItemDetail: itemId=${itemId}, autoEquip=${isAlreadyEquipped}`, { hasItem: !!item, hasCharm: !!charm });
 
         if (!targetItem || !this.detailPanel) return;
 
         this.selectedItemId = itemId;
         if (this.detailName) this.detailName.textContent = targetItem.name;
+
+        // Reset Equip Button State
+        if (this.btnEquipItem) {
+            if (isAlreadyEquipped) {
+                this.btnEquipItem.innerText = '장착됨';
+                this.btnEquipItem.style.opacity = '0.5';
+                this.btnEquipItem.style.pointerEvents = 'none'; // Disable click
+            } else {
+                this.btnEquipItem.innerText = '장착';
+                this.btnEquipItem.style.opacity = '1';
+                this.btnEquipItem.style.pointerEvents = 'auto';
+            }
+        }
 
         // Map type enum to user-friendly label
         let typeLabel = 'ITEM';
@@ -994,16 +1004,13 @@ export default class UIManager {
         this.detailPanel.style.display = 'flex';
     }
 
-    executeEquip(itemId) {
+    executeEquip(itemId, allowFallback = true) {
         const item = ItemManager.getItem(itemId);
         const charm = CharmManager.getCharm(itemId);
 
-        console.log(`[UIManager] executeEquip: itemId=${itemId}, isItem=${!!item}, isCharm=${!!charm}`);
+        console.log(`[UIManager] executeEquip: itemId=${itemId}, allowFallback=${allowFallback}`);
 
         // Find the appropriate target channel
-        // 1. Current detail view (mercenary info is open)
-        // 2. Focused channel (last interacted)
-        // 3. Fallback to first bound channel
         const targetChannel = this.detailChannel || this.channels.find(c => c.active) || this.channels.find(c => c.boundUnitId);
 
         if (!targetChannel || !targetChannel.linkedUnitId) {
@@ -1011,10 +1018,7 @@ export default class UIManager {
             return false;
         }
 
-        console.log(`[UIManager] executeEquip SUCCESS: Targeting ${targetChannel.name} (${targetChannel.linkedUnitId})`);
-
         if (item && item.type === 'equipment') {
-            console.log(`[UIManager] Equipping gear: ${itemId}`);
             EventBus.emit(EventBus.EVENTS.EQUIP_REQUEST, {
                 unitId: targetChannel.linkedUnitId,
                 itemId: itemId
@@ -1035,7 +1039,7 @@ export default class UIManager {
                     this.pendingGrimoireSlot.element.classList.remove('grim-slot-pending');
                 }
                 this.pendingGrimoireSlot = null;
-            } else {
+            } else if (allowFallback) {
                 // 2. Fallback: Find first empty slot based on type
                 if (item && item.type === 'node_charm') {
                     chapter = 'TACTICAL';

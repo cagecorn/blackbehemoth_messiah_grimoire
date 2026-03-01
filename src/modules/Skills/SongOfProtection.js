@@ -103,6 +103,9 @@ export default class SongOfProtection {
 
         // Giant screen-wide central flash (optional, just centered on the caster)
         const flash = caster.scene.add.circle(caster.x, caster.y, 10, 0xffff00, 0.6);
+        if (flash.postFX) {
+            flash.postFX.addBlur(4, 2, 1);
+        }
         caster.scene.tweens.add({
             targets: flash,
             scale: 60,
