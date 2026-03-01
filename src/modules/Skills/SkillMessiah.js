@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import SoundEffects from '../Core/SoundEffects.js';
 
 /**
  * SkillMessiah.js
@@ -98,6 +99,9 @@ export default class SkillMessiah {
     onImpact(scene, caster, x, y) {
         // Camera Shake
         scene.cameras.main.shake(300, 0.015);
+
+        // Mobile Vibration
+        SoundEffects.vibrate(100);
 
         // Visuals: Shockwave
         const shockwave = scene.add.circle(x, y, 10, 0xffffff, 0.8);

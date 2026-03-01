@@ -135,6 +135,7 @@ export default class FatesString {
             // Stagger the lines
             scene.time.delayedCall(i * 150, () => {
                 soundEffects.playWhipSound();
+                soundEffects.vibrate(50);
                 this.createTrajectoryLine(scene, startX, startY, endX, endY, 400);
                 this.applyLineDamage(scene, caster, startX, startY, endX, endY);
                 scene.cameras.main.shake(100, 0.005);

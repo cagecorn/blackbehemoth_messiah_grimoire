@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import GachaManager from '../modules/Core/GachaManager.js';
 import DBManager from '../modules/Database/DBManager.js';
 import EventBus from '../modules/Events/EventBus.js';
+import SoundEffects from '../modules/Core/SoundEffects.js';
 
 export default class GachaScene extends Phaser.Scene {
     constructor() {
@@ -150,6 +151,9 @@ export default class GachaScene extends Phaser.Scene {
 
         // Update gem display
         await this.updateGemsDisplay();
+
+        // Start Sound Effect
+        SoundEffects.playGachaSound();
 
         // Start Animation Phase
         await this.playGachaAnimation(result.pulled, result.mergeResults);

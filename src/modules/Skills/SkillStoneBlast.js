@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import SoundEffects from '../Core/SoundEffects.js';
 import { Action, Condition, Sequence } from '../AI/BehaviorTreeManager.js';
 import EventBus from '../Events/EventBus.js';
 
@@ -97,6 +98,8 @@ export default class SkillStoneBlast {
 
     detonate(scene, caster, x, y, damage) {
         if (!scene || !scene.scene || !scene.scene.isActive()) return;
+
+        SoundEffects.playStoneImpactSound();
 
         // Shockwave Visual
         const shockwave = scene.add.circle(x, y, 10, 0xaaaaaa, 0.5);

@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import SoundEffects from '../Core/SoundEffects.js';
 
 /**
  * SkillGoBabao.js
@@ -21,6 +22,7 @@ export default class SkillGoBabao {
 
         // 1. Play Cutscene
         await scene.ultimateManager.playCutscene(caster, this.name);
+        SoundEffects.playPpabamSound();
 
         console.log(`[Ultimate] ${caster.unitName}: GO BABAO! SPIN FOR YOUR BROTHER!`);
 

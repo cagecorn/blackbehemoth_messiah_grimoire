@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import SoundEffects from '../Core/SoundEffects.js';
 
 /**
  * ImSorry.js
@@ -61,6 +62,7 @@ export default class ImSorry {
         });
 
         // Scattering loop
+        let tick = 0;
         const scatterEvent = scene.time.addEvent({
             delay: 150,
             repeat: Math.floor(this.duration / 150),
@@ -72,6 +74,13 @@ export default class ImSorry {
                 this.spawnEmojis(scene, caster);
                 aura.setPosition(caster.x, caster.y);
                 scene.cameras.main.shake(100, 0.003);
+
+                // Sound and Vibration on "landing" (every 2nd tick of 150ms = 300ms)
+                tick++;
+                if (tick % 2 === 0) {
+                    SoundEffects.playSylvieSorrySound();
+                    SoundEffects.vibrate(80);
+                }
             }
         });
 

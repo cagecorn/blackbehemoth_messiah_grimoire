@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import SoundEffects from '../Core/SoundEffects.js';
 import EventBus from '../Events/EventBus.js';
 
 /**
@@ -19,6 +20,7 @@ export default class SkillIceStorm {
         // Show Cutscene if possible
         if (scene.ultimateManager) {
             await scene.ultimateManager.playCutscene(caster, this.name);
+            SoundEffects.playWindSound();
         } else {
             EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, `[궁극기] ${caster.unitName}: 아이스 스톰! 🌨️`);
         }

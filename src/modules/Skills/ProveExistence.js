@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import BoonClone from '../Player/BoonClone.js';
+import SoundEffects from '../Core/SoundEffects.js';
 
 /**
  * ProveExistence.js
@@ -34,10 +35,12 @@ export default class ProveExistence {
 
         if (!isCloneActive) {
             // --- SUMMON MODE ---
+            SoundEffects.playProveExistenceSound();
             await scene.ultimateManager.playCutscene(caster, this.name);
             this.summonClone();
         } else {
             // --- SMITE MODE ---
+            SoundEffects.playProveExistenceSound();
             // Maybe a smaller cutscene or just the text/fx for Smite?
             // User requested "Smite instead", let's do a quick text/flash.
             console.log("[ProveExistence] Clone active, executing Smite!");
@@ -110,6 +113,10 @@ export default class ProveExistence {
     }
 
     smiteImpact(x, y) {
+        // Sound and Vibration
+        SoundEffects.playSmiteSound();
+        SoundEffects.vibrate(100);
+
         // Visual: Blast circle
         const circle = this.scene.add.circle(x, y, 10, 0xffffff, 0.8)
             .setDepth(3001);

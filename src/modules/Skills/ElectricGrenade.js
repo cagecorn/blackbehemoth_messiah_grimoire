@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import SoundEffects from '../Core/SoundEffects.js';
 
 /**
  * ElectricGrenade.js
@@ -96,6 +97,8 @@ export default class ElectricGrenade {
         // Use correct Phaser 3 API to check scene activity
         if (!scene || !scene.scene || !scene.scene.isActive()) return;
         if (!caster || !caster.active) return;
+
+        SoundEffects.playJijigSound();
 
         console.log(`[Grenade] Exploding at (${Math.round(x)}, ${Math.round(y)}) from caster ${caster.unitName}`);
 

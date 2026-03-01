@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import SoundEffects from '../Core/SoundEffects.js';
 
 export default class CarpetBombing {
     constructor(caster) {
@@ -47,6 +48,7 @@ export default class CarpetBombing {
             const dropY = targetY;
 
             this.scene.time.delayedCall(200 + i * 150, () => {
+                SoundEffects.playByungSound();
                 this.dropBomb(dropX, dropY, targetGroup);
             });
         }
@@ -150,6 +152,7 @@ export default class CarpetBombing {
 
         // Camera Shake (Small per bomb)
         this.scene.cameras.main.shake(200, 0.005);
+        SoundEffects.vibrate(150);
 
         // Damage & Status Application
         if (this.scene.aoeManager) {

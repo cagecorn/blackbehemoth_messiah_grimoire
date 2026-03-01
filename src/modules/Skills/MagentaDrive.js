@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import SoundEffects from '../Core/SoundEffects.js';
 
 /**
  * MagentaDrive.js
@@ -63,6 +64,10 @@ export default class MagentaDrive {
         // 4. Visuals: Red Beam Splitting the Screen & Blood
         // Run AT THE SAME TIME as the dash
         this.createVisuals(scene, startX, slashY, targetX, slashY, directionX);
+
+        // Sound & Vibration
+        SoundEffects.playMagentaDriveSound();
+        SoundEffects.vibrate(100);
 
         await new Promise(resolve => {
             const timer = scene.time.addEvent({

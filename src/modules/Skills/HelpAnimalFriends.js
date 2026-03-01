@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import SoundEffects from '../Core/SoundEffects.js';
 import TrackingEmoji from '../Combat/TrackingEmoji.js';
 
 export default class HelpAnimalFriends {
@@ -37,19 +38,23 @@ export default class HelpAnimalFriends {
         this.lastCastTime = now;
 
         console.log(`[Skill] ${caster.unitName} uses Help! Animal Friends!`);
+        SoundEffects.playCuteTtanTadanSound();
 
         const count = Phaser.Math.Between(3, 5);
         for (let i = 0; i < count; i++) {
-            const animal = Phaser.Utils.Array.GetRandom(this.animalPool);
-            const targetGroup = animal.type === 'ally' ? caster.allyGroup : caster.targetGroup;
-            if (!targetGroup || !targetGroup.getChildren) continue;
+            caster.scene.time.delayedCall(i * 100, () => {
+                SoundEffects.playTtorureukSound();
+                const animal = Phaser.Utils.Array.GetRandom(this.animalPool);
+                const targetGroup = animal.type === 'ally' ? caster.allyGroup : caster.targetGroup;
+                if (!targetGroup || !targetGroup.getChildren) return;
 
-            const children = targetGroup.getChildren().filter(c => c.active && c.hp > 0);
-            if (children.length === 0) continue;
+                const children = targetGroup.getChildren().filter(c => c.active && c.hp > 0);
+                if (children.length === 0) return;
 
-            const target = Phaser.Utils.Array.GetRandom(children);
+                const target = Phaser.Utils.Array.GetRandom(children);
 
-            new TrackingEmoji(caster.scene, caster.x, caster.y, animal.texture, target, this.getEffect(animal.texture), caster);
+                new TrackingEmoji(caster.scene, caster.x, caster.y, animal.texture, target, this.getEffect(animal.texture), caster);
+            });
         }
 
         if (caster.sprite) {

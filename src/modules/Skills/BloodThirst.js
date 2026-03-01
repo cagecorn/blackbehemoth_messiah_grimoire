@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import SoundEffects from '../Core/SoundEffects.js';
 
 /**
  * BloodThirst.js
@@ -27,6 +28,7 @@ export default class BloodThirst {
 
         // 1. Play dramatic cutscene
         await scene.ultimateManager.playCutscene(caster, this.name);
+        SoundEffects.playSpookyJjijingSound();
 
         // 2. Start Transformation
         caster.enterBerserk(this.duration);

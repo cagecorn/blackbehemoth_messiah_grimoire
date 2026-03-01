@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import SoundEffects from '../Core/SoundEffects.js';
 
 /**
  * TacticalCommand.js
@@ -60,6 +61,8 @@ export default class TacticalCommand {
 
         console.log(`[Skill] 📢 Tactical Command activated by ${caster.unitName}!`);
         console.log(`[Skill] 📢 Buffing ${caster.unitName} and ${targetAlly.unitName} for ${this.duration}ms.`);
+
+        SoundEffects.playJajajanSound();
 
         // Apply Buff
         this.applyBuffToTarget(caster);

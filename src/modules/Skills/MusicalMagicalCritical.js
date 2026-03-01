@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import SoundEffects from '../Core/SoundEffects.js';
 
 /**
  * MusicalMagicalCritical.js
@@ -95,6 +96,7 @@ export default class MusicalMagicalCritical {
     }
 
     playVisuals(scene, x, y) {
+        SoundEffects.playByongSound();
         const emojis = ['emoji_note', 'emoji_star', 'emoji_heart'];
         const count = 15;
 

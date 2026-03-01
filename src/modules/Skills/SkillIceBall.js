@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import SoundEffects from '../Core/SoundEffects.js';
 import { Action, Condition, Sequence } from '../AI/BehaviorTreeManager.js';
 import EventBus from '../Events/EventBus.js';
 
@@ -134,6 +135,7 @@ export default class SkillIceBall {
     }
 
     playShatterEffect(scene, x, y, scale = 1) {
+        SoundEffects.playIceShatterSound();
         const emitter = scene.add.particles(x, y, 'emoji_snowball', {
             speed: { min: 50, max: 200 },
             scale: { start: 0.4 * scale, end: 0 },

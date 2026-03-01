@@ -201,6 +201,7 @@ export default class Bard extends Mercenary {
         // Cyan Ripple/Column
         const ripple = this.scene.add.circle(x, y, 10, 0x00ffff, 0.4);
         ripple.setDepth(25000);
+        if (ripple.postFX) ripple.postFX.addBlur(2);
 
         this.scene.tweens.add({
             targets: ripple,
