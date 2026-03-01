@@ -35,14 +35,20 @@ export default function applyProtectAI(agent, allyGroupGetter, enemyGroupGetter)
             const className = ally.className || (ally.config ? ally.config.id : '');
             const pIdx = priorities.indexOf(className);
 
-            if (pIdx > highestPriorityIdx) {
-                highestPriorityIdx = pIdx;
-                bestTarget = ally;
+            if (pIdx !== -1) {
+                // Lower index = Higher priority
+                if (highestPriorityIdx === -1 || pIdx < highestPriorityIdx) {
+                    highestPriorityIdx = pIdx;
+                    bestTarget = ally;
+                }
             }
         }
 
         if (bestTarget) {
-            bb.set('protect_target', bestTarget);
+            if (bb.get('protect_target') !== bestTarget) {
+                bb.set('protect_target', bestTarget);
+                console.log(`[ProtectAI] ${a.unitName} is now protecting ${bestTarget.unitName} (Class: ${bestTarget.className || bestTarget.config?.id})`);
+            }
             return true;
         }
         return false;

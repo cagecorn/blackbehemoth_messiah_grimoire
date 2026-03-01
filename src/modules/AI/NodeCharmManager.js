@@ -133,9 +133,12 @@ export default class NodeCharmManager {
                 const className = ally.className || (ally.config ? ally.config.id : '');
                 const pIdx = priorities.indexOf(className);
 
-                if (pIdx > highestPriorityIdx) {
-                    highestPriorityIdx = pIdx;
-                    bestTarget = ally;
+                if (pIdx !== -1) {
+                    // Lower index = Higher priority (0: healer, 1: shaman, etc.)
+                    if (highestPriorityIdx === -1 || pIdx < highestPriorityIdx) {
+                        highestPriorityIdx = pIdx;
+                        bestTarget = ally;
+                    }
                 }
             }
 
@@ -155,6 +158,11 @@ export default class NodeCharmManager {
             const lowestHpAlly = bestTarget;
 
             if (!lowestHpAlly) return 2; // Failed, no one to guard
+
+            if (bb.get('protect_target') !== lowestHpAlly) {
+                bb.set('protect_target', lowestHpAlly);
+                console.log(`[Bodyguard] ${a.unitName} is now guarding ${lowestHpAlly.unitName} (Class: ${lowestHpAlly.className || lowestHpAlly.config?.id})`);
+            }
 
             // 1. Check if we need to move to the ally
             const distToAlly = Phaser.Math.Distance.Between(a.x, a.y, lowestHpAlly.x, lowestHpAlly.y);
