@@ -1074,11 +1074,6 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         // --- Charm Effects ---
         this.updateCharmEffects(delta);
 
-        // Burn DOT: 2% Max HP per second
-        if (this.isBurning && this.hp > 0) {
-            this.takeDamage(this.maxHp * 0.02 * (delta / 1000), 'burn_dot', false, 'fire');
-        }
-
         if (this.isAirborne || this.isStunned || this.isAsleep) {
             // Can't act while CC'd. Keep velocity at 0
             if (this.body && !this.isKnockedBack) {

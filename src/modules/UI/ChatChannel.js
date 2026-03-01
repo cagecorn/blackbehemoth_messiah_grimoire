@@ -773,7 +773,7 @@ export default class ChatChannel {
             slot.addEventListener('click', () => {
                 if (this.uiManager) {
                     // Clear any previous pending highlights
-                    const allSlots = document.querySelectorAll('.grimoire-slot');
+                    const allSlots = document.querySelectorAll('.grim-slot');
                     allSlots.forEach(s => s.classList.remove('grim-slot-pending'));
 
                     // Mark this slot as pending for equip

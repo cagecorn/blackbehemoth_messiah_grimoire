@@ -946,12 +946,18 @@ export default class UIManager {
 
     handleItemClick(itemId) {
         if (this.tooltipEl) this.tooltipEl.style.display = 'none'; // Kill legacy tooltip
-        this.showItemDetail(itemId);
 
         // If we have a pending Grimoire slot, try to equip immediately on click
         if (this.pendingGrimoireSlot) {
-            this.executeEquip(itemId);
+            const success = this.executeEquip(itemId);
+            if (success) {
+                // If equipped successfully to a pending slot, we don't necessarily need to show the detail panel
+                // unless we want to confirm. Let's skip it to prevent double-triggering.
+                return;
+            }
         }
+
+        this.showItemDetail(itemId);
     }
 
     showItemDetail(itemId) {
@@ -1001,13 +1007,8 @@ export default class UIManager {
         const targetChannel = this.detailChannel || this.channels.find(c => c.active) || this.channels.find(c => c.boundUnitId);
 
         if (!targetChannel || !targetChannel.linkedUnitId) {
-            console.error('[UIManager] executeEquip FAILED: No target character found.', {
-                detailChannel: !!this.detailChannel,
-                anyActive: !!this.channels.find(c => c.active),
-                anyBound: !!this.channels.find(c => c.boundUnitId),
-                channels: this.channels.map(c => ({ id: c.id, unit: c.linkedUnitId }))
-            });
-            return;
+            console.error('[UIManager] executeEquip FAILED: No target character found.');
+            return false;
         }
 
         console.log(`[UIManager] executeEquip SUCCESS: Targeting ${targetChannel.name} (${targetChannel.linkedUnitId})`);
@@ -1018,6 +1019,7 @@ export default class UIManager {
                 unitId: targetChannel.linkedUnitId,
                 itemId: itemId
             });
+            return true;
         } else {
             // It's a charm/node click!
             let chapter = null;
@@ -1064,11 +1066,10 @@ export default class UIManager {
                 if (window.soundEffects && window.soundEffects.playEquipSound) {
                     window.soundEffects.playEquipSound();
                 }
+                return true;
             } else {
                 console.warn('[UIManager] No available slot found for equip request.', { itemId, chapter, index });
-                if (this.scene && this.scene.fxManager) {
-                    // Show "No Slot" feedback maybe?
-                }
+                return false;
             }
         }
     }
