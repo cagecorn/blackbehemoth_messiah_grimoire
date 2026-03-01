@@ -191,6 +191,7 @@ export default class BootScene extends Phaser.Scene {
         this.load.image('bg_gacha', 'assets/background/gacha_background.png');
         this.load.image('bg_cursed_forest', 'assets/background/battle-stage-cursed-forest.png');
         this.load.image('bg_arena', 'assets/background/battle-stage-arena.png');
+        this.load.image('bg_raid', 'assets/background/battle_stage_raid.png');
 
         // Load UI/Icon assets
         this.load.image('logo_icon', 'assets/icon/logo_icon.png');

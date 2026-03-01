@@ -22,6 +22,10 @@ import BarkManager from '../modules/AI/BarkManager.js';
 import { Characters } from '../modules/Core/EntityStats.js';
 import EventBus from '../modules/Events/EventBus.js';
 import partyManager from '../modules/Core/PartyManager.js';
+import StageManager from '../modules/Environment/StageManager.js';
+import { StageConfigs } from '../modules/Core/EntityStats.js';
+import AmbientMoteManager from '../modules/Environment/AmbientMoteManager.js';
+import DynamicCameraManager from '../modules/Core/DynamicCameraManager.js';
 
 export default class RaidScene extends Phaser.Scene {
     constructor() {
@@ -41,21 +45,22 @@ export default class RaidScene extends Phaser.Scene {
         console.log('RaidScene started');
         EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, `[레이드] 레이드가 시작되었습니다! 원정대 출격! 🏰`);
 
-        // Background (Reuse Cursed Forest for Raid)
-        const bgCenterX = this.cameras.main.width / 2;
-        const bgCenterY = this.cameras.main.height / 2;
-        const bg = this.add.image(bgCenterX, bgCenterY, 'bg_cursed_forest').setOrigin(0.5, 0.5);
-        const scaleX = this.cameras.main.width / bg.width;
-        const scaleY = this.cameras.main.height / bg.height;
-        const scale = Math.max(scaleX, scaleY) * 1.2; // Extra scale to allow for camera movement room
-        bg.setScale(scale);
+        // Fixed Raid Dimensions (matching background asset 1536x1024)
+        const worldWidth = 1536;
+        const worldHeight = 1024;
+
+        // Stage visual rendering
+        this.stageManager = new StageManager(this, StageConfigs.RAID);
+        this.stageManager.buildStage(worldWidth, worldHeight);
+
 
         // Physics Groups
         this.mercenaries = this.physics.add.group();
         this.enemies = this.physics.add.group(); // Boss will be added here
 
-        // World Bounds
-        this.physics.world.setBounds(0, 0, this.cameras.main.width, this.cameras.main.height);
+        // ★ Set fixed world & camera bounds
+        this.cameras.main.setBounds(0, 0, worldWidth, worldHeight);
+        this.physics.world.setBounds(0, 0, worldWidth, worldHeight);
 
         // Initialize Managers
         this.fxManager = new FXManager(this);
@@ -106,11 +111,22 @@ export default class RaidScene extends Phaser.Scene {
         this.physics.add.overlap(this.mercenaries, this.enemies, (u1, u2) => {
             SeparationManager.applyRepulsion(u1, u2, 80); // Stronger repulsion for boss
         });
+
+        // ── 환경 부유 먼지 (3레이어 Parallax) ──
+        this.ambientMoteManager = new AmbientMoteManager(this);
+        console.log('[Raid] Dust Bokeh (AmbientMoteManager) initialized.');
+
+        // Cleanup on scene shutdown
+        this.events.once('shutdown', () => {
+            if (this.ambientMoteManager) this.ambientMoteManager.destroy();
+            console.log('[RaidScene] Cleaned up AmbientMotes.');
+        });
     }
 
     spawnPlayers() {
         this.isStarting = true; // Block update until players are spawned
-        const centerY = this.cameras.main.height / 2;
+        const worldHeight = 1024;
+        const centerY = worldHeight / 2;
         const activeParty = partyManager.getActiveParty();
 
         let playerLeader = null;
@@ -154,7 +170,11 @@ export default class RaidScene extends Phaser.Scene {
 
         // Initialize Camera Target (follows centroid of party)
         this.cameraTarget = this.add.container(150, centerY);
-        this.cameras.main.startFollow(this.cameraTarget, true, 0.1, 0.1);
+
+        // Initialize Dynamic Camera Manager
+        this.dynamicCamera = new DynamicCameraManager(this, this.cameras.main);
+        this.dynamicCamera.setTarget(this.cameraTarget);
+        console.log('[Raid] Dynamic Shake Camera (DynamicCameraManager) initialized.');
 
         // Trigger UI binding
         EventBus.emit(EventBus.EVENTS.PARTY_DEPLOYED, {
@@ -164,11 +184,13 @@ export default class RaidScene extends Phaser.Scene {
     }
 
     spawnBoss() {
-        const centerX = this.cameras.main.width / 2;
-        const centerY = this.cameras.main.height / 2;
+        const worldWidth = 1536;
+        const worldHeight = 1024;
+        const centerX = worldWidth / 2;
+        const centerY = worldHeight / 2;
 
         // Boss spawns on the right
-        const bossX = this.cameras.main.width - 250;
+        const bossX = worldWidth - 250;
         const bossY = centerY;
 
         const playerLeader = this.mercenaries.getChildren().find(u => u.className === 'warrior');
@@ -195,24 +217,52 @@ export default class RaidScene extends Phaser.Scene {
         if (this.shieldManager) this.shieldManager.update(time, delta);
         if (this.barkManager) this.barkManager.update(time, delta);
 
-        const margin = 50;
-        const width = this.cameras.main.width;
-        const height = this.cameras.main.height;
+        const HUD_MARGIN = 80;
+        const SIDE_MARGIN = 40;
+        const worldWidth = 1536;
+        const worldHeight = 1024;
 
         this.mercenaries.getChildren().forEach(u => {
             u.update();
             u.setDepth(u.y);
-            u.x = Phaser.Math.Clamp(u.x, margin, width - margin);
-            u.y = Phaser.Math.Clamp(u.y, margin, height - margin);
+
+            // Strict Boundary Clamping
+            u.x = Phaser.Math.Clamp(u.x, (u.body?.radius || 20) + SIDE_MARGIN, worldWidth - (u.body?.radius || 20) - SIDE_MARGIN);
+            u.y = Phaser.Math.Clamp(u.y, (u.body?.radius || 20) + SIDE_MARGIN, worldHeight - (u.body?.radius || 20) - HUD_MARGIN);
+
+            // ── Idle Bob 자동 제어 (에어본 글리치 방지) ──
+            if (u.body && u.startIdleBob) {
+                const isMoving = u.body.speed > 5;
+                const isBlocked = u.isAirborne || u.isKnockedBack || u.hp <= 0;
+
+                if ((isMoving || isBlocked) && u._idleBobTween) {
+                    u.stopIdleBob(false);
+                } else if (!isMoving && !isBlocked && !u._idleBobTween) {
+                    u.startIdleBob();
+                }
+            }
         });
 
         if (this.boss && this.boss.active) {
             this.boss.update();
             this.boss.setDepth(this.boss.y);
-            // Allow boss a bit more room due to large size
-            const bossMargin = 100;
-            this.boss.x = Phaser.Math.Clamp(this.boss.x, bossMargin, width - bossMargin);
-            this.boss.y = Phaser.Math.Clamp(this.boss.y, bossMargin, height - bossMargin);
+
+            // Strict Boundary Clamping (factoring in larger boss size)
+            const bossRadius = this.boss.body?.radius || 40;
+            this.boss.x = Phaser.Math.Clamp(this.boss.x, bossRadius + SIDE_MARGIN, worldWidth - bossRadius - SIDE_MARGIN);
+            this.boss.y = Phaser.Math.Clamp(this.boss.y, bossRadius + SIDE_MARGIN, worldHeight - bossRadius - HUD_MARGIN);
+
+            // ── Idle Bob 자동 제어 (보스 유닛도 동일하게 체크할 수 있음) ──
+            if (this.boss.body && this.boss.startIdleBob) {
+                const isMoving = this.boss.body.speed > 5;
+                const isBlocked = this.boss.isAirborne || this.boss.isKnockedBack || this.boss.hp <= 0;
+
+                if ((isMoving || isBlocked) && this.boss._idleBobTween) {
+                    this.boss.stopIdleBob(false);
+                } else if (!isMoving && !isBlocked && !this.boss._idleBobTween) {
+                    this.boss.startIdleBob();
+                }
+            }
         } else if (!this.isRespawning && this.mercenaries.countActive(true) > 0) {
             this.handleBossDefeated();
         }
@@ -223,6 +273,18 @@ export default class RaidScene extends Phaser.Scene {
         }
 
         this.updateCameraFollow();
+
+        if (this.stageManager) {
+            this.stageManager.update(time, delta);
+        }
+
+        if (this.ambientMoteManager) {
+            this.ambientMoteManager.update();
+        }
+
+        if (this.dynamicCamera) {
+            this.dynamicCamera.update(time, delta);
+        }
     }
 
     updateCameraFollow() {

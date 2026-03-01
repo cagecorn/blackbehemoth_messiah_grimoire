@@ -43,11 +43,20 @@ export default class SeparationManager {
             const nudgeX = Math.cos(angle) * overlap * 0.5;
             const nudgeY = Math.sin(angle) * overlap * 0.5;
 
-            unitA.x += nudgeX;
-            unitA.y += nudgeY;
+            // Get world bounds for constraints
+            const bounds = unitA.scene.physics.world.bounds;
+            const radiusA = unitA.body.radius || 20;
+            const radiusB = unitB.body.radius || 20;
+            const HUD_MARGIN = 80;
+            const SIDE_MARGIN = 40;
 
-            unitB.x -= nudgeX;
-            unitB.y -= nudgeY;
+            // Strict Clamped nudge application for Unit A
+            unitA.x = Phaser.Math.Clamp(unitA.x + nudgeX, radiusA + SIDE_MARGIN, bounds.width - radiusA - SIDE_MARGIN);
+            unitA.y = Phaser.Math.Clamp(unitA.y + nudgeY, radiusA + SIDE_MARGIN, bounds.height - radiusA - HUD_MARGIN);
+
+            // Strict Clamped nudge application for Unit B
+            unitB.x = Phaser.Math.Clamp(unitB.x - nudgeX, radiusB + SIDE_MARGIN, bounds.width - radiusB - SIDE_MARGIN);
+            unitB.y = Phaser.Math.Clamp(unitB.y - nudgeY, radiusB + SIDE_MARGIN, bounds.height - radiusB - HUD_MARGIN);
         }
     }
 }

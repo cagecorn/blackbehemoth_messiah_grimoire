@@ -129,14 +129,25 @@ export default class DungeonScene extends Phaser.Scene {
         this.dungeonManager.generateDungeon();
 
         // Stage visual rendering
-        const worldSize = 80 * 32; // Increased for higher resolution
+        // Background base 1536x1024 * 1.5 = 2304x1536
+        const worldWidth = this.dungeonManager.dungeonInstance.width * 32;
+        const worldHeight = this.dungeonManager.dungeonInstance.height * 32;
         this.stageManager = new StageManager(this, StageConfigs.CURSED_FOREST);
-        this.stageManager.buildStage(worldSize, worldSize);
+        this.stageManager.buildStage(worldWidth, worldHeight);
 
         // ★ Set world & camera bounds BEFORE spawning units
-        // so that setCollideWorldBounds(true) in constructors uses the correct dungeon size.
-        this.cameras.main.setBounds(0, 0, worldSize, worldSize);
-        this.physics.world.setBounds(0, 0, worldSize, worldSize);
+        this.cameras.main.setBounds(0, 0, worldWidth, worldHeight);
+        this.physics.world.setBounds(0, 0, worldWidth, worldHeight);
+
+        console.log(`[Dungeon] World Size Scaled to 1.5x: ${worldWidth}x${worldHeight}`);
+
+        // --- Global Debug helper for user ---
+        window.showWorldBounds = () => {
+            console.log(`World Bounds: 0..${worldWidth}, 0..${worldHeight}`);
+            console.log(`Camera Bounds: ${this.cameras.main._bounds.x}..${this.cameras.main._bounds.width}`);
+            const bg = this.children.list.find(c => c.texture && c.texture.key.includes('bg'));
+            if (bg) console.log(`BG: Pos(${bg.x},${bg.y}), Size(${bg.displayWidth},${bg.displayHeight})`);
+        };
 
         // Physics Groups (Initialize early for Managers)
         this.mercenaries = this.physics.add.group();
@@ -297,6 +308,12 @@ export default class DungeonScene extends Phaser.Scene {
             SeparationManager.applyRepulsion(u1, u2, 60); // Stronger repulsion for enemies
         });
 
+        // 3. Wall Collisions
+        if (this.dungeonManager && this.dungeonManager.renderer && this.dungeonManager.renderer.wallLayer) {
+            this.physics.add.collider(this.mercenaries, this.dungeonManager.renderer.wallLayer);
+            this.physics.add.collider(this.enemies, this.dungeonManager.renderer.wallLayer);
+        }
+
         // Sync UI with initial character names after a short delay to ensure UI is ready
         this.time.delayedCall(500, () => {
             // We no longer trigger hardcoded debug swaps here
@@ -433,6 +450,17 @@ export default class DungeonScene extends Phaser.Scene {
                         mercenary.startIdleBob();
                     }
                 }
+
+                // --- NEW: Strict Boundary Clamping (Anti-Bypass Safety) ---
+                if (mercenary.body && mercenary.body.collideWorldBounds) {
+                    const radius = mercenary.body.radius || 20;
+                    const bounds = this.physics.world.bounds;
+                    const HUD_MARGIN = 80; // Bottom HUD height (tightened from 160)
+                    const SIDE_MARGIN = 40; // Extra safety so they don't touch the pixel edge
+
+                    mercenary.x = Phaser.Math.Clamp(mercenary.x, radius + SIDE_MARGIN, bounds.width - radius - SIDE_MARGIN);
+                    mercenary.y = Phaser.Math.Clamp(mercenary.y, radius + SIDE_MARGIN, bounds.height - radius - HUD_MARGIN);
+                }
             });
         }
 
@@ -451,6 +479,17 @@ export default class DungeonScene extends Phaser.Scene {
                     } else if (!isMoving && !isBlocked && !enemy._idleBobTween) {
                         enemy.startIdleBob();
                     }
+                }
+
+                // --- NEW: Strict Boundary Clamping (Anti-Bypass Safety) ---
+                if (enemy.body && enemy.body.collideWorldBounds) {
+                    const radius = enemy.body.radius || 20;
+                    const bounds = this.physics.world.bounds;
+                    const HUD_MARGIN = 80;
+                    const SIDE_MARGIN = 40;
+
+                    enemy.x = Phaser.Math.Clamp(enemy.x, radius + SIDE_MARGIN, bounds.width - radius - SIDE_MARGIN);
+                    enemy.y = Phaser.Math.Clamp(enemy.y, radius + SIDE_MARGIN, bounds.height - radius - HUD_MARGIN);
                 }
             });
         }

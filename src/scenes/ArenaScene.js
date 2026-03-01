@@ -20,6 +20,10 @@ import BarkManager from '../modules/AI/BarkManager.js';
 import { Characters } from '../modules/Core/EntityStats.js';
 import partyManager from '../modules/Core/PartyManager.js';
 import EventBus from '../modules/Events/EventBus.js';
+import StageManager from '../modules/Environment/StageManager.js';
+import { StageConfigs } from '../modules/Core/EntityStats.js';
+import AmbientMoteManager from '../modules/Environment/AmbientMoteManager.js';
+import DynamicCameraManager from '../modules/Core/DynamicCameraManager.js';
 
 export default class ArenaScene extends Phaser.Scene {
     constructor() {
@@ -47,20 +51,22 @@ export default class ArenaScene extends Phaser.Scene {
     create() {
         console.log('ArenaScene started');
 
-        // Background
-        const centerX = this.cameras.main.width / 2;
-        const centerY = this.cameras.main.height / 2;
-        const bg = this.add.image(centerX, centerY, 'bg_arena').setOrigin(0.5, 0.5);
-        const scaleX = this.cameras.main.width / bg.width;
-        const scaleY = this.cameras.main.height / bg.height;
-        const scale = Math.max(scaleX, scaleY) * 1.2; // Extra scale to allow for camera movement room
-        bg.setScale(scale);
+        // Fixed Arena Dimensions (matching background asset 1536x1024)
+        const worldWidth = 1536;
+        const worldHeight = 1024;
+
+        // Stage visual rendering
+        this.stageManager = new StageManager(this, StageConfigs.ARENA);
+        this.stageManager.buildStage(worldWidth, worldHeight);
+
 
         // Physics Groups
         this.mercenaries = this.physics.add.group();
         this.enemies = this.physics.add.group();
 
-        this.physics.world.setBounds(0, 0, this.cameras.main.width, this.cameras.main.height);
+        // ★ Set fixed world & camera bounds
+        this.cameras.main.setBounds(0, 0, worldWidth, worldHeight);
+        this.physics.world.setBounds(0, 0, worldWidth, worldHeight);
 
         // Initialize Managers
         this.fxManager = new FXManager(this);
@@ -110,6 +116,17 @@ export default class ArenaScene extends Phaser.Scene {
 
         EventBus.on(EventBus.EVENTS.DEBUG_SWAP_CHARACTER, this.handleDebugSwap, this);
 
+        // ── 환경 부유 먼지 (3레이어 Parallax) ──
+        this.ambientMoteManager = new AmbientMoteManager(this);
+        console.log('[Arena] Dust Bokeh (AmbientMoteManager) initialized.');
+
+        // Cleanup on scene shutdown
+        this.events.once('shutdown', () => {
+            EventBus.off(EventBus.EVENTS.DEBUG_SWAP_CHARACTER, this.handleDebugSwap, this);
+            if (this.ambientMoteManager) this.ambientMoteManager.destroy();
+            console.log('[ArenaScene] Cleaned up AmbientMotes.');
+        });
+
         // Start battle immediately with PartyManager data
         this.startNewBattle();
     }
@@ -124,8 +141,8 @@ export default class ArenaScene extends Phaser.Scene {
             this.projectileManager.projectiles.clear(true, true);
         }
 
-        const centerX = this.cameras.main.width / 2;
-        const centerY = this.cameras.main.height / 2;
+        const centerX = 1536 / 2;
+        const centerY = 1024 / 2;
 
         // 1. Spawn Selected Player Party from PartyManager
         const activeParty = partyManager.getActiveParty();
@@ -176,7 +193,11 @@ export default class ArenaScene extends Phaser.Scene {
 
         // Initialize Camera Target (follows centroid of party)
         this.cameraTarget = this.add.container(centerX, centerY);
-        this.cameras.main.startFollow(this.cameraTarget, true, 0.1, 0.1);
+
+        // Initialize Dynamic Camera Manager
+        this.dynamicCamera = new DynamicCameraManager(this, this.cameras.main);
+        this.dynamicCamera.setTarget(this.cameraTarget);
+        console.log('[Arena] Dynamic Shake Camera (DynamicCameraManager) initialized.');
 
         // Trigger UI binding for the deployed mercenaries
         EventBus.emit(EventBus.EVENTS.PARTY_DEPLOYED, {
@@ -257,27 +278,65 @@ export default class ArenaScene extends Phaser.Scene {
         if (this.shieldManager) this.shieldManager.update(time, delta);
         if (this.barkManager) this.barkManager.update(time, delta);
 
-        const margin = 40;
-        const width = this.cameras.main.width;
-        const height = this.cameras.main.height;
+        const HUD_MARGIN = 80;
+        const SIDE_MARGIN = 40;
+        const worldWidth = 1536;
+        const worldHeight = 1024;
 
         this.mercenaries.getChildren().forEach(u => {
             u.update();
-            u.setDepth(u.y); // 발밑 그림자 및 레이어링 해결
+            u.setDepth(u.y);
 
-            // 맵 밖으로 나가지 않도록 강제 클램핑 (SeparationManager 등의 Nudge 방지)
-            u.x = Phaser.Math.Clamp(u.x, margin, width - margin);
-            u.y = Phaser.Math.Clamp(u.y, margin, height - margin);
+            // Strict Boundary Clamping (Anti-Bypass Safety)
+            u.x = Phaser.Math.Clamp(u.x, (u.body?.radius || 20) + SIDE_MARGIN, worldWidth - (u.body?.radius || 20) - SIDE_MARGIN);
+            u.y = Phaser.Math.Clamp(u.y, (u.body?.radius || 20) + SIDE_MARGIN, worldHeight - (u.body?.radius || 20) - HUD_MARGIN);
+
+            // ── Idle Bob 자동 제어 (에어본 글리치 방지) ──
+            if (u.body && u.startIdleBob) {
+                const isMoving = u.body.speed > 5;
+                const isBlocked = u.isAirborne || u.isKnockedBack || u.hp <= 0;
+
+                if ((isMoving || isBlocked) && u._idleBobTween) {
+                    u.stopIdleBob(false);
+                } else if (!isMoving && !isBlocked && !u._idleBobTween) {
+                    u.startIdleBob();
+                }
+            }
         });
         this.enemies.getChildren().forEach(u => {
             u.update();
-            u.setDepth(u.y); // 발밑 그림자 및 레이어링 해결
+            u.setDepth(u.y);
 
-            // 맵 밖으로 나가지 않도록 강제 클램핑
-            u.y = Phaser.Math.Clamp(u.y, margin, height - margin);
+            // Strict Boundary Clamping
+            u.x = Phaser.Math.Clamp(u.x, (u.body?.radius || 20) + SIDE_MARGIN, worldWidth - (u.body?.radius || 20) - SIDE_MARGIN);
+            u.y = Phaser.Math.Clamp(u.y, (u.body?.radius || 20) + SIDE_MARGIN, worldHeight - (u.body?.radius || 20) - HUD_MARGIN);
+
+            // ── Idle Bob 자동 제어 (적 유닛도 동일) ──
+            if (u.body && u.startIdleBob) {
+                const isMoving = u.body.speed > 5;
+                const isBlocked = u.isAirborne || u.isKnockedBack || u.hp <= 0;
+
+                if ((isMoving || isBlocked) && u._idleBobTween) {
+                    u.stopIdleBob(false);
+                } else if (!isMoving && !isBlocked && !u._idleBobTween) {
+                    u.startIdleBob();
+                }
+            }
         });
 
         this.updateCameraFollow();
+
+        if (this.stageManager) {
+            this.stageManager.update(time, delta);
+        }
+
+        if (this.ambientMoteManager) {
+            this.ambientMoteManager.update();
+        }
+
+        if (this.dynamicCamera) {
+            this.dynamicCamera.update(time, delta);
+        }
 
         // Check for victory/defeat
         const playersAlive = this.mercenaries.countActive(true);

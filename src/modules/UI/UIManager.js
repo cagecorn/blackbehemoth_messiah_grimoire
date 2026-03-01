@@ -948,12 +948,15 @@ export default class UIManager {
         if (this.tooltipEl) this.tooltipEl.style.display = 'none'; // Kill legacy tooltip
 
         let autoEquipped = false;
-        // If we have a pending Grimoire slot, try to equip immediately on click
-        if (this.pendingGrimoireSlot) {
-            // pass allowFallback = false to only equip to the SPECIFIC slot
+
+        // --- Improved UX: Two-Click System ---
+        // 1. If we have a pending Grimoire slot AND this item is ALREADY selected (second click)
+        if (this.pendingGrimoireSlot && this.selectedItemId === itemId) {
+            // This is the second click on the same item, proceed with equip
             autoEquipped = this.executeEquip(itemId, false);
         }
 
+        // 2. Otherwise, just show the detail panel (first click or switching items)
         this.showItemDetail(itemId, autoEquipped);
     }
 
