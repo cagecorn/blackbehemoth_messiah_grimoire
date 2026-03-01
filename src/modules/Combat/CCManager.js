@@ -266,6 +266,7 @@ export default class CCManager {
         if (target.isBurning) {
             if (target._burnCleanupTimer) target._burnCleanupTimer.remove();
             if (target._burnEmitter) target._burnEmitter.destroy();
+            if (target._burnInterval) target._burnInterval.remove(); // BUG FIX: Clear existing DOT interval
             target.isBurning = false;
         }
 

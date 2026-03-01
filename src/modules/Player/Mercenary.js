@@ -1284,26 +1284,6 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             statuses.push(...customStatuses);
         }
 
-        // 1.2 Grimoire Class Charms (Legacy Perks)
-        // Add icons for active perks that aren't already in customStatuses
-        this.activatedPerks.forEach(perkId => {
-            const alreadyAdded = customStatuses.some(s => s.id === perkId);
-            if (!alreadyAdded) {
-                const item = ItemManager.getItem(perkId);
-                if (item) {
-                    // Only add if it's a passive style perk or we want it always visible
-                    // For now, let's add them to the buff list
-                    statuses.push({
-                        id: perkId,
-                        name: item.name,
-                        description: item.description,
-                        emoji: item.icon.replace('emoji_', ''), // Remove prefix if needed, or use as is
-                        category: 'buff'
-                    });
-                }
-            }
-        });
-
         // 2. Check Shields
         if (this.scene.shieldManager && this.scene.shieldManager.getShield(this) > 0) {
             const shieldAmt = this.scene.shieldManager.getShield(this);

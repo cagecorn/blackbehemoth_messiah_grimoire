@@ -486,11 +486,11 @@ export default class ChatChannel {
 
             const itemId = grimoire[chapterId] ? grimoire[chapterId][index] : null;
 
-            // Cache rendering to prevent flickering
-            const renderKey = `${chapterId}_${index}_${itemId}`;
-            if (this.renderedGrimoireSlots && this.renderedGrimoireSlots[renderKey]) return;
+            // Cache rendering to prevent flickering - Only return if THIS specific slot already matches this itemId
             if (!this.renderedGrimoireSlots) this.renderedGrimoireSlots = {};
-            this.renderedGrimoireSlots[renderKey] = true;
+            const slotKey = `${chapterId}_${index}`;
+            if (this.renderedGrimoireSlots[slotKey] === itemId) return;
+            this.renderedGrimoireSlots[slotKey] = itemId;
 
             slot.innerHTML = '';
             if (itemId) {

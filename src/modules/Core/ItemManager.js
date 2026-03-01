@@ -139,7 +139,7 @@ export default class ItemManager {
             'emoji_pouting_face': '1f620.svg',
             'emoji_enraged_face': '1f621.svg',
             'emoji_smiling_face_with_sunglasses': '1f60e.svg',
-            'emoji_running_shoe': '1f45f.svg',
+            'emoji_running_shoe': '1f3c3.svg',
             'emoji_bullseye': '1f3af.svg',
             'emoji_shoe': '1f45e.svg',
             'emoji_shield': '1f6e1.svg',

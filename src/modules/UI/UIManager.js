@@ -75,7 +75,7 @@ export default class UIManager {
                     channel.updateStatuses(payload.statuses);
                 }
                 if (payload.equipment) {
-                    channel.updateEquipment(payload.equipment, payload.charms, payload.nodeCharms);
+                    channel.updateEquipment(payload.equipment, payload.grimoire);
                 }
                 if (payload.stats) {
                     channel.updateStats(payload.stats);

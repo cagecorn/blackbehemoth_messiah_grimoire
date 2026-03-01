@@ -1,4 +1,5 @@
 import Phaser from 'phaser'; // Import Phaser from npm
+import DBManager from './modules/Database/DBManager.js';
 
 import BootScene from './scenes/BootScene.js';
 import DungeonScene from './scenes/DungeonScene.js';
@@ -52,6 +53,12 @@ const game = new Phaser.Game(config);
 const uiManager = new UIManager();
 uiManager.init();
 logManager.init();
+
+// Attach managers to game instance for scene access
+game.uiManager = uiManager;
+game.logManager = logManager;
+game.partyManager = partyManager;
+game.dbManager = DBManager; // If needed, but DBManager is static usually
 
 // Boot up Global Managers
 globalBlackboard.init();
