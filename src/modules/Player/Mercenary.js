@@ -1017,22 +1017,50 @@ export default class Mercenary extends Phaser.GameObjects.Container {
                 (chapter === 'CLASS') ? GrimoireManager.CHAPTERS.CLASS :
                     GrimoireManager.CHAPTERS.TRANSFORMATION;
 
+        const oldId = this.grimoire[chapterId][index];
+        if (oldId === itemId) return true; // Already equipped
+
+        // 1. Consume from inventory
+        const invItem = await DBManager.getInventoryItem(itemId);
+        if (!invItem || invItem.amount <= 0) {
+            console.warn(`[Grimoire] Not enough ${itemId} in inventory to equip.`);
+            return false;
+        }
+
+        // 2. Return old item if any
+        if (oldId) {
+            const oldInv = await DBManager.getInventoryItem(oldId);
+            await DBManager.saveInventoryItem(oldId, (oldInv ? oldInv.amount : 0) + 1);
+        }
+
+        // 3. Decrement and save
+        await DBManager.saveInventoryItem(itemId, invItem.amount - 1);
+
         this.grimoire[chapterId][index] = itemId;
 
         // Re-apply grimoire effects
         GrimoireManager.applyAll(this);
 
         if (this.syncStatusUI) this.syncStatusUI();
+        EventBus.emit('UI_REFRESH_INVENTORY');
         console.log(`[Grimoire] ${this.unitName} set ${chapter} slot ${index} to ${itemId}`);
+        return true;
     }
 
     async removeGrimoireItem(chapter, index) {
-        if (!this.grimoire) return;
+        if (!this.grimoire) return false;
 
         const chapterId = (chapter === 'ACTIVE') ? GrimoireManager.CHAPTERS.ACTIVE :
             (chapter === 'TACTICAL') ? GrimoireManager.CHAPTERS.TACTICAL :
                 (chapter === 'CLASS') ? GrimoireManager.CHAPTERS.CLASS :
                     GrimoireManager.CHAPTERS.TRANSFORMATION;
+
+        const itemId = this.grimoire[chapterId][index];
+        if (!itemId) return false;
+
+        // Return to inventory
+        const invItem = await DBManager.getInventoryItem(itemId);
+        await DBManager.saveInventoryItem(itemId, (invItem ? invItem.amount : 0) + 1);
 
         this.grimoire[chapterId][index] = null;
 
@@ -1040,7 +1068,9 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         GrimoireManager.applyAll(this);
 
         if (this.syncStatusUI) this.syncStatusUI();
+        EventBus.emit('UI_REFRESH_INVENTORY');
         console.log(`[Grimoire] ${this.unitName} removed ${chapter} slot ${index}`);
+        return true;
     }
 
     destroy(fromScene) {

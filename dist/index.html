@@ -11,32 +11,83 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="mobile-web-app-capable" content="yes">
 
-    <!-- Custom CSS for DOM Overlay -->
-  <script type="module" crossorigin src="./assets/index-CP8m22UY.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-K-jNZod0.css">
+    <!-- Retro Pixel Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+    <!-- Custom CSS for DOM Overlay -->
+  <script type="module" crossorigin src="./assets/index-BxTxMRYA.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-SSQA8PON.css">
 </head>
 
 <body>
+    <!-- Hidden SVG Filters -->
+    <svg class="hd2d-film-grain-filter" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+            <filter id="hd2d-noise" x="0%" y="0%" width="100%" height="100%" color-interpolation-filters="linearRGB">
+                <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"
+                    result="noiseOut" />
+                <feColorMatrix type="saturate" values="0" in="noiseOut" result="grayNoise" />
+                <feBlend in="SourceGraphic" in2="grayNoise" mode="overlay" result="blend" />
+                <feComposite in="blend" in2="SourceGraphic" operator="in" />
+            </filter>
+
+        </defs>
+    </svg>
+
     <div id="app-container">
         <!-- Phaser renders here (Top-Left) -->
-        <div id="game-container"></div>
+        <div id="game-container">
+            <!-- HD-2D Visual Enhancements (Octopath Traveler Style) -->
+            <div class="hd2d-fx-layer vignette"></div>
+            <div class="hd2d-fx-layer tilt-shift">
+                <div class="tilt-shift-top"></div>
+                <div class="tilt-shift-bottom"></div>
+            </div>
+            <div class="hd2d-fx-layer soft-bloom"></div>
+            <div class="hd2d-fx-layer color-grading"></div>
+            <div class="hd2d-fx-layer scanlines"></div>
+            <!-- Film Grain: SVG feTurbulence noise (Octopath signature texture) -->
+            <div class="hd2d-fx-layer film-grain"></div>
+            <!-- Chromatic Aberration: subtle RGB channel split -->
+            <div class="hd2d-fx-layer chromatic-aberration">
+                <div class="hd2d-fx-layer chromatic-r"></div>
+                <div class="hd2d-fx-layer chromatic-b"></div>
+            </div>
+        </div>
 
         <!-- Inventory Sidebar (Top-Right) -->
         <div id="sidebar-right">
-            <div class="panel-title">Inventory</div>
+            <div class="panel-title" style="display: none;">Inventory</div>
 
-            <div class="inventory-section">
-                <div class="section-title">Materials</div>
+            <div class="inventory-tabs">
+                <button class="tab-btn active" id="tab-materials">🎒 Materials</button>
+                <button class="tab-btn" id="tab-gear">⚔️ Gear</button>
+            </div>
+
+            <div id="section-materials" class="inventory-section">
+                <div class="section-title" style="display: none;">🎒 Materials</div>
                 <div id="material-list" class="inventory-grid">
                     <!-- Materials go here -->
                 </div>
             </div>
 
-            <div class="inventory-section">
-                <div class="section-title">Gear</div>
+            <div id="section-gear" class="inventory-section" style="display: none;">
+                <div class="section-title" style="display: none;">⚔️ Gear</div>
                 <div id="gear-list" class="inventory-grid">
                     <!-- Equipment goes here -->
                 </div>
+            </div>
+
+            <!-- Item Detail Panel -->
+            <div id="item-detail-panel" style="display: none;">
+                <div class="detail-header">
+                    <h3 id="detail-name">Item Name</h3>
+                    <span id="detail-type">ITEM</span>
+                </div>
+                <div class="detail-divider"></div>
+                <div id="detail-description">Item description goes here.</div>
+                <button id="btn-equip-item" class="equip-btn">장착</button>
             </div>
         </div>
 
@@ -70,7 +121,7 @@
             </div>
         </div>
     </div>
-
+
 </body>
 
 </html>

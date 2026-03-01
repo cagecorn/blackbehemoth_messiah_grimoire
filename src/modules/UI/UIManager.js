@@ -946,11 +946,14 @@ export default class UIManager {
 
     handleItemClick(itemId) {
         if (this.tooltipEl) this.tooltipEl.style.display = 'none'; // Kill legacy tooltip
-        this.showItemDetail(itemId);
 
         // If we have a pending Grimoire slot, try to equip immediately on click
         if (this.pendingGrimoireSlot) {
             this.executeEquip(itemId);
+            // Hide the inventory pop-up to avoid double-equipping or confusion
+            this.hidePopup();
+        } else {
+            this.showItemDetail(itemId);
         }
     }
 
