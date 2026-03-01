@@ -68,26 +68,34 @@ export default function applyProtectAI(agent, allyGroupGetter, enemyGroupGetter)
         const protectTarget = bb.get('protect_target');
         if (!protectTarget) return false;
 
+        // If we are too far from ally, we aren't "defending" anymore, we are "returning"
+        const distFromAlly = Phaser.Math.Distance.Between(a.x, a.y, protectTarget.x, protectTarget.y);
+        if (distFromAlly > 150) return false;
+
         const enemies = enemyGroupGetter(a);
         const children = enemies.getChildren ? enemies.getChildren() : enemies;
 
         let nearestThreat = null;
-        let minDist = 200; // Only care about enemies within 200px of target
+        let minDist = 220; // Only care about enemies within 220px of target
 
         for (const enemy of children) {
             if (!enemy.active || enemy.hp <= 0) continue;
 
             const distToAlly = Phaser.Math.Distance.Between(enemy.x, enemy.y, protectTarget.x, protectTarget.y);
-            const distToMe = Phaser.Math.Distance.Between(enemy.x, enemy.y, a.x, a.y);
 
-            if (distToAlly < minDist || distToMe < 100) {
-                minDist = Math.min(distToAlly, distToMe);
+            // REMOVED: distToMe < 100 (Prevent chasing enemies that aren't near the ally)
+            if (distToAlly < minDist) {
+                minDist = distToAlly;
                 nearestThreat = enemy;
             }
         }
 
         if (nearestThreat) {
-            bb.set('target', nearestThreat);
+            const prevTarget = bb.get('target');
+            if (prevTarget !== nearestThreat) {
+                bb.set('target', nearestThreat);
+                console.log(`[ProtectAI] ${a.unitName} detected threat to ${protectTarget.unitName}: ${nearestThreat.unitName}`);
+            }
             return true;
         }
         return false;

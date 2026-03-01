@@ -496,7 +496,7 @@ export default class DungeonScene extends Phaser.Scene {
         // Elite Settings
         const eliteChance = Math.min(0.5, 0.1 + (this.currentRound - 1) * 0.05);
         const novaCharms = ['emoji_fireworks', 'emoji_sparkler', 'emoji_koinobori'];
-        const nodeCharmsList = ['node_hater', 'node_blood', 'node_guard'];
+        const nodeCharmsList = ['emoji_pouting_face', 'emoji_enraged_face', 'emoji_smiling_face_with_sunglasses'];
 
         const applyEliteLogic = (monster) => {
             if (Math.random() < eliteChance) {
@@ -654,15 +654,15 @@ export default class DungeonScene extends Phaser.Scene {
             if (charmCount > 2) unit.charms[2] = shuffledNova[2];
 
             // Assign 1 random node charm (Gambit AI)
-            const nodeCharmsList = ['node_hater', 'node_blood', 'node_guard'];
+            const nodeCharmsList = ['emoji_pouting_face', 'emoji_enraged_face', 'emoji_smiling_face_with_sunglasses'];
             const randomNodeCharm = nodeCharmsList[Math.floor(Math.random() * nodeCharmsList.length)];
             unit.nodeCharms[0] = randomNodeCharm;
 
             // Convert node charm back to readable emoji for Log
             let nodeEmoji = 'None';
-            if (randomNodeCharm === 'node_hater') nodeEmoji = '😠 [Hater]';
-            if (randomNodeCharm === 'node_blood') nodeEmoji = '😡 [Blood Scent]';
-            if (randomNodeCharm === 'node_guard') nodeEmoji = '😎 [Bodyguard]';
+            if (randomNodeCharm === 'emoji_pouting_face') nodeEmoji = '😠 [Hater]';
+            if (randomNodeCharm === 'emoji_enraged_face') nodeEmoji = '😡 [Blood Scent]';
+            if (randomNodeCharm === 'emoji_smiling_face_with_sunglasses') nodeEmoji = '😎 [Bodyguard]';
 
             this.enemies.add(unit);
             console.log(`[Dungeon] Spawned Shadow ${config.name} (ID: ${unit.id}) with HP: ${unit.hp}/${unit.maxHp}, Node Charm: ${nodeEmoji} and novas: ${unit.charms}`);

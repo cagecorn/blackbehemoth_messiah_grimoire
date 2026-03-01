@@ -6,6 +6,7 @@ import SpeechBubble from '../UI/SpeechBubble.js';
 import partyManager from '../Core/PartyManager.js';
 import ItemManager from '../Core/ItemManager.js';
 import CharmManager from '../Core/CharmManager.js';
+import GrimoireManager from '../Core/GrimoireManager.js';
 import DBManager from '../Database/DBManager.js';
 import soundEffects from '../Core/SoundEffects.js';
 
@@ -83,7 +84,6 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         this.skill = null; // To be initialized by subclasses
 
         // Perk System
-        this.perkPoints = config.perkPoints !== undefined ? config.perkPoints : 1;
         this.activatedPerks = config.activatedPerks || []; // List of perk IDs
 
         // Ultimate System
@@ -96,9 +96,35 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             armor: null,
             accessory: null
         };
-        this.charms = config.charms || Array(9).fill(null);
+
+        // --- Grimoire System (Messiah Grimoire) ---
+        GrimoireManager.initGrimoire(this);
+        // Link legacy arrays to Grimoire chapters for backward compatibility
+        this.charms = this.grimoire[GrimoireManager.CHAPTERS.ACTIVE];
+        this.nodeCharms = this.grimoire[GrimoireManager.CHAPTERS.TACTICAL];
+        this.activatedPerks = this.grimoire[GrimoireManager.CHAPTERS.CLASS];
+
+        // If config provided old arrays, migrate them
+        if (config.charms) {
+            for (let i = 0; i < Math.min(config.charms.length, 9); i++) {
+                this.grimoire[GrimoireManager.CHAPTERS.ACTIVE][i] = config.charms[i];
+            }
+        }
+        if (config.nodeCharms) {
+            for (let i = 0; i < Math.min(config.nodeCharms.length, 3); i++) {
+                this.grimoire[GrimoireManager.CHAPTERS.TACTICAL] = config.nodeCharms;
+            }
+        }
+
+        // Apply all grimoire effects
+        GrimoireManager.applyAll(this);
+        if (config.activatedPerks) {
+            for (let i = 0; i < Math.min(config.activatedPerks.length, 6); i++) {
+                this.grimoire[GrimoireManager.CHAPTERS.CLASS][i] = config.activatedPerks[i];
+            }
+        }
+
         this.charmTimers = Array(9).fill(0); // Tick timers for periodic effects
-        this.nodeCharms = config.nodeCharms || Array(3).fill(null); // Node Charm DB (Tactical AI Slots)
 
         this.acc = config.acc || 100;
         this.eva = config.eva || 0;
@@ -115,14 +141,26 @@ export default class Mercenary extends Phaser.GameObjects.Container {
                 this.hp = savedState.hp !== undefined ? savedState.hp : this.hp;
                 this.maxHp = savedState.maxHp || this.maxHp;
                 this.def = savedState.def || this.def;
-                this.perkPoints = savedState.perkPoints !== undefined ? savedState.perkPoints : (this.perkPoints || 1);
                 this.activatedPerks = savedState.activatedPerks || this.activatedPerks || [];
                 this.equipment = savedState.equipment || this.equipment;
-                this.charms = savedState.charms || this.charms;
-                this.nodeCharms = savedState.nodeCharms || this.nodeCharms;
+                // Sync persistent Grimoire state
+                if (savedState.grimoire) {
+                    this.grimoire = savedState.grimoire;
+                    this.charms = this.grimoire[GrimoireManager.CHAPTERS.ACTIVE];
+                    this.nodeCharms = this.grimoire[GrimoireManager.CHAPTERS.TACTICAL];
+                    this.activatedPerks = this.grimoire[GrimoireManager.CHAPTERS.CLASS];
+                } else {
+                    // Fallback migration for old saves
+                    if (savedState.charms) this.grimoire[GrimoireManager.CHAPTERS.ACTIVE] = savedState.charms;
+                    if (savedState.nodeCharms) this.grimoire[GrimoireManager.CHAPTERS.TACTICAL] = savedState.nodeCharms;
+                    if (savedState.activatedPerks) this.grimoire[GrimoireManager.CHAPTERS.CLASS] = savedState.activatedPerks;
+                }
                 this.expToNextLevel = this.calculateExpToNextLevel(this.level);
             }
         }
+
+        // Apply all grimoire effects (Active, Tactical, Class, Trans)
+        GrimoireManager.applyAll(this);
 
         // Setup Physics & Rendering
         this.scene.add.existing(this);
@@ -256,27 +294,16 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         };
         EventBus.on(EventBus.EVENTS.EQUIP_REQUEST, this.handleEquipRequest);
 
-        this.handleCharmRequest = async (payload) => {
+        this.handleGrimoireRequest = async (payload) => {
             if (payload.unitId === this.id) {
                 if (payload.action === 'set') {
-                    await this.setCharm(payload.index, payload.itemId);
+                    await this.setGrimoireItem(payload.chapter, payload.index, payload.itemId);
                 } else if (payload.action === 'remove') {
-                    await this.removeCharm(payload.index);
+                    await this.removeGrimoireItem(payload.chapter, payload.index);
                 }
             }
         };
-        EventBus.on('CHARM_REQUEST', this.handleCharmRequest);
-
-        this.handleNodeCharmRequest = async (payload) => {
-            if (payload.unitId === this.id) {
-                if (payload.action === 'set') {
-                    await this.equipNodeCharm(payload.itemId, payload.index);
-                } else if (payload.action === 'remove') {
-                    await this.removeNodeCharm(payload.index);
-                }
-            }
-        };
-        EventBus.on('NODE_CHARM_REQUEST', this.handleNodeCharmRequest);
+        EventBus.on('GRIMOIRE_REQUEST', this.handleGrimoireRequest);
     }
 
     handleAICommand(cmd) {
@@ -357,9 +384,15 @@ export default class Mercenary extends Phaser.GameObjects.Container {
     }
 
     getTotalAtk() {
-        const base = this.atk + (this.bonusAtk || 0) + this.getEquipmentBonus('atk');
-        let final = this.isTacticalCommandActive ? base * 1.5 : base;
-        return final;
+        const base = (this.atk || 0) + (this.bonusAtk || 0);
+        // [NodeCharm] Enraged (😠) bonus: UP TO +50% based on missing HP
+        let nodeMult = 1.0;
+        if (this.blackboard && this.blackboard.get('enraged_active')) {
+            const missingHpRatio = 1 - (this.hp / this.maxHp);
+            nodeMult += missingHpRatio * 0.15; // Max 1.15x at 0% HP
+        }
+        const transMult = this.grimoire_transmult || 1.0;
+        return base * nodeMult * transMult;
     }
 
     getTotalMAtk() {
@@ -373,7 +406,10 @@ export default class Mercenary extends Phaser.GameObjects.Container {
     }
 
     getTotalDef() {
-        return this.def + (this.bonusDef || 0);
+        const base = this.def + (this.bonusDef || 0);
+        // [NodeCharm] Bodyguard (😎) bonus: +10% Defense
+        const nodeMult = (this.blackboard && this.blackboard.get('guard_active')) ? 1.1 : 1.0;
+        return base * nodeMult;
     }
 
     getTotalEva() {
@@ -530,33 +566,31 @@ export default class Mercenary extends Phaser.GameObjects.Container {
     async equipNodeCharm(itemId, index) {
         if (!itemId || index < 0 || index > 2) return false;
 
-        const DBManager = (await import('../Database/DBManager.js')).default;
-        const ItemManager = (await import('../Core/ItemManager.js')).default;
-
-        const itemData = ItemManager.getItem(itemId);
-        if (!itemData || itemData.type !== 'node_charm') return false;
-
-        // Deduct from DB First
-        const invItem = await DBManager.getInventoryItem(itemId);
-        if (!invItem || invItem.amount <= 0) {
-            this.scene.fxManager?.showDamageText(this, 'Not enough items!', '#ff0000');
-            return false;
-        }
-        await DBManager.saveInventoryItem(itemId, invItem.amount - 1);
-
         // If replacing an existing node charm, return the old one back to inventory
         if (this.nodeCharms[index]) {
-            const oldItemId = this.nodeCharms[index];
-            const oldInvItem = await DBManager.getInventoryItem(oldItemId);
-            await DBManager.saveInventoryItem(oldItemId, (oldInvItem ? oldInvItem.amount : 0) + 1);
+            await this.removeNodeCharm(index); // Use the new removeNodeCharm
+        }
+
+        // Deduct from inventory
+        if (this.scene.inventory) {
+            this.scene.inventory.removeItem(itemId, 1);
+        } else {
+            // Fallback to DBManager if inventory not available (e.g., for initial load)
+            const DBManager = (await import('../Database/DBManager.js')).default;
+            const invItem = await DBManager.getInventoryItem(itemId);
+            if (!invItem || invItem.amount <= 0) {
+                this.scene.fxManager?.showDamageText(this, 'Not enough items!', '#ff0000');
+                return false;
+            }
+            await DBManager.saveInventoryItem(itemId, invItem.amount - 1);
         }
 
         // Equip the new one
         this.nodeCharms[index] = itemId;
+        console.log(`[Mercenary] ${this.unitName} equipped Node Charm: ${itemId} at slot ${index}`);
 
         // Apply visual logic
         this.scene.fxManager?.showEmojiPopup(this, '🧠');
-        console.log(`[Mercenary] ${this.unitName} equipped Node Charm: ${itemId} at slot ${index}`);
 
         // Re-inject AI Node Charms into BT dynamically
         if (this.initAI) {
@@ -574,12 +608,19 @@ export default class Mercenary extends Phaser.GameObjects.Container {
     async removeNodeCharm(index) {
         if (index < 0 || index > 2 || !this.nodeCharms[index]) return false;
 
-        const DBManager = (await import('../Database/DBManager.js')).default;
         const itemId = this.nodeCharms[index];
 
-        const invItem = await DBManager.getInventoryItem(itemId);
-        await DBManager.saveInventoryItem(itemId, (invItem ? invItem.amount : 0) + 1);
+        // Add back to inventory
+        if (this.scene.inventory) {
+            this.scene.inventory.addItem(itemId, 1);
+        } else {
+            // Fallback to DBManager if inventory not available
+            const DBManager = (await import('../Database/DBManager.js')).default;
+            const invItem = await DBManager.getInventoryItem(itemId);
+            await DBManager.saveInventoryItem(itemId, (invItem ? invItem.amount : 0) + 1);
+        }
 
+        console.log(`[Mercenary] ${this.unitName} removed Node Charm: ${itemId} from slot ${index}`);
         this.nodeCharms[index] = null;
 
         // Re-inject AI Node Charms
@@ -823,12 +864,6 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         this.atk += 2;
         this.def += 1;
 
-        // Perk points every 5 levels
-        if (this.level % 5 === 0) {
-            this.perkPoints += 1;
-            console.log(`[Level] ${this.unitName} gained a Perk Point! Total: ${this.perkPoints}`);
-        }
-
         console.log(`[Level] ${this.unitName} LEVELED UP to ${this.level}!`);
 
         if (this.scene.fxManager) {
@@ -921,21 +956,6 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         }
     }
 
-    learnPerk(perkId) {
-        if (this.perkPoints <= 0) return;
-        if (this.activatedPerks.includes(perkId)) return;
-
-        this.perkPoints -= 1;
-        this.activatedPerks.push(perkId);
-        console.log(`[Perk] ${this.unitName} learned perk: ${perkId}. Remaining points: ${this.perkPoints}`);
-
-        if (this.scene.fxManager) {
-            this.scene.fxManager.showDamageText(this, 'PERK ACTIVATED!', '#ffcc00');
-        }
-
-        this.syncStatusUI();
-    }
-
     die() {
         if (!this.active) return;
 
@@ -989,6 +1009,40 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         console.log(`[Mercenary] ${this.unitName} has been cleansed.`);
     }
 
+    async setGrimoireItem(chapter, index, itemId) {
+        if (!this.grimoire) GrimoireManager.initGrimoire(this);
+
+        const chapterId = (chapter === 'ACTIVE') ? GrimoireManager.CHAPTERS.ACTIVE :
+            (chapter === 'TACTICAL') ? GrimoireManager.CHAPTERS.TACTICAL :
+                (chapter === 'CLASS') ? GrimoireManager.CHAPTERS.CLASS :
+                    GrimoireManager.CHAPTERS.TRANSFORMATION;
+
+        this.grimoire[chapterId][index] = itemId;
+
+        // Re-apply grimoire effects
+        GrimoireManager.applyAll(this);
+
+        if (this.syncStatusUI) this.syncStatusUI();
+        console.log(`[Grimoire] ${this.unitName} set ${chapter} slot ${index} to ${itemId}`);
+    }
+
+    async removeGrimoireItem(chapter, index) {
+        if (!this.grimoire) return;
+
+        const chapterId = (chapter === 'ACTIVE') ? GrimoireManager.CHAPTERS.ACTIVE :
+            (chapter === 'TACTICAL') ? GrimoireManager.CHAPTERS.TACTICAL :
+                (chapter === 'CLASS') ? GrimoireManager.CHAPTERS.CLASS :
+                    GrimoireManager.CHAPTERS.TRANSFORMATION;
+
+        this.grimoire[chapterId][index] = null;
+
+        // Re-apply grimoire effects
+        GrimoireManager.applyAll(this);
+
+        if (this.syncStatusUI) this.syncStatusUI();
+        console.log(`[Grimoire] ${this.unitName} removed ${chapter} slot ${index}`);
+    }
+
     destroy(fromScene) {
         // Remove global event listeners to prevent memory leaks and zombie calls
         const commandEvent = (this.className === 'archer')
@@ -1003,8 +1057,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         EventBus.off(EventBus.EVENTS.ULT_TOGGLE_AUTO, this.handleUltToggleAuto);
         EventBus.off(EventBus.EVENTS.ULT_TRIGGER, this.handleUltTrigger);
         EventBus.off('PERK_LEARN', this.handlePerkLearn);
-        EventBus.off('CHARM_REQUEST', this.handleCharmRequest);
-        EventBus.off('NODE_CHARM_REQUEST', this.handleNodeCharmRequest);
+        EventBus.off('GRIMOIRE_REQUEST', this.handleGrimoireRequest);
 
         console.log(`[Mercenary] Cleaned up listeners for ${this.unitName}(${this.characterId})`);
 
@@ -1197,11 +1250,59 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             });
         }
 
-        // 1.1 Custom Character Statuses
+        // 1.2 Node Charm Buffs (Tactical AI Effects)
+        if (this.blackboard) {
+            if (this.blackboard.get('enraged_active')) {
+                statuses.push({
+                    name: '분노 (Enraged)',
+                    description: '가장 가까운 적 추적 및 잃은 체력 비례 공격력 상승',
+                    emoji: '😠',
+                    category: 'buff'
+                });
+            }
+            if (this.blackboard.get('blood_active')) {
+                statuses.push({
+                    name: '피냄새 (Blood Scent)',
+                    description: '추격 시 이동 속도 대폭 증가',
+                    emoji: '😡',
+                    category: 'buff'
+                });
+            }
+            if (this.blackboard.get('guard_active')) {
+                statuses.push({
+                    name: '경호원 (Bodyguard)',
+                    description: '아군 호위 중이며 방어력 10% 증가',
+                    emoji: '😎',
+                    category: 'buff'
+                });
+            }
+        }
+
+        // 1.1 Custom Character Statuses (Passives/Perks)
         const customStatuses = this.getCustomStatuses();
         if (customStatuses && customStatuses.length > 0) {
             statuses.push(...customStatuses);
         }
+
+        // 1.2 Grimoire Class Charms (Legacy Perks)
+        // Add icons for active perks that aren't already in customStatuses
+        this.activatedPerks.forEach(perkId => {
+            const alreadyAdded = customStatuses.some(s => s.id === perkId);
+            if (!alreadyAdded) {
+                const item = ItemManager.getItem(perkId);
+                if (item) {
+                    // Only add if it's a passive style perk or we want it always visible
+                    // For now, let's add them to the buff list
+                    statuses.push({
+                        id: perkId,
+                        name: item.name,
+                        description: item.description,
+                        emoji: item.icon.replace('emoji_', ''), // Remove prefix if needed, or use as is
+                        category: 'buff'
+                    });
+                }
+            }
+        });
 
         // 2. Check Shields
         if (this.scene.shieldManager && this.scene.shieldManager.getShield(this) > 0) {
@@ -1271,7 +1372,6 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             acc: this.acc,
             eva: this.eva,
             crit: this.getTotalCrit(),
-            perkPoints: this.perkPoints,
             activatedPerks: this.activatedPerks
         };
 
@@ -1279,8 +1379,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             agentId: this.id,
             statuses: statuses,
             equipment: this.equipment,
-            charms: this.charms,
-            nodeCharms: this.nodeCharms,
+            grimoire: this.grimoire, // Send full Grimoire instead of just legacy parts
             stats: stats
         });
 
@@ -1321,7 +1420,6 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             acc: this.acc,
             eva: this.eva,
             crit: this.crit,
-            perkPoints: this.perkPoints,
             activatedPerks: this.activatedPerks,
             equipment: this.equipment,
             charms: this.charms,

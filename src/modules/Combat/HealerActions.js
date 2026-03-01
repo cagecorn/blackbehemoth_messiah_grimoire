@@ -16,7 +16,7 @@ export const HealerActions = {
         let healAmount = mAtk * 1.5;
 
         // Perk: 구원의 손길 (Salvation) — +30% heal on targets at ≤25% HP
-        if (unit.activatedPerks && unit.activatedPerks.includes('salvation')) {
+        if (unit.activatedPerks && unit.activatedPerks.includes('emoji_pill')) {
             if (target.hp / target.maxHp <= 0.25) {
                 healAmount *= 1.3;
                 console.log(`[Perk] ${unit.unitName}: 구원의 손길 발동! 회복량 30% 증가 (대상 HP: ${Math.round(target.hp / target.maxHp * 100)}%) → ${healAmount.toFixed(1)}`);
@@ -29,7 +29,7 @@ export const HealerActions = {
         target.receiveHeal(healAmount);
 
         // Perk: 정화 (Purify) — 5% chance to cleanse 1 debuff on basic heal
-        if (unit.activatedPerks && unit.activatedPerks.includes('purify')) {
+        if (unit.activatedPerks && unit.activatedPerks.includes('emoji_bubbles')) {
             const roll = Math.random();
             console.log(`[Perk] ${unit.unitName}: 정화 확률 체크... (Roll: ${roll.toFixed(2)} / Threshold: 0.05)`);
             if (roll < 0.05) {
@@ -45,7 +45,7 @@ export const HealerActions = {
                     cleansed = true; // proc'd, but nothing to remove
                 }
                 if (cleansed && unit.scene && unit.scene.fxManager) {
-                    unit.scene.fxManager.showDamageText(target, '정화! ✨', '#aaffff');
+                    unit.scene.fxManager.showDamageText(target, '정화! 🫧', '#aaffff');
                 }
             }
         }

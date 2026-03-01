@@ -34,9 +34,29 @@ const ITEM_DATABASE = {
     'emoji_koinobori': { name: 'Ice Nova (🎏)', type: ITEM_TYPES.MATERIAL, icon: 'emoji_koinobori' },
 
     // --- Tactical Node Charms ---
-    'emoji_pouting_face': { name: 'Hater Node (😠)', type: 'node_charm', icon: 'emoji_pouting_face', description: '서포터(힐러/바드)를 최우선으로 노리며 피해량이 10% 증가합니다.' },
-    'emoji_enraged_face': { name: 'Blood Scent Node (😡)', type: 'node_charm', icon: 'emoji_enraged_face', description: '체력이 30% 이하인 적을 최우선으로 노리며 이동속도가 증가합니다.' },
+    'emoji_pouting_face': { name: '분노 (Enraged 😠)', type: 'node_charm', icon: 'emoji_pouting_face', description: '적의 서포터(힐러/바드)를 최우선으로 추적하며, 자신의 잃은 체력에 비례해 공격력이 최대 15%까지 상승합니다.' },
+    'emoji_enraged_face': { name: 'Blood Scent Node (😡)', type: 'node_charm', icon: 'emoji_enraged_face', description: '체력이 30% 이하인 적을 최우선으로 노리며 이동속도가 영구적으로 +50 증가합니다 (기본 속도에 추가).' },
     'emoji_smiling_face_with_sunglasses': { name: 'Bodyguard Node (😎)', type: 'node_charm', icon: 'emoji_smiling_face_with_sunglasses', description: '팀원 중 서포터(힐러/바드)의 주위를 맴돌며 다가오는 적을 요격합니다.' },
+
+    // --- Class Charms (Chapter C) ---
+    // Archer
+    'emoji_running_shoe': { name: '회피 기동 (🏃)', type: 'class_charm', icon: 'emoji_running_shoe', classId: 'archer', description: '적에게 포위되었을 때 즉시 구르며 탈출합니다. (이동속도 150% 증가, 유닛 통과, 10초 쿨타임)' },
+    'emoji_bullseye': { name: '약자 멸시 (🎯)', type: 'class_charm', icon: 'emoji_bullseye', classId: 'archer', description: '체력이 30% 이하인 적에게 주는 피해량이 20% 증가합니다.' },
+    'emoji_shoe': { name: '히트 앤 런 (👞)', type: 'class_charm', icon: 'emoji_shoe', classId: 'archer', description: '공격 시 2초 동안 이동 속도가 30% 증가합니다.' },
+    // Warrior
+    'emoji_shield': { name: '강건함 (🛡️)', type: 'class_charm', icon: 'emoji_shield', classId: 'warrior', description: '주위에 3명 이상의 적에게 포위당할 경우, 방어력이 10% 상승합니다.' },
+    'emoji_wolf': { name: '론 울프 (🐺)', type: 'class_charm', icon: 'emoji_wolf', classId: 'warrior', description: '주위에 아군이 없을 경우, 모든 스탯이 5% 상승합니다.' },
+    // Healer
+    'emoji_pill': { name: '구원 (💊)', type: 'class_charm', icon: 'emoji_pill', classId: 'healer', description: '체력이 25% 이하인 아군을 회복시킬 때 회복량이 30% 증가합니다.' },
+    'emoji_bubbles': { name: '정화 (🫧)', type: 'class_charm', icon: 'emoji_bubbles', classId: 'healer', description: '평타 회복 시 5%의 확률로 대상의 해로운 효과 하나를 제거합니다.' },
+    // Wizard
+    'emoji_milky_way': { name: '텔레포트 (🌌)', type: 'class_charm', icon: 'emoji_milky_way', classId: 'wizard', description: '적에게 포위당하거나 체력이 낮아지면 안전한 위치로 순식간에 이동합니다. (10초 쿨타임)' },
+    'emoji_cyclone': { name: '비전 분출 (🌀)', type: 'class_charm', icon: 'emoji_cyclone', classId: 'wizard', description: '스킬 사용 시 20% 확률로 다음 재사용 대기시간이 50% 감소합니다.' },
+    // Bard
+    'emoji_musical_note': { name: '고양 (🎶)', type: 'class_charm', icon: 'emoji_musical_note', classId: 'bard', description: '평타 버프 시 5% 확률로 대상의 스킬 재사용 대기시간을 15% 단축시킵니다.' },
+
+    // --- Transformation Charms (Chapter D) ---
+    'emoji_crown': { name: 'Messiah Crown (👑)', type: 'trans_charm', icon: 'emoji_crown', description: '장착 시 금서의 힘을 빌어 특별한 형태로 변신합니다. 모든 능력치가 대폭 상승합니다.' },
 
     // --- Equipment ---
     'test_sword_fire': {
@@ -119,6 +139,19 @@ export default class ItemManager {
             'emoji_pouting_face': '1f620.svg',
             'emoji_enraged_face': '1f621.svg',
             'emoji_smiling_face_with_sunglasses': '1f60e.svg',
+            'emoji_running_shoe': '1f45f.svg',
+            'emoji_bullseye': '1f3af.svg',
+            'emoji_shoe': '1f45e.svg',
+            'emoji_shield': '1f6e1.svg',
+            'emoji_wolf': '1f43a.svg',
+            'emoji_pill': '1f48a.svg',
+            'emoji_bubbles': '1fae7.svg',
+            'emoji_milky_way': '1f30c.svg',
+            'emoji_sparkles': '2728.svg',
+            'emoji_sparkles_wiz': '2728.svg',
+            'emoji_cyclone': '1f300.svg',
+            'emoji_musical_note': '1f3b6.svg',
+            'emoji_crown': '1f451.svg',
             'test_sword_fire': '1f5e1.svg',
             'test_sword_ice': '1f5e1.svg',
             'test_sword_lightning': '1f5e1.svg',

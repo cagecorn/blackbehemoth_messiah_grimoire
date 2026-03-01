@@ -167,6 +167,9 @@ export default function applyHealerAI(unit, getAllyGroup, getEnemyGroup) {
 
         if (unit.isShocked) return 1; // Wait out shock
 
+        // [NodeCharm] Hater Node (😠) damage bonus
+        unit._haterDamageMult = unit.blackboard.get('hater_active') ? 1.1 : 1.0;
+
         const success = unit.castAttack(target);
         return success ? 0 : 2; // SUCCESS or FAILED
     }, "Casting Sparkle");

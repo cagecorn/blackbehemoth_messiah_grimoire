@@ -922,8 +922,11 @@ export default class UIManager {
                         this.handleItemClick(item.id);
                     };
                     this.gearList.appendChild(div);
-                } else if (CharmManager.getCharm(item.id) || itemData.type === 'node_charm') {
-                    // It's a charm or tactical node! Add click handler for easy equipping
+                } else if (CharmManager.getCharm(item.id) ||
+                    itemData.type === 'node_charm' ||
+                    itemData.type === 'class_charm' ||
+                    itemData.type === 'trans_charm') {
+                    // It's a charm or tactical node! Add click handler for easy equipping/viewing
                     div.classList.add('is-charm');
                     div.onclick = (e) => {
                         e.stopPropagation();
@@ -944,6 +947,11 @@ export default class UIManager {
     handleItemClick(itemId) {
         if (this.tooltipEl) this.tooltipEl.style.display = 'none'; // Kill legacy tooltip
         this.showItemDetail(itemId);
+
+        // If we have a pending Grimoire slot, try to equip immediately on click
+        if (this.pendingGrimoireSlot) {
+            this.executeEquip(itemId);
+        }
     }
 
     showItemDetail(itemId) {
@@ -959,7 +967,22 @@ export default class UIManager {
 
         this.selectedItemId = itemId;
         if (this.detailName) this.detailName.textContent = targetItem.name;
-        if (this.detailType) this.detailType.textContent = (targetItem.slot || (charm ? 'CHARM' : 'ITEM')).toUpperCase();
+
+        // Map type enum to user-friendly label
+        let typeLabel = 'ITEM';
+        if (targetItem.slot) {
+            typeLabel = targetItem.slot;
+        } else if (item && item.type === 'class_charm') {
+            typeLabel = 'CLASS CHARM';
+        } else if (item && item.type === 'node_charm') {
+            typeLabel = 'NODE CHARM';
+        } else if (item && item.type === 'trans_charm') {
+            typeLabel = 'TRANS CHARM';
+        } else if (charm) {
+            typeLabel = 'CHARM';
+        }
+
+        if (this.detailType) this.detailType.textContent = typeLabel.toUpperCase();
         if (this.detailDesc) this.detailDesc.textContent = targetItem.description || (item ? '재료 아이템입니다.' : '');
 
         this.detailPanel.style.display = 'flex';
@@ -995,33 +1018,57 @@ export default class UIManager {
                 unitId: targetChannel.linkedUnitId,
                 itemId: itemId
             });
-        } else if (item && item.type === 'node_charm') {
-            // It's a Node Charm click! Find first empty tactical slot
-            const emptySlot = targetChannel.findEmptyNodeCharmSlot();
-            console.log(`[UIManager] Found empty node charm slot: ${emptySlot}`);
-            if (emptySlot !== -1) {
-                EventBus.emit('NODE_CHARM_REQUEST', {
-                    unitId: targetChannel.linkedUnitId,
-                    itemId: itemId,
-                    index: emptySlot,
-                    action: 'set'
-                });
+        } else {
+            // It's a charm/node click!
+            let chapter = null;
+            let index = -1;
+
+            if (this.pendingGrimoireSlot) {
+                // 1. Use manual pending slot if exists
+                chapter = this.pendingGrimoireSlot.chapter;
+                index = this.pendingGrimoireSlot.index;
+
+                // Clear highlight
+                if (this.pendingGrimoireSlot.element) {
+                    this.pendingGrimoireSlot.element.classList.remove('grim-slot-pending');
+                }
+                this.pendingGrimoireSlot = null;
             } else {
-                console.log('[UIManager] No empty node charm slots available for', targetChannel.name);
+                // 2. Fallback: Find first empty slot based on type
+                if (item && item.type === 'node_charm') {
+                    chapter = 'TACTICAL';
+                    index = targetChannel.findEmptyNodeCharmSlot();
+                } else if (item && item.type === 'class_charm') {
+                    chapter = 'CLASS';
+                    index = targetChannel.findEmptyGrimoireSlot('CLASS');
+                } else if (item && item.type === 'trans_charm') {
+                    chapter = 'TRANSFORMATION';
+                    index = 0; // Trans only has 1 slot
+                } else if (charm) {
+                    chapter = 'ACTIVE';
+                    index = targetChannel.findEmptyCharmSlot();
+                }
             }
-        } else if (charm) {
-            // It's a charm click! Find first empty slot
-            const emptySlot = targetChannel.findEmptyCharmSlot();
-            console.log(`[UIManager] Found empty charm slot: ${emptySlot}`);
-            if (emptySlot !== -1) {
-                EventBus.emit('CHARM_REQUEST', {
+
+            if (chapter && index !== -1) {
+                console.log(`[UIManager] Equipping charm: ${itemId} to ${chapter}[${index}] for ${targetChannel.name}`);
+                EventBus.emit('GRIMOIRE_REQUEST', {
                     unitId: targetChannel.linkedUnitId,
                     itemId: itemId,
-                    index: emptySlot,
+                    chapter: chapter,
+                    index: index,
                     action: 'set'
                 });
+
+                // Optional: Play a sound or show short feedback
+                if (window.soundEffects && window.soundEffects.playEquipSound) {
+                    window.soundEffects.playEquipSound();
+                }
             } else {
-                console.log('[UIManager] No empty charm slots available for', targetChannel.name);
+                console.warn('[UIManager] No available slot found for equip request.', { itemId, chapter, index });
+                if (this.scene && this.scene.fxManager) {
+                    // Show "No Slot" feedback maybe?
+                }
             }
         }
     }

@@ -162,12 +162,12 @@ export default class Warrior extends Mercenary {
         }
 
         // Perk: 강건함 (Fortitude)
-        if (this.activatedPerks.includes('fortitude')) {
+        if (this.activatedPerks.includes('emoji_shield')) {
             this.checkFortitude();
         }
 
         // Perk: 론 울프 (Lone Wolf)
-        if (this.activatedPerks.includes('lone_wolf')) {
+        if (this.activatedPerks.includes('emoji_wolf')) {
             this.checkLoneWolf();
         }
 
@@ -193,12 +193,15 @@ export default class Warrior extends Mercenary {
 
         if (isSurrounded && !this.isFortitudeActive) {
             this.isFortitudeActive = true;
-            this.bonusDef += Math.round(this.def * 0.10);
+            // Use getTotalDef() for calculation
+            this._bonusDefForFortitude = Math.round(this.getTotalDef() * 0.10);
+            this.bonusDef += this._bonusDefForFortitude;
             console.log(`[Perk] ${this.unitName}: 강건함 발동! 방어력 10% 상승`);
             this.syncStatusUI();
         } else if (!isSurrounded && this.isFortitudeActive) {
             this.isFortitudeActive = false;
-            this.bonusDef -= Math.round(this.def * 0.10);
+            this.bonusDef -= (this._bonusDefForFortitude || Math.round(this.def * 0.10));
+            this._bonusDefForFortitude = 0;
             console.log(`[Perk] ${this.unitName}: 강건함 해제.`);
             this.syncStatusUI();
         }
@@ -221,22 +224,27 @@ export default class Warrior extends Mercenary {
 
         if (isAlone && !this.isLoneWolfActive) {
             this.isLoneWolfActive = true;
-            this.bonusAtk += Math.round(this.atk * 0.05);
-            this.bonusDef += Math.round(this.def * 0.05);
-            this.bonusMAtk += Math.round(this.mAtk * 0.05);
-            this.bonusMDef += Math.round(this.mDef * 0.05);
-            this.bonusSpeed += Math.round(this.speed * 0.05);
-            // maxHp is normally not buffed this way as it requires health adjustment too. 
-            // We'll skip maxHp for now or handle it via a separate setter if needed.
+            this._lwAtk = Math.round(this.getTotalAtk() * 0.05);
+            this._lwDef = Math.round(this.getTotalDef() * 0.05);
+            this._lwMAtk = Math.round(this.getTotalMAtk() * 0.05);
+            this._lwMDef = Math.round(this.getTotalMDef() * 0.05);
+            this._lwSpeed = Math.round(this.getTotalSpeed() * 0.05);
+
+            this.bonusAtk += this._lwAtk;
+            this.bonusDef += this._lwDef;
+            this.bonusMAtk += this._lwMAtk;
+            this.bonusMDef += this._lwMDef;
+            this.bonusSpeed += this._lwSpeed;
+
             console.log(`[Perk] ${this.unitName}: 론 울프 발동! 주요 스탯 5% 상승`);
             this.syncStatusUI();
         } else if (!isAlone && this.isLoneWolfActive) {
             this.isLoneWolfActive = false;
-            this.bonusAtk -= Math.round(this.atk * 0.05);
-            this.bonusDef -= Math.round(this.def * 0.05);
-            this.bonusMAtk -= Math.round(this.mAtk * 0.05);
-            this.bonusMDef -= Math.round(this.mDef * 0.05);
-            this.bonusSpeed -= Math.round(this.speed * 0.05);
+            this.bonusAtk -= (this._lwAtk || Math.round(this.atk * 0.05));
+            this.bonusDef -= (this._lwDef || Math.round(this.def * 0.05));
+            this.bonusMAtk -= (this._lwMAtk || Math.round(this.mAtk * 0.05));
+            this.bonusMDef -= (this._lwMDef || Math.round(this.mDef * 0.05));
+            this.bonusSpeed -= (this._lwSpeed || Math.round(this.speed * 0.05));
             console.log(`[Perk] ${this.unitName}: 론 울프 해제.`);
             this.syncStatusUI();
         }

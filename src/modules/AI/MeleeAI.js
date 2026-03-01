@@ -147,6 +147,11 @@ export default function applyMeleeAI(agent, targetListGetter, initialState = 'AG
                 damage *= 1.5;
             }
 
+            // [NodeCharm] Hater Node (😠) damage bonus
+            if (bb.get('hater_active')) {
+                damage *= 1.1;
+            }
+
             if (target.takeDamage) {
                 // Pass weapon prefix element if available
                 const prefix = a.getWeaponPrefix ? a.getWeaponPrefix() : null;

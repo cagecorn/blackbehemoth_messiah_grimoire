@@ -134,6 +134,10 @@ export default function applyRangedAI(unit, skillNode = null) {
             return 1; // RUNNING
         }
 
+        // [NodeCharm] Hater Node (😠) damage bonus
+        // For ranged, we set a flag on the unit so fireProjectile can read it
+        unit._haterDamageMult = unit.blackboard.get('hater_active') ? 1.1 : 1.0;
+
         const success = unit.fireProjectile();
         return success ? 0 : 2; // SUCCESS or FAILED
     }, "Sniping (Attack)");

@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import HealthBar from '../UI/HealthBar.js';
 import EventBus from '../Events/EventBus.js';
 import CharmManager from '../Core/CharmManager.js';
+import GrimoireManager from '../Core/GrimoireManager.js';
 
 /**
  * BaseMonster.js
@@ -63,11 +64,30 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
         this.isAsleep = false; // Sleep CC
         this.isFrozen = false; // Freeze CC
 
-        // Elite & Charm System
+        // Elite & Charm System (Messiah Grimoire)
         this.isElite = config.isElite || false;
-        this.charms = config.charms || Array(9).fill(null);
+
+        GrimoireManager.initGrimoire(this);
+        // Link legacy arrays to Grimoire chapters
+        this.charms = this.grimoire[GrimoireManager.CHAPTERS.ACTIVE];
+        this.nodeCharms = this.grimoire[GrimoireManager.CHAPTERS.TACTICAL];
+        this.activatedPerks = this.grimoire[GrimoireManager.CHAPTERS.CLASS];
+
+        GrimoireManager.applyAll(this);
+
+        // Populate from config
+        if (config.charms) {
+            for (let i = 0; i < Math.min(config.charms.length, 9); i++) {
+                this.grimoire[GrimoireManager.CHAPTERS.ACTIVE][i] = config.charms[i];
+            }
+        }
+        if (config.nodeCharms) {
+            for (let i = 0; i < Math.min(config.nodeCharms.length, 3); i++) {
+                this.grimoire[GrimoireManager.CHAPTERS.TACTICAL][i] = config.nodeCharms[i];
+            }
+        }
+
         this.charmTimers = Array(9).fill(0);
-        this.nodeCharms = config.nodeCharms || Array(3).fill(null); // Tactical AI Slots
 
         // Combat Timers
         this.lastAttackTime = 0;
@@ -403,6 +423,11 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
             finalDmg *= 1.5;
         }
 
+        // Apply Hater Node bonus if active
+        if (this._haterDamageMult) {
+            finalDmg *= this._haterDamageMult;
+        }
+
         // Basic projectile firing via ProjectileManager
         // For monsters, we use 'orc' or 'archer' type for now, or we can make it dynamic based on config
         const projectileType = this.config.id === 'orc' ? 'archer' : 'archer';
@@ -584,7 +609,14 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
 
     getTotalAtk() {
         const base = this.atk + (this.bonusAtk || 0);
-        return this.isTacticalCommandActive ? base * 1.5 : base;
+        let nodeMult = 1.0;
+        if (this.blackboard && this.blackboard.get('enraged_active')) {
+            const missingHpRatio = 1 - (this.hp / this.maxHp);
+            nodeMult += missingHpRatio * 0.15; // Max 1.15x at 0% HP
+        }
+        const tactMult = this.isTacticalCommandActive ? 1.5 : 1.0;
+        const transMult = this.grimoire_transmult || 1.0;
+        return base * nodeMult * tactMult * transMult;
     }
 
     getTotalMAtk() {
@@ -593,7 +625,11 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
     }
 
     getTotalDef() {
-        return (this.def || 0) + (this.bonusDef || 0);
+        const base = (this.def || 0) + (this.bonusDef || 0);
+        // [NodeCharm] Bodyguard (😎) defense bonus for Elites
+        const nodeMult = (this.blackboard && this.blackboard.get('guard_active')) ? 1.1 : 1.0;
+        const transMult = this.grimoire_transmult || 1.0;
+        return base * nodeMult * transMult;
     }
 
     getTotalMDef() {

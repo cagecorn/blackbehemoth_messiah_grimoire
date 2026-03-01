@@ -61,7 +61,7 @@ export default class Wizard extends Mercenary {
         if (!this.active || !this.scene) return;
 
         // Check for Perk: Teleport
-        if (this.activatedPerks.includes('teleport')) {
+        if (this.activatedPerks.includes('emoji_milky_way')) {
             this.checkTeleportTrigger();
         }
 
@@ -165,7 +165,7 @@ export default class Wizard extends Mercenary {
         this.teleportCooldown = this.scene.time.now + 10000; // 10s cooldown
 
         console.log(`[Perk] ${this.unitName} triggered Teleport!`);
-        EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, `${this.unitName}: 텔레포트! ✨`);
+        EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, `${this.unitName}: 텔레포트! 🌌`);
 
         // 1. Find Safe Spot
         const targetGroup = this.targetGroup;
@@ -205,7 +205,7 @@ export default class Wizard extends Mercenary {
 
         // 2. Visual & Sound "Pop!"
         if (this.scene.fxManager) {
-            this.scene.fxManager.showDamageText(this, 'POP! ✨', '#ffffff');
+            this.scene.fxManager.showDamageText(this, 'POP! 🌌', '#ffffff');
             // Flash at old position
             const flash = this.scene.add.circle(this.x, this.y, 30, 0xffffff, 0.8);
             this.scene.tweens.add({
@@ -236,7 +236,7 @@ export default class Wizard extends Mercenary {
 
 
     onSkillExecuted(skill) {
-        if (this.activatedPerks.includes('arcane_surge')) {
+        if (this.activatedPerks.includes('emoji_cyclone')) {
             const roll = Math.random();
             console.log(`[Perk] ${this.unitName}: 비전 분출 확률 체크... (Roll: ${roll.toFixed(2)} / Threshold: 0.20)`);
 

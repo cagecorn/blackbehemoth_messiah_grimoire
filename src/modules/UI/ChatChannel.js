@@ -39,21 +39,19 @@ export default class ChatChannel {
             stats: {},
             equipment: {},
             statuses: "",
-            perks: "",
             ultProgress: -1,
             narrativeKey: ""
         };
+        this.lastGrimoireState = null; // For dirty flag optimization
 
         this.dirty = false;
         this.pendingData = {
             statuses: null,
             equipment: null,
-            charms: null,
-            nodeCharms: null,
+            equipment: null,
+            grimoire: null,
             stats: null,
             skill: null,
-            perkPoints: null,
-            activatedPerks: null,
             narrative: { unlocks: null, level: null },
             ultProgress: null
         };
@@ -87,6 +85,10 @@ export default class ChatChannel {
             <!-- Dashboard Menu View (Always Visible) -->
             <div class="chat-dashboard-view" id="dashboard-${id}" style="display: flex;">
                 <div class="dashboard-grid">
+                    <button class="dash-item highlight" data-view="grimoire">
+                        <span class="dash-icon">📖</span>
+                        <span class="dash-label">그리모어</span>
+                    </button>
                     <button class="dash-item" data-view="gear">
                         <span class="dash-icon">⚔️</span>
                         <span class="dash-label">장비</span>
@@ -103,10 +105,49 @@ export default class ChatChannel {
                         <span class="dash-icon">📚</span>
                         <span class="dash-label">서사</span>
                     </button>
-                    <button class="dash-item highlight" data-view="perk">
-                        <span class="dash-icon">🌟</span>
-                        <span class="dash-label">퍽 [PERK]</span>
-                    </button>
+                </div>
+            </div>
+
+            <!-- Grimoire View (Messiah Grimoire) -->
+            <div class="chat-grimoire-view" id="grimoire-${id}" style="display: none;">
+                <div class="grimoire-book-bg"></div>
+                <div class="grim-container">
+                    <div class="grim-header-row">
+                        <div class="grim-page-header">📖 MESSIAH GRIMOIRE</div>
+                        <button class="grim-close-btn dash-back-btn" title="닫기">×</button>
+                    </div>
+                    
+                    <div class="grim-page">
+                        <div class="grim-chapter" data-chapter="A">
+                            <div class="grim-chapter-label">CHAPTER A: ACTIVE (액티브)</div>
+                            <div class="grim-grid" id="charms-a-${id}">
+                                ${Array(9).fill(0).map((_, i) => `<div class="grim-slot" data-chapter="ACTIVE" data-index="${i}"></div>`).join('')}
+                            </div>
+                        </div>
+
+                        <div class="grim-chapter-subgrid">
+                            <div class="grim-chapter" data-chapter="B">
+                                <div class="grim-chapter-label">CHAPTER B: TACTICAL (전술)</div>
+                                <div class="grim-grid tactical-grid" id="charms-b-${id}">
+                                    ${Array(3).fill(0).map((_, i) => `<div class="grim-slot node-charm-slot" data-chapter="TACTICAL" data-index="${i}"></div>`).join('')}
+                                </div>
+                            </div>
+
+                            <div class="grim-chapter" data-chapter="C">
+                                <div class="grim-chapter-label">CHAPTER C: CLASS (클래스)</div>
+                                <div class="grim-grid class-grid" id="charms-c-${id}">
+                                    ${Array(6).fill(0).map((_, i) => `<div class="grim-slot class-charm-slot" data-chapter="CLASS" data-index="${i}"></div>`).join('')}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grim-chapter" data-chapter="D">
+                            <div class="grim-chapter-label">CHAPTER D: TRANSFORMATION (변신)</div>
+                            <div class="grim-grid trans-grid" id="charms-d-${id}">
+                                <div class="grim-slot trans-charm-slot" data-chapter="TRANSFORMATION" data-index="0"></div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -129,16 +170,7 @@ export default class ChatChannel {
                 <div class="gear-slot" data-slot="necklace"><span class="slot-label">[목걸이]</span> <span class="slot-value">Empty</span></div>
                 <div class="gear-slot" data-slot="ring"><span class="slot-label">[반지]</span> <span class="slot-value">Empty</span></div>
                 
-                <div class="charm-inventory-label">이모지 참 (Emoji Charms)</div>
-                <div class="charm-grid" id="charms-${id}">
-                    ${Array(9).fill(0).map((_, i) => `<div class="charm-slot" data-index="${i}"></div>`).join('')}
-                </div>
-
-                <div class="charm-inventory-label tactical-label" style="color: #ffaa00; margin-top: 10px;">전술 참 (Tactical Node)</div>
-                <div class="charm-grid tactical-grid" id="node-charms-${id}" style="grid-template-columns: repeat(3, 40px); justify-content: center;">
-                    ${Array(3).fill(0).map((_, i) => `<div class="charm-slot node-charm-slot" data-node-index="${i}"></div>`).join('')}
-                </div>
-
+                <div class="gear-hint-msg" style="color: #888; font-size: 11px; margin-top: 15px; text-align: center;">참(Charm)은 '그리모어' 탭에서 관리할 수 있습니다.</div>
                 <button class="dash-back-btn">돌아가기</button>
             </div>
             <div class="chat-status-view" id="stats-${id}" style="display: none;">
@@ -204,13 +236,13 @@ export default class ChatChannel {
         this.dashboardView = this.element.querySelector('.chat-dashboard-view');
         this.perkView = this.element.querySelector('.chat-perk-view');
         this.gearView = this.element.querySelector('.chat-gear-view');
+        this.grimoireView = this.element.querySelector('.chat-grimoire-view');
         this.skillView = this.element.querySelector('.chat-skill-view');
         this.statusView = this.element.querySelector('.chat-status-view');
         this.narrativeView = this.element.querySelector('.chat-narrative-view');
         this.currentView = 'dashboard'; // Default view
         this.setupGearDragDrop();
-        this.setupCharmDragDrop();
-        this.setupNodeCharmDragDrop();
+        this.setupGrimoireDragDrop();
 
         // Bind dashboard grid items
         this.dashboardView.querySelectorAll('.dash-item').forEach(btn => {
@@ -229,7 +261,7 @@ export default class ChatChannel {
         });
 
         // Add context menu or "Back to Menu" logic for sub-views
-        [this.perkView, this.gearView, this.skillView, this.statusView, this.narrativeView].forEach(view => {
+        [this.perkView, this.gearView, this.grimoireView, this.skillView, this.statusView, this.narrativeView].forEach(view => {
             view.addEventListener('click', (e) => {
                 // If clicking the view background (not its children), go back to dashboard
                 if (e.target === view) {
@@ -301,6 +333,7 @@ export default class ChatChannel {
         // Sync Visuals
         this.dashboardView.style.display = (this.currentView === 'dashboard') ? 'flex' : 'none';
         this.gearView.style.display = (this.currentView === 'gear') ? 'flex' : 'none';
+        this.grimoireView.style.display = (this.currentView === 'grimoire') ? 'flex' : 'none';
         this.skillView.style.display = (this.currentView === 'skill') ? 'flex' : 'none';
         this.statusView.style.display = (this.currentView === 'status') ? 'block' : 'none';
         this.narrativeView.style.display = (this.currentView === 'narrative') ? 'block' : 'none';
@@ -393,17 +426,15 @@ export default class ChatChannel {
         }
     }
 
-    updateEquipment(equipment, charms, nodeCharms) {
+    updateEquipment(equipment, grimoire) {
         if (equipment) this.pendingData.equipment = equipment;
-        if (charms) this.pendingData.charms = charms;
-        if (nodeCharms) this.pendingData.nodeCharms = nodeCharms;
+        if (grimoire) this.pendingData.grimoire = grimoire;
         this.dirty = true;
     }
 
-    _applyEquipment(equipment, charms, nodeCharms) {
-        this.charms = charms || Array(9).fill(null);
-        this.nodeCharms = nodeCharms || Array(3).fill(null);
+    _applyEquipment(equipment, grimoire) {
         if (!equipment || !this.gearView) return;
+        this.grimoire = grimoire;
 
         const slots = {
             weapon: equipment.weapon || 'Empty',
@@ -432,50 +463,41 @@ export default class ChatChannel {
             }
         });
 
-        if (charms) {
-            this.updateCharmGrid(charms);
-        }
-        if (nodeCharms) {
-            this.updateNodeCharmGrid(nodeCharms);
+        if (grimoire && this.grimoireView) {
+            this.updateGrimoireGrid(grimoire);
         }
     }
 
-    updateCharmGrid(charms) {
-        const charmSlots = this.gearView.querySelectorAll('.charm-slot');
-        charms.forEach((itemId, index) => {
-            // Optimized: Skip re-rendering if the charm ID hasn't changed.
-            // This prevents flickering during frequent state updates.
-            if (this.renderedCharms[index] === itemId) return;
-            this.renderedCharms[index] = itemId;
+    updateGrimoireGrid(grimoire) {
+        // --- Dirty Flag Optimization ---
+        const grimoireStr = JSON.stringify(grimoire);
+        if (this.lastGrimoireState === grimoireStr) return;
+        this.lastGrimoireState = grimoireStr;
 
-            const slot = charmSlots[index];
-            if (!slot) return;
+        const slots = this.grimoireView.querySelectorAll('.grim-slot');
+        slots.forEach(slot => {
+            const chapter = slot.dataset.chapter;
+            const index = parseInt(slot.dataset.index);
+            const chapterKey = `chapter_${chapter.toLowerCase().substring(0, 1)}`; // chapter_a, etc. 
+            // Correcting mapping: ACTIVE -> chapter_a, TACTICAL -> chapter_b, CLASS -> chapter_c, TRANSFORMATION -> chapter_d
+            const chapterId = (chapter === 'ACTIVE') ? 'chapter_a' :
+                (chapter === 'TACTICAL') ? 'chapter_b' :
+                    (chapter === 'CLASS') ? 'chapter_c' : 'chapter_d';
+
+            const itemId = grimoire[chapterId] ? grimoire[chapterId][index] : null;
+
+            // Cache rendering to prevent flickering
+            const renderKey = `${chapterId}_${index}_${itemId}`;
+            if (this.renderedGrimoireSlots && this.renderedGrimoireSlots[renderKey]) return;
+            if (!this.renderedGrimoireSlots) this.renderedGrimoireSlots = {};
+            this.renderedGrimoireSlots[renderKey] = true;
+
             slot.innerHTML = '';
             if (itemId) {
                 const filename = ItemManager.getSVGFilename(itemId);
                 const img = document.createElement('img');
                 img.src = `assets/emojis/${filename}`;
-                img.className = 'charm-icon';
-                img.dataset.itemId = itemId;
-                slot.appendChild(img);
-            }
-        });
-    }
-
-    updateNodeCharmGrid(nodeCharms) {
-        const charmSlots = this.gearView.querySelectorAll('.node-charm-slot');
-        nodeCharms.forEach((itemId, index) => {
-            if (this.renderedNodeCharms[index] === itemId) return;
-            this.renderedNodeCharms[index] = itemId;
-
-            const slot = charmSlots[index];
-            if (!slot) return;
-            slot.innerHTML = '';
-            if (itemId) {
-                const filename = ItemManager.getSVGFilename(itemId);
-                const img = document.createElement('img');
-                img.src = `assets/emojis/${filename}`;
-                img.className = 'charm-icon node-charm-icon';
+                img.className = 'grim-icon';
                 img.dataset.itemId = itemId;
                 slot.appendChild(img);
             }
@@ -565,75 +587,6 @@ export default class ChatChannel {
         }
     }
 
-    updatePerks(perkPoints, activatedPerks) {
-        this.pendingData.perkPoints = perkPoints;
-        this.pendingData.activatedPerks = activatedPerks;
-        this.dirty = true;
-    }
-
-    _applyPerks(perkPoints, activatedPerks) {
-        if (!this.perkView) return;
-
-        const perkKey = `${perkPoints}|${activatedPerks.sort().join(',')}`;
-        if (this.lastState.perks === perkKey) return;
-        this.lastState.perks = perkKey;
-
-        const ptsEl = this.perkView.querySelector('.perk-points');
-        if (ptsEl) ptsEl.textContent = `Available: ${perkPoints}`;
-
-        const container = this.perkView.querySelector('.perk-container');
-        // Find or create perk list
-        let list = container.querySelector('.perk-list');
-        if (!list) {
-            list = document.createElement('div');
-            list.className = 'perk-list';
-            container.appendChild(list);
-
-            // Remove empty msg if list is added
-            const emptyMsg = container.querySelector('.perk-empty-msg');
-            if (emptyMsg) emptyMsg.style.display = 'none';
-        }
-
-        import('../Core/PerkManager.js').then(module => {
-            const PerkDefinitions = module.PerkDefinitions;
-            const perks = PerkDefinitions[this.classId] || [];
-
-            list.innerHTML = '';
-            perks.forEach(perk => {
-                const isLearned = activatedPerks.includes(perk.id);
-                const canLearn = !isLearned && perkPoints > 0;
-                const row = document.createElement('div');
-                row.className = `perk-row ${isLearned ? 'learned' : ''}`;
-                row.innerHTML = `
-                    <div class="perk-info">
-                        <span class="perk-icon">${perk.emoji}</span>
-                        <div class="perk-details">
-                            <span class="perk-name">${perk.name}</span>
-                            <span class="perk-desc">${perk.description}</span>
-                        </div>
-                    </div>
-                    ${isLearned ? '<span class="perk-status">LEARNED</span>' :
-                        canLearn ? `<button class="perk-learn-btn" data-perk="${perk.id}">ALLOCATE</button>` :
-                            '<span class="perk-status locked">LOCKED</span>'}
-                `;
-
-                const btn = row.querySelector('.perk-learn-btn');
-                if (btn) {
-                    btn.addEventListener('click', () => {
-                        import('../Events/EventBus.js').then(eb => {
-                            eb.default.emit('PERK_LEARN', {
-                                agentId: this.linkedUnitId || this.id,
-                                perkId: perk.id
-                            });
-                        });
-                    });
-                }
-
-                list.appendChild(row);
-            });
-        });
-    }
-
     updateNarrative(unlocks, level) {
         this.pendingData.narrative = { unlocks, level };
         this.dirty = true;
@@ -691,12 +644,9 @@ export default class ChatChannel {
 
         const d = this.pendingData;
         if (d.statuses) this._applyStatuses(d.statuses);
-        if (d.equipment || d.charms || d.nodeCharms) this._applyEquipment(d.equipment, d.charms, d.nodeCharms);
+        if (d.equipment || d.grimoire) this._applyEquipment(d.equipment, d.grimoire);
         if (d.stats) this._applyStats(d.stats);
         if (d.skill) this._applySkill(d.skill);
-        if (d.perkPoints !== null && d.activatedPerks !== null) {
-            this._applyPerks(d.perkPoints, d.activatedPerks);
-        }
         if (d.narrative.unlocks) this._applyNarrative(d.narrative.unlocks, d.narrative.level);
         if (d.ultProgress !== null) this._applyUltGauge(d.ultProgress);
 
@@ -800,12 +750,13 @@ export default class ChatChannel {
         });
     }
 
-    setupCharmDragDrop() {
-        if (!this.gearView) return;
+    setupGrimoireDragDrop() {
+        if (!this.grimoireView) return;
 
-        const charmSlots = this.gearView.querySelectorAll('.charm-slot');
-        charmSlots.forEach(slot => {
+        const slots = this.grimoireView.querySelectorAll('.grim-slot');
+        slots.forEach(slot => {
             const index = parseInt(slot.dataset.index);
+            const chapter = slot.dataset.chapter;
 
             slot.addEventListener('dragover', (e) => {
                 e.preventDefault();
@@ -818,9 +769,24 @@ export default class ChatChannel {
                 slot.classList.remove('drag-over');
             });
 
-            // Click to open inventory
+            // Click to open inventory and mark as pending
             slot.addEventListener('click', () => {
                 if (this.uiManager) {
+                    // Clear any previous pending highlights
+                    const allSlots = document.querySelectorAll('.grimoire-slot');
+                    allSlots.forEach(s => s.classList.remove('grim-slot-pending'));
+
+                    // Mark this slot as pending for equip
+                    this.uiManager.pendingGrimoireSlot = {
+                        unitId: this.linkedUnitId,
+                        chapter: chapter,
+                        index: index,
+                        element: slot
+                    };
+                    slot.classList.add('grim-slot-pending');
+
+                    console.log(`[Grimoire] Slot pending: ${chapter}[${index}] for ${this.name}`);
+
                     this.uiManager.showPopup('inventory');
                     if (this.uiManager.switchInventoryTab) {
                         this.uiManager.switchInventoryTab('materials');
@@ -837,9 +803,11 @@ export default class ChatChannel {
                 if (itemId && this.linkedUnitId) {
                     import('../Events/EventBus.js').then(module => {
                         const EventBus = module.default;
-                        EventBus.emit('CHARM_REQUEST', {
+                        // Map UI Chapter to Internal Event Type/Chapter
+                        EventBus.emit('GRIMOIRE_REQUEST', {
                             unitId: this.linkedUnitId,
                             itemId: itemId,
+                            chapter: chapter,
                             index: index,
                             action: 'set'
                         });
@@ -853,8 +821,9 @@ export default class ChatChannel {
                 if (this.linkedUnitId) {
                     import('../Events/EventBus.js').then(module => {
                         const EventBus = module.default;
-                        EventBus.emit('CHARM_REQUEST', {
+                        EventBus.emit('GRIMOIRE_REQUEST', {
                             unitId: this.linkedUnitId,
+                            chapter: chapter,
                             index: index,
                             action: 'remove'
                         });
@@ -864,68 +833,14 @@ export default class ChatChannel {
         });
     }
 
-    setupNodeCharmDragDrop() {
-        if (!this.gearView) return;
+    findEmptyGrimoireSlot(chapter) {
+        if (!this.grimoire) return -1;
+        const chapterId = (chapter === 'ACTIVE') ? 'chapter_a' :
+            (chapter === 'TACTICAL') ? 'chapter_b' :
+                (chapter === 'CLASS') ? 'chapter_c' : 'chapter_d';
 
-        const nodeSlots = this.gearView.querySelectorAll('.node-charm-slot');
-        nodeSlots.forEach(slot => {
-            const index = parseInt(slot.dataset.nodeIndex);
-
-            slot.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                slot.classList.add('drag-over');
-            });
-
-            slot.addEventListener('dragleave', (e) => {
-                e.stopPropagation();
-                slot.classList.remove('drag-over');
-            });
-
-            // Click to open inventory
-            slot.addEventListener('click', () => {
-                if (this.uiManager) {
-                    this.uiManager.showPopup('inventory');
-                    if (this.uiManager.switchInventoryTab) {
-                        this.uiManager.switchInventoryTab('materials');
-                    }
-                }
-            });
-
-            slot.addEventListener('drop', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                slot.classList.remove('drag-over');
-
-                const itemId = e.dataTransfer.getData('itemId');
-                if (itemId && this.linkedUnitId) {
-                    import('../Events/EventBus.js').then(module => {
-                        const EventBus = module.default;
-                        EventBus.emit('NODE_CHARM_REQUEST', {
-                            unitId: this.linkedUnitId,
-                            itemId: itemId,
-                            index: index,
-                            action: 'set'
-                        });
-                    });
-                }
-            });
-
-            // Right-click to remove
-            slot.addEventListener('contextmenu', (e) => {
-                e.preventDefault();
-                if (this.linkedUnitId) {
-                    import('../Events/EventBus.js').then(module => {
-                        const EventBus = module.default;
-                        EventBus.emit('NODE_CHARM_REQUEST', {
-                            unitId: this.linkedUnitId,
-                            index: index,
-                            action: 'remove'
-                        });
-                    });
-                }
-            });
-        });
+        const list = this.grimoire[chapterId];
+        return list ? list.findIndex(c => c === null) : -1;
     }
 
     findEmptyCharmSlot() {

@@ -71,7 +71,7 @@ export default class Bard extends Mercenary {
         this.scene.buffManager.applyBuff(target, this, 'Motivation', duration, buffAtk, buffMAtk);
 
         // Perk: 고양 (Inspiration) — 5% chance to advance target's skill cooldown by 15%
-        if (this.activatedPerks.includes('inspiration') && target.skill) {
+        if (this.activatedPerks.includes('emoji_musical_note') && target.skill) {
             const roll = Math.random();
             console.log(`[Perk] ${this.unitName}: 고양 확률 체크... (Roll: ${roll.toFixed(2)} / Threshold: 0.05)`);
             if (roll < 0.05) {

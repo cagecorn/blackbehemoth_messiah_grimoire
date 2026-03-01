@@ -108,9 +108,19 @@ export default class BootScene extends Phaser.Scene {
         this.load.svg('emoji_koinobori', 'assets/emojis/1f38f.svg', { width: 64, height: 64 });
 
         // Tactical Node Charms Emojis
-        this.load.svg('emoji_pouting_face', 'assets/emojis/1f620.svg', { width: 64, height: 64 }); // 😠
-        this.load.svg('emoji_enraged_face', 'assets/emojis/1f621.svg', { width: 64, height: 64 }); // 😡
         this.load.svg('emoji_smiling_face_with_sunglasses', 'assets/emojis/1f60e.svg', { width: 64, height: 64 }); // 😎
+
+        // Class Charms (Chapter C)
+        this.load.svg('emoji_running_shoe', 'assets/emojis/1f45f.svg', { width: 64, height: 64 }); // 🏃
+        this.load.svg('emoji_bullseye', 'assets/emojis/1f3af.svg', { width: 64, height: 64 });    // 🎯
+        this.load.svg('emoji_shoe', 'assets/emojis/1f45e.svg', { width: 64, height: 64 });        // 👞
+        this.load.svg('emoji_shield', 'assets/emojis/1f6e1.svg', { width: 64, height: 64 });      // 🛡️
+        this.load.svg('emoji_wolf', 'assets/emojis/1f43a.svg', { width: 64, height: 64 });        // 🐺
+        this.load.svg('emoji_pill', 'assets/emojis/1f48a.svg', { width: 64, height: 64 });        // 💊
+        this.load.svg('emoji_bubbles', 'assets/emojis/1fae7.svg', { width: 64, height: 64 });     // 🫧
+        this.load.svg('emoji_milky_way', 'assets/emojis/1f30c.svg', { width: 64, height: 64 });   // 🌌
+        this.load.svg('emoji_cyclone', 'assets/emojis/1f300.svg', { width: 64, height: 64 });     // 🌀
+        this.load.svg('emoji_musical_note', 'assets/emojis/1f3b6.svg', { width: 64, height: 64 }); // 🎶
 
         this.load.on('loaderror', (file) => {
             console.error(`[BootScene] Error loading asset: ${file.key} from ${file.src}`);
@@ -241,6 +251,23 @@ export default class BootScene extends Phaser.Scene {
             if (!existingGuard) {
                 console.log('[BootScene] Initializing Node Charm: 😎 x10');
                 await DBManager.saveInventoryItem('emoji_smiling_face_with_sunglasses', 10);
+            }
+
+            // --- Class Charms (Chapter C) ---
+            const classCharms = [
+                'emoji_running_shoe', 'emoji_bullseye', 'emoji_shoe',   // Archer
+                'emoji_shield', 'emoji_wolf',                          // Warrior
+                'emoji_pill', 'emoji_bubbles',                         // Healer
+                'emoji_milky_way', 'emoji_cyclone',                    // Wizard
+                'emoji_musical_note'                                   // Bard
+            ];
+
+            for (const charmId of classCharms) {
+                const existing = await DBManager.getInventoryItem(charmId);
+                if (!existing) {
+                    console.log(`[BootScene] Initializing Class Charm: ${charmId} x10`);
+                    await DBManager.saveInventoryItem(charmId, 10);
+                }
             }
 
             // Developer Cheat: Give 99999 diamonds for testing

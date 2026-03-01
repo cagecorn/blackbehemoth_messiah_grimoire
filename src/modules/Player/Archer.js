@@ -100,7 +100,7 @@ export default class Archer extends Mercenary {
         this.findNearestEnemy();
 
         // Check for Evasive Maneuvers Perk
-        if (this.activatedPerks.includes('evasive_maneuvers')) {
+        if (this.activatedPerks.includes('emoji_running_shoe')) {
             this.checkEvasiveManeuversTrigger();
         }
     }
@@ -134,8 +134,6 @@ export default class Archer extends Mercenary {
         this.bonusSpeed += Math.round(this.speed * 1.5); // +150% = x2.5 total
 
         // Disable collisions with other units (Phasing)
-        // We use checkCollision.none or just rely on them not slowing down
-        // For actual phasing, we can stop the separation manager or set a flag
         this.isPhasing = true;
 
         // 2. Rolling Animation
@@ -144,13 +142,9 @@ export default class Archer extends Mercenary {
             angle: 360,
             duration: 600,
             onComplete: () => {
-                this.sprite.angle = 0;
+                if (this.sprite) this.sprite.angle = 0;
             }
         });
-
-        // 3. Forced Movement (Flee from nearest enemies)
-        // This will be handled by the AI's "Flee" behavior if we set a high priority, 
-        // or we can manually push here for a split second.
 
         // 4. Trail Effect (After-images)
         const trailTimer = this.scene.time.addEvent({
@@ -209,7 +203,7 @@ export default class Archer extends Mercenary {
 
         // Calculate Damage
         let finalDmg = this.getTotalAtk();
-        if (this.activatedPerks.includes('weakness_exploitation')) {
+        if (this.activatedPerks.includes('emoji_bullseye')) {
             if (target.hp / target.maxHp <= 0.3) {
                 finalDmg *= 1.2; // 20% bonus vs low HP
                 console.log(`[Perk] ${this.unitName}: 약자 멸시 발동! 피해량 20% 증가 (대상 HP: ${Math.round(target.hp / target.maxHp * 100)}%)`);
@@ -232,7 +226,7 @@ export default class Archer extends Mercenary {
         );
 
         // Perk: Hit and Run
-        if (this.activatedPerks.includes('hit_and_run')) {
+        if (this.activatedPerks.includes('emoji_shoe')) {
             this.applyHitAndRun();
         }
 
@@ -284,8 +278,9 @@ export default class Archer extends Mercenary {
         }
 
         const target = this.blackboard ? this.blackboard.get('target') : null;
-        if (this.activatedPerks.includes('weakness_exploitation') && target && target.active && target.hp / target.maxHp <= 0.3) {
+        if (this.activatedPerks.includes('emoji_bullseye') && target && target.active && target.hp / target.maxHp <= 0.3) {
             statuses.push({
+                id: 'emoji_bullseye',
                 name: '약자 멸시',
                 description: '생명력이 30% 이하인 적에게 주는 피해가 20% 증가합니다.',
                 emoji: '🎯',
