@@ -355,6 +355,9 @@ export default class DungeonScene extends Phaser.Scene {
 
         this.setupFakeAestheticOverlays();
 
+        // 🎬 Start Intro Blur Effect
+        this.applyIntroBlur();
+
         EventBus.on(EventBus.EVENTS.DEBUG_SWAP_CHARACTER, this.handleDebugSwap, this);
     }
 
@@ -755,10 +758,6 @@ export default class DungeonScene extends Phaser.Scene {
         return null;
     }
 
-    /**
-     * Setup cinematic filters using hardware-accelerated dual cameras.
-     * This provides a "real" silk-like blur and atmospheric lighting with much lower performance cost than PostFX.
-     */
     setupFakeAestheticOverlays() {
         // Remove the expensive PostFX TiltShift if any
         if (this.cameras.main.postFX) {
@@ -769,5 +768,29 @@ export default class DungeonScene extends Phaser.Scene {
         this.cameras.main.setBackgroundColor('#2d2d2d');
 
         console.log('[디버그] 대기 효과 적용 (구름 그림자 & 렌즈 플레어)');
+    }
+
+    /**
+     * Applies a cinematic intro blur that fades away.
+     */
+    applyIntroBlur() {
+        if (!this.cameras.main.postFX) return;
+
+        // Add a temporary blur effect
+        const blur = this.cameras.main.postFX.addBlur(2, 4, 4, 1, 0xffffff, 4);
+
+        // Tween to zero strength
+        this.tweens.add({
+            targets: blur,
+            x: 0,
+            y: 0,
+            strength: 0,
+            duration: 1500,
+            ease: 'Power2',
+            onComplete: () => {
+                this.cameras.main.postFX.remove(blur);
+                console.log('[Visuals] Intro Blur Concluded. Screen is clear. ✨');
+            }
+        });
     }
 }

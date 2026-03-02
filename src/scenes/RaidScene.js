@@ -123,9 +123,11 @@ export default class RaidScene extends Phaser.Scene {
             SeparationManager.applyRepulsion(u1, u2, 80); // Stronger repulsion for boss
         });
 
-        // ── 환경 부유 먼지 (3레이어 Parallax) ──
         this.ambientMoteManager = new AmbientMoteManager(this);
         console.log('[Raid] Dust Bokeh (AmbientMoteManager) initialized.');
+
+        // 🎬 Start Intro Blur Effect
+        this.applyIntroBlur();
 
         // Cleanup on scene shutdown
         this.events.once('shutdown', () => {
@@ -342,6 +344,30 @@ export default class RaidScene extends Phaser.Scene {
         EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, `[레이드] 원정대가 전멸했습니다... 영지로 귀환합니다. 💀`);
         this.time.delayedCall(3000, () => {
             this.scene.start('TerritoryScene');
+        });
+    }
+
+    /**
+     * Applies a cinematic intro blur that fades away.
+     */
+    applyIntroBlur() {
+        if (!this.cameras.main.postFX) return;
+
+        // Add a temporary blur effect
+        const blur = this.cameras.main.postFX.addBlur(2, 4, 4, 1, 0xffffff, 4);
+
+        // Tween to zero strength
+        this.tweens.add({
+            targets: blur,
+            x: 0,
+            y: 0,
+            strength: 0,
+            duration: 1500,
+            ease: 'Power2',
+            onComplete: () => {
+                this.cameras.main.postFX.remove(blur);
+                console.log('[Visuals] Raid Intro Blur Concluded. ⚔️');
+            }
         });
     }
 }
