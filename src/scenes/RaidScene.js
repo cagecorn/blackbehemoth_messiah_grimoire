@@ -8,6 +8,7 @@ import Bao from '../modules/Player/Bao.js';
 import Bard from '../modules/Player/Bard.js';
 import Nana from '../modules/Player/Nana.js';
 import Nickle from '../modules/Player/Nickle.js';
+import Wrinkle from '../modules/Player/Wrinkle.js';
 import BossGoblin from '../modules/AI/BossGoblin.js';
 import ProjectileManager from '../modules/Combat/ProjectileManager.js';
 import ParticleManager from '../modules/Particles/ParticleManager.js';
@@ -143,6 +144,8 @@ export default class RaidScene extends Phaser.Scene {
             if (charConfig.classId === 'warrior') {
                 unit = new Warrior(this, x, y, charConfig);
                 if (!playerLeader) playerLeader = unit;
+            } else if (charId === 'wrinkle' || charConfig.characterId === 'wrinkle') {
+                unit = new Wrinkle(this, x, y, playerLeader, charConfig);
             } else if (charId === 'nickle' || charConfig.characterId === 'nickle') {
                 unit = new Nickle(this, x, y, playerLeader, charConfig);
             } else if (charConfig.classId === 'archer') {

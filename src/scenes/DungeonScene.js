@@ -14,6 +14,7 @@ import Nana from '../modules/Player/Nana.js';
 import Nickle from '../modules/Player/Nickle.js';
 import Noah from '../modules/Player/Noah.js';
 import Noel from '../modules/Player/Noel.js';
+import Wrinkle from '../modules/Player/Wrinkle.js';
 import ProjectileManager from '../modules/Combat/ProjectileManager.js';
 import ParticleManager from '../modules/Particles/ParticleManager.js';
 import FXManager from '../modules/Combat/FXManager.js';
@@ -222,6 +223,8 @@ export default class DungeonScene extends Phaser.Scene {
                     playerLeader = unit;
                     this.player = unit;
                 }
+            } else if (charId === 'wrinkle') {
+                unit = new Wrinkle(this, x, y, playerLeader, charConfig);
             } else if (charId === 'nickle') {
                 unit = new Nickle(this, x, y, playerLeader, charConfig);
             } else if (charConfig.classId === 'archer') {
@@ -366,6 +369,8 @@ export default class DungeonScene extends Phaser.Scene {
             this.mercenaries.getChildren().forEach(m => {
                 if (m !== newUnit) m.warrior = newUnit;
             });
+        } else if (characterId === 'wrinkle') {
+            newUnit = new Wrinkle(this, x, y, this.player, config);
         } else if (characterId === 'nickle') {
             newUnit = new Nickle(this, x, y, this.player, config);
         } else if (classId === 'archer') {
@@ -667,6 +672,8 @@ export default class DungeonScene extends Phaser.Scene {
         let unit = null;
         if (classId === 'warrior') {
             unit = new Warrior(this, x, y, config);
+        } else if (characterConfig.id === 'wrinkle' || characterConfig.characterId === 'wrinkle') {
+            unit = new Wrinkle(this, x, y, leaderRef, config);
         } else if (characterConfig.id === 'nickle' || characterConfig.characterId === 'nickle') {
             unit = new Nickle(this, x, y, leaderRef, config);
         } else if (classId === 'archer') {

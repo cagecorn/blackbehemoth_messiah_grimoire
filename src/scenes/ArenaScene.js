@@ -8,6 +8,7 @@ import Bao from '../modules/Player/Bao.js';
 import Bard from '../modules/Player/Bard.js';
 import Nana from '../modules/Player/Nana.js';
 import Nickle from '../modules/Player/Nickle.js';
+import Wrinkle from '../modules/Player/Wrinkle.js';
 import ProjectileManager from '../modules/Combat/ProjectileManager.js';
 import ParticleManager from '../modules/Particles/ParticleManager.js';
 import FXManager from '../modules/Combat/FXManager.js';
@@ -214,6 +215,8 @@ export default class ArenaScene extends Phaser.Scene {
 
         if (classId === 'warrior') {
             unit = new Warrior(this, x, y, finalConfig);
+        } else if (config.id === 'wrinkle' || config.characterId === 'wrinkle') {
+            unit = new Wrinkle(this, x, y, leader, finalConfig);
         } else if (config.id === 'nickle' || config.characterId === 'nickle') {
             unit = new Nickle(this, x, y, leader, finalConfig);
         } else if (classId === 'archer') {

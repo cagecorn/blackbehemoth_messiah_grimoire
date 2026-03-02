@@ -214,24 +214,39 @@ export default class GachaScene extends Phaser.Scene {
                 const pos = positions[index];
 
                 // Card Background
+                const isBehemoth = char.rarity === 'BLACK_BEHEMOTH';
                 const cardBg = this.add.graphics();
-                cardBg.fillStyle(0x1e293b, 0.95);
-                cardBg.lineStyle(3, 0xfbbf24);
+                if (isBehemoth) {
+                    cardBg.fillStyle(0x020617, 0.95); // Deep black
+                    cardBg.lineStyle(4, 0x8b5cf6); // Intense Purple border
+                } else {
+                    cardBg.fillStyle(0x1e293b, 0.95);
+                    cardBg.lineStyle(3, 0xfbbf24);
+                }
                 cardBg.fillRoundedRect(-45, -60, 90, 120, 12);
                 cardBg.strokeRoundedRect(-45, -60, 90, 120, 12);
 
                 // Add nice internal glow / backdrop
                 const glow = this.add.graphics();
-                glow.fillStyle(0x60a5fa, 0.3); // nice blue tint
+                if (isBehemoth) {
+                    glow.fillStyle(0xa78bfa, 0.5); // Stronger purple glow
+                } else {
+                    glow.fillStyle(0x60a5fa, 0.3);
+                }
                 glow.fillCircle(0, -10, 30);
 
                 // Character Sprite
                 const sprite = this.add.image(0, -10, char.sprite);
-                sprite.setScale(0.9);
+                sprite.setScale(isBehemoth ? 1.0 : 0.9); // Slightly larger for Behemoth
 
                 // Name plate
                 const nameText = this.add.text(0, 40, char.name.split(' (')[0], {
-                    fontSize: '14px', fontFamily: 'Inter', fontStyle: 'bold', fill: '#fff'
+                    fontSize: isBehemoth ? '16px' : '14px',
+                    fontFamily: 'Inter',
+                    fontStyle: 'bold',
+                    fill: isBehemoth ? '#a78bfa' : '#fff',
+                    stroke: isBehemoth ? '#000' : 'transparent',
+                    strokeThickness: isBehemoth ? 3 : 0
                 }).setOrigin(0.5);
 
                 const cardContainer = this.add.container(pos.x, pos.y - 50, [cardBg, glow, sprite, nameText]);

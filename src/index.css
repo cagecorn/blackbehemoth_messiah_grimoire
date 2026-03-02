@@ -1865,6 +1865,36 @@ body {
     transform: translateY(-3px);
 }
 
+/* --- Black Behemoth Premium Portrait --- */
+.unit-portrait.behemoth-portrait {
+    border: 1px solid var(--retro-purple);
+    box-shadow: 0 0 10px rgba(170, 119, 255, 0.4), inset 0 0 15px rgba(170, 119, 255, 0.2);
+    background: linear-gradient(135deg, rgba(25, 15, 45, 0.95), rgba(10, 5, 25, 0.98));
+}
+
+.unit-portrait.behemoth-portrait::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border: 1px solid var(--retro-purple);
+    opacity: 0.5;
+    animation: behemoth-glow 2s infinite alternate;
+    pointer-events: none;
+    z-index: 10;
+}
+
+@keyframes behemoth-glow {
+    from {
+        opacity: 0.3;
+        box-shadow: 0 0 5px rgba(170, 119, 255, 0.3);
+    }
+
+    to {
+        opacity: 0.8;
+        box-shadow: 0 0 15px rgba(170, 119, 255, 0.6), inset 0 0 10px rgba(170, 119, 255, 0.2);
+    }
+}
+
 /* 초상화 이미지 박스: 세로형에 맞게 약간 확대 */
 .portrait-img-box {
     width: 36px;

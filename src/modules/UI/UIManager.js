@@ -437,6 +437,9 @@ export default class UIManager {
 
                 const portrait = document.createElement('div');
                 portrait.className = 'unit-portrait';
+                if (charConfig.rarity === 'BLACK_BEHEMOTH') {
+                    portrait.classList.add('behemoth-portrait');
+                }
                 portrait.innerHTML = `
                     <div class="portrait-img-box">
                         <img src="assets/characters/party/${charConfig.sprite}.png" alt="${merc.unitName}">

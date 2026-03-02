@@ -21,12 +21,24 @@ export default class GachaManager {
 
         await DBManager.saveInventoryItem('emoji_gem', currentDiamonds - totalCost);
 
-        // 2. 가챠 결과 도출 (1성 캐릭터 무작위 픽업)
-        const charIds = Object.keys(Characters);
+        // 2. 가챠 결과 도출 (확률 기반 레어리티 결정)
+        const allCharIds = Object.keys(Characters);
+        const normalChars = allCharIds.filter(id => Characters[id].rarity !== 'BLACK_BEHEMOTH');
+        const behemothChars = allCharIds.filter(id => Characters[id].rarity === 'BLACK_BEHEMOTH');
+
         const pulled = [];
         for (let i = 0; i < pullCount; i++) {
-            const randomCharId = charIds[Math.floor(Math.random() * charIds.length)];
-            pulled.push(randomCharId);
+            const roll = Math.random() * 100;
+            let selectedCharId;
+
+            if (roll < 2 && behemothChars.length > 0) {
+                // 2% 확률로 블랙 베히모스 획득
+                selectedCharId = behemothChars[Math.floor(Math.random() * behemothChars.length)];
+            } else {
+                // 98% 확률로 일반 캐릭터 획득
+                selectedCharId = normalChars[Math.floor(Math.random() * normalChars.length)];
+            }
+            pulled.push(selectedCharId);
         }
 
         // 3. 로스터 불러오기 및 1성 병합 계산
