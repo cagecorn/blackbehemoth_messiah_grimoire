@@ -51,6 +51,14 @@ class PartyManager {
 
     async setPartySlot(index, characterId) {
         if (index >= 0 && index < 6) {
+            // Duplicate prevention: if this character is already in another slot, clear it
+            if (characterId !== null) {
+                const existingIndex = this.activeParty.indexOf(characterId);
+                if (existingIndex !== -1 && existingIndex !== index) {
+                    this.activeParty[existingIndex] = null;
+                }
+            }
+
             this.activeParty[index] = characterId;
             // Persist party change
             await DBManager.saveParty(this.activeParty);

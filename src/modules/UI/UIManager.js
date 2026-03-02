@@ -626,6 +626,14 @@ export default class UIManager {
         const slotIndex = parseInt(slotId.replace('slot', ''));
         const channel = this.channels[slotIndex];
 
+        // Duplicate prevention: check if this character is already in another slot
+        this.channels.forEach((ch, idx) => {
+            if (idx !== slotIndex && ch.characterId === characterId) {
+                console.log(`[UIManager] Moving ${characterId} from slot ${idx} to slot ${slotIndex}`);
+                ch.clear(); // Clear the old slot UI
+            }
+        });
+
         // Save to PartyManager
         import('../Core/PartyManager.js').then(module => {
             const partyManager = module.default;

@@ -294,7 +294,13 @@ export default class TerritoryScene extends Phaser.Scene {
             // Click to pick
             card.onclick = () => {
                 const charId = card.dataset.id;
-                // Find first empty slot or replace selected
+                // Duplicate prevention: check if already in party
+                if (currentSlots.includes(charId)) {
+                    console.log(`[Party] ${charId} is already in the party.`);
+                    return;
+                }
+
+                // Find first empty slot
                 let emptyIndex = currentSlots.indexOf(null);
                 if (emptyIndex !== -1) {
                     currentSlots[emptyIndex] = charId;
@@ -309,6 +315,13 @@ export default class TerritoryScene extends Phaser.Scene {
                 e.preventDefault();
                 const charId = e.dataTransfer.getData('characterId');
                 if (charId) {
+                    // Duplicate prevention: if this character is already in another slot, clear it
+                    const existingIndex = currentSlots.indexOf(charId);
+                    if (existingIndex !== -1 && existingIndex !== i) {
+                        currentSlots[existingIndex] = null;
+                        updateSlotUI(existingIndex);
+                    }
+
                     currentSlots[i] = charId;
                     updateSlotUI(i);
                 }
