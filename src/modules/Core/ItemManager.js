@@ -28,10 +28,10 @@ const ITEM_DATABASE = {
     'emoji_meat': { name: 'Monster Meat', type: ITEM_TYPES.MATERIAL, icon: 'emoji_meat' },
     'emoji_wood': { name: 'Wood Log', type: ITEM_TYPES.MATERIAL, icon: 'emoji_wood' },
     'emoji_herb': { name: 'Magic Herb', type: ITEM_TYPES.MATERIAL, icon: 'emoji_herb' },
-    'emoji_burger': { name: 'Hamburger', type: ITEM_TYPES.MATERIAL, icon: 'emoji_burger' },
-    'emoji_fireworks': { name: 'Fire Nova (🎆)', type: ITEM_TYPES.MATERIAL, icon: 'emoji_fireworks' },
-    'emoji_sparkler': { name: 'Spark Nova (🎇)', type: ITEM_TYPES.MATERIAL, icon: 'emoji_sparkler' },
-    'emoji_koinobori': { name: 'Ice Nova (🎏)', type: ITEM_TYPES.MATERIAL, icon: 'emoji_koinobori' },
+    'emoji_burger': { name: 'Hamburger', type: ITEM_TYPES.MATERIAL, icon: 'emoji_burger', chapter: 'ACTIVE' },
+    'emoji_fireworks': { name: 'Fire Nova (🎆)', type: ITEM_TYPES.MATERIAL, icon: 'emoji_fireworks', chapter: 'ACTIVE' },
+    'emoji_sparkler': { name: 'Spark Nova (🎇)', type: ITEM_TYPES.MATERIAL, icon: 'emoji_sparkler', chapter: 'ACTIVE' },
+    'emoji_koinobori': { name: 'Ice Nova (🎏)', type: ITEM_TYPES.MATERIAL, icon: 'emoji_koinobori', chapter: 'ACTIVE' },
 
     // --- Tactical Node Charms ---
     'emoji_pouting_face': { name: '분노 (Enraged 😠)', type: 'node_charm', icon: 'emoji_pouting_face', description: '적의 서포터(힐러/바드)를 최우선으로 추적하며, 자신의 잃은 체력에 비례해 공격력이 최대 15%까지 상승합니다.' },
@@ -165,5 +165,15 @@ export default class ItemManager {
     static isEquipment(id) {
         const item = this.getItem(id);
         return item && item.type === ITEM_TYPES.EQUIPMENT;
+    }
+
+    static getChapter(id) {
+        const item = this.getItem(id);
+        if (!item) return null;
+        if (item.chapter) return item.chapter;
+        if (item.type === 'node_charm') return 'TACTICAL';
+        if (item.type === 'class_charm') return 'CLASS';
+        if (item.type === 'trans_charm') return 'TRANSFORMATION';
+        return null;
     }
 }

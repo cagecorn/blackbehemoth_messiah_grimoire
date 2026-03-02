@@ -2310,6 +2310,46 @@ body {
     line-height: 1;
 }
 
+/* Emoji Filter Bar */
+.emoji-filter-bar {
+    display: flex;
+    gap: 4px;
+    padding: 8px 12px;
+    background: rgba(0, 0, 0, 0.4);
+    border-bottom: 2px solid var(--retro-border);
+    margin-bottom: 8px;
+    overflow-x: auto;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.emoji-filter-bar .filter-btn {
+    min-width: 45px;
+    padding: 5px 8px;
+    background: var(--retro-panel2);
+    border: 1px solid var(--retro-border2);
+    color: var(--retro-dim);
+    font-family: var(--font-pixel);
+    font-size: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+    box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.5);
+}
+
+.emoji-filter-bar .filter-btn:hover {
+    border-color: var(--retro-amber);
+    color: var(--retro-amber);
+    transform: translateY(-1px);
+}
+
+.emoji-filter-bar .filter-btn.active {
+    background: var(--retro-amber);
+    color: #000;
+    border-color: var(--retro-gold);
+    box-shadow: 0 0 10px rgba(255, 176, 0, 0.4);
+    text-shadow: none;
+}
+
 /* --- Status Description Popup (Mobile Friendly) --- */
 .status-popup-tab {
     position: fixed;

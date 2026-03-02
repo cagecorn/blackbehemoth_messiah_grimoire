@@ -47,6 +47,9 @@ export default class UIManager {
         this.detailDesc = document.getElementById('detail-description');
         this.btnEquipItem = document.getElementById('btn-equip-item');
         this.selectedItemId = null;
+        this.pendingGrimoireSlot = null;
+        this.pendingGearSlot = null; // Track gear slot clicked in ChatChannel
+        this.emojiFilter = 'ALL'; // Filter for Emoji Inventory
 
         // Bind the RAF loop
         this.rafLoop = this.rafLoop.bind(this);
@@ -281,9 +284,40 @@ export default class UIManager {
         const tabGear = document.getElementById('tab-gear');
         if (tabMaterials) tabMaterials.onclick = () => this.switchInventoryTab('materials');
         if (tabGear) tabGear.onclick = () => this.switchInventoryTab('gear');
+
+        // Emoji Filter Listeners
+        const filterButtons = document.querySelectorAll('.emoji-filter-bar .filter-btn');
+        filterButtons.forEach(btn => {
+            btn.onclick = () => {
+                const filter = btn.dataset.filter;
+                this.setEmojiFilter(filter);
+            };
+        });
     }
 
-    switchInventoryTab(tab) {
+    setEmojiFilter(filter) {
+        this.emojiFilter = filter;
+
+        // Update button UI
+        const filterButtons = document.querySelectorAll('.emoji-filter-bar .filter-btn');
+        filterButtons.forEach(btn => {
+            if (btn.dataset.filter === filter) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+
+        this.inventoryDirty = true;
+    }
+
+    switchInventoryTab(tab, filter = null) {
+        if (tab === 'materials' && filter) {
+            this.setEmojiFilter(filter);
+        } else if (tab === 'materials' && !filter) {
+            this.setEmojiFilter('ALL');
+        }
+
         const sectionMaterials = document.getElementById('section-materials');
         const sectionGear = document.getElementById('section-gear');
         const tabMaterials = document.getElementById('tab-materials');
@@ -923,7 +957,20 @@ export default class UIManager {
 
             items.sort((a, b) => b.amount - a.amount);
 
-            items.forEach(item => {
+            // Filter by Grimoire Chapter if active (for Emoji/Materials tab)
+            const filteredItems = items.filter(item => {
+                const itemData = ItemManager.getItem(item.id);
+                if (!itemData) return false;
+
+                // If Gear tab, show all gear
+                if (itemData.type === 'equipment') return true;
+
+                // If Emoji tab, respect the filter
+                if (this.emojiFilter === 'ALL') return true;
+                return ItemManager.getChapter(item.id) === this.emojiFilter;
+            });
+
+            filteredItems.forEach(item => {
                 const itemData = ItemManager.getItem(item.id);
                 if (!itemData) return;
 
@@ -981,8 +1028,8 @@ export default class UIManager {
         let autoEquipped = false;
 
         // --- Improved UX: Two-Click System ---
-        // 1. If we have a pending Grimoire slot AND this item is ALREADY selected (second click)
-        if (this.pendingGrimoireSlot && this.selectedItemId === itemId) {
+        // 1. If we have a pending slot (Grimoire or Gear) AND this item is ALREADY selected (second click)
+        if ((this.pendingGrimoireSlot || this.pendingGearSlot) && this.selectedItemId === itemId) {
             // This is the second click on the same item, proceed with equip
             autoEquipped = this.executeEquip(itemId, false);
         }
@@ -1053,8 +1100,28 @@ export default class UIManager {
         }
 
         if (item && item.type === 'equipment') {
+            let unitId = targetChannel ? targetChannel.linkedUnitId : null;
+
+            // If we have a pending gear slot, override target
+            if (this.pendingGearSlot) {
+                unitId = this.pendingGearSlot.unitId;
+                // Note: The slot type itself is handled by the server/logic based on the item,
+                // but we could explicitly pass it if needed. For now, matching the unitId is key.
+
+                // Clear highlight
+                if (this.pendingGearSlot.element) {
+                    this.pendingGearSlot.element.classList.remove('gear-slot-pending');
+                }
+                this.pendingGearSlot = null;
+            }
+
+            if (!unitId) {
+                console.error('[UIManager] executeEquip FAILED: No target unitId.');
+                return false;
+            }
+
             EventBus.emit(EventBus.EVENTS.EQUIP_REQUEST, {
-                unitId: targetChannel.linkedUnitId,
+                unitId: unitId,
                 itemId: itemId
             });
             return true;

@@ -738,7 +738,6 @@ export default class ChatChannel {
             }
         });
     }
-
     setupGearDragDrop() {
         if (!this.gearView) return;
 
@@ -769,6 +768,33 @@ export default class ChatChannel {
                             itemId: itemId
                         });
                     });
+                }
+            });
+
+            // Click to open inventory and mark as pending gear slot
+            slot.addEventListener('click', () => {
+                if (this.uiManager) {
+                    const slotType = slot.dataset.slot;
+
+                    // Clear any previous pending highlights (both gear and grimoire)
+                    document.querySelectorAll('.gear-slot, .grim-slot').forEach(s => {
+                        s.classList.remove('gear-slot-pending', 'grim-slot-pending');
+                    });
+
+                    // Mark this slot as pending for equip
+                    this.uiManager.pendingGearSlot = {
+                        unitId: this.linkedUnitId,
+                        slot: slotType,
+                        element: slot
+                    };
+                    slot.classList.add('gear-slot-pending');
+
+                    console.log(`[Gear] Slot pending: ${slotType} for ${this.name}`);
+
+                    this.uiManager.showPopup('inventory');
+                    if (this.uiManager.switchInventoryTab) {
+                        this.uiManager.switchInventoryTab('gear');
+                    }
                 }
             });
         });
@@ -813,7 +839,15 @@ export default class ChatChannel {
 
                     this.uiManager.showPopup('inventory');
                     if (this.uiManager.switchInventoryTab) {
-                        this.uiManager.switchInventoryTab('materials');
+                        // Map grimoire slot type to inventory filter
+                        let filter = 'ALL';
+                        const lowerChapter = chapter.toLowerCase();
+                        if (lowerChapter.includes('active')) filter = 'ACTIVE';
+                        else if (lowerChapter.includes('tactical')) filter = 'TACTICAL';
+                        else if (lowerChapter.includes('class')) filter = 'CLASS';
+                        else if (lowerChapter.includes('trans')) filter = 'TRANSFORMATION';
+
+                        this.uiManager.switchInventoryTab('materials', filter);
                     }
                 }
             });
