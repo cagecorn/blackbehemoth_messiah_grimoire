@@ -16,8 +16,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
     <!-- Custom CSS for DOM Overlay -->
-  <script type="module" crossorigin src="./assets/index-CcX3FX-A.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-DP14w2C6.css">
+  <script type="module" crossorigin src="./assets/index-BCtOt5KG.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-U7s7b-02.css">
 </head>
 
 <body>
@@ -102,15 +102,29 @@
 
         <!-- Mobile HUD Layer -->
         <div id="mobile-hud">
-            <div id="hud-top">
-                <div class="hud-stat"><img src="assets/emojis/1fa99.svg" alt="Gold"> <span id="hud-gold">0</span></div>
-                <div class="hud-stat"><img src="assets/emojis/1f48e.svg" alt="Gem"> <span id="hud-gem">0</span></div>
-                <div id="hud-menu-btns">
-                    <button id="btn-fullscreen" title="Fullscreen">⛶</button>
-                    <button id="btn-inventory" title="Inventory">🎒</button>
-                    <button id="btn-party" title="Party">⚔️</button>
-                    <button id="btn-exit" title="Exit"
-                        style="background: rgba(255, 50, 50, 0.6); display: none;">✕</button>
+            <div id="hud-header">
+                <div id="hud-top">
+                    <div class="hud-stat"><img src="assets/emojis/1fa99.svg" alt="Gold"> <span id="hud-gold">0</span>
+                    </div>
+                    <div class="hud-stat"><img src="assets/emojis/1f48e.svg" alt="Gem"> <span id="hud-gem">0</span>
+                    </div>
+                    <div id="hud-menu-btns">
+                        <button id="btn-fullscreen" title="Fullscreen">⛶</button>
+                        <button id="btn-inventory" title="Inventory">🎒</button>
+                        <button id="btn-party" title="Party">⚔️</button>
+                        <button id="btn-settings" title="Settings">⚙️</button>
+                        <button id="btn-exit" title="Exit"
+                            style="background: rgba(255, 50, 50, 0.6); display: none;">✕</button>
+                    </div>
+                </div>
+
+                <div id="hud-scene-nav">
+                    <button class="nav-btn" data-scene="TerritoryScene">영지</button>
+                    <button class="nav-btn" data-scene="GachaScene">뽑기</button>
+                    <button class="nav-btn" data-popup="party">편성</button>
+                    <button class="nav-btn" data-scene="DungeonScene">던전</button>
+                    <button class="nav-btn" data-scene="ArenaScene">아레나</button>
+                    <button class="nav-btn" data-scene="RaidScene">레이드</button>
                 </div>
             </div>
 
