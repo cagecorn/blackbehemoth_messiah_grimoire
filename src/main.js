@@ -51,35 +51,39 @@ const config = {
 
 // Boot up DOM UI Systems outside of Phaser's context
 const uiManager = new UIManager();
-uiManager.init();
-logManager.init();
+const logManagerInstance = logManager; // renamed to instance to avoid confusion if needed, but keeping it simple
 
-// Boot up Global Managers
-globalBlackboard.init();
-// embeddingGemma.init(); // Disabled as per user request
-// intentRouter.init();  // Disabled as per user request
-await partyManager.init(Object.values(Characters));
+(async () => {
+    uiManager.init();
+    logManagerInstance.init();
 
-// Start the game after managers are ready
-const game = new Phaser.Game(config);
+    // Boot up Global Managers
+    globalBlackboard.init();
+    // embeddingGemma.init(); // Disabled as per user request
+    // intentRouter.init();  // Disabled as per user request
+    await partyManager.init(Object.values(Characters));
 
-// Attach managers to game instance for scene access
-game.uiManager = uiManager;
-game.logManager = logManager;
-game.partyManager = partyManager;
-game.dbManager = DBManager; // If needed, but DBManager is static usually
+    // Start the game after managers are ready
+    const game = new Phaser.Game(config);
 
-// --- Developer Debug Commands ---
-window.addDiamonds = async (amount = 99999) => {
-    const existing = await DBManager.getInventoryItem('emoji_gem');
-    const currentAmount = existing ? existing.amount : 0;
-    const newAmount = currentAmount + amount;
-    await DBManager.saveInventoryItem('emoji_gem', newAmount);
+    // Attach managers to game instance for scene access
+    game.uiManager = uiManager;
+    game.logManager = logManagerInstance;
+    game.partyManager = partyManager;
+    game.dbManager = DBManager; // If needed, but DBManager is static usually
 
-    // Notify systems to refresh UI
-    EventBus.emit(EventBus.EVENTS.INVENTORY_UPDATED, { id: 'emoji_gem', amount: newAmount });
-    console.log(`%c[Cheat] Added ${amount} diamonds. Total: ${newAmount}`, "color: #00ffcc; font-weight: bold;");
-};
+    // --- Developer Debug Commands ---
+    window.addDiamonds = async (amount = 99999) => {
+        const existing = await DBManager.getInventoryItem('emoji_gem');
+        const currentAmount = existing ? existing.amount : 0;
+        const newAmount = currentAmount + amount;
+        await DBManager.saveInventoryItem('emoji_gem', newAmount);
+
+        // Notify systems to refresh UI
+        EventBus.emit(EventBus.EVENTS.INVENTORY_UPDATED, { id: 'emoji_gem', amount: newAmount });
+        console.log(`%c[Cheat] Added ${amount} diamonds. Total: ${newAmount}`, "color: #00ffcc; font-weight: bold;");
+    };
+})();
 
 
 function preload() {
