@@ -9,6 +9,7 @@ import Bard from '../modules/Player/Bard.js';
 import Nana from '../modules/Player/Nana.js';
 import Nickle from '../modules/Player/Nickle.js';
 import Wrinkle from '../modules/Player/Wrinkle.js';
+import Veve from '../modules/Player/Veve.js';
 import ProjectileManager from '../modules/Combat/ProjectileManager.js';
 import ParticleManager from '../modules/Particles/ParticleManager.js';
 import FXManager from '../modules/Combat/FXManager.js';
@@ -229,6 +230,8 @@ export default class ArenaScene extends Phaser.Scene {
                 unit = new Bao(this, x, y, leader, finalConfig);
             } else if (config.id === 'aina' || config.characterId === 'aina') {
                 unit = new Aina(this, x, y, leader, finalConfig);
+            } else if (config.id === 'veve' || config.characterId === 'veve') {
+                unit = new Veve(this, x, y, leader, finalConfig);
             } else {
                 unit = new Wizard(this, x, y, leader, finalConfig);
             }

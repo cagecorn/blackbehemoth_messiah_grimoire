@@ -15,6 +15,7 @@ import Nickle from '../modules/Player/Nickle.js';
 import Noah from '../modules/Player/Noah.js';
 import Noel from '../modules/Player/Noel.js';
 import Wrinkle from '../modules/Player/Wrinkle.js';
+import Veve from '../modules/Player/Veve.js';
 import ProjectileManager from '../modules/Combat/ProjectileManager.js';
 import ParticleManager from '../modules/Particles/ParticleManager.js';
 import FXManager from '../modules/Combat/FXManager.js';
@@ -242,6 +243,8 @@ export default class DungeonScene extends Phaser.Scene {
                     unit = new Bao(this, x, y, playerLeader, charConfig);
                 } else if (charId === 'aina') {
                     unit = new Aina(this, x, y, playerLeader, charConfig);
+                } else if (charId === 'veve') {
+                    unit = new Veve(this, x, y, playerLeader, charConfig);
                 } else {
                     unit = new Wizard(this, x, y, playerLeader, charConfig);
                 }
@@ -395,6 +398,8 @@ export default class DungeonScene extends Phaser.Scene {
                 newUnit = new Bao(this, x, y, this.player, config);
             } else if (characterId === 'aina') {
                 newUnit = new Aina(this, x, y, this.player, config);
+            } else if (characterId === 'veve') {
+                newUnit = new Veve(this, x, y, this.player, config);
             } else {
                 newUnit = new Wizard(this, x, y, this.player, config);
             }

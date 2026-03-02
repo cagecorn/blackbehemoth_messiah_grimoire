@@ -184,6 +184,9 @@ export default class BootScene extends Phaser.Scene {
         this.load.image('aina_cutscene', 'assets/characters/party/aina_cutscene.png');
         this.load.image('wrinkle_sprite', 'assets/characters/party/wrinkle_sprite.png');
         this.load.image('wrinkle_cutscene', 'assets/characters/party/wrinkle_cutscene.png');
+        this.load.image('veve_sprite', 'assets/characters/party/veve_sprite.png');
+        this.load.image('veve_cutscene', 'assets/characters/party/veve_cutscene.png');
+        this.load.image('veve_ultimate_sprite', 'assets/characters/party/veve_ultimate_sprite.png');
 
         // Load effect sprites
         this.load.image('guillotine_paper', 'assets/effect/guillotine_paper.png');

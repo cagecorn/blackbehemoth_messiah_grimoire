@@ -9,6 +9,7 @@ import Bard from '../modules/Player/Bard.js';
 import Nana from '../modules/Player/Nana.js';
 import Nickle from '../modules/Player/Nickle.js';
 import Wrinkle from '../modules/Player/Wrinkle.js';
+import Veve from '../modules/Player/Veve.js';
 import BossGoblin from '../modules/AI/BossGoblin.js';
 import ProjectileManager from '../modules/Combat/ProjectileManager.js';
 import ParticleManager from '../modules/Particles/ParticleManager.js';
@@ -163,6 +164,8 @@ export default class RaidScene extends Phaser.Scene {
                     unit = new Bao(this, x, y, playerLeader, charConfig);
                 } else if (charId === 'aina') {
                     unit = new Aina(this, x, y, playerLeader, charConfig);
+                } else if (charId === 'veve') {
+                    unit = new Veve(this, x, y, playerLeader, charConfig);
                 } else {
                     unit = new Wizard(this, x, y, playerLeader, charConfig);
                 }

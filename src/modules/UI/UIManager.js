@@ -32,8 +32,18 @@ export default class UIManager {
         this.hudGold = document.getElementById('hud-gold');
         this.hudGem = document.getElementById('hud-gem');
         this.portraitBar = document.getElementById('portrait-bar');
+
+
+        // --- Popup / Overlay Management ---
         this.popupOverlay = document.getElementById('popup-overlay');
         this.popupInner = document.getElementById('popup-inner');
+
+        // Confirm Modal Elements
+        this.confirmOverlay = document.getElementById('confirm-overlay');
+        this.confirmMessage = document.getElementById('confirm-message');
+        this.btnConfirmYes = document.getElementById('btn-confirm-yes');
+        this.btnConfirmNo = document.getElementById('btn-confirm-no');
+        this.confirmCallback = null;
         this.popupClose = document.getElementById('popup-close');
         this.btnInventory = document.getElementById('btn-inventory');
         this.btnParty = document.getElementById('btn-party');
@@ -224,6 +234,24 @@ export default class UIManager {
         });
     }
 
+    showConfirm(message, onConfirm, onCancel = null) {
+        if (!this.confirmOverlay || !this.confirmMessage) return;
+
+        this.confirmMessage.innerText = message;
+        this.confirmOverlay.style.display = 'flex';
+
+        this.btnConfirmYes.onclick = () => {
+            this.confirmOverlay.style.display = 'none';
+            if (onConfirm) onConfirm();
+        };
+
+        this.btnConfirmNo.onclick = () => {
+            this.confirmOverlay.style.display = 'none';
+            if (onCancel) onCancel();
+            if (this.updateActiveNav) this.updateActiveNav();
+        };
+    }
+
     setupMobileEvents() {
         const combatScenes = ['DungeonScene', 'ArenaScene', 'RaidScene'];
         const getActiveKey = () => (this.scene?.scene?.key || this.scene?.sys?.settings?.key || "");
@@ -238,8 +266,11 @@ export default class UIManager {
             this.btnParty.onclick = () => {
                 const currentKey = getActiveKey();
                 if (combatScenes.includes(currentKey)) {
-                    if (!window.confirm("전투가 진행 중입니다. 정말로 나가시겠습니까?")) return;
-                    this.safeSceneStart('TerritoryScene');
+                    this.showConfirm("전투가 진행 중입니다. 정말로 나가시겠습니까?", () => {
+                        this.safeSceneStart('TerritoryScene');
+                        this.showPopup('party');
+                    });
+                    return;
                 }
                 this.showPopup('party');
             };
@@ -259,7 +290,10 @@ export default class UIManager {
             this.btnExit.onclick = () => {
                 const currentKey = getActiveKey();
                 if (combatScenes.includes(currentKey)) {
-                    if (!window.confirm("전투를 포기하고 나가시겠습니까?")) return;
+                    this.showConfirm("전투를 포기하고 나가시겠습니까?", () => {
+                        this.safeSceneStart('TerritoryScene');
+                    });
+                    return;
                 }
                 this.safeSceneStart('TerritoryScene');
             };
@@ -324,15 +358,24 @@ export default class UIManager {
                 const popupKey = btn.dataset.popup;
                 const currentKey = getActiveKey();
 
-                // 1. Prevent redundant clicks
-                if (sceneKey && sceneKey === currentKey) return;
+                // 1. Prevent redundant clicks (Removed guard to allow closing overlays even on current scene)
+                // if (sceneKey && sceneKey === currentKey) return;
 
                 // 2. Confirmation if in combat
                 if (combatScenes.includes(currentKey)) {
-                    if (!window.confirm("전투가 진행 중입니다. 정말로 나가시겠습니까?")) {
-                        if (this.updateActiveNav) this.updateActiveNav();
-                        return;
-                    }
+                    this.showConfirm("전투가 진행 중입니다. 정말로 나가시겠습니까?", () => {
+                        // Success Callback
+                        navButtons.forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+
+                        if (sceneKey) {
+                            this.safeSceneStart(sceneKey);
+                        } else if (popupKey) {
+                            this.safeSceneStart('TerritoryScene');
+                            this.showPopup(popupKey);
+                        }
+                    });
+                    return;
                 }
 
                 // 3. Update UI highlights
