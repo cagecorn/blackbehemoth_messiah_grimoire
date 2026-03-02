@@ -26,11 +26,9 @@ export default class GuardianOfTruth {
         this.isActive = true;
 
         // 1. Cutscene Trigger (Global UI)
-        EventBus.emit(EventBus.EVENTS.ULTIMATE_CAST, {
-            unitName: caster.unitName,
-            ultName: this.name,
-            cutscene: caster.config.cutscene || 'veve_cutscene'
-        });
+        if (scene.ultimateManager) {
+            await scene.ultimateManager.playCutscene(caster, this.name);
+        }
 
         // 2. Sound
         if (soundEffects.playAaahSound) {

@@ -53,6 +53,9 @@ export default class ArenaScene extends Phaser.Scene {
     }
 
     create() {
+        if (this.game.uiManager) {
+            this.game.uiManager.scene = this;
+        }
         console.log('ArenaScene started');
 
         // Fixed Arena Dimensions (matching background asset 1536x1024)

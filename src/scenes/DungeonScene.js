@@ -66,6 +66,9 @@ export default class DungeonScene extends Phaser.Scene {
     }
 
     create() {
+        if (this.game.uiManager) {
+            this.game.uiManager.scene = this;
+        }
         console.log('DungeonScene started');
         this.cameras.main.setBackgroundColor('#2d2d2d');
 

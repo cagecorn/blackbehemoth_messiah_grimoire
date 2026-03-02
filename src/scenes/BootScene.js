@@ -340,4 +340,11 @@ export default class BootScene extends Phaser.Scene {
         div.className = className;
         return div;
     }
+
+    create() {
+        if (this.game.uiManager) {
+            this.game.uiManager.scene = this;
+        }
+        this.scene.start('TerritoryScene');
+    }
 }

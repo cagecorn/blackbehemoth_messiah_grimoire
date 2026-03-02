@@ -51,6 +51,9 @@ export default class RaidScene extends Phaser.Scene {
     }
 
     create() {
+        if (this.game.uiManager) {
+            this.game.uiManager.scene = this;
+        }
         console.log('RaidScene started');
         EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, `[레이드] 레이드가 시작되었습니다! 원정대 출격! 🏰`);
 

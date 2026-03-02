@@ -12,7 +12,7 @@ export default class Cyclone {
     constructor(options = {}) {
         this.id = 'cyclone';
         this.name = '싸이클론';
-        this.baseCooldown = options.cooldown || 7000;
+        this.baseCooldown = options.cooldown || 5000; // More aggressive: 7s -> 5s
         this.damageMultiplier = options.damageMultiplier || 1.8;
         this.lastCastTime = 0;
         this.projectileCount = options.projectileCount || 1;
@@ -38,7 +38,8 @@ export default class Cyclone {
         if (!caster || !caster.active || !target || !target.active) return false;
 
         const now = caster.scene.time.now;
-        if (!this.isReady(now, caster.castSpd)) return false;
+        const castSpd = caster.getTotalCastSpd ? caster.getTotalCastSpd() : (caster.castSpd || 1000);
+        if (!this.isReady(now, castSpd)) return false;
 
         this.lastCastTime = now;
         const scene = caster.scene;
@@ -66,55 +67,68 @@ export default class Cyclone {
         const startX = caster.x;
         const startY = caster.y;
 
-        // Target position plus some randomness for "zigzag" variety
-        const targetX = target.x + Phaser.Math.Between(-30, 30);
-        const targetY = target.y + Phaser.Math.Between(-30, 30);
+        // Target position
+        const targetX = target.x;
+        const targetY = target.y;
 
-        // 1. Create Projectile (Group of emojis for "overlapping" look)
+        // 1. Create Projectile (Container for multiple emojis)
         const container = scene.add.container(startX, startY);
         container.setDepth(2000);
 
-        const swirls = [];
-        for (let i = 0; i < 3; i++) {
-            const s = scene.add.text(0, 0, '🌪️', { fontSize: '42px' }).setOrigin(0.5);
-            s.setAlpha(0.7 - i * 0.2);
-            s.setBlendMode('ADD');
-            s.setScale(1 + i * 0.2);
-            container.add(s);
-            swirls.push(s);
+        // Requested: 4 layers of 🌪️ with 60% alpha, ADD blend, and varied ScaleX
+        const configs = [
+            { size: '64px', alpha: 0.6, scaleX: 1.0, swayAmp: 10, swayFreq: 400 },
+            { size: '56px', alpha: 0.6, scaleX: 1.5, swayAmp: 20, swayFreq: 600 },
+            { size: '48px', alpha: 0.6, scaleX: 0.8, swayAmp: 15, swayFreq: 500 },
+            { size: '72px', alpha: 0.5, scaleX: 1.2, swayAmp: 25, swayFreq: 800 }
+        ];
 
-            // Spinning animation for each swirl
+        configs.forEach((cfg, i) => {
+            const s = scene.add.text(0, 0, '🌪️', { fontSize: cfg.size }).setOrigin(0.5, 0.8);
+            s.setAlpha(cfg.alpha);
+            s.setBlendMode('ADD');
+            s.setScale(cfg.scaleX, 1.0); // Apply varied horizontal scaling
+            container.add(s);
+
+            // Billboard Sway with unique logic per layer
             scene.tweens.add({
                 targets: s,
-                angle: 360,
-                duration: 500 - i * 100,
+                angle: { from: -cfg.swayAmp, to: cfg.swayAmp },
+                duration: cfg.swayFreq,
+                yoyo: true,
+                repeat: -1,
+                ease: 'Sine.easeInOut'
+            });
+
+            // Pulse width slightly for "turbulent" feeling
+            scene.tweens.add({
+                targets: s,
+                scaleX: '*=1.1',
+                duration: 500 + i * 200,
+                yoyo: true,
                 repeat: -1
             });
-        }
+        });
 
-        // 🍃 Leaves flying around
-        const leaves = scene.add.particles(0, 0, 'emoji_herb', {
-            speed: { min: 50, max: 150 },
+        // 🍃 Dust/Leaves at the base
+        const baseEmitter = scene.add.particles(0, 20, 'emoji_herb', {
+            speed: { min: 20, max: 100 },
             angle: { min: 0, max: 360 },
-            scale: { start: 0.4, end: 0 },
-            lifespan: 600,
-            frequency: 50,
-            blendMode: 'ADD',
+            scale: { start: 0.5, end: 0 },
+            lifespan: 800,
+            frequency: 30, // More frequent
+            quantity: 2,
             follow: container
         });
-        leaves.setDepth(1999);
+        baseEmitter.setDepth(1999);
 
-        // Path calculation for Zigzag
+        // Path calculation for Wandering/Wobbling (Diablo 2 Tornado style)
         const dx = targetX - startX;
         const dy = targetY - startY;
-        const angle = Math.atan2(dy, dx);
         const dist = Math.sqrt(dx * dx + dy * dy);
+        const angle = Math.atan2(dy, dx);
 
-        // Randomize zigzag frequency and amplitude
-        const freq = Phaser.Math.FloatBetween(2, 4);
-        const amp = Phaser.Math.Between(40, 80);
-
-        const duration = 1200;
+        const duration = 1500; // Snappier: 1500ms
         const movement = { t: 0 };
 
         scene.tweens.add({
@@ -124,31 +138,37 @@ export default class Cyclone {
             ease: 'Linear',
             onUpdate: () => {
                 const currentDist = dist * movement.t;
+                // General direction towards target
                 const lx = startX + Math.cos(angle) * currentDist;
                 const ly = startY + Math.sin(angle) * currentDist;
 
-                // Zigzag offset
-                const offset = Math.sin(movement.t * Math.PI * freq) * amp;
-                container.x = lx + Math.cos(angle + Math.PI / 2) * offset;
-                container.y = ly + Math.sin(angle + Math.PI / 2) * offset;
+                // "Drunk Walk" / Wandering offset
+                // Using multiple sine waves with different frequencies for unpredictable movement
+                const timeFactor = movement.t * duration * 0.01;
+                const wobbleX = Math.sin(timeFactor * 0.5) * 40 + Math.cos(timeFactor * 1.2) * 20;
+                const wobbleY = Math.sin(timeFactor * 0.8) * 30 + Math.cos(timeFactor * 1.5) * 15;
 
-                // 💨 Smoke emoji puffs at bottom
-                if (scene.time.now % 100 < 20) {
-                    const smoke = scene.add.text(container.x, container.y + 20, '💨', { fontSize: '24px' }).setOrigin(0.5);
-                    smoke.setDepth(container.depth - 1);
+                container.x = lx + wobbleX;
+                container.y = ly + wobbleY;
+
+                // 💨 Ground dust effect
+                if (scene.time.now % 150 < 20) {
+                    const dust = scene.add.text(container.x, container.y + 30, '💨', { fontSize: '28px' }).setOrigin(0.5);
+                    dust.setDepth(1998);
+                    dust.setAlpha(0.6);
                     scene.tweens.add({
-                        targets: smoke,
-                        y: smoke.y - 40,
+                        targets: dust,
                         alpha: 0,
-                        duration: 500,
-                        onComplete: () => smoke.destroy()
+                        scale: 1.5,
+                        duration: 800,
+                        onComplete: () => dust.destroy()
                     });
                 }
             },
             onComplete: () => {
                 this.hit(scene, container.x, container.y, caster);
                 container.destroy();
-                leaves.destroy();
+                baseEmitter.destroy();
             }
         });
 
@@ -161,9 +181,9 @@ export default class Cyclone {
     hit(scene, x, y, caster) {
         if (!scene || !scene.scene.isActive()) return;
 
-        // AOE Check at end of path
-        const radius = 60;
-        const mAtk = caster.getTotalMAtk ? caster.getTotalMAtk() : caster.mAtk;
+        // AOE Check at end of path - Increased radius for better feel
+        const radius = 100;
+        const mAtk = caster.getTotalMAtk ? caster.getTotalMAtk() : (caster.mAtk || 0);
         const damage = mAtk * this.damageMultiplier;
 
         if (scene.aoeManager) {
@@ -172,18 +192,18 @@ export default class Cyclone {
             // Airborne CC
             if (scene.ccManager && hitEnemies.length > 0) {
                 hitEnemies.forEach(e => {
-                    scene.ccManager.applyAirborne(e, 1000, 100);
+                    scene.ccManager.applyAirborne(e, 1200, 150); // Slightly stronger CC
                 });
             }
         }
 
         // Impact Visuals
-        const blast = scene.add.circle(x, y, radius, 0xffffff, 0.3).setDepth(2001);
+        const blast = scene.add.circle(x, y, radius, 0xaaffff, 0.4).setDepth(2001);
         scene.tweens.add({
             targets: blast,
-            scale: 2,
+            scale: 1.5,
             alpha: 0,
-            duration: 300,
+            duration: 400,
             onComplete: () => blast.destroy()
         });
     }
@@ -198,11 +218,17 @@ export default class Cyclone {
             const targetObj = unit.blackboard.get('target');
             if (!targetObj || targetObj.hp <= 0) return false;
 
-            // Check range
+            // Check range using reachDist (accounting for hitboxes) for more aggressive usage
             const dist = Phaser.Math.Distance.Between(unit.x, unit.y, targetObj.x, targetObj.y);
-            if (dist > (unit.rangeMax || 400)) return false;
+            const r1 = unit.body ? unit.body.radius : 0;
+            const r2 = targetObj.body ? targetObj.body.radius : 0;
+            const reachDist = dist - r1 - r2;
 
-            return this.isReady(unit.scene.time.now, unit.castSpd);
+            const rangeMax = unit.getTotalRangeMax ? unit.getTotalRangeMax() : (unit.rangeMax || 500);
+            if (reachDist > rangeMax) return false;
+
+            const castSpd = unit.getTotalCastSpd ? unit.getTotalCastSpd() : (unit.castSpd || 1000);
+            return this.isReady(unit.scene.time.now, castSpd);
         }, "Is Cyclone Ready?");
 
         const castAction = new Action(() => {

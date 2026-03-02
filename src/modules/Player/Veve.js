@@ -38,7 +38,7 @@ export default class Veve extends Wizard {
     getSkillProgress() {
         if (!this.skill || !this.scene || !this.scene.time) return 0;
 
-        let castSpd = this.castSpd;
+        let castSpd = this.getTotalCastSpd();
         // If ultimate is active, effectively double the cast speed for 50% CD reduction
         if (this.isUltimateActive) {
             castSpd *= 2;

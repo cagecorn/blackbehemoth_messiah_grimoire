@@ -10,6 +10,9 @@ export default class GachaScene extends Phaser.Scene {
     }
 
     async create() {
+        if (this.game.uiManager) {
+            this.game.uiManager.scene = this;
+        }
         const width = this.cameras.main.width;
         const height = this.cameras.main.height;
 

@@ -9,6 +9,9 @@ export default class TerritoryScene extends Phaser.Scene {
     }
 
     create() {
+        if (this.game.uiManager) {
+            this.game.uiManager.scene = this;
+        }
         const { width, height } = this.scale;
 
         // Play Territory BGM

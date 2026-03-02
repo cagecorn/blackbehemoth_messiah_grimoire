@@ -781,9 +781,11 @@ export const Characters = {
         ultimateDescription: '15초간 진리의 파수꾼으로 각성합니다. 각성 중에는 싸이클론을 5발씩 발사하며, 재사용 대기시간이 50% 감소합니다.',
         atk: 6,
         mAtk: 32,
-        def: 8,
         mDef: 18,
         speed: 100,
+        atkRange: 300,
+        rangeMin: 150,
+        rangeMax: 300,
         personality: '독수리 수인 마법사. 세상을 정처없이 떠도는 방랑자. 독고다이 스타일이지만 타인을 돕는 걸 주저하지 않음. 방향치라서 길을 잘 잃는 카리스마 있는 모습 뒤의 반전 매력이 있음.',
         relationships: {
             merlin: '마법에 대한 집착이 대단하군. 하지만 가끔은 비워내는 것도 실리에 이르는 길이다.',
