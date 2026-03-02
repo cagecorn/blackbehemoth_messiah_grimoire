@@ -635,32 +635,30 @@ export default class UIManager {
         });
 
         // Save to PartyManager
-        import('../Core/PartyManager.js').then(module => {
-            const partyManager = module.default;
-            partyManager.setPartySlot(slotIndex, characterId);
+        const partyManager = this.scene.game.partyManager;
+        partyManager.setPartySlot(slotIndex, characterId);
 
-            // Bind the UI slot immediately for feedback
-            channel.classId = charConfig.classId;
-            channel.bindUnit(
-                `preview-${characterId}`, // Temporary ID for preview
-                charConfig.name,
-                `assets/characters/party/${charConfig.sprite}.png`,
-                {
-                    name: charConfig.skillName,
-                    emoji: charConfig.skillEmoji,
-                    description: charConfig.skillDescription,
-                    passiveName: charConfig.passiveName,
-                    passiveEmoji: charConfig.passiveEmoji,
-                    passiveDescription: charConfig.passiveDescription,
-                    ultimateName: charConfig.ultimateName,
-                    ultimateDescription: charConfig.ultimateDescription
-                },
-                charConfig.narrativeUnlocks,
-                characterId
-            );
-            channel.element.classList.add('has-unit');
-            channel.element.classList.remove('empty');
-        });
+        // Bind the UI slot immediately for feedback
+        channel.classId = charConfig.classId;
+        channel.bindUnit(
+            `preview-${characterId}`, // Temporary ID for preview
+            charConfig.name,
+            `assets/characters/party/${charConfig.sprite}.png`,
+            {
+                name: charConfig.skillName,
+                emoji: charConfig.skillEmoji,
+                description: charConfig.skillDescription,
+                passiveName: charConfig.passiveName,
+                passiveEmoji: charConfig.passiveEmoji,
+                passiveDescription: charConfig.passiveDescription,
+                ultimateName: charConfig.ultimateName,
+                ultimateDescription: charConfig.ultimateDescription
+            },
+            charConfig.narrativeUnlocks,
+            characterId
+        );
+        channel.element.classList.add('has-unit');
+        channel.element.classList.remove('empty');
     }
 
     rafLoop() {

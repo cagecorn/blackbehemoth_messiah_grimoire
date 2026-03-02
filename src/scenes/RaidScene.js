@@ -22,7 +22,7 @@ import SeparationManager from '../modules/Core/SeparationManager.js';
 import BarkManager from '../modules/AI/BarkManager.js';
 import { Characters } from '../modules/Core/EntityStats.js';
 import EventBus from '../modules/Events/EventBus.js';
-import partyManager from '../modules/Core/PartyManager.js';
+// partyManager will be accessed via this.game.partyManager
 import StageManager from '../modules/Environment/StageManager.js';
 import { StageConfigs } from '../modules/Core/EntityStats.js';
 import AmbientMoteManager from '../modules/Environment/AmbientMoteManager.js';
@@ -45,7 +45,8 @@ export default class RaidScene extends Phaser.Scene {
         this.isUltimateActive = false;
 
         // Global Heal on Scene Entry
-        if (partyManager) partyManager.healAll();
+        const pm = this.game.partyManager;
+        if (pm) pm.healAll();
     }
 
     create() {
@@ -133,7 +134,7 @@ export default class RaidScene extends Phaser.Scene {
         this.isStarting = true; // Block update until players are spawned
         const worldHeight = 1024;
         const centerY = worldHeight / 2;
-        const activeParty = partyManager.getActiveParty();
+        const activeParty = this.game.partyManager.getActiveParty();
 
         let playerLeader = null;
         activeParty.forEach((charId, i) => {

@@ -3,7 +3,7 @@ import HealthBar from '../UI/HealthBar.js';
 import CooldownBar from '../UI/CooldownBar.js';
 import EventBus from '../Events/EventBus.js';
 import SpeechBubble from '../UI/SpeechBubble.js';
-import partyManager from '../Core/PartyManager.js';
+// partyManager will be accessed via this.scene.game.partyManager
 import ItemManager from '../Core/ItemManager.js';
 import CharmManager from '../Core/CharmManager.js';
 import GrimoireManager from '../Core/GrimoireManager.js';

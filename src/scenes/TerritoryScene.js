@@ -9,9 +9,12 @@ export default class TerritoryScene extends Phaser.Scene {
     }
 
     create() {
-        console.log('TerritoryScene started');
-        const width = this.cameras.main.width;
-        const height = this.cameras.main.height;
+        const { width, height } = this.scale;
+
+        // Play Territory BGM
+        this.sound.stopAll();
+        this.bgm = this.sound.add('territory_bgm', { volume: 0.4, loop: true });
+        this.bgm.play();
 
         // Background
         const bg = this.add.image(0, 0, 'bg_territory').setOrigin(0, 0);
@@ -206,7 +209,7 @@ export default class TerritoryScene extends Phaser.Scene {
     }
 
     async checkPartyStatus() {
-        const { default: partyManager } = await import('../modules/Core/PartyManager.js');
+        const partyManager = this.game.partyManager;
         const activeParty = partyManager.getActiveParty();
 
         // If party is completely empty
@@ -219,8 +222,12 @@ export default class TerritoryScene extends Phaser.Scene {
         if (this.partyOverlay) return;
 
         const { Characters } = await import('../modules/Core/EntityStats.js');
-        const { default: partyManager } = await import('../modules/Core/PartyManager.js');
+        const partyManager = this.game.partyManager;
         const { default: EventBus } = await import('../modules/Events/EventBus.js');
+
+        // Global Heal on Scene Entry
+        const pm = this.game.partyManager;
+        if (pm) pm.healAll();
 
         // 가챠 씬에서 변경된 Roster 갱신
         await partyManager.reloadRoster();
@@ -265,6 +272,7 @@ export default class TerritoryScene extends Phaser.Scene {
         document.body.appendChild(this.partyOverlay);
 
         const currentSlots = [...partyManager.getActiveParty()];
+        console.log('[TerritoryScene] Opening selection with slots:', currentSlots);
         const slotEls = this.partyOverlay.querySelectorAll('.party-slot');
         const cards = this.partyOverlay.querySelectorAll('.mercenary-card');
 
@@ -346,7 +354,7 @@ export default class TerritoryScene extends Phaser.Scene {
         confirmBtn.addEventListener('click', () => {
             // Save to PartyManager
             currentSlots.forEach((id, i) => {
-                partyManager.setPartySlot(i, id);
+                this.game.partyManager.setPartySlot(i, id);
             });
 
             this.partyOverlay.remove();

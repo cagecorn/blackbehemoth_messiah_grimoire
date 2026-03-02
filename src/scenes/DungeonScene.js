@@ -32,7 +32,7 @@ import AmbientMoteManager from '../modules/Environment/AmbientMoteManager.js';
 import DynamicCameraManager from '../modules/Core/DynamicCameraManager.js';
 import EventBus from '../modules/Events/EventBus.js';
 import BarkManager from '../modules/AI/BarkManager.js';
-import partyManager from '../modules/Core/PartyManager.js';
+// partyManager will be accessed via this.game.partyManager
 
 
 export default class DungeonScene extends Phaser.Scene {
@@ -61,7 +61,7 @@ export default class DungeonScene extends Phaser.Scene {
         this.isResetting = false;
 
         // Global Heal on Scene Entry
-        if (partyManager) partyManager.healAll();
+        if (this.game.partyManager) this.game.partyManager.healAll();
     }
 
     create() {
@@ -209,7 +209,7 @@ export default class DungeonScene extends Phaser.Scene {
         });
 
         // Spawn Party from PartyManager
-        const activeParty = partyManager.getActiveParty();
+        const activeParty = this.game.partyManager.getActiveParty();
         const startPos = this.dungeonManager.getPlayerStartPosition();
 
         let playerLeader = null;

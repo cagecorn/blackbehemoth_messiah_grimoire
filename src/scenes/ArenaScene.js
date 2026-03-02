@@ -19,7 +19,7 @@ import BuffManager from '../modules/Core/BuffManager.js';
 import SeparationManager from '../modules/Core/SeparationManager.js';
 import BarkManager from '../modules/AI/BarkManager.js';
 import { Characters } from '../modules/Core/EntityStats.js';
-import partyManager from '../modules/Core/PartyManager.js';
+// partyManager will be accessed via this.game.partyManager
 import EventBus from '../modules/Events/EventBus.js';
 import StageManager from '../modules/Environment/StageManager.js';
 import { StageConfigs } from '../modules/Core/EntityStats.js';
@@ -48,7 +48,7 @@ export default class ArenaScene extends Phaser.Scene {
         this.isUltimateActive = false;
 
         // Global Heal on Scene Entry
-        if (partyManager) partyManager.healAll();
+        if (this.game.partyManager) this.game.partyManager.healAll();
     }
 
     create() {
@@ -147,7 +147,7 @@ export default class ArenaScene extends Phaser.Scene {
         const centerY = 1024 / 2;
 
         // 1. Spawn Selected Player Party from PartyManager
-        const activeParty = partyManager.getActiveParty();
+        const activeParty = this.game.partyManager.getActiveParty();
 
         activeParty.forEach((charId, i) => {
             if (!charId) return;
@@ -164,7 +164,7 @@ export default class ArenaScene extends Phaser.Scene {
         });
 
         // 2. Spawn Random Enemy Party
-        const avgLevel = partyManager.getAveragePartyLevel();
+        const avgLevel = this.game.partyManager.getAveragePartyLevel();
         const availableCharacters = [...Object.values(Characters)];
         Phaser.Utils.Array.Shuffle(availableCharacters);
 
