@@ -199,21 +199,30 @@ export default class ChatChannel {
             </div>
             <div class="chat-skill-view" id="skill-${id}" style="display: none;">
                 <div class="skill-info-container">
-                    <div class="skill-section">
-                        <div class="skill-header">
+                    <div class="skill-section passive" style="display: none; border-left: 4px solid #3b82f6; margin-bottom: 12px; padding-left: 8px;">
+                        <div class="skill-header" style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                            <span class="skill-emoji-passive" style="font-size: 1.2rem;">⚡</span>
+                            <span class="skill-name-passive" style="font-weight: bold; color: #60a5fa;">Passive Name</span>
+                        </div>
+                        <div class="skill-description-passive" style="font-size: 0.9rem; color: #cbd5e1; line-height: 1.4;">
+                            Passive description...
+                        </div>
+                    </div>
+                    <div class="skill-section" style="border-left: 4px solid #f59e0b; margin-bottom: 12px; padding-left: 8px;">
+                        <div class="skill-header" style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
                             <span class="skill-emoji">✨</span>
                             <span class="skill-name">Skill Name</span>
                         </div>
-                        <div class="skill-description">
+                        <div class="skill-description" style="font-size: 0.9rem; color: #cbd5e1; line-height: 1.4;">
                             Skill description goes here...
                         </div>
                     </div>
-                    <div class="skill-section ultimate">
-                        <div class="skill-header">
+                    <div class="skill-section ultimate" style="border-left: 4px solid #ef4444; padding-left: 8px;">
+                        <div class="skill-header" style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
                             <span class="skill-emoji">🌟</span>
                             <span class="skill-name-ult">Ultimate Name</span>
                         </div>
-                        <div class="skill-description-ult">
+                        <div class="skill-description-ult" style="font-size: 0.9rem; color: #cbd5e1; line-height: 1.4;">
                             Ultimate description goes here...
                         </div>
                     </div>
@@ -564,6 +573,21 @@ export default class ChatChannel {
     _applySkill(skillData) {
         if (!skillData || !this.skillView) return;
 
+        // Passive
+        const passiveSection = this.skillView.querySelector('.skill-section.passive');
+        if (skillData.passiveName) {
+            if (passiveSection) passiveSection.style.display = 'block';
+            const pNameEl = this.skillView.querySelector('.skill-name-passive');
+            const pEmojiEl = this.skillView.querySelector('.skill-emoji-passive');
+            const pDescEl = this.skillView.querySelector('.skill-description-passive');
+            if (pNameEl) pNameEl.textContent = skillData.passiveName;
+            if (pEmojiEl) pEmojiEl.textContent = skillData.passiveEmoji || '⚡';
+            if (pDescEl) pDescEl.textContent = skillData.passiveDescription || '';
+        } else {
+            if (passiveSection) passiveSection.style.display = 'none';
+        }
+
+        // Active
         const nameEl = this.skillView.querySelector('.skill-name');
         const emojiEl = this.skillView.querySelector('.skill-emoji');
         const descEl = this.skillView.querySelector('.skill-description');

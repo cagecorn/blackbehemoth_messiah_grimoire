@@ -75,7 +75,9 @@ export default class Wrinkle extends Archer {
      * Dash to enemy, melee strike, airborne, dash back.
      */
     executeLightningDash(enemy) {
+        // Guard: Prevent dashing if already dashing, or if CC'd
         if (this.isDashing || !this.active || !enemy || !enemy.active) return;
+        if (this.isAirborne || this.isStunned || this.isKnockedBack) return;
 
         this.isDashing = true;
         const originalX = this.x;
@@ -152,6 +154,12 @@ export default class Wrinkle extends Archer {
     }
 
     dashBack(targetX, targetY) {
+        // Final guard: if CC'd during impact, don't dash back, just reset state
+        if (this.isAirborne || this.isStunned || this.isKnockedBack) {
+            this.isDashing = false;
+            return;
+        }
+
         this.scene.tweens.add({
             targets: this,
             x: targetX,
@@ -165,10 +173,28 @@ export default class Wrinkle extends Archer {
     }
 
     /**
+     * Override Evasive Maneuvers to prevent conflict with Lightning Dash.
+     */
+    checkEvasiveManeuversTrigger() {
+        if (this.isDashing) return; // Priority to offensive dash
+        super.checkEvasiveManeuversTrigger();
+    }
+
+    /**
      * Clean up stacks when enemies are removed.
      */
     update(time, delta) {
         super.update(time, delta);
+        if (!this.active) return;
+
+        // Emergency State Sync: If CC'd while dashing, force stop tweens
+        if (this.isDashing && (this.isAirborne || this.isStunned || this.isKnockedBack)) {
+            if (this.scene && this.scene.tweens) {
+                this.scene.tweens.killTweensOf(this);
+            }
+            this.isDashing = false;
+            console.log(`[Wrinkle] Dash interrupted by CC 🛑`);
+        }
 
         // Simple cleanup: if Map gets too large, clear it or check for inactive enemies
         if (this.lightningStacks.size > 50) {

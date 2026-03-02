@@ -38,6 +38,7 @@ export default class UIManager {
         this.btnInventory = document.getElementById('btn-inventory');
         this.btnParty = document.getElementById('btn-party');
         this.btnFullscreen = document.getElementById('btn-fullscreen');
+        this.btnExit = document.getElementById('btn-exit');
 
         // Item Detail Panel
         this.detailPanel = document.getElementById('item-detail-panel');
@@ -104,12 +105,14 @@ export default class UIManager {
 
             // Manage portrait bar visibility without overriding display: grid 
             if (this.portraitBar) {
-                if (sceneKey === 'TerritoryScene') {
+                if (sceneKey === 'TerritoryScene' || sceneKey === 'GachaScene') {
                     this.portraitBar.classList.add('hidden');
                     this.portraitBar.classList.remove('active');
+                    if (this.btnExit) this.btnExit.style.display = 'none';
                 } else {
                     this.portraitBar.classList.remove('hidden');
                     this.portraitBar.classList.add('active');
+                    if (this.btnExit) this.btnExit.style.display = 'block';
                 }
             }
 
@@ -137,6 +140,9 @@ export default class UIManager {
                             name: charConfig.skillName,
                             emoji: charConfig.skillEmoji,
                             description: charConfig.skillDescription,
+                            passiveName: charConfig.passiveName,
+                            passiveEmoji: charConfig.passiveEmoji,
+                            passiveDescription: charConfig.passiveDescription,
                             ultimateName: charConfig.ultimateName,
                             ultimateDescription: charConfig.ultimateDescription
                         },
@@ -166,6 +172,9 @@ export default class UIManager {
                 name: charConfig.skillName,
                 emoji: charConfig.skillEmoji,
                 description: charConfig.skillDescription,
+                passiveName: charConfig.passiveName,
+                passiveEmoji: charConfig.passiveEmoji,
+                passiveDescription: charConfig.passiveDescription,
                 ultimateName: charConfig.ultimateName,
                 ultimateDescription: charConfig.ultimateDescription
             });
@@ -226,6 +235,13 @@ export default class UIManager {
         }
         if (this.btnFullscreen) {
             this.btnFullscreen.onclick = () => this.toggleFullscreen();
+        }
+        if (this.btnExit) {
+            this.btnExit.onclick = () => {
+                if (this.scene && this.scene.scene) {
+                    this.scene.scene.start('TerritoryScene');
+                }
+            };
         }
 
         if (this.btnEquipItem) {
@@ -625,6 +641,9 @@ export default class UIManager {
                     name: charConfig.skillName,
                     emoji: charConfig.skillEmoji,
                     description: charConfig.skillDescription,
+                    passiveName: charConfig.passiveName,
+                    passiveEmoji: charConfig.passiveEmoji,
+                    passiveDescription: charConfig.passiveDescription,
                     ultimateName: charConfig.ultimateName,
                     ultimateDescription: charConfig.ultimateDescription
                 },

@@ -79,6 +79,40 @@ export default class DBManager {
         await this.db.put(storeName, { id, ...data });
     }
 
+    // --- Party Persistence ---
+    static async saveParty(activeParty) {
+        if (!this.db) await this.initDB();
+        await this.db.put('party', { id: 'activeParty', activeParty });
+    }
+
+    static async getParty() {
+        if (!this.db) await this.initDB();
+        const data = await this.db.get('party', 'activeParty');
+        return data ? data.activeParty : null;
+    }
+
+    // --- Mercenary State Persistence ---
+    static async saveMercenaryState(id, state) {
+        if (!this.db) await this.initDB();
+        // Create a copy without methods/circular refs if any
+        const plainState = JSON.parse(JSON.stringify(state));
+        await this.db.put('party', { id: `state_${id}`, ...plainState });
+    }
+
+    static async getAllMercenaryStates() {
+        if (!this.db) await this.initDB();
+        const all = await this.db.getAll('party');
+        const states = {};
+        all.forEach(item => {
+            if (item.id.startsWith('state_')) {
+                const charId = item.id.replace('state_', '');
+                states[charId] = { ...item };
+                delete states[charId].id; // Remove the DB key
+            }
+        });
+        return states;
+    }
+
     // --- Mercenary Roster Operations ---
     static async getMercenaryRoster() {
         if (!this.db) await this.initDB();

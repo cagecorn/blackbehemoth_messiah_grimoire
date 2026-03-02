@@ -41,9 +41,11 @@ export default class ArenaScene extends Phaser.Scene {
     }
 
     init() {
-        // Reset state on every restart
+        // Reset state on every entry
         this.gameState = 'BATTLE';
         this.isResetting = false;
+        this.battleCount = 1;
+        this.isUltimateActive = false;
 
         // Global Heal on Scene Entry
         if (partyManager) partyManager.healAll();
@@ -97,7 +99,6 @@ export default class ArenaScene extends Phaser.Scene {
             strokeThickness: 6
         }).setOrigin(0.5).setScrollFactor(0).setDepth(2000);
 
-        this.add.text(10, 10, 'ESC to Return to Territory', { fontSize: '16px', fill: '#fff' }).setScrollFactor(0).setDepth(1000);
 
         // ESC to return
         this.input.keyboard.on('keydown-ESC', () => {

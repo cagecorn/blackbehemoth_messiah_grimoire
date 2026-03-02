@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import EventBus from '../modules/Events/EventBus.js';
 
 export default class TerritoryScene extends Phaser.Scene {
     constructor() {
@@ -36,6 +37,14 @@ export default class TerritoryScene extends Phaser.Scene {
         // this.checkPartyStatus();
 
         this.createSparkleParticles();
+
+        // Force UI sync to hide portrait bar
+        this.events.once('update', () => {
+            EventBus.emit('PARTY_DEPLOYED', {
+                scene: this,
+                mercenaries: []
+            });
+        });
     }
 
     createSparkleParticles() {

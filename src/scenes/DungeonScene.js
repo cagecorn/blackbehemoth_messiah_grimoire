@@ -54,6 +54,12 @@ export default class DungeonScene extends Phaser.Scene {
     }
 
     init() {
+        // Reset state on every entry
+        this.currentRound = 1;
+        this.isResting = false;
+        this.isUltimateActive = false;
+        this.isResetting = false;
+
         // Global Heal on Scene Entry
         if (partyManager) partyManager.healAll();
     }
@@ -291,7 +297,14 @@ export default class DungeonScene extends Phaser.Scene {
             }
         });
 
-        // this.add.text(10, 10, 'WASD to Move, ESC to Return', { fontSize: '16px', fill: '#fff' }).setScrollFactor(0).setDepth(100);
+        // UI Indicators
+        this.roundText = this.add.text(this.cameras.main.width / 2, 55, `DUNGEON ROUND ${this.currentRound}`, {
+            fontSize: '24px',
+            fill: '#fff',
+            fontStyle: 'bold',
+            stroke: '#000',
+            strokeThickness: 5
+        }).setOrigin(0.5).setScrollFactor(0).setDepth(10000);
 
         // 1. Mercenaries collect Loot
         this.physics.add.overlap(this.mercenaries, this.lootManager.lootGroup, (mercenary, item) => {
@@ -421,6 +434,7 @@ export default class DungeonScene extends Phaser.Scene {
                 });
 
                 this.currentRound++;
+                if (this.roundText) this.roundText.setText(`DUNGEON ROUND ${this.currentRound}`);
                 this.isResting = false;
                 this.spawnWave();
             });

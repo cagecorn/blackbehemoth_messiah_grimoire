@@ -18,6 +18,19 @@ class PartyManager {
         // Roster starts with the 10 available characters
         this.roster = allCharacters || [];
         this.playerRoster = await DBManager.getMercenaryRoster();
+
+        // Load Persistent State
+        const savedParty = await DBManager.getParty();
+        if (savedParty) {
+            this.activeParty = savedParty;
+            console.log('[PartyManager] Loaded saved party:', this.activeParty);
+        }
+
+        const savedStates = await DBManager.getAllMercenaryStates();
+        if (savedStates) {
+            this.mercenaryStates = savedStates;
+            console.log('[PartyManager] Loaded saved mercenary states');
+        }
     }
 
     async reloadRoster() {
@@ -36,9 +49,11 @@ class PartyManager {
         return stars.length > 0 ? Math.max(...stars) : 1;
     }
 
-    setPartySlot(index, characterId) {
+    async setPartySlot(index, characterId) {
         if (index >= 0 && index < 6) {
             this.activeParty[index] = characterId;
+            // Persist party change
+            await DBManager.saveParty(this.activeParty);
         }
     }
 
@@ -55,13 +70,16 @@ class PartyManager {
      * @param {string} id 
      * @param {Object} state 
      */
-    saveState(id, state) {
+    async saveState(id, state) {
         this.mercenaryStates[id] = {
             ...this.mercenaryStates[id],
             ...state,
             charms: state.charms || this.mercenaryStates[id]?.charms || Array(this.CHARM_GRID_SIZE).fill(null),
             lastUpdate: Date.now()
         };
+
+        // Persist state change
+        await DBManager.saveMercenaryState(id, this.mercenaryStates[id]);
     }
 
     /**

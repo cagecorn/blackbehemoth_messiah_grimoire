@@ -274,11 +274,11 @@ export default class BootScene extends Phaser.Scene {
                 }
             }
 
-            // Demo Version: Give 1000 diamonds for starter
+            // Demo Version: Give 2000 diamonds for starter
             const existingGem = await DBManager.getInventoryItem('emoji_gem');
             if (!existingGem) {
-                console.log('[BootScene] Initializing demo starter 💎 x1000');
-                await DBManager.saveInventoryItem('emoji_gem', 1000);
+                console.log('[BootScene] Initializing demo starter 💎 x2000');
+                await DBManager.saveInventoryItem('emoji_gem', 2000);
             }
         } catch (e) {
             console.error('[BootScene] Failed to initialize starter items', e);
