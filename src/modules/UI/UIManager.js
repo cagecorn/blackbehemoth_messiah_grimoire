@@ -225,14 +225,24 @@ export default class UIManager {
     }
 
     setupMobileEvents() {
+        const combatScenes = ['DungeonScene', 'ArenaScene', 'RaidScene'];
+        const getActiveKey = () => (this.scene?.scene?.key || this.scene?.sys?.settings?.key || "");
+
         if (this.btnInventory) {
             this.btnInventory.onclick = () => {
                 this.showPopup('inventory');
-                this.switchInventoryTab('materials'); // Reset to materials on open
+                this.switchInventoryTab('materials');
             };
         }
         if (this.btnParty) {
-            this.btnParty.onclick = () => this.showPopup('party');
+            this.btnParty.onclick = () => {
+                const currentKey = getActiveKey();
+                if (combatScenes.includes(currentKey)) {
+                    if (!window.confirm("전투가 진행 중입니다. 정말로 나가시겠습니까?")) return;
+                    this.safeSceneStart('TerritoryScene');
+                }
+                this.showPopup('party');
+            };
         }
         if (this.popupClose) {
             this.popupClose.onclick = () => this.hidePopup();
@@ -247,6 +257,10 @@ export default class UIManager {
         }
         if (this.btnExit) {
             this.btnExit.onclick = () => {
+                const currentKey = getActiveKey();
+                if (combatScenes.includes(currentKey)) {
+                    if (!window.confirm("전투를 포기하고 나가시겠습니까?")) return;
+                }
                 this.safeSceneStart('TerritoryScene');
             };
         }
@@ -301,21 +315,39 @@ export default class UIManager {
 
     setupNavigationEvents() {
         const navButtons = document.querySelectorAll('#hud-scene-nav .nav-btn');
+        const combatScenes = ['DungeonScene', 'ArenaScene', 'RaidScene'];
+        const getActiveKey = () => (this.scene?.scene?.key || this.scene?.sys?.settings?.key || "");
+
         navButtons.forEach(btn => {
             btn.onclick = () => {
                 const sceneKey = btn.dataset.scene;
                 const popupKey = btn.dataset.popup;
+                const currentKey = getActiveKey();
 
-                // Remove active class from all
+                // 1. Prevent redundant clicks
+                if (sceneKey && sceneKey === currentKey) return;
+
+                // 2. Confirmation if in combat
+                if (combatScenes.includes(currentKey)) {
+                    if (!window.confirm("전투가 진행 중입니다. 정말로 나가시겠습니까?")) {
+                        if (this.updateActiveNav) this.updateActiveNav();
+                        return;
+                    }
+                }
+
+                // 3. Update UI highlights
                 navButtons.forEach(b => b.classList.remove('active'));
-                // Add to current
                 btn.classList.add('active');
 
-                if (sceneKey && this.scene && this.scene.scene) {
+                if (sceneKey) {
                     console.log(`[UIManager] Navigating to Scene: ${sceneKey}`);
                     this.safeSceneStart(sceneKey);
                 } else if (popupKey) {
                     console.log(`[UIManager] Opening Nav Popup: ${popupKey}`);
+                    // IF we are leaving combat for a popup (like Party), stop the combat first
+                    if (combatScenes.includes(currentKey)) {
+                        this.safeSceneStart('TerritoryScene');
+                    }
                     this.showPopup(popupKey);
                 }
             };
