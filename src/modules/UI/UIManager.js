@@ -944,9 +944,18 @@ export default class UIManager {
 
     async refreshInventory() {
         this.isRefreshing = true;
-        // removed global hiding of detailPanel here to prevent 0.1s vanishing bug
         try {
             const items = await DBManager.getAllInventory();
+
+            // Find the appropriate target channel for the "Equipped" check
+            let targetChannel = this.detailChannel;
+            if (!targetChannel && this.pendingGrimoireSlot) {
+                targetChannel = this.channels.find(c => c.linkedUnitId === this.pendingGrimoireSlot.unitId);
+            }
+            if (!targetChannel && this.pendingGearSlot) {
+                targetChannel = this.channels.find(c => c.linkedUnitId === this.pendingGearSlot.unitId);
+            }
+            if (!targetChannel) targetChannel = this.channels.find(c => c.active);
 
             if (!this.materialList) this.materialList = document.getElementById('material-list');
             if (!this.gearList) this.gearList = document.getElementById('gear-list');
@@ -993,23 +1002,25 @@ export default class UIManager {
                     e.dataTransfer.effectAllowed = 'copyMove';
                 };
 
+                const isEquipped = itemData.type === 'equipment' ?
+                    (targetChannel && targetChannel.equipment && Object.values(targetChannel.equipment).some(e => e && e.id === item.id)) :
+                    (targetChannel && targetChannel.grimoire && Object.values(targetChannel.grimoire).some(arr => arr && Array.isArray(arr) && arr.includes(item.id)));
+
+                div.onclick = (e) => {
+                    e.stopPropagation();
+                    this.handleItemClick(item.id, isEquipped);
+                };
+
                 if (itemData && itemData.type === 'equipment') {
                     div.classList.add('is-gear');
-                    div.onclick = (e) => {
-                        e.stopPropagation();
-                        this.handleItemClick(item.id);
-                    };
+                    if (isEquipped) div.classList.add('equipped');
                     this.gearList.appendChild(div);
                 } else if (CharmManager.getCharm(item.id) ||
                     itemData.type === 'node_charm' ||
                     itemData.type === 'class_charm' ||
                     itemData.type === 'trans_charm') {
-                    // It's a charm or tactical node! Add click handler for easy equipping/viewing
                     div.classList.add('is-charm');
-                    div.onclick = (e) => {
-                        e.stopPropagation();
-                        this.handleItemClick(item.id);
-                    };
+                    if (isEquipped) div.classList.add('equipped');
                     this.materialList.appendChild(div);
                 } else {
                     this.materialList.appendChild(div);
@@ -1022,7 +1033,7 @@ export default class UIManager {
         }
     }
 
-    handleItemClick(itemId) {
+    handleItemClick(itemId, isAlreadyEquipped = false) {
         if (this.tooltipEl) this.tooltipEl.style.display = 'none'; // Kill legacy tooltip
 
         let autoEquipped = false;
@@ -1031,11 +1042,13 @@ export default class UIManager {
         // 1. If we have a pending slot (Grimoire or Gear) AND this item is ALREADY selected (second click)
         if ((this.pendingGrimoireSlot || this.pendingGearSlot) && this.selectedItemId === itemId) {
             // This is the second click on the same item, proceed with equip
-            autoEquipped = this.executeEquip(itemId, false);
+            if (!isAlreadyEquipped) {
+                autoEquipped = this.executeEquip(itemId, false);
+            }
         }
 
         // 2. Otherwise, just show the detail panel (first click or switching items)
-        this.showItemDetail(itemId, autoEquipped);
+        this.showItemDetail(itemId, isAlreadyEquipped || autoEquipped);
     }
 
     showItemDetail(itemId, isAlreadyEquipped = false) {
@@ -1086,15 +1099,25 @@ export default class UIManager {
         let canEquip = true;
 
         if (targetItem.type === 'class_charm' && targetItem.classId) {
-            const targetChannel = this.detailChannel || this.channels.find(c => c.active);
+            // Prioritize pending slot channel, then detail panel channel, then fallback to active
+            let targetChannel = null;
+            if (this.pendingGrimoireSlot) {
+                targetChannel = this.channels.find(c => c.linkedUnitId === this.pendingGrimoireSlot.unitId);
+            } else if (this.pendingGearSlot) {
+                targetChannel = this.channels.find(c => c.linkedUnitId === this.pendingGearSlot.unitId);
+            }
+
+            if (!targetChannel) targetChannel = this.detailChannel;
+            if (!targetChannel) targetChannel = this.channels.find(c => c.active);
+
             const currentClassName = targetChannel ? targetChannel.className : null;
 
             const isMatch = (currentClassName === targetItem.classId);
             const color = isMatch ? '#00ffcc' : '#ff4444';
             const classNameKr = {
-                'warrior': '워리어',
+                'warrior': '전사',
                 'archer': '아처',
-                'wizard': '위자드',
+                'wizard': '마법사',
                 'healer': '힐러',
                 'bard': '바드'
             }[targetItem.classId] || targetItem.classId;
@@ -1133,7 +1156,14 @@ export default class UIManager {
         console.log(`[UIManager] executeEquip: itemId=${itemId}, allowFallback=${allowFallback}`);
 
         // Find the appropriate target channel
-        const targetChannel = this.detailChannel || this.channels.find(c => c.active) || this.channels.find(c => c.boundUnitId);
+        let targetChannel = this.detailChannel;
+        if (!targetChannel && this.pendingGrimoireSlot) {
+            targetChannel = this.channels.find(c => c.linkedUnitId === this.pendingGrimoireSlot.unitId);
+        }
+        if (!targetChannel && this.pendingGearSlot) {
+            targetChannel = this.channels.find(c => c.linkedUnitId === this.pendingGearSlot.unitId);
+        }
+        if (!targetChannel) targetChannel = this.channels.find(c => c.active);
 
         if (!targetChannel || !targetChannel.linkedUnitId) {
             console.error('[UIManager] executeEquip FAILED: No target character found.');

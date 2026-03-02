@@ -521,6 +521,11 @@ export default class ChatChannel {
     _applyStats(stats) {
         if (!stats || !this.statusView) return;
 
+        // Sync logical ID and class if they changed
+        if (stats.className) this.className = stats.className;
+        if (stats.classId) this.classId = stats.classId;
+        if (stats.characterId) this.characterId = stats.characterId;
+
         const statMappings = [
             { key: 'level', val: stats.level },
             { key: 'exp_display', val: (stats.exp !== undefined && stats.expToNextLevel !== undefined) ? `${Math.round(stats.exp)}/${Math.round(stats.expToNextLevel)}` : undefined },

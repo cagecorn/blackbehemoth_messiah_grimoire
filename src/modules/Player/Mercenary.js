@@ -1359,6 +1359,9 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             acc: this.acc,
             eva: this.eva,
             crit: this.getTotalCrit(),
+            className: this.className,
+            classId: this.className,
+            characterId: this.characterId,
             activatedPerks: this.activatedPerks
         };
 

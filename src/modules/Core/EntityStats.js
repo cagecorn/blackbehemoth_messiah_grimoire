@@ -717,7 +717,7 @@ export const Characters = {
     WRINKLE: {
         id: 'wrinkle',
         characterId: 'wrinkle',
-        classId: 'wrinkle',
+        classId: 'archer',
         name: 'Wrinkle (링클)',
         sprite: 'wrinkle_sprite',
         cutscene: 'wrinkle_cutscene',
