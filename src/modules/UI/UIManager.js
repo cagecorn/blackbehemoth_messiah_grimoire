@@ -1080,7 +1080,48 @@ export default class UIManager {
         }
 
         if (this.detailType) this.detailType.textContent = typeLabel.toUpperCase();
-        if (this.detailDesc) this.detailDesc.textContent = targetItem.description || (item ? '재료 아이템입니다.' : '');
+
+        // Class Requirement Text
+        let classReqText = '';
+        let canEquip = true;
+
+        if (targetItem.type === 'class_charm' && targetItem.classId) {
+            const targetChannel = this.detailChannel || this.channels.find(c => c.active);
+            const currentClassName = targetChannel ? targetChannel.className : null;
+
+            const isMatch = (currentClassName === targetItem.classId);
+            const color = isMatch ? '#00ffcc' : '#ff4444';
+            const classNameKr = {
+                'warrior': '워리어',
+                'archer': '아처',
+                'wizard': '위자드',
+                'healer': '힐러',
+                'bard': '바드'
+            }[targetItem.classId] || targetItem.classId;
+
+            classReqText = `<div style="color: ${color}; font-size: 10px; margin-top: 4px;">[전용: ${classNameKr}]</div>`;
+
+            if (!isMatch) {
+                canEquip = false;
+            }
+        }
+
+        if (this.detailDesc) {
+            this.detailDesc.innerHTML = (targetItem.description || (item ? '재료 아이템입니다.' : '')) + classReqText;
+        }
+
+        // Disable equip button if class mismatch
+        if (this.btnEquipItem && !isAlreadyEquipped) {
+            if (!canEquip) {
+                this.btnEquipItem.innerText = '장착 불가';
+                this.btnEquipItem.style.opacity = '0.3';
+                this.btnEquipItem.style.pointerEvents = 'none';
+            } else {
+                this.btnEquipItem.innerText = '장착';
+                this.btnEquipItem.style.opacity = '1';
+                this.btnEquipItem.style.pointerEvents = 'auto';
+            }
+        }
 
         this.detailPanel.style.display = 'flex';
     }

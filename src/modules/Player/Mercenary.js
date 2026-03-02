@@ -1017,6 +1017,18 @@ export default class Mercenary extends Phaser.GameObjects.Container {
                 (chapter === 'CLASS') ? GrimoireManager.CHAPTERS.CLASS :
                     GrimoireManager.CHAPTERS.TRANSFORMATION;
 
+        // Class validation (Chapter C)
+        if (chapter === 'CLASS' || chapterId === GrimoireManager.CHAPTERS.CLASS) {
+            const item = ItemManager.getItem(itemId);
+            if (item && item.classId && item.classId !== this.className) {
+                console.warn(`[Grimoire] Class mismatch! ${itemId} requires ${item.classId}, but ${this.unitName} is ${this.className}`);
+                if (this.scene.fxManager) {
+                    this.scene.fxManager.showDamageText(this, 'Wrong Class!', '#ff4444');
+                }
+                return false;
+            }
+        }
+
         this.grimoire[chapterId][index] = itemId;
 
         // Re-apply grimoire effects
