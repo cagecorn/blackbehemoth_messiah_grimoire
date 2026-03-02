@@ -2764,6 +2764,7 @@ body {
 .settings-slider {
     flex: 1;
     -webkit-appearance: none;
+    appearance: none;
     height: 8px;
     background: var(--retro-panel2);
     border: 1px solid var(--retro-border);
@@ -2773,6 +2774,7 @@ body {
 
 .settings-slider::-webkit-slider-thumb {
     -webkit-appearance: none;
+    appearance: none;
     width: 16px;
     height: 16px;
     background: var(--retro-amber);
