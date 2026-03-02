@@ -39,7 +39,7 @@ export default class GuillotinePaper {
         this.lastCastTime = now;
 
         console.log(`[Skill] ${caster.unitName} uses Guillotine Paper!`);
-        soundEffects.playArrowSound(); // Placeholder sound
+        soundEffects.playWhipSound(); // Corrected: playWhipSound exists, playArrowSound doesn't
 
         const numProjectiles = 9;
         const angleStep = (Math.PI * 2) / numProjectiles;

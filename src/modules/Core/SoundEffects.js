@@ -737,6 +737,50 @@ class SoundEffects {
         osc.stop(ctx.currentTime + 0.1);
     }
 
+    // 24. "파팟!" (Sharp Burst/Spark) - 원소 노바 효과
+    async playPapatSound() {
+        await this.ensureContext();
+        if (!this.audioCtx) return;
+        const ctx = this.audioCtx;
+
+        const duration = 0.15;
+        const masterGain = ctx.createGain();
+        masterGain.connect(ctx.destination);
+        masterGain.gain.setValueAtTime(0.4, ctx.currentTime);
+        masterGain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
+
+        const osc = ctx.createOscillator();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(400, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(1200, ctx.currentTime + duration);
+
+        osc.connect(masterGain);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + duration);
+    }
+
+    // 25. "뾰롱!" (Cute/High Pluck) - 햄버거 회복 효과
+    async playBbyorongSound() {
+        await this.ensureContext();
+        if (!this.audioCtx) return;
+        const ctx = this.audioCtx;
+
+        const duration = 0.3;
+        const masterGain = ctx.createGain();
+        masterGain.connect(ctx.destination);
+        masterGain.gain.setValueAtTime(0.3, ctx.currentTime);
+        masterGain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
+
+        const osc = ctx.createOscillator();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(880, ctx.currentTime); // A5
+        osc.frequency.exponentialRampToValueAtTime(1760, ctx.currentTime + 0.1); // A6 jump
+
+        osc.connect(masterGain);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + duration);
+    }
+
     // Vibration Wrapper
     vibrate(pattern) {
         if (typeof navigator !== 'undefined' && navigator.vibrate) {

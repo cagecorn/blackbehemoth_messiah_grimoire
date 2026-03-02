@@ -182,6 +182,8 @@ export default class BootScene extends Phaser.Scene {
         this.load.image('noel_cutscene', 'assets/characters/party/noel_cutscene.png');
         this.load.image('aina_sprite', 'assets/characters/party/aina_sprite.png');
         this.load.image('aina_cutscene', 'assets/characters/party/aina_cutscene.png');
+        this.load.image('wrinkle_sprite', 'assets/characters/party/wrinkle_sprite.png');
+        this.load.image('wrinkle_cutscene', 'assets/characters/party/wrinkle_cutscene.png');
 
         // Load effect emojis
         this.load.svg('emoji_rock', 'assets/emojis/1f5ff.svg', { width: 32, height: 32 });
