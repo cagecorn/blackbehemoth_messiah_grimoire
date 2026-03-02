@@ -113,7 +113,7 @@
 | `noah` | 노아 | `bard` | `Help! Animal Friends!` | 동물을 사랑하는 소년. 동물 친구들을 소환하여 아군을 돕고 적을 공격합니다. |
 | `noel` | 노엘 | `bard` | `Help! Plant Friends!` | 식물을 가꾸는 소년. 노아의 형으로, 식물의 힘을 빌려 아군을 치유하고 강화합니다. |
 | `aina` | 아이나 | `wizard` | `SkillIceBall` | 차가운 얼음 여왕. 합리적이고 조언하기를 좋아하며, 매운 음식을 남몰래 즐깁니다. |
-| `wrinkle` | 링클 | `archer` | `GuillotinePaper` | 평행세계 '블랙 베히모스'에서 건너온 메시아. 화려한 연출과 강력한 스택 기반 패시브를 보유함. |
+| `wrinkle` | 링클 | `archer` | `GuillotinePaper` | 평행세계 '블랙 베히모스'에서 건너온 메시아.남자.화려한 연출과 강력한 스택 기반 패시브를 보유함. |
 
 ## 시스템 용어 및 상태 이상 (Global Terms & Status)
 

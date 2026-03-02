@@ -741,6 +741,42 @@ export default class FXManager {
         });
     }
 
+    /**
+     * 혈흔 파티클 효과 (Dark Red visceral effect).
+     */
+    spawnBloodParticles(x, y, count = 8) {
+        if (!this.scene.textures.exists('sparkle_fx')) {
+            const graphics = this.scene.add.graphics();
+            graphics.fillStyle(0xffffff, 1);
+            graphics.fillCircle(4, 4, 4);
+            graphics.generateTexture('sparkle_fx', 8, 8);
+            graphics.destroy();
+        }
+
+        const emitter = this.scene.add.particles(x, y, 'sparkle_fx', {
+            speed: { min: 50, max: 150 },
+            angle: { min: 0, max: 360 },
+            scale: { start: 0.8, end: 0 },
+            alpha: { start: 1, end: 0 },
+            lifespan: 400,
+            tint: [0x880000, 0xaa0000, 0xbb0000],
+            blendMode: 'NORMAL',
+            quantity: count,
+            emitting: false
+        });
+
+        if (this.scene.skillFxLayer) {
+            this.scene.skillFxLayer.add(emitter);
+        }
+
+        emitter.setDepth(20000);
+        emitter.explode(count);
+
+        this.scene.time.delayedCall(1000, () => {
+            if (emitter) emitter.destroy();
+        });
+    }
+
     // Deprecated but kept for compatibility
     showFireNovaEffect(target) {
         this.showElementalNovaEffect(target, 'fire');

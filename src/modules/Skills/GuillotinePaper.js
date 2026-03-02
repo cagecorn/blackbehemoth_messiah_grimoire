@@ -62,55 +62,82 @@ export default class GuillotinePaper {
     }
 
     fireGuillotine(caster, angle) {
+        const scene = caster.scene;
         const startX = caster.x;
         const startY = caster.y;
         const distance = 800;
         const targetX = startX + Math.cos(angle) * distance;
         const targetY = startY + Math.sin(angle) * distance;
 
-        // For Wrinkle, we use 'emoji_note' or a custom texture if it exists. 
-        // User mentioned window.addDiamonds so I assume they can handle assets.
-        // I'll use a placeholder or try to find a paper-like emoji.
-        const type = 'emoji_note'; // Placeholder for paper
+        const blade = scene.add.image(startX, startY, 'guillotine_paper')
+            .setOrigin(0.5)
+            .setDepth(16000)
+            .setDisplaySize(50, 25)
+            .setRotation(angle);
 
-        const onHit = (target, damage) => {
-            if (caster.scene.ccManager) {
-                caster.scene.ccManager.applyBurn(target, 5000);
-            }
-            // Logic for Lightning Dash stack (Wrinkle specific)
-            if (caster.addLightningStack) {
-                caster.addLightningStack(target);
-            }
-        };
+        const hitEnemies = new Set();
+        const damage = caster.getTotalAtk() * this.damageMultiplier;
 
-        const projectile = caster.scene.projectileManager.fire(
-            startX, startY, targetX, targetY,
-            caster.getTotalAtk() * this.damageMultiplier,
-            type, false, caster.targetGroup, caster, onHit, false, 'fire'
-        );
+        scene.tweens.add({
+            targets: blade,
+            x: targetX,
+            y: targetY,
+            duration: 1000,
+            ease: 'Linear',
+            onUpdate: () => {
+                if (!blade.active) return;
 
-        if (projectile) {
-            projectile.setTint(0xff3333); // Red tint for "Guillotine Paper"
-
-            // Add custom trail
-            const trail = caster.scene.time.addEvent({
-                delay: 20,
-                callback: () => {
-                    if (projectile.active) {
-                        const t = caster.scene.add.circle(projectile.x, projectile.y, 4, 0xff0000, 0.5);
-                        caster.scene.tweens.add({
-                            targets: t,
-                            alpha: 0,
-                            scale: 0.1,
-                            duration: 200,
-                            onComplete: () => t.destroy()
-                        });
-                    } else {
-                        trail.remove();
+                // 1. Trail Visuals (Denser & Custom)
+                if (scene.time.now % 40 < 20) {
+                    if (scene.fxManager && scene.fxManager.createAfterimage) {
+                        scene.fxManager.createAfterimage({
+                            x: blade.x, y: blade.y, sprite: blade, active: true, depth: blade.depth
+                        }, 400, 0.4);
                     }
-                },
-                loop: true
-            });
-        }
+                    const drip = scene.add.circle(blade.x, blade.y, 3, 0x880000, 0.8);
+                    scene.tweens.add({
+                        targets: drip,
+                        y: drip.y + 20,
+                        alpha: 0,
+                        duration: 500,
+                        onComplete: () => drip.destroy()
+                    });
+                }
+
+                // 2. Traversal Hit Detection
+                const enemies = caster.targetGroup.getChildren().filter(e => e.active && e.hp > 0);
+                enemies.forEach(enemy => {
+                    if (hitEnemies.has(enemy)) return;
+                    const dist = Phaser.Math.Distance.Between(blade.x, blade.y, enemy.x, enemy.y);
+                    if (dist < 40) {
+                        hitEnemies.add(enemy);
+
+                        // Apply Damage
+                        if (enemy.takeDamage) {
+                            // Neutral element (null) to inherit/synergize with weapon
+                            enemy.takeDamage(damage, caster, false, null, Math.random() < caster.getTotalCrit() / 100);
+                        }
+
+                        // Apply Burn
+                        if (scene.ccManager) {
+                            scene.ccManager.applyBurn(enemy, 5000);
+                        }
+
+                        // Passive Stack
+                        if (caster.addLightningStack) {
+                            caster.addLightningStack(enemy);
+                        }
+
+                        // Blood Visuals
+                        if (scene.fxManager && scene.fxManager.spawnBloodParticles) {
+                            scene.fxManager.spawnBloodParticles(enemy.x, enemy.y, 12);
+                        }
+                    }
+                });
+            },
+            onComplete: () => {
+                blade.destroy();
+            }
+        });
     }
 }

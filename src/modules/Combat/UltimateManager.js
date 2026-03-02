@@ -112,7 +112,7 @@ export default class UltimateManager {
         let yOffset = height - 300; // Raised from 150 to avoid HUD
 
         // Special case: high-res cutscene characters
-        const cutsceneChars = ['merlin', 'aren', 'sera', 'lute', 'nickle', 'bao', 'king', 'leona', 'silvi', 'ella', 'boon', 'nana', 'noah', 'noel', 'aina'];
+        const cutsceneChars = ['merlin', 'aren', 'sera', 'lute', 'nickle', 'bao', 'king', 'leona', 'silvi', 'ella', 'boon', 'nana', 'noah', 'noel', 'aina', 'wrinkle'];
         if (cutsceneChars.includes(unit.characterId)) {
             spriteKey = unit.characterId + '_cutscene';
             scale = 1.0;

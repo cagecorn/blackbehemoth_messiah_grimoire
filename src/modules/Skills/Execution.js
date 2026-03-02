@@ -1,134 +1,185 @@
 import Phaser from 'phaser';
+import soundEffects from '../Core/SoundEffects.js';
 
 /**
  * Execution.js
- * Wrinkle's Ultimate Skill. 
- * Spawns 12 homing "Guillotine Paper" projectiles that track targets.
- * Damage scales based on target's lost HP.
- * Each hit adds a Lightning Dash stack.
+ * Wrinkle's Ultimate Skill (Redesigned). 
+ * 10 high-speed dashes across the screen, slashing through enemies.
+ * Inspired by FatesString and Magenta Drive.
  */
 export default class Execution {
     constructor(caster) {
         this.caster = caster;
-        this.baseDamageMult = 1.5; // Base per projectile
-        this.numProjectiles = 12;
+        this.strikeDamageMult = 1.0;
+        this.numStrikes = 10;
     }
 
-    execute(scene, caster) {
-        if (!caster || !caster.active || caster.hp <= 0) return;
+    async execute(scene, caster) {
+        if (!caster || !caster.active || !scene) return;
 
-        console.log(`[Ultimate] ${caster.unitName} triggers Execution!`);
+        console.log(`[Ultimate] ${caster.unitName} activates Redesigned Execution!`);
 
-        // 1. Zoom and Dim effect for flamboyant entrance
-        const mainCamera = scene.cameras.main;
-        const originalZoom = mainCamera.zoom;
-        const overlay = scene.add.rectangle(0, 0, scene.game.config.width, scene.game.config.height, 0x000000, 0.6)
-            .setOrigin(0, 0).setDepth(15000).setAlpha(0);
+        // 1. Play dramatic cutscene
+        if (scene.ultimateManager) {
+            await scene.ultimateManager.playCutscene(caster, '처형 (Execution)');
+        }
 
-        scene.tweens.add({
-            targets: overlay,
-            alpha: 1,
-            duration: 300,
-            yoyo: true,
-            hold: 500
-        });
+        if (!caster.active || !scene) return;
 
-        // 2. Play Ultimate Cutscene (provided in EntityStats)
-        if (caster.characterId === 'wrinkle') {
-            // Assume UIManager handles the cutscene overlay better, but we'll do a simple flash here
-            if (scene.fxManager) {
-                scene.fxManager.showElementalNovaEffect(caster, 'lightning');
+        caster.isStunned = true; // Prevent player from breaking the animation
+        const originalX = caster.x;
+        const originalY = caster.y;
+        const originalScaleX = Math.abs(caster.sprite.scaleX); // Use magnitude to avoid flip issues
+        const originalScaleY = caster.sprite.scaleY;
+
+        // Darken screen for drama
+        const darken = scene.add.rectangle(0, 0, scene.game.config.width * 2, scene.game.config.height * 2, 0x000000, 0.5)
+            .setDepth(15000).setScrollFactor(0);
+
+        // 2. Perform strike sequence
+        for (let i = 0; i < this.numStrikes; i++) {
+            const targets = caster.targetGroup.getChildren().filter(e => e.active && e.hp > 0);
+            const target = targets.length > 0 ? Phaser.Utils.Array.GetRandom(targets) : null;
+
+            // Determine target points: pick a point slightly past the target to "slash through"
+            let tx, ty;
+            if (target) {
+                const angle = Phaser.Math.Angle.Between(caster.x, caster.y, target.x, target.y);
+                const dashPastDistance = 150;
+                tx = target.x + Math.cos(angle) * dashPastDistance;
+                ty = target.y + Math.sin(angle) * dashPastDistance;
+            } else {
+                // Random fallback if no targets left
+                tx = Phaser.Math.Between(100, scene.game.config.width - 100);
+                ty = Phaser.Math.Between(100, scene.game.config.height - 100);
+            }
+
+            await this.performStrike(scene, caster, tx, ty, originalScaleX, originalScaleY);
+
+            // Small pause between strikes if needed, but the user wants "quick"
+            if (i < this.numStrikes - 1) {
+                await new Promise(resolve => scene.time.delayedCall(40, resolve));
             }
         }
 
-        // 3. Spawn homing projectiles
-        const enemies = caster.targetGroup.getChildren().filter(e => e.active && e.hp > 0);
-        if (enemies.length === 0) return;
-
-        for (let i = 0; i < this.numProjectiles; i++) {
-            scene.time.delayedCall(100 + i * 80, () => {
-                const target = enemies.length > 0 ? Phaser.Utils.Array.GetRandom(enemies) : null;
-                if (target && target.active && target.hp > 0) {
-                    this.fireHomingPaper(scene, caster, target);
-                }
-            });
-        }
+        // 3. Return to origin
+        scene.tweens.add({
+            targets: caster,
+            x: originalX,
+            y: originalY,
+            duration: 250,
+            ease: 'Cubic.easeOut',
+            onComplete: () => {
+                caster.isStunned = false;
+                darken.destroy();
+                caster.sprite.setScale(originalScaleX, originalScaleY);
+                caster.sprite.setRotation(0);
+                caster.sprite.clearTint();
+            }
+        });
     }
 
-    fireHomingPaper(scene, caster, target) {
+    async performStrike(scene, caster, tx, ty, originalScaleX, originalScaleY) {
         const startX = caster.x;
         const startY = caster.y;
 
-        const paper = scene.add.text(startX, startY, '📄', { fontSize: '32px' }).setOrigin(0.5).setDepth(16000);
-        paper.setTint(0xff0000);
+        // Visual Trail (Sword Slash) - Fate's String style
+        const line = scene.add.graphics().setDepth(14000);
+        line.lineStyle(20, 0x880000, 0.4); // Thick glow
+        line.beginPath();
+        line.moveTo(startX, startY);
+        line.lineTo(tx, ty);
+        line.strokePath();
 
-        // Homing Tween
+        line.lineStyle(6, 0xff0000, 1.0); // Bright core
+        line.beginPath();
+        line.moveTo(startX, startY);
+        line.lineTo(tx, ty);
+        line.strokePath();
+
         scene.tweens.add({
-            targets: paper,
-            x: target.x || startX,
-            y: target.y || startY,
-            duration: 600,
-            ease: 'Cubic.easeIn',
-            onUpdate: (tween, targetObj) => {
-                if (target && target.active) {
-                    tween.updateTo('x', target.x, true);
-                    tween.updateTo('y', target.y, true);
-                    // Rotation towards target
-                    const angle = Phaser.Math.Angle.Between(paper.x, paper.y, target.x, target.y);
-                    paper.setRotation(angle + Math.PI / 4);
-                }
-            },
-            onComplete: () => {
-                if (target && target.active) {
-                    this.handleImpact(scene, caster, target);
-                }
-
-                // Visual Impact
-                if (scene.fxManager) {
-                    scene.fxManager.spawnElementalParticles(paper.x, paper.y, 'fire');
-                }
-
-                paper.destroy();
-            }
+            targets: line,
+            alpha: 0,
+            duration: 500,
+            ease: 'Power2',
+            onComplete: () => line.destroy()
         });
 
-        // Trail effect for each homing paper
-        const paperTrail = scene.time.addEvent({
-            delay: 30,
-            callback: () => {
-                if (paper.active) {
-                    const t = scene.add.circle(paper.x, paper.y, 4, 0xff0000, 0.4);
-                    scene.tweens.add({
-                        targets: t,
-                        alpha: 0,
-                        scale: 0.1,
-                        duration: 300,
-                        onComplete: () => t.destroy()
-                    });
-                } else {
-                    paperTrail.remove();
+        // Sprite Stretching (Magenta Drive style)
+        const angle = Phaser.Math.Angle.Between(startX, startY, tx, ty);
+        caster.sprite.setRotation(angle);
+        // Stretch horizontally (in local rotation space)
+        caster.sprite.setScale(originalScaleX * 2.5, originalScaleY * 0.4);
+        caster.sprite.setTint(0xff0000);
+
+        if (scene.fxManager && scene.fxManager.createAfterimage) {
+            scene.fxManager.createAfterimage(caster, 400, 0.7, 0xff0000);
+        }
+
+        // Damage calculation
+        this.applyStrikeDamage(scene, caster, startX, startY, tx, ty);
+
+        // Movement
+        return new Promise(resolve => {
+            scene.tweens.add({
+                targets: caster,
+                x: tx,
+                y: ty,
+                duration: 90,
+                ease: 'Linear',
+                onComplete: () => {
+                    // Restore rotation and scale for next frame/strike
+                    caster.sprite.setRotation(0);
+                    caster.sprite.setScale(originalScaleX, originalScaleY);
+
+                    // Sound & Effects
+                    soundEffects.playWhipSound();
+                    scene.cameras.main.shake(150, 0.012);
+                    resolve();
                 }
-            },
-            loop: true
+            });
         });
     }
 
-    handleImpact(scene, caster, target) {
-        // Damage scales based on target's lost HP
-        const lostHpRatio = 1 - (target.hp / target.maxHp);
-        const damageMult = this.baseDamageMult * (1 + lostHpRatio * 1.5); // Up to 2.5x total
-        const finalDamage = caster.getTotalAtk() * damageMult;
+    applyStrikeDamage(scene, caster, x1, y1, x2, y2) {
+        const enemies = caster.targetGroup.getChildren().filter(e => e.active && e.hp > 0);
+        const damage = caster.getTotalAtk() * this.strikeDamageMult;
 
-        const isCritical = Math.random() * 100 < caster.getTotalCrit();
-        const damageToApply = isCritical ? finalDamage * 1.5 : finalDamage;
+        enemies.forEach(enemy => {
+            const dist = this.getPointLineDistance(enemy.x, enemy.y, x1, y1, x2, y2);
+            if (dist < 100) { // Hitbox width
+                if (enemy.takeDamage) {
+                    // Neutral element (null) to inherit/synergize with weapon
+                    enemy.takeDamage(damage, caster, true, null, Math.random() < caster.getTotalCrit() / 100);
+                }
 
-        if (target.takeDamage) {
-            target.takeDamage(damageToApply, caster, true, 'fire', isCritical);
-        }
+                // Blood Visuals
+                if (scene.fxManager && scene.fxManager.spawnBloodParticles) {
+                    scene.fxManager.spawnBloodParticles(enemy.x, enemy.y, 12);
+                }
+            }
+        });
+    }
 
-        // Add Lightning Stack for Passive
-        if (caster.addLightningStack) {
-            caster.addLightningStack(target);
-        }
+    getPointLineDistance(px, py, x1, y1, x2, y2) {
+        const A = px - x1;
+        const B = py - y1;
+        const C = x2 - x1;
+        const D = y2 - y1;
+
+        const dot = A * C + B * D;
+        const len_sq = C * C + D * D;
+        let param = -1;
+        if (len_sq !== 0) param = dot / len_sq;
+
+        let xx, yy;
+
+        if (param < 0) { xx = x1; yy = y1; }
+        else if (param > 1) { xx = x2; yy = y2; }
+        else { xx = x1 + param * C; yy = y1 + param * D; }
+
+        const dx = px - xx;
+        const dy = py - yy;
+        return Math.sqrt(dx * dx + dy * dy);
     }
 }

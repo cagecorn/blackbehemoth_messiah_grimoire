@@ -63,9 +63,9 @@ export default class Wrinkle extends Archer {
         } else {
             this.lightningStacks.set(enemy, stacks);
 
-            // Visual indicator for stacks (e.g., small lightning sparks)
-            if (this.scene.fxManager) {
-                this.scene.fxManager.spawnElementalParticles(enemy.x, enemy.y, 'lightning');
+            // Visual indicator for stacks (Bleeding effect)
+            if (this.scene && this.scene.fxManager && this.scene.fxManager.spawnBloodParticles) {
+                this.scene.fxManager.spawnBloodParticles(enemy.x, enemy.y, 4);
             }
         }
     }
@@ -92,17 +92,17 @@ export default class Wrinkle extends Archer {
             ease: 'Expo.easeIn',
             onStart: () => {
                 // After-image effect
-                const trail = this.scene.time.addEvent({
+                const trail = this.scene ? this.scene.time.addEvent({
                     delay: 20,
                     callback: () => {
                         if (this.isDashing && this.scene && this.scene.fxManager) {
                             this.scene.fxManager.createAfterimage(this, 300, 0.5);
                         } else {
-                            trail.remove();
+                            if (trail) trail.remove();
                         }
                     },
                     loop: true
-                });
+                }) : null;
             },
             onComplete: () => {
                 // 2. Melee Strike at target
@@ -123,24 +123,26 @@ export default class Wrinkle extends Archer {
         const totalDamage = baseDamage + percentDamage;
 
         // Visual Hit Effect
-        if (this.scene.fxManager) {
-            this.scene.fxManager.showElementalNovaEffect(enemy, 'lightning');
-            this.scene.fxManager.showDamageText(enemy, totalDamage, '#ffff00', true);
+        if (this.scene && this.scene.fxManager) {
+            if (this.scene.fxManager.spawnBloodParticles) {
+                this.scene.fxManager.spawnBloodParticles(enemy.x, enemy.y, 15);
+            }
+            this.scene.fxManager.showDamageText(enemy, totalDamage, '#ff0000', true);
         }
 
         // Apply Damage & CC
         if (enemy.takeDamage) {
-            enemy.takeDamage(totalDamage, this, false, 'lightning', true);
+            // Neutral element (null) allows it to inherit weapon element or trigger synergy
+            enemy.takeDamage(totalDamage, this, false, null, true);
         }
 
-        if (this.scene.ccManager) {
+        if (this.scene && this.scene.ccManager) {
             this.scene.ccManager.applyAirborne(enemy, 1000, 80);
         }
 
         // Sound effect
-        if (this.scene.soundEffects) {
-            // Assume there's a lightning sound or use generic hit
-            this.scene.soundEffects.playGachaSound(); // temporary flashy sound
+        if (this.scene && this.scene.soundEffects) {
+            this.scene.soundEffects.playWhipSound();
         }
 
         // 3. Dash back to original position
