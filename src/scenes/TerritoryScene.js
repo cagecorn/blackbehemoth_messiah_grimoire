@@ -17,17 +17,21 @@ export default class TerritoryScene extends Phaser.Scene {
         const bg = this.add.image(0, 0, 'bg_territory').setOrigin(0, 0);
         bg.setDisplaySize(width, height);
 
-        // Logo
-        const logo = this.add.image(width / 2, height * 0.22, 'logo_icon').setOrigin(0.5);
-        // Optional: Animate the logo slightly for a nice intro effect
-        logo.setAlpha(0);
-        logo.setScale(0.8);
+        // Logo & Title
+        const title = this.add.image(width / 2, height * 0.13, 'title_icon').setOrigin(0.5);
+        const logo = this.add.image(width / 2, height * 0.25, 'logo_icon').setOrigin(0.5);
+
+        // Animate both for a nice premium feel
+        title.setAlpha(0).setScale(0.7);
+        logo.setAlpha(0).setScale(0.8);
+
         this.tweens.add({
-            targets: logo,
+            targets: [title, logo],
             alpha: 1,
             scale: 1,
-            duration: 1000,
-            ease: 'Back.easeOut'
+            duration: 1200,
+            ease: 'Back.easeOut',
+            delay: (target, key, index) => index * 300 // Stagger them
         });
 
         // [DOM UI Wrapper]
@@ -268,7 +272,13 @@ export default class TerritoryScene extends Phaser.Scene {
             const charId = currentSlots[index];
             const slotEl = slotEls[index];
             if (charId) {
-                const char = Object.values(Characters).find(c => c.id === charId);
+                // Case-insensitive lookup for safety
+                const char = Object.values(Characters).find(c => c.id.toLowerCase() === charId.toLowerCase());
+                if (!char) {
+                    console.warn(`[TerritoryScene] Character not found: ${charId}`);
+                    slotEl.innerHTML = `${index + 1}`;
+                    return;
+                }
                 const star = partyManager.getHighestStar(charId);
                 const starHtml = star > 0 ? `<div style="position:absolute; bottom:2px; right:4px; font-size:14px; font-weight:bold; color:#fbbf24; text-shadow:0 1px 2px #000; z-index:10;">★${star}</div>` : '';
                 slotEl.style.position = 'relative';

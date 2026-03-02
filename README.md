@@ -1,14 +1,14 @@
-# MESSIAH GRIMOIRE (메시아 그리모어) 📖
+# 블랙 베히모스 : 메시아 그리모어 (Black Behemoth: Messiah Grimoire) 📖
 
 ## 🌍 글로벌 용어 (Global Terminology)
-- **Messiah Grimoire (메시아 그리모어)**: 이모지=상형문자에 의해 모든 메커니즘이 굴러가는 방방치형 게임의 공식 명칭.
+- **블랙 베히모스 : 메시아 그리모어**: 이모지=상형문자에 의해 모든 메커니즘이 굴러가는 방방치형 게임의 공식 명칭.
 - **Grimoire Inventory (그리모어 인벤토리)**: 모든 유닛(용병/몬스터)이 보유한 전용 금서 슬롯.
 - **Territory (영지)**: 메인 메뉴 및 기지
 - **Dungeon (던전)**: 일반적인 몬스터 사냥 테마
 - **Elite Monster (엘리트 몬스터)**: 일반 몬스터 중 강화된 개체. 황금색 오라를 띠며 [그리모어 - 택티컬 참]을 장착하여 특수 능력을 발휘함.
 - **Arena (아레나)**: 영웅 vs 영웅 대결 테마
 - **Raid (레이드)**: 거대 보스(대왕 고블린) 처치 테마
-(Project Name TBD)
+- (Official Project Name)
 
 이 프로젝트는 기존에 진행하던 게임의 아이디어를 일부 계승하여 새롭게 시작하는 2D RPG 게임 프로젝트입니다.
 
@@ -220,7 +220,7 @@
 | | 전광석화 (Passive) | 1.5x Atk + 2% MaxHP | - | 3스택 시 돌진, 에어본 |
 | | 처형 | 3.5x Atk (총합) | - | 화면 전체 고속 난무 공격 |
 
-## 📖 그리모어 시스템 (Messiah Grimoire System)
+## 📖 그리모어 시스템# 블랙 베히모스 : 메시아 그리모어 (Black Behemoth: Messiah Grimoire)
 모든 유닛은 4가지 챕터로 구성된 그리모어를 통해 자신의 능력을 정의하고 강화합니다.
 
 ### Chapter A: 액티브 참 (Active Charms) 💫

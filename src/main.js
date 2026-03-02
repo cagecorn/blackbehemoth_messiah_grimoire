@@ -49,24 +49,25 @@ const config = {
     }
 };
 
-const game = new Phaser.Game(config);
-
 // Boot up DOM UI Systems outside of Phaser's context
 const uiManager = new UIManager();
 uiManager.init();
 logManager.init();
+
+// Boot up Global Managers
+globalBlackboard.init();
+// embeddingGemma.init(); // Disabled as per user request
+// intentRouter.init();  // Disabled as per user request
+await partyManager.init(Object.values(Characters));
+
+// Start the game after managers are ready
+const game = new Phaser.Game(config);
 
 // Attach managers to game instance for scene access
 game.uiManager = uiManager;
 game.logManager = logManager;
 game.partyManager = partyManager;
 game.dbManager = DBManager; // If needed, but DBManager is static usually
-
-// Boot up Global Managers
-globalBlackboard.init();
-// embeddingGemma.init(); // Disabled as per user request
-// intentRouter.init();  // Disabled as per user request
-partyManager.init(Object.values(Characters));
 
 // --- Developer Debug Commands ---
 window.addDiamonds = async (amount = 99999) => {

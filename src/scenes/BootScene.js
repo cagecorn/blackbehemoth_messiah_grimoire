@@ -198,6 +198,7 @@ export default class BootScene extends Phaser.Scene {
 
         // Load UI/Icon assets
         this.load.image('logo_icon', 'assets/icon/logo_icon.png');
+        this.load.image('title_icon', 'assets/icon/title_icon.png');
 
         // Load BGM
         this.load.audio('main_battle_bgm_1', 'assets/BGM/main_battle_bgm_1.mp3');
