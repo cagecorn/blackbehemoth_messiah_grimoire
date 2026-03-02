@@ -1412,6 +1412,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             crit: this.crit,
             activatedPerks: this.activatedPerks,
             equipment: this.equipment,
+            grimoire: this.grimoire,
             charms: this.charms,
             nodeCharms: this.nodeCharms,
             // Logic flags

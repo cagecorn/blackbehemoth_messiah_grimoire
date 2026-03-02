@@ -82,7 +82,7 @@ class PartyManager {
         this.mercenaryStates[id] = {
             ...this.mercenaryStates[id],
             ...state,
-            charms: state.charms || this.mercenaryStates[id]?.charms || Array(this.CHARM_GRID_SIZE).fill(null),
+            grimoire: state.grimoire || this.mercenaryStates[id]?.grimoire,
             lastUpdate: Date.now()
         };
 
