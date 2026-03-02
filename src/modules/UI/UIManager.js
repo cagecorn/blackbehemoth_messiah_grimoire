@@ -5,7 +5,7 @@ import intentRouter from '../AI/IntentRouter.js';
 import localLLM from '../AI/LocalLLM.js';
 import embeddingGemma from '../AI/EmbeddingGemma.js';
 import { MercenaryClasses, Characters } from '../Core/EntityStats.js';
-import partyManager from '../Core/PartyManager.js';
+// partyManager will be accessed via this.scene.game.partyManager
 import ItemManager from '../Core/ItemManager.js';
 import CharmManager from '../Core/CharmManager.js';
 
@@ -442,8 +442,11 @@ export default class UIManager {
                 }
 
                 // Add star level UI
-                const starLevel = partyManager.getHighestStar(merc.characterId);
-                const starHtml = starLevel > 0 ? `<span style="color:#fbbf24; font-size:10px; margin-left:4px; text-shadow:0 1px 2px #000;">★${starLevel}</span>` : '';
+                let starHtml = '';
+                if (merc.active && merc.characterId) {
+                    const starLevel = this.scene.game.partyManager.getHighestStar(merc.characterId);
+                    starHtml = starLevel > 0 ? `<span style="color:#fbbf24; font-size:10px; margin-left:4px; text-shadow:0 1px 2px #000;">★${starLevel}</span>` : '';
+                }
 
                 const HP_SEGMENTS = 10;
                 let segmentsHtml = '';
@@ -776,7 +779,7 @@ export default class UIManager {
                     personality: unit.personality || unit.config.personality
                 } : charConfig;
 
-                const activePartyIds = partyManager.getActiveParty().filter(id => id !== null);
+                const activePartyIds = this.scene.game.partyManager.getActiveParty().filter(id => id !== null);
                 const response = await localLLM.generateResponse(dynamicConfig, text, memories, channel.chatHistory, channel.lastLevel || 1, activePartyIds);
 
                 this.addLog(agentId, `[${charName}] ${response}`, '#00ffcc');
