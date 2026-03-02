@@ -282,6 +282,10 @@ export default class BootScene extends Phaser.Scene {
                 console.log('[BootScene] Initializing demo starter 💎 x2000');
                 await DBManager.saveInventoryItem('emoji_gem', 2000);
             }
+
+            // --- UI Sync ---
+            // Ensure UIManager HUD reflects the newly added starter items/diamonds immediately
+            EventBus.emit(EventBus.EVENTS.INVENTORY_UPDATED);
         } catch (e) {
             console.error('[BootScene] Failed to initialize starter items', e);
         }
