@@ -210,6 +210,12 @@ export default class BootScene extends Phaser.Scene {
     async create() {
         console.log('BootScene assets loaded. Transitioning to game world.');
 
+        // Apply sound settings
+        const bgmVol = localStorage.getItem('bgmVolume');
+        const bgmMuted = localStorage.getItem('bgmMuted');
+        if (bgmVol !== null) this.sound.setVolume(parseFloat(bgmVol));
+        if (bgmMuted !== null) this.sound.setMute(bgmMuted === 'true');
+
         // Initialize Global Cinematic Filters (Persistent across all scenes)
         this.setupFakeAestheticOverlays();
 

@@ -37,6 +37,12 @@ export default class GachaScene extends Phaser.Scene {
             quantity: 20
         });
         this.particles.setDepth(5);
+
+        // Register scene with UIManager
+        EventBus.emit(EventBus.EVENTS.PARTY_DEPLOYED, {
+            scene: this,
+            mercenaries: [] // No active mercenaries in Gacha
+        });
     }
 
     async createDOMUI() {
@@ -50,27 +56,6 @@ export default class GachaScene extends Phaser.Scene {
             align-items: center; justify-content: space-between; padding: 60px 20px 20px 20px; box-sizing: border-box;
             z-index: 1000;
         `;
-
-        // Top Bar
-        const topBar = document.createElement('div');
-        topBar.style.cssText = `
-            width: 100%; display: flex; justify-content: space-between; align-items: center; pointer-events: auto;
-        `;
-
-        const backBtn = document.createElement('button');
-        backBtn.innerText = '◀ 영지로 복귀';
-        backBtn.style.cssText = `
-            padding: 10px 20px; font-size: 16px; font-weight: bold; background: rgba(0,0,0,0.6);
-            color: white; border: 2px solid #a78bfa; border-radius: 8px; cursor: pointer;
-        `;
-        backBtn.onclick = () => {
-            this.scene.start('TerritoryScene');
-        };
-        backBtn.onmouseover = () => { backBtn.style.background = 'rgba(167, 139, 250, 0.4)'; };
-        backBtn.onmouseout = () => { backBtn.style.background = 'rgba(0,0,0,0.6)'; };
-        topBar.appendChild(backBtn);
-
-        this.uiContainer.appendChild(topBar);
 
         // Title Element
         this.titleArea = document.createElement('div');

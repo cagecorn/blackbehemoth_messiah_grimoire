@@ -4,6 +4,15 @@ class SoundEffects {
     constructor() {
         this.audioCtx = null;
         this.initialized = false;
+        this.masterSFXGain = null;
+
+        const savedVol = localStorage.getItem('sfxVolume');
+        this.sfxVolume = savedVol !== null ? parseFloat(savedVol) : 0.8;
+
+        this.sfxMuted = localStorage.getItem('sfxMuted') === 'true';
+        this.vibrationEnabled = localStorage.getItem('vibrationEnabled') !== 'false'; // Default ON
+
+        console.log(`[SoundEffects] Constructor: Volume=${this.sfxVolume}, Muted=${this.sfxMuted}`);
     }
 
     init() {
@@ -11,8 +20,15 @@ class SoundEffects {
         try {
             const AudioContext = window.AudioContext || window.webkitAudioContext;
             this.audioCtx = new AudioContext();
+
+            // Create Master SFX Gain Node
+            this.masterSFXGain = this.audioCtx.createGain();
+            this.masterSFXGain.connect(this.audioCtx.destination);
+            this.updateSFXGain();
+
             this.initialized = true;
-            console.log('[SoundEffects] Web Audio API Initialized');
+            console.log('[SoundEffects] Web Audio API Initialized. MasterSFXGain:', this.masterSFXGain);
+            console.log('[SoundEffects] MasterSFXGain connected to destination:', this.audioCtx.destination);
 
             // 브라우저 오디오 자동 재생 정책(Autoplay policy) 대응
             const unlockAudio = async () => {
@@ -51,7 +67,8 @@ class SoundEffects {
 
         // 메인 게인(볼륨) 노드
         const masterGain = ctx.createGain();
-        masterGain.connect(ctx.destination);
+        console.log('[SoundEffects] Connecting masterGain to masterSFXGain:', this.masterSFXGain);
+        masterGain.connect(this.masterSFXGain);
 
         // 터지는 타격감을 위한 빠른 어택, 느린 릴리즈
         masterGain.gain.setValueAtTime(0, ctx.currentTime);
@@ -108,7 +125,7 @@ class SoundEffects {
 
         const duration = 0.3;
         const masterGain = ctx.createGain();
-        masterGain.connect(ctx.destination);
+        masterGain.connect(this.masterSFXGain);
         masterGain.gain.setValueAtTime(0.8, ctx.currentTime);
         masterGain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
 
@@ -139,7 +156,7 @@ class SoundEffects {
 
         const duration = 0.2;
         const masterGain = ctx.createGain();
-        masterGain.connect(ctx.destination);
+        masterGain.connect(this.masterSFXGain);
         masterGain.gain.setValueAtTime(0, ctx.currentTime);
         masterGain.gain.linearRampToValueAtTime(0.6, ctx.currentTime + 0.05);
         masterGain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
@@ -162,7 +179,7 @@ class SoundEffects {
 
         const duration = 0.6;
         const masterGain = ctx.createGain();
-        masterGain.connect(ctx.destination);
+        masterGain.connect(this.masterSFXGain);
         masterGain.gain.setValueAtTime(0, ctx.currentTime);
         masterGain.gain.linearRampToValueAtTime(0.4, ctx.currentTime + 0.1);
         masterGain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
@@ -185,7 +202,7 @@ class SoundEffects {
 
         const duration = 1.5;
         const masterGain = ctx.createGain();
-        masterGain.connect(ctx.destination);
+        masterGain.connect(this.masterSFXGain);
         masterGain.gain.setValueAtTime(0, ctx.currentTime);
         masterGain.gain.linearRampToValueAtTime(0.3, ctx.currentTime + 0.5);
         masterGain.gain.linearRampToValueAtTime(0, ctx.currentTime + duration);
@@ -215,7 +232,7 @@ class SoundEffects {
 
         const duration = 0.5;
         const masterGain = ctx.createGain();
-        masterGain.connect(ctx.destination);
+        masterGain.connect(this.masterSFXGain);
         masterGain.gain.setValueAtTime(0, ctx.currentTime);
         masterGain.gain.linearRampToValueAtTime(0.6, ctx.currentTime + 0.1);
         masterGain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
@@ -254,7 +271,7 @@ class SoundEffects {
             const time = ctx.currentTime + idx * 0.1; // arp speed
 
             const masterGain = ctx.createGain();
-            masterGain.connect(ctx.destination);
+            masterGain.connect(this.masterSFXGain);
             masterGain.gain.setValueAtTime(0, time);
             masterGain.gain.linearRampToValueAtTime(0.3, time + 0.05);
             masterGain.gain.exponentialRampToValueAtTime(0.01, time + noteDuration);
@@ -298,7 +315,7 @@ class SoundEffects {
             g.gain.exponentialRampToValueAtTime(0.01, time + note.d);
 
             osc.connect(g);
-            g.connect(ctx.destination);
+            g.connect(this.masterSFXGain);
 
             osc.start(time);
             osc.stop(time + note.d);
@@ -329,7 +346,7 @@ class SoundEffects {
         g.gain.exponentialRampToValueAtTime(0.01, time + duration);
 
         osc.connect(g);
-        g.connect(ctx.destination);
+        g.connect(this.masterSFXGain);
         osc.start(time);
         osc.stop(time + duration);
     }
@@ -361,7 +378,7 @@ class SoundEffects {
 
         noise.connect(filter);
         filter.connect(noiseG);
-        noiseG.connect(ctx.destination);
+        noiseG.connect(this.masterSFXGain);
         noise.start(ctx.currentTime);
 
         // Low "Kwang" boom
@@ -389,7 +406,7 @@ class SoundEffects {
             g.gain.setValueAtTime(0.15, time);
             g.gain.exponentialRampToValueAtTime(0.01, time + note.duration);
             osc.connect(g);
-            g.connect(ctx.destination);
+            g.connect(this.masterSFXGain);
             osc.start(time);
             osc.stop(time + note.duration);
         });
@@ -408,7 +425,7 @@ class SoundEffects {
         g.gain.setValueAtTime(0.2, ctx.currentTime);
         g.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.6);
         osc.connect(g);
-        g.connect(ctx.destination);
+        g.connect(this.masterSFXGain);
         osc.start();
         osc.stop(ctx.currentTime + 0.6);
     }
@@ -429,7 +446,7 @@ class SoundEffects {
             g.gain.linearRampToValueAtTime(0.15, ctx.currentTime + 0.5);
             g.gain.linearRampToValueAtTime(0, ctx.currentTime + 2.0);
             osc.connect(g);
-            g.connect(ctx.destination);
+            g.connect(this.masterSFXGain);
             osc.start();
             osc.stop(ctx.currentTime + 2.0);
         });
@@ -452,7 +469,7 @@ class SoundEffects {
             g.gain.setValueAtTime(0.5, ctx.currentTime + t);
             g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + t + 0.3);
             osc.connect(g);
-            g.connect(ctx.destination);
+            g.connect(this.masterSFXGain);
             osc.start(ctx.currentTime + t);
             osc.stop(ctx.currentTime + t + 0.3);
         });
@@ -483,7 +500,7 @@ class SoundEffects {
         g.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.5);
 
         osc.connect(g);
-        g.connect(ctx.destination);
+        g.connect(this.masterSFXGain);
         osc.start();
         osc.stop(ctx.currentTime + 0.5);
         lfo.stop(ctx.currentTime + 0.5);
@@ -509,7 +526,7 @@ class SoundEffects {
             g.gain.setValueAtTime(0.2, ctx.currentTime + n.t);
             g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + n.t + 0.15);
             osc.connect(g);
-            g.connect(ctx.destination);
+            g.connect(this.masterSFXGain);
             osc.start(ctx.currentTime + n.t);
             osc.stop(ctx.currentTime + n.t + 0.15);
         });
@@ -543,7 +560,7 @@ class SoundEffects {
 
         src.connect(filter);
         filter.connect(g);
-        g.connect(ctx.destination);
+        g.connect(this.masterSFXGain);
         src.start();
     }
 
@@ -576,7 +593,7 @@ class SoundEffects {
 
         src.connect(filter);
         filter.connect(g);
-        g.connect(ctx.destination);
+        g.connect(this.masterSFXGain);
         src.start();
     }
 
@@ -596,7 +613,7 @@ class SoundEffects {
         noiseG.gain.setValueAtTime(0.2, ctx.currentTime);
         noiseG.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.2);
         noise.connect(noiseG);
-        noiseG.connect(ctx.destination);
+        noiseG.connect(this.masterSFXGain);
         noise.start();
         noise.stop(ctx.currentTime + 0.2);
     }
@@ -622,7 +639,7 @@ class SoundEffects {
             g.gain.setValueAtTime(0.1, ctx.currentTime + n.t);
             g.gain.linearRampToValueAtTime(0, ctx.currentTime + n.t + 0.1);
             osc.connect(g);
-            g.connect(ctx.destination);
+            g.connect(this.masterSFXGain);
             osc.start(ctx.currentTime + n.t);
             osc.stop(ctx.currentTime + n.t + 0.1);
         });
@@ -643,7 +660,7 @@ class SoundEffects {
             g.gain.setValueAtTime(0.08, time);
             g.gain.exponentialRampToValueAtTime(0.001, time + 0.05);
             osc.connect(g);
-            g.connect(ctx.destination);
+            g.connect(this.masterSFXGain);
             osc.start(time);
             osc.stop(time + 0.05);
         }
@@ -663,7 +680,7 @@ class SoundEffects {
         g.gain.setValueAtTime(0.15, ctx.currentTime);
         g.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
         osc.connect(g);
-        g.connect(ctx.destination);
+        g.connect(this.masterSFXGain);
         osc.start();
         osc.stop(ctx.currentTime + 0.1);
 
@@ -678,7 +695,7 @@ class SoundEffects {
         noiseG.gain.setValueAtTime(0.1, ctx.currentTime);
         noiseG.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.15);
         src.connect(noiseG);
-        noiseG.connect(ctx.destination);
+        noiseG.connect(this.masterSFXGain);
         src.start();
     }
 
@@ -703,7 +720,7 @@ class SoundEffects {
             g.gain.linearRampToValueAtTime(0, ctx.currentTime + duration);
 
             osc.connect(g);
-            g.connect(ctx.destination);
+            g.connect(this.masterSFXGain);
             osc.start(ctx.currentTime);
             osc.stop(ctx.currentTime + duration);
         });
@@ -731,7 +748,7 @@ class SoundEffects {
 
         osc.connect(filter);
         filter.connect(g);
-        g.connect(ctx.destination);
+        g.connect(this.masterSFXGain);
 
         osc.start(ctx.currentTime);
         osc.stop(ctx.currentTime + 0.1);
@@ -745,7 +762,7 @@ class SoundEffects {
 
         const duration = 0.15;
         const masterGain = ctx.createGain();
-        masterGain.connect(ctx.destination);
+        masterGain.connect(this.masterSFXGain);
         masterGain.gain.setValueAtTime(0.4, ctx.currentTime);
         masterGain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
 
@@ -767,7 +784,7 @@ class SoundEffects {
 
         const duration = 0.3;
         const masterGain = ctx.createGain();
-        masterGain.connect(ctx.destination);
+        masterGain.connect(this.masterSFXGain);
         masterGain.gain.setValueAtTime(0.3, ctx.currentTime);
         masterGain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
 
@@ -783,6 +800,7 @@ class SoundEffects {
 
     // Vibration Wrapper
     vibrate(pattern) {
+        if (!this.vibrationEnabled) return;
         if (typeof navigator !== 'undefined' && navigator.vibrate) {
             try {
                 navigator.vibrate(pattern);
@@ -791,8 +809,151 @@ class SoundEffects {
             }
         }
     }
-}
 
+    updateSFXGain() {
+        if (!this.masterSFXGain) {
+            console.warn('[SoundEffects] updateSFXGain failed: masterSFXGain is null');
+            return;
+        }
+        const vol = this.sfxMuted ? 0 : this.sfxVolume;
+        console.log(`[SoundEffects] Updating SFX Gain: Volume=${this.sfxVolume}, Muted=${this.sfxMuted} -> Final Gain=${vol}`);
+
+        // Check if audioCtx is suspended
+        if (this.audioCtx && this.audioCtx.state === 'running') {
+            this.masterSFXGain.gain.setTargetAtTime(vol, this.audioCtx.currentTime, 0.05);
+        } else {
+            console.log('[SoundEffects] AudioContext not running, setting gain value directly.');
+            this.masterSFXGain.gain.value = vol;
+        }
+    }
+
+    setSFXVolume(v) {
+        this.sfxVolume = v;
+        localStorage.setItem('sfxVolume', v);
+        this.updateSFXGain();
+    }
+
+    setSFXMuted(m) {
+        this.sfxMuted = m;
+        localStorage.setItem('sfxMuted', m);
+        this.updateSFXGain();
+    }
+
+    setVibrationEnabled(e) {
+        this.vibrationEnabled = e;
+        localStorage.setItem('vibrationEnabled', e);
+    }
+
+    // --- Common Utility Sounds for SpeechBubble & FXManager ---
+
+    play8BitBeep(pitch = 600) {
+        if (!this.initialized) this.init();
+        if (!this.audioCtx || !this.masterSFXGain) return;
+
+        try {
+            const ctx = this.audioCtx;
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(pitch + (Math.random() * 50 - 25), ctx.currentTime);
+
+            gain.gain.setValueAtTime(0.05, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.04);
+
+            osc.connect(gain);
+            gain.connect(this.masterSFXGain);
+
+            osc.start();
+            osc.stop(ctx.currentTime + 0.05);
+        } catch (e) {
+            console.warn('[SoundEffects] play8BitBeep failed', e);
+        }
+    }
+
+    play8BitHitSound(isCritical, amount) {
+        if (!this.initialized) this.init();
+        if (!this.audioCtx || !this.masterSFXGain) return;
+
+        try {
+            const ctx = this.audioCtx;
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+
+            let startFreq = 200 + Math.random() * 100;
+            let endFreq = 50 + Math.random() * 50;
+            let duration = 0.1;
+            let vol = 0.08;
+
+            const isMiss = amount === 'MISS!';
+            const isHeal = typeof amount === 'string' && amount.startsWith('+');
+
+            if (isHeal) return;
+
+            if (isMiss) {
+                osc.type = 'triangle';
+                startFreq = 800 + Math.random() * 100;
+                endFreq = 800;
+                duration = 0.05;
+                vol = 0.03;
+            } else if (isCritical) {
+                osc.type = 'sawtooth';
+                startFreq = 400 + Math.random() * 200;
+                endFreq = 80;
+                duration = 0.2;
+                vol = 0.12;
+
+                const dist = ctx.createWaveShaper();
+                const makeDistortionCurve = (amount) => {
+                    let k = typeof amount === 'number' ? amount : 50,
+                        n_samples = 44100,
+                        curve = new Float32Array(n_samples),
+                        deg = Math.PI / 180,
+                        i = 0,
+                        x;
+                    for (; i < n_samples; ++i) {
+                        x = i * 2 / n_samples - 1;
+                        curve[i] = (3 + k) * x * 20 * deg / (Math.PI + k * Math.abs(x));
+                    }
+                    return curve;
+                };
+                dist.curve = makeDistortionCurve(50);
+                dist.oversample = '4x';
+
+                osc.connect(dist);
+                dist.connect(gain);
+            } else {
+                osc.type = 'square';
+                if (typeof amount === 'number' && amount > 100) {
+                    startFreq = 150 + Math.random() * 50;
+                    endFreq = 40;
+                    duration = 0.15;
+                    vol = 0.1;
+                } else if (typeof amount === 'number' && amount <= 5) {
+                    startFreq = 600 + Math.random() * 100;
+                    endFreq = 400;
+                    duration = 0.06;
+                    vol = 0.05;
+                }
+                osc.connect(gain);
+            }
+
+            osc.frequency.setValueAtTime(startFreq, ctx.currentTime);
+            if (!isMiss) {
+                osc.frequency.exponentialRampToValueAtTime(endFreq, ctx.currentTime + duration);
+            }
+
+            gain.gain.setValueAtTime(vol, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+
+            gain.connect(this.masterSFXGain);
+            osc.start();
+            osc.stop(ctx.currentTime + duration);
+        } catch (e) {
+            console.warn('[SoundEffects] play8BitHitSound failed', e);
+        }
+    }
+}
 
 // 싱글톤 패턴으로 내보냄
 const soundEffects = new SoundEffects();

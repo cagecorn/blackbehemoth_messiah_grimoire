@@ -1,5 +1,5 @@
 /* ================================================================
-   RETRO UI SYSTEM — CSS Variables
+   RETRO UI SYSTEM ??CSS Variables
    Palette: CRT Green + Amber + Dark Panel
    ================================================================ */
 :root {
@@ -20,7 +20,7 @@
     --font-vt: 'VT323', monospace;
 }
 
-/* Global Scrollbar Styles — Retro */
+/* Global Scrollbar Styles ??Retro */
 ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -74,12 +74,12 @@ body {
 /* 
   ================================================================
   HD-2D Visual Effects Overlays (Octopath Traveler Style)
-  전략: GPU-accelerated CSS only. JavaScript/Canvas 연산 없음.
-  연산 비용: ~0 (브라우저 합성 레이어 위임)
+  ?꾨왂: GPU-accelerated CSS only. JavaScript/Canvas ?곗궛 ?놁쓬.
+  ?곗궛 鍮꾩슜: ~0 (釉뚮씪?곗? ?⑹꽦 ?덉씠???꾩엫)
   ================================================================
 */
 
-/* SVG 기반 Film Grain 필터 정의 (DOM에 숨겨진 형태로 추가) */
+/* SVG 湲곕컲 Film Grain ?꾪꽣 ?뺤쓽 (DOM???④꺼吏??뺥깭濡?異붽?) */
 .hd2d-film-grain-filter {
     position: absolute;
     width: 0;
@@ -97,7 +97,7 @@ body {
     z-index: 10;
 }
 
-/* 1. Vignette: 극장 스포트라이트 효과 - 가장자리를 어둡게 */
+/* 1. Vignette: 洹뱀옣 ?ㅽ룷?몃씪?댄듃 ?④낵 - 媛?μ옄由щ? ?대몼寃?*/
 .vignette {
     background: radial-gradient(ellipse at center,
             transparent 45%,
@@ -105,7 +105,7 @@ body {
             rgba(0, 0, 0, 0.55) 100%);
 }
 
-/* 2. Tilt-Shift: 디오라마 심도 표현 (위/아래 블러) */
+/* 2. Tilt-Shift: ?붿삤?쇰쭏 ?щ룄 ?쒗쁽 (???꾨옒 釉붾윭) */
 .tilt-shift {
     display: flex;
     flex-direction: column;
@@ -127,7 +127,7 @@ body {
     -webkit-mask-image: linear-gradient(to top, black 0%, transparent 100%);
 }
 
-/* 3. Soft Bloom: 밝은 영역에 은은한 빛번짐 */
+/* 3. Soft Bloom: 諛앹? ?곸뿭??????鍮쏅쾲吏?*/
 .soft-bloom {
     backdrop-filter: blur(3px) brightness(1.15) contrast(1.05);
     -webkit-backdrop-filter: blur(3px) brightness(1.15) contrast(1.05);
@@ -135,21 +135,21 @@ body {
     opacity: 0.2;
 }
 
-/* 4. Color Grading: 레트로 분위기 그라데이션 오버레이
-   앰버(좌상단) → 투명(중앙) → 딥 바이올렛(우하단)
-   CRT/SNES 필름 질감과 어우러지도록 soft-light 합성
+/* 4. Color Grading: ?덊듃濡?遺꾩쐞湲?洹몃씪?곗씠???ㅻ쾭?덉씠
+   ?곕쾭(醫뚯긽?? ???щ챸(以묒븰) ????諛붿씠?щ젢(?고븯??
+   CRT/SNES ?꾨쫫 吏덇컧怨??댁슦?ъ??꾨줉 soft-light ?⑹꽦
 */
 .color-grading {
     background:
-        /* 좌상단: 따뜻한 앰버/세피아 (레트로 하이라이트) */
+        /* 醫뚯긽?? ?곕쑜???곕쾭/?명뵾??(?덊듃濡??섏씠?쇱씠?? */
         radial-gradient(ellipse at 15% 15%,
             rgba(255, 176, 60, 0.13) 0%,
             transparent 55%),
-        /* 우하단: 딥 바이올렛/인디고 (레트로 섀도우) */
+        /* ?고븯?? ??諛붿씠?щ젢/?몃뵒怨?(?덊듃濡???꾩슦) */
         radial-gradient(ellipse at 85% 85%,
             rgba(70, 30, 110, 0.16) 0%,
             transparent 55%),
-        /* 전체 대각선: 세피아→쿨 블루 흐름 */
+        /* ?꾩껜 ?媛곸꽑: ?명뵾?꾟넂荑?釉붾（ ?먮쫫 */
         linear-gradient(145deg,
             rgba(200, 140, 60, 0.06) 0%,
             transparent 35%,
@@ -158,7 +158,7 @@ body {
     mix-blend-mode: soft-light;
 }
 
-/* 5. Scanlines: 더 조밀하고 선명한 레트로 필름 라인 */
+/* 5. Scanlines: ??議곕??섍퀬 ?좊챸???덊듃濡??꾨쫫 ?쇱씤 */
 .scanlines {
     background: repeating-linear-gradient(to bottom,
             transparent 0px,
@@ -168,9 +168,9 @@ body {
     background-size: 100% 2px;
 }
 
-/* 6. Film Grain: SVG feTurbulence 기반 노이즈 애니메이션
-   옥토패스 트래블러 특유의 필름 그레인 질감 구현.
-   CSS @keyframes로 노이즈 시드를 지속적으로 바꿔 살아있는 입자감을 냄.
+/* 6. Film Grain: SVG feTurbulence 湲곕컲 ?몄씠利??좊땲硫붿씠??
+   ?ν넗?⑥뒪 ?몃옒釉붾윭 ?뱀쑀???꾨쫫 洹몃젅??吏덇컧 援ы쁽.
+   CSS @keyframes濡??몄씠利??쒕뱶瑜?吏?띿쟻?쇰줈 諛붽퓭 ?댁븘?덈뒗 ?낆옄媛먯쓣 ??
 */
 .film-grain {
     opacity: 0.045;
@@ -226,9 +226,9 @@ body {
     }
 }
 
-/* 7. Chromatic Aberration: RGB 채널 미세 분리 (렌즈 색수차)
-   진짜 광학 렌즈처럼 RGB 채널이 조금씩 어긋나는 효과.
-   mix-blend-mode로 화면에 자연스럽게 합성.
+/* 7. Chromatic Aberration: RGB 梨꾨꼸 誘몄꽭 遺꾨━ (?뚯쫰 ?됱닔李?
+   吏꾩쭨 愿묓븰 ?뚯쫰泥섎읆 RGB 梨꾨꼸??議곌툑???닿툔?섎뒗 ?④낵.
+   mix-blend-mode濡??붾㈃???먯뿰?ㅻ읇寃??⑹꽦.
 */
 .chromatic-r {
     background: rgba(255, 0, 0, 0.018);
@@ -242,7 +242,7 @@ body {
     mix-blend-mode: screen;
 }
 
-/* 크로마틱 컨테이너: 두 채널을 하나의 레이어로 묶음 */
+/* ?щ줈留덊떛 而⑦뀒?대꼫: ??梨꾨꼸???섎굹???덉씠?대줈 臾띠쓬 */
 .chromatic-aberration {
     overflow: hidden;
 }
@@ -466,7 +466,7 @@ body {
     background: var(--retro-panel);
     border: 2px solid var(--retro-border2);
     border-radius: 0px;
-    z-index: 2000;
+    z-index: 1400;
     display: none;
     flex-direction: column;
     padding: 16px;
@@ -1487,11 +1487,11 @@ body {
     width: 100vw;
     height: 100vh;
     background: rgba(5, 5, 5, 0.96);
-    z-index: 2000;
+    z-index: 1400;
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 30px;
+    padding: 100px 30px 30px 30px;
     box-sizing: border-box;
     color: var(--retro-white);
 }
@@ -1731,7 +1731,7 @@ body {
 
 #hud-top {
     padding: 6px 12px;
-    /* 상하 여백 대폭 축소 */
+    /* ?곹븯 ?щ갚 ???異뺤냼 */
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -1745,9 +1745,9 @@ body {
     display: flex;
     align-items: center;
     gap: 6px;
-    /* 간격 축소 */
+    /* 媛꾧꺽 異뺤냼 */
     font-size: 16px;
-    /* 폰트 축소 (22px -> 16px) */
+    /* ?고듃 異뺤냼 (22px -> 16px) */
     font-family: var(--font-vt);
     color: var(--retro-gold);
     text-shadow: 0 0 8px var(--retro-gold);
@@ -1755,7 +1755,7 @@ body {
 
 .hud-stat img {
     width: 16px;
-    /* 아이콘 축소 (22px -> 16px) */
+    /* ?꾩씠肄?異뺤냼 (22px -> 16px) */
     height: 16px;
     image-rendering: pixelated;
 }
@@ -1763,7 +1763,7 @@ body {
 #hud-menu-btns {
     display: flex;
     gap: 6px;
-    /* 10px -> 6px 축소 */
+    /* 10px -> 6px 異뺤냼 */
 }
 
 #hud-menu-btns button {
@@ -1771,10 +1771,10 @@ body {
     border: 2px solid var(--retro-border2);
     border-radius: 0px;
     width: 34px;
-    /* 46px -> 34px 축소 */
+    /* 46px -> 34px 異뺤냼 */
     height: 34px;
     font-size: 16px;
-    /* 20px -> 16px 축소 */
+    /* 20px -> 16px 異뺤냼 */
     cursor: pointer;
     transition: border-color 0.1s;
     display: flex;
@@ -1802,15 +1802,15 @@ body {
 }
 
 /* ================================================================
-   PORTRAIT BAR — 레트로 아케이드 + 세련미 혼합 스타일
-   컨셉: 80~90s 아케이드 격투게임 HUD (KOF/SF) + 현대적 글로우
+   PORTRAIT BAR ???덊듃濡??꾩??대뱶 + ?몃젴誘??쇳빀 ?ㅽ???
+   而⑥뀎: 80~90s ?꾩??대뱶 寃⑺닾寃뚯엫 HUD (KOF/SF) + ?꾨???湲濡쒖슦
    ================================================================ */
 
 #portrait-bar {
     display: none !important;
-    /* 기본 히든 */
+    /* 湲곕낯 ?덈뱺 */
     grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
-    /* 6인 1열 강제 */
+    /* 6??1??媛뺤젣 */
     grid-auto-rows: auto !important;
     gap: 3px !important;
     background: linear-gradient(to top, rgba(5, 5, 8, 0.98), rgba(12, 12, 18, 0.94));
@@ -1832,24 +1832,24 @@ body {
     display: none !important;
 }
 
-/* 각 영웅 카드: grid cell에 꽉 채워짐 */
+/* 媛??곸썒 移대뱶: grid cell??苑?梨꾩썙吏?*/
 .unit-portrait {
     display: flex;
     flex-direction: column;
-    /* 세로 방향 나열 */
+    /* ?몃줈 諛⑺뼢 ?섏뿴 */
     align-items: center;
     justify-content: space-between;
     gap: 3px;
     width: 100%;
     height: 100%;
-    /* 부모 그리드 셀에 꽉 차게 */
+    /* 遺紐?洹몃━?????苑?李④쾶 */
     border-radius: 0px;
     background: rgba(10, 10, 15, 0.9);
     position: relative;
     cursor: pointer;
     overflow: hidden;
     padding: 3px 2px;
-    /* 좌우 패딩을 최대한 줄임 */
+    /* 醫뚯슦 ?⑤뵫??理쒕???以꾩엫 */
     box-sizing: border-box;
     border: 1px solid var(--retro-border2);
     box-shadow: 1px 1px 0px var(--retro-border);
@@ -1895,7 +1895,7 @@ body {
     }
 }
 
-/* 초상화 이미지 박스: 세로형에 맞게 약간 확대 */
+/* 珥덉긽???대?吏 諛뺤뒪: ?몃줈?뺤뿉 留욊쾶 ?쎄컙 ?뺣? */
 .portrait-img-box {
     width: 36px;
     height: 36px;
@@ -1919,17 +1919,17 @@ body {
     filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
 }
 
-/* 카드 오른쪽 정보 블록 -> 하단 정보 블록 */
+/* 移대뱶 ?ㅻⅨ履??뺣낫 釉붾줉 -> ?섎떒 ?뺣낫 釉붾줉 */
 .portrait-info {
     display: flex;
     flex-direction: column;
     gap: 2px;
     width: 100%;
-    /* 부모 너비에 맞춤 */
+    /* 遺紐??덈퉬??留욎땄 */
     min-width: 0;
     overflow: hidden;
     align-items: center;
-    /* 텍스트 및 바 중앙 정렬 */
+    /* ?띿뒪??諛?諛?以묒븰 ?뺣젹 */
 }
 
 .portrait-name-chip {
@@ -1947,7 +1947,7 @@ body {
     text-align: center;
 }
 
-/* HP 라벨 행 (HP 수치 숫자) */
+/* HP ?쇰꺼 ??(HP ?섏튂 ?レ옄) */
 .portrait-hp-label {
     font-family: var(--font-vt);
     font-size: clamp(11px, 2.5vw, 14px);
@@ -1955,17 +1955,17 @@ body {
     font-weight: bold;
 }
 
-/* HP 세그먼트 바 컨테이너 */
+/* HP ?멸렇癒쇳듃 諛?而⑦뀒?대꼫 */
 .portrait-hp-bar {
     display: flex;
     gap: 1px;
-    /* 1.5px -> 1px 축소 */
+    /* 1.5px -> 1px 異뺤냼 */
     align-items: center;
     height: 6px;
-    /* 7px -> 6px 축소 */
+    /* 7px -> 6px 異뺤냼 */
 }
 
-/* HP 세그먼트 한 칸 */
+/* HP ?멸렇癒쇳듃 ??移?*/
 .portrait-hp-segment {
     flex: 1;
     height: 100%;
@@ -1975,21 +1975,21 @@ body {
     image-rendering: pixelated;
 }
 
-/* HP 활성 세그먼트 — 기본(건강: 시안) */
+/* HP ?쒖꽦 ?멸렇癒쇳듃 ??湲곕낯(嫄닿컯: ?쒖븞) */
 .portrait-hp-segment.active-hp {
     background: var(--retro-cyan);
     box-shadow: 0 0 3px rgba(0, 229, 204, 0.5);
     border-color: rgba(0, 229, 204, 0.3);
 }
 
-/* HP 활성 세그먼트 — 경고(앰버) */
+/* HP ?쒖꽦 ?멸렇癒쇳듃 ??寃쎄퀬(?곕쾭) */
 .portrait-hp-segment.active-hp-warn {
     background: var(--retro-amber);
     box-shadow: 0 0 3px rgba(255, 176, 0, 0.5);
     border-color: rgba(255, 176, 0, 0.3);
 }
 
-/* HP 활성 세그먼트 — 위험(레드) */
+/* HP ?쒖꽦 ?멸렇癒쇳듃 ???꾪뿕(?덈뱶) */
 .portrait-hp-segment.active-hp-danger {
     background: var(--retro-red);
     box-shadow: 0 0 4px rgba(255, 68, 68, 0.7);
@@ -2007,18 +2007,18 @@ body {
     }
 }
 
-/* 궁극기 바 컨테이너 */
+/* 沅곴레湲?諛?而⑦뀒?대꼫 */
 .portrait-ult-bar {
     width: 100%;
     height: 4px;
-    /* 5px -> 4px 축소 */
+    /* 5px -> 4px 異뺤냼 */
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(100, 60, 160, 0.3);
     position: relative;
     overflow: hidden;
 }
 
-/* 궁극기 바 채움 */
+/* 沅곴레湲?諛?梨꾩? */
 .portrait-ult-fill {
     height: 100%;
     width: 0%;
@@ -2028,7 +2028,7 @@ body {
     position: relative;
 }
 
-/* ULT READY 상태 — 체움 바가 꽉 찰 때 */
+/* ULT READY ?곹깭 ??泥댁? 諛붽? 苑?李???*/
 .portrait-ult-fill.ult-ready {
     background: linear-gradient(to right, rgba(255, 176, 0, 0.9), rgba(255, 220, 80, 1));
     box-shadow: 0 0 8px rgba(255, 200, 0, 0.8);
@@ -2047,11 +2047,11 @@ body {
     }
 }
 
-/* ULT 라벨 (READY! 텍스트) */
+/* ULT ?쇰꺼 (READY! ?띿뒪?? */
 .portrait-ult-label {
     font-family: var(--font-pixel);
     font-size: 5px;
-    /* 텍스트 크기 좀 더 축소 */
+    /* ?띿뒪???ш린 醫 ??異뺤냼 */
     letter-spacing: 0.2px;
     color: var(--retro-purple);
     line-height: 1;
@@ -2059,7 +2059,7 @@ body {
     white-space: nowrap;
     width: 100%;
     text-align: center;
-    /* 세로형 카드에 맞춰 중앙 정렬 */
+    /* ?몃줈??移대뱶??留욎떠 以묒븰 ?뺣젹 */
 }
 
 .portrait-ult-label.ult-ready-label {
@@ -2081,16 +2081,16 @@ body {
     }
 }
 
-/* 상태이상 아이콘 행 */
+/* ?곹깭?댁긽 ?꾩씠肄???*/
 .portrait-status-row {
     display: flex;
     gap: 2px;
     flex-wrap: wrap;
     min-height: 10px;
-    /* 높이 약간 축소 */
+    /* ?믪씠 ?쎄컙 異뺤냼 */
     width: 100%;
     justify-content: center;
-    /* 중앙 정렬 */
+    /* 以묒븰 ?뺣젹 */
     align-items: center;
 }
 
@@ -2102,10 +2102,10 @@ body {
     transition: transform 0.1s;
     position: relative;
     margin-left: -4px;
-    /* 아이콘 겹침 (Overlap) 효과 */
+    /* ?꾩씠肄?寃뱀묠 (Overlap) ?④낵 */
 }
 
-/* 첫 번째 아이콘은 왼쪽 여백 제거 */
+/* 泥?踰덉㎏ ?꾩씠肄섏? ?쇱そ ?щ갚 ?쒓굅 */
 .portrait-status-mini:first-child {
     margin-left: 0;
 }
@@ -2113,10 +2113,10 @@ body {
 .portrait-status-mini:hover {
     transform: scale(1.3);
     z-index: 10;
-    /* 마우스 오버 시 가장 앞으로 오게 함 */
+    /* 留덉슦???ㅻ쾭 ??媛???욎쑝濡??ㅺ쾶 ??*/
 }
 
-/* 사망 오버레이 */
+/* ?щ쭩 ?ㅻ쾭?덉씠 */
 .portrait-dead-overlay {
     position: absolute;
     inset: 0;
@@ -2715,4 +2715,212 @@ body {
 
 .chat-grimoire-view .dash-back-btn:not(.grim-close-btn) {
     display: none !important;
+}
+/* --- Settings Popup Styles --- */
+.settings-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 10px;
+    color: var(--retro-white);
+    font-family: var(--font-vt);
+}
+
+.settings-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--font-pixel);
+    font-size: 0.8rem;
+    color: var(--retro-amber);
+    margin-bottom: 10px;
+}
+
+.settings-row {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.settings-label-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.settings-label {
+    font-size: 1.2rem;
+    color: var(--retro-white);
+}
+
+.settings-controls {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+/* Slider Style */
+.settings-slider {
+    flex: 1;
+    -webkit-appearance: none;
+    height: 8px;
+    background: var(--retro-panel2);
+    border: 1px solid var(--retro-border);
+    outline: none;
+    cursor: pointer;
+}
+
+.settings-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    background: var(--retro-amber);
+    border: 1px solid var(--retro-white);
+    cursor: pointer;
+}
+
+/* Toggle Switch Style */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 24px;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider-toggle {
+    position: absolute;
+    cursor: pointer;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: var(--retro-panel2);
+    border: 1px solid var(--retro-border);
+    transition: .3s;
+}
+
+.slider-toggle:before {
+    position: absolute;
+    content: "";
+    height: 16px;
+    width: 16px;
+    left: 4px;
+    bottom: 3px;
+    background-color: var(--retro-dim);
+    transition: .3s;
+}
+
+input:checked + .slider-toggle {
+    background-color: var(--retro-green);
+    border-color: var(--retro-green);
+}
+
+input:checked + .slider-toggle:before {
+    transform: translateX(25px);
+    background-color: white;
+}
+
+.mute-btn {
+    background: none;
+    border: 1px solid var(--retro-border);
+    color: var(--retro-white);
+    padding: 5px 10px;
+    cursor: pointer;
+    font-family: var(--font-vt);
+    font-size: 1rem;
+    min-width: 40px;
+}
+
+.mute-btn.active {
+    background: var(--retro-red);
+    border-color: var(--retro-red);
+}
+
+
+/* --- HUD Scene Navigation Bar --- */
+#hud-scene-nav {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 4px;
+    padding: 4px 12px;
+    pointer-events: auto;
+    background: rgba(15, 15, 10, 0.85);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-bottom: 2px solid var(--retro-border2);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+.nav-btn {
+    background: var(--retro-panel2);
+    border: 1px solid var(--retro-border2);
+    color: var(--retro-dim);
+    font-family: var(--font-vt);
+    font-size: 14px;
+    padding: 6px 0;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+    text-shadow: 1px 1px 0px #000;
+}
+
+.nav-btn::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: var(--retro-amber);
+    transform: scaleX(0);
+    transition: transform 0.2s ease;
+}
+
+.nav-btn:hover {
+    background: rgba(255, 176, 0, 0.1);
+    color: var(--retro-amber);
+    border-color: var(--retro-amber);
+}
+
+.nav-btn:hover::after {
+    transform: scaleX(1);
+}
+
+.nav-btn.active {
+    background: rgba(255, 176, 0, 0.15);
+    color: var(--retro-amber);
+    border-color: var(--retro-amber);
+    box-shadow: inset 0 0 8px rgba(255, 176, 0, 0.2);
+}
+
+.nav-btn.active::after {
+    transform: scaleX(1);
+}
+
+.nav-btn:active {
+    transform: translateY(1px);
+    background: rgba(255, 176, 0, 0.25);
+}
+
+
+/* --- HUD Header Grouping Fix --- */
+#hud-header {
+    pointer-events: auto;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+#hud-top {
+    border-bottom: none !important; /* Remove border to merge with nav bar */
+    box-shadow: none !important;
+}
+
+#hud-scene-nav {
+    border-top: 1px solid var(--retro-border); /* Subtle separator */
 }

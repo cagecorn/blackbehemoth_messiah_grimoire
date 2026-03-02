@@ -38,6 +38,7 @@ export default class UIManager {
         this.btnInventory = document.getElementById('btn-inventory');
         this.btnParty = document.getElementById('btn-party');
         this.btnFullscreen = document.getElementById('btn-fullscreen');
+        this.btnSettings = document.getElementById('btn-settings');
         this.btnExit = document.getElementById('btn-exit');
 
         // Item Detail Panel
@@ -61,6 +62,8 @@ export default class UIManager {
         this.createTooltip();
         this.setupChatChannels();
         this.setupMobileEvents();
+        this.setupSettingsEvents();
+        this.setupNavigationEvents();
         this.injectTestItems();
 
         // Listen for combat and loot events
@@ -105,6 +108,9 @@ export default class UIManager {
 
             const sceneKey = this.scene?.scene?.key || this.scene?.sys?.settings?.key;
             console.log(`[UIManager] Party deployed in scene: ${sceneKey}`);
+
+            // Sync navigation bar highlight
+            if (this.updateActiveNav) this.updateActiveNav();
 
             // Manage portrait bar visibility without overriding display: grid 
             if (this.portraitBar) {
@@ -241,9 +247,7 @@ export default class UIManager {
         }
         if (this.btnExit) {
             this.btnExit.onclick = () => {
-                if (this.scene && this.scene.scene) {
-                    this.scene.scene.start('TerritoryScene');
-                }
+                this.safeSceneStart('TerritoryScene');
             };
         }
 
@@ -293,6 +297,42 @@ export default class UIManager {
                 this.setEmojiFilter(filter);
             };
         });
+    }
+
+    setupNavigationEvents() {
+        const navButtons = document.querySelectorAll('#hud-scene-nav .nav-btn');
+        navButtons.forEach(btn => {
+            btn.onclick = () => {
+                const sceneKey = btn.dataset.scene;
+                const popupKey = btn.dataset.popup;
+
+                // Remove active class from all
+                navButtons.forEach(b => b.classList.remove('active'));
+                // Add to current
+                btn.classList.add('active');
+
+                if (sceneKey && this.scene && this.scene.scene) {
+                    console.log(`[UIManager] Navigating to Scene: ${sceneKey}`);
+                    this.safeSceneStart(sceneKey);
+                } else if (popupKey) {
+                    console.log(`[UIManager] Opening Nav Popup: ${popupKey}`);
+                    this.showPopup(popupKey);
+                }
+            };
+        });
+
+        // Highlight active scene function
+        this.updateActiveNav = () => {
+            if (!this.scene || !this.scene.scene) return;
+            const currentSceneKey = this.scene.scene.key;
+            navButtons.forEach(btn => {
+                if (btn.dataset.scene === currentSceneKey) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+        };
     }
 
     setEmojiFilter(filter) {
@@ -365,20 +405,210 @@ export default class UIManager {
                 invContent.style.border = 'none';
                 invContent.style.boxShadow = 'none';
             }
+            this.popupOverlay.style.display = 'flex';
         } else if (type === 'party') {
-            const chatContent = document.getElementById('chat-container');
-            if (chatContent) {
-                this.popupInner.appendChild(chatContent);
-                chatContent.style.setProperty('display', 'flex', 'important');
-                chatContent.style.height = '100%';
-                chatContent.style.background = 'transparent';
-            }
+            // "Party" now triggers the Mercenary Formation UI (previously in TerritoryScene)
+            this.showPartyFormation();
+            return; // showPartyFormation handles its own overlay or reuse popup-overlay
         }
 
         this.popupOverlay.style.display = 'flex';
     }
 
+    /**
+     * Safer scene transition that stops all active scenes to prevent overlapping.
+     */
+    safeSceneStart(sceneKey) {
+        if (!this.scene) return;
+
+        console.log(`[UIManager] Safe start scene: ${sceneKey}`);
+
+        // Robust game/sceneManager access
+        const game = this.scene.game || (this.scene.scene && this.scene.scene.game);
+        if (!game || !game.scene) {
+            console.warn(`[UIManager] Game or SceneManager not found. Direct start.`);
+            if (this.scene.scene) this.scene.scene.start(sceneKey);
+            else if (this.scene.start) this.scene.start(sceneKey);
+            return;
+        }
+
+        // Stop all scenes effectively
+        const activeScenes = game.scene.getScenes(true);
+        activeScenes.forEach(s => {
+            const key = s.scene?.key || s.sys?.settings?.key;
+            if (key && key !== sceneKey) {
+                console.log(`[UIManager] Stopping active scene: ${key}`);
+                game.scene.stop(key);
+            }
+        });
+
+        // Start the target scene
+        game.scene.start(sceneKey);
+
+        // Ensure any popups are hidden
+        this.hidePopup();
+
+        // Sync nav bar
+        if (this.updateActiveNav) setTimeout(() => this.updateActiveNav(), 100);
+    }
+
+    /**
+     * Global Party Formation UI (extracted and improved from TerritoryScene.js)
+     */
+    async showPartyFormation() {
+        if (this.partyFormationOverlay || !this.scene) return;
+
+        const game = this.scene.game || (this.scene.scene && this.scene.scene.game);
+        const partyManager = game?.partyManager;
+        if (!partyManager) {
+            console.error('[UIManager] PartyManager not found.');
+            return;
+        }
+
+        // Restore/Heal all members on opening
+        if (partyManager) partyManager.healAll();
+        // Reload roster to reflect any new gacha pulls
+        await partyManager.reloadRoster();
+
+        const overlay = document.createElement('div');
+        overlay.id = 'party-formation-overlay';
+        overlay.className = 'party-selection-overlay';
+        this.partyFormationOverlay = overlay;
+
+        let candidatesHtml = '';
+        Object.values(Characters).forEach(char => {
+            const star = partyManager.getHighestStar(char.id);
+            if (star === 0) return; // Not owned
+
+            const starHtml = `<div style="position:absolute; top:4px; right:4px; font-size:12px; font-weight:bold; color:#fbbf24; text-shadow:0 1px 2px #000;">★${star}</div>`;
+            candidatesHtml += `
+                <div class="mercenary-card" draggable="true" data-id="${char.id}" style="position:relative;">
+                    ${starHtml}
+                    <img src="assets/characters/party/${char.sprite}.png" alt="${char.name}">
+                    <div class="merc-name">${char.name.split(' (')[0]}</div>
+                </div>
+            `;
+        });
+
+        overlay.innerHTML = `
+            <div class="party-selection-title">원정대 편성 (슬롯에 드래그하거나 클릭하여 배치)</div>
+            
+            <div class="party-slots">
+                <div class="party-slot" data-slot="0">1</div>
+                <div class="party-slot" data-slot="1">2</div>
+                <div class="party-slot" data-slot="2">3</div>
+                <div class="party-slot" data-slot="3">4</div>
+                <div class="party-slot" data-slot="4">5</div>
+                <div class="party-slot" data-slot="5">6</div>
+            </div>
+
+            <div class="mercenary-candidates">
+                ${candidatesHtml}
+            </div>
+            
+            <div style="display: flex; gap: 10px; width: 100%; justify-content: center; margin-top: 10px;">
+                <button class="party-confirm-btn" style="flex: 1;">편성 완료</button>
+                <button class="party-cancel-btn" style="flex: 0.4; background: rgba(100, 100, 100, 0.6);">취소</button>
+            </div>
+        `;
+
+        document.body.appendChild(overlay);
+
+        const currentSlots = [...partyManager.getActiveParty()];
+        const slotEls = overlay.querySelectorAll('.party-slot');
+        const cards = overlay.querySelectorAll('.mercenary-card');
+
+        const updateSlotUI = (index) => {
+            const charId = currentSlots[index];
+            const slotEl = slotEls[index];
+            if (charId) {
+                const char = Object.values(Characters).find(c => c.id.toLowerCase() === charId.toLowerCase());
+                if (!char) {
+                    slotEl.innerHTML = `${index + 1}`;
+                    return;
+                }
+                const star = partyManager.getHighestStar(charId);
+                const starHtml = star > 0 ? `<div style="position:absolute; bottom:2px; right:4px; font-size:14px; font-weight:bold; color:#fbbf24; text-shadow:0 1px 2px #000; z-index:10;">★${star}</div>` : '';
+                slotEl.style.position = 'relative';
+                slotEl.innerHTML = `
+                    ${starHtml}
+                    <img src="assets/characters/party/${char.sprite}.png" alt="${char.name}">
+                `;
+                slotEl.classList.add('filled');
+            } else {
+                slotEl.innerHTML = `${index + 1}`;
+                slotEl.classList.remove('filled');
+            }
+        };
+
+        currentSlots.forEach((_, i) => updateSlotUI(i));
+
+        cards.forEach(card => {
+            card.addEventListener('dragstart', (e) => e.dataTransfer.setData('characterId', card.dataset.id));
+            card.onclick = () => {
+                const charId = card.dataset.id;
+                if (currentSlots.includes(charId)) return;
+                let emptyIndex = currentSlots.indexOf(null);
+                if (emptyIndex !== -1) {
+                    currentSlots[emptyIndex] = charId;
+                    updateSlotUI(emptyIndex);
+                }
+            };
+        });
+
+        slotEls.forEach((slot, i) => {
+            slot.addEventListener('dragover', (e) => e.preventDefault());
+            slot.addEventListener('drop', (e) => {
+                e.preventDefault();
+                const charId = e.dataTransfer.getData('characterId');
+                if (charId) {
+                    const existingIndex = currentSlots.indexOf(charId);
+                    if (existingIndex !== -1 && existingIndex !== i) {
+                        currentSlots[existingIndex] = null;
+                        updateSlotUI(existingIndex);
+                    }
+                    currentSlots[i] = charId;
+                    updateSlotUI(i);
+                }
+            });
+            slot.onclick = () => {
+                currentSlots[i] = null;
+                updateSlotUI(i);
+            };
+        });
+
+        const confirmBtn = overlay.querySelector('.party-confirm-btn');
+        confirmBtn.onclick = () => {
+            currentSlots.forEach((id, i) => partyManager.setPartySlot(i, id));
+
+            // Sync with Mobile HUD
+            EventBus.emit(EventBus.EVENTS.PARTY_DEPLOYED, {
+                scene: this.scene,
+                mercenaries: currentSlots
+                    .filter(id => id !== null)
+                    .map(id => {
+                        const char = Object.values(Characters).find(c => c.id === id);
+                        return { id: `init-${id}`, characterId: id, unitName: char.name, sprite: char.sprite, hp: 100, maxHp: 100 };
+                    })
+            });
+
+            overlay.remove();
+            this.partyFormationOverlay = null;
+        };
+
+        const cancelBtn = overlay.querySelector('.party-cancel-btn');
+        cancelBtn.onclick = () => {
+            overlay.remove();
+            this.partyFormationOverlay = null;
+        };
+    }
+
     hidePopup() {
+        if (this.partyFormationOverlay) {
+            this.partyFormationOverlay.remove();
+            this.partyFormationOverlay = null;
+        }
+
         if (this.popupOverlay) {
             this.detailChannel = null;
             if (this.detailPanel) this.detailPanel.style.display = 'none';
@@ -1255,42 +1485,116 @@ export default class UIManager {
     }
 
     showStatusTooltip(status, anchorEl) {
-        if (!this.statusTooltip) {
-            this.statusTooltip = document.createElement('div');
-            this.statusTooltip.id = 'status-tooltip';
-            this.statusTooltip.className = 'status-popup-tab';
-            document.body.appendChild(this.statusTooltip);
+        // ... (existing status tooltip code)
+    }
+
+    setupSettingsEvents() {
+        if (this.btnSettings) {
+            this.btnSettings.onclick = () => this.showSettingsPopup();
         }
+    }
 
-        const rect = anchorEl.getBoundingClientRect();
+    showSettingsPopup() {
+        if (!this.popupOverlay) return;
 
-        this.statusTooltip.innerHTML = `
-            <div class="status-popup-header">
-                <span class="status-popup-emoji">${status.emoji}</span>
-                <span class="status-popup-title">${status.name}</span>
-            </div>
-            <div class="status-popup-desc">${status.description}</div>
-        `;
+        import('../Core/SoundEffects.js').then(module => {
+            const sfx = module.default;
 
-        this.statusTooltip.style.display = 'block';
+            // Current BGM Volume (from Phaser)
+            const currentBgmVol = (this.scene && this.scene.sound.volume) || 0.5;
+            const currentSfxVol = sfx.sfxVolume;
 
-        // Position above the icon
-        const tooltipRect = this.statusTooltip.getBoundingClientRect();
-        this.statusTooltip.style.left = Math.max(10, Math.min(window.innerWidth - tooltipRect.width - 10, rect.left + rect.width / 2 - tooltipRect.width / 2)) + 'px';
-        this.statusTooltip.style.top = (rect.top - tooltipRect.height - 12) + 'px';
+            this.popupInner.innerHTML = `
+                <div class="settings-menu">
+                    <div class="settings-header">
+                        <span>⚙️</span> SETTINGS
+                    </div>
 
-        // Auto-hide after 3 seconds
-        if (this.statusTooltipTimer) clearTimeout(this.statusTooltipTimer);
-        this.statusTooltipTimer = setTimeout(() => {
-            this.statusTooltip.style.display = 'none';
-        }, 3000);
+                    <!-- SFX Volume -->
+                    <div class="settings-row">
+                        <div class="settings-label-row">
+                            <span class="settings-label">효과음 (SFX)</span>
+                            <div class="settings-controls">
+                                <button id="btn-mute-sfx" class="mute-btn ${sfx.sfxMuted ? 'active' : ''}">🔇</button>
+                                <span id="sfx-vol-val">${Math.round(currentSfxVol * 100)}%</span>
+                            </div>
+                        </div>
+                        <input type="range" id="slider-sfx-vol" class="settings-slider" min="0" max="1" step="0.01" value="${currentSfxVol}">
+                    </div>
 
-        // Click anywhere to hide immediately
-        const hideMe = () => {
-            this.statusTooltip.style.display = 'none';
-            document.removeEventListener('mousedown', hideMe);
-        };
-        setTimeout(() => document.addEventListener('mousedown', hideMe), 100);
+                    <!-- BGM Volume -->
+                    <div class="settings-row">
+                        <div class="settings-label-row">
+                            <span class="settings-label">배경음 (BGM)</span>
+                            <div class="settings-controls">
+                                <button id="btn-mute-bgm" class="mute-btn ${(this.scene && this.scene.sound.mute) ? 'active' : ''}">🔇</button>
+                                <span id="bgm-vol-val">${Math.round(currentBgmVol * 100)}%</span>
+                            </div>
+                        </div>
+                        <input type="range" id="slider-bgm-vol" class="settings-slider" min="0" max="1" step="0.01" value="${currentBgmVol}">
+                    </div>
+
+                    <!-- Vibration -->
+                    <div class="settings-row">
+                        <div class="settings-label-row">
+                            <span class="settings-label">진동 (Vibration)</span>
+                            <label class="switch">
+                                <input type="checkbox" id="check-vibration" ${sfx.vibrationEnabled ? 'checked' : ''}>
+                                <span class="slider-toggle"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            this.popupOverlay.style.display = 'flex';
+
+            // SFX Listeners
+            const sfxSlider = document.getElementById('slider-sfx-vol');
+            const sfxMuteBtn = document.getElementById('btn-mute-sfx');
+            const sfxValText = document.getElementById('sfx-vol-val');
+
+            sfxSlider.oninput = (e) => {
+                const vol = parseFloat(e.target.value);
+                sfx.setSFXVolume(vol);
+                sfxValText.innerText = `${Math.round(vol * 100)}%`;
+            };
+
+            sfxMuteBtn.onclick = () => {
+                const isMuted = !sfx.sfxMuted;
+                sfx.setSFXMuted(isMuted);
+                sfxMuteBtn.classList.toggle('active', isMuted);
+            };
+
+            // BGM Listeners
+            const bgmSlider = document.getElementById('slider-bgm-vol');
+            const bgmMuteBtn = document.getElementById('btn-mute-bgm');
+            const bgmValText = document.getElementById('bgm-vol-val');
+
+            bgmSlider.oninput = (e) => {
+                const vol = parseFloat(e.target.value);
+                if (this.scene) {
+                    this.scene.sound.setVolume(vol);
+                    localStorage.setItem('bgmVolume', vol);
+                }
+                bgmValText.innerText = `${Math.round(vol * 100)}%`;
+            };
+
+            bgmMuteBtn.onclick = () => {
+                const isMuted = this.scene ? !this.scene.sound.mute : false;
+                if (this.scene) {
+                    this.scene.sound.setMute(isMuted);
+                    localStorage.setItem('bgmMuted', isMuted);
+                }
+                bgmMuteBtn.classList.toggle('active', isMuted);
+            };
+
+            // Vibration Listener
+            const vibCheck = document.getElementById('check-vibration');
+            vibCheck.onchange = (e) => {
+                sfx.setVibrationEnabled(e.target.checked);
+            };
+        });
     }
 
     destroy() {

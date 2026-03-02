@@ -1,26 +1,5 @@
 import Phaser from 'phaser';
-
-// Initialize Web Audio API for 8-bit beeps
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-function play8BitBeep(pitch = 600) {
-    if (!audioCtx) return;
-    if (audioCtx.state === 'suspended') audioCtx.resume();
-    try {
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = 'square';
-        // Randomize pitch slightly for organic typing feel
-        osc.frequency.setValueAtTime(pitch + (Math.random() * 50 - 25), audioCtx.currentTime);
-        gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.04);
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start();
-        osc.stop(audioCtx.currentTime + 0.05);
-    } catch (e) {
-        // Ignore audio errors if blocked
-    }
-}
+import soundEffects from '../Core/SoundEffects.js';
 
 /**
  * SpeechBubble
@@ -158,7 +137,7 @@ export default class SpeechBubble extends Phaser.GameObjects.Container {
                     // Play beep for non-space characters
                     if (mainText[typeIndex] !== ' ' && mainText[typeIndex] !== '\n') {
                         // Pitch mapping: higher pitch for higher characters (just random flavor)
-                        play8BitBeep(600 + (Math.random() * 200 - 100));
+                        soundEffects.play8BitBeep(600 + (Math.random() * 200 - 100));
                     }
                     typeIndex++;
                 } else {
