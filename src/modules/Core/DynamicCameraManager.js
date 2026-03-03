@@ -93,6 +93,7 @@ export default class DynamicCameraManager {
          * [Bourne Style Logic]
          * To truly feel like Bourne Identity, we could also slightly randomize the scrollFactor 
          * or slightly adjust the zoom dynamically, but for now, the shaky offset is the core.
-         */
+             */
+
     }
 }
