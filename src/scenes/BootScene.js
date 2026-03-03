@@ -213,6 +213,10 @@ export default class BootScene extends Phaser.Scene {
     async create() {
         console.log('BootScene assets loaded. Transitioning to game world.');
 
+        if (this.game.uiManager) {
+            this.game.uiManager.scene = this;
+        }
+
         // Apply sound settings
         const bgmVol = localStorage.getItem('bgmVolume');
         const bgmMuted = localStorage.getItem('bgmMuted');
@@ -222,9 +226,12 @@ export default class BootScene extends Phaser.Scene {
         // Initialize Global Cinematic Filters (Persistent across all scenes)
         this.setupFakeAestheticOverlays();
 
-        // Initialize 10 burgers if not present (Tutorial/Starter items)
+        // Initialize starter items if not present
         try {
             const DBManager = (await import('../modules/Database/DBManager.js')).default;
+            const partyManager = (await import('../modules/Core/PartyManager.js')).default;
+            const { Characters } = await import('../modules/Core/EntityStats.js');
+
             const existingBurger = await DBManager.getInventoryItem('emoji_burger');
             if (!existingBurger) {
                 console.log('[BootScene] Initializing starter 🍔 x10');
@@ -315,6 +322,10 @@ export default class BootScene extends Phaser.Scene {
                 await DBManager.saveParty(defaultParty);
             }
 
+            // --- Re-sync Managers ---
+            // Important: We need to tell PartyManager to reload its data from DB after we seeded it.
+            await partyManager.init(Object.values(Characters));
+
             // --- UI Sync ---
             // Ensure UIManager HUD reflects the newly added starter items/diamonds immediately
             EventBus.emit(EventBus.EVENTS.INVENTORY_UPDATED);
@@ -364,10 +375,4 @@ export default class BootScene extends Phaser.Scene {
         return div;
     }
 
-    create() {
-        if (this.game.uiManager) {
-            this.game.uiManager.scene = this;
-        }
-        this.scene.start('TerritoryScene');
-    }
 }
