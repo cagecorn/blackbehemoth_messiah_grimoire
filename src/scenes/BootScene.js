@@ -292,6 +292,29 @@ export default class BootScene extends Phaser.Scene {
                 await DBManager.saveInventoryItem('emoji_gem', 2000);
             }
 
+            // --- Default Roster (New Players) ---
+            const existingRoster = await DBManager.getMercenaryRoster();
+            if (Object.keys(existingRoster).length === 0) {
+                console.log('[BootScene] Initializing default roster: [Aren, Ella, Sera, Merlin, Lute, Silvi]');
+                const defaultRoster = {
+                    'aren': { '1': 1 },
+                    'ella': { '1': 1 },
+                    'sera': { '1': 1 },
+                    'merlin': { '1': 1 },
+                    'lute': { '1': 1 },
+                    'silvi': { '1': 1 }
+                };
+                await DBManager.saveMercenaryRoster(defaultRoster);
+            }
+
+            // --- Default Active Party (New Players) ---
+            const existingParty = await DBManager.getParty();
+            if (!existingParty) {
+                console.log('[BootScene] Initializing default active party');
+                const defaultParty = ['aren', 'ella', 'sera', 'merlin', 'lute', 'silvi'];
+                await DBManager.saveParty(defaultParty);
+            }
+
             // --- UI Sync ---
             // Ensure UIManager HUD reflects the newly added starter items/diamonds immediately
             EventBus.emit(EventBus.EVENTS.INVENTORY_UPDATED);
