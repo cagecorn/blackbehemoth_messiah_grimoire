@@ -132,6 +132,18 @@ export default class TerritoryScene extends Phaser.Scene {
         `;
 
         const handleSceneChange = (targetScene) => {
+            const combatScenes = ['DungeonScene', 'ArenaScene', 'RaidScene'];
+            if (combatScenes.includes(targetScene)) {
+                const partyManager = this.game.partyManager;
+                if (partyManager && !partyManager.isPartyFull()) {
+                    if (this.game.uiManager) {
+                        this.game.uiManager.showToast("6명의 용병을 편성해주세요");
+                        this.game.uiManager.showPartyFormation();
+                    }
+                    return;
+                }
+            }
+
             if (this.navContainer) this.navContainer.remove();
             this.navContainer = null;
             this.scene.start(targetScene);

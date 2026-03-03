@@ -69,6 +69,14 @@ class PartyManager {
         return this.activeParty;
     }
 
+    /**
+     * Checks if all 6 slots in the active party are filled.
+     * @returns {boolean}
+     */
+    isPartyFull() {
+        return this.activeParty.filter(p => p !== null).length === 6;
+    }
+
     getRoster() {
         return this.roster;
     }

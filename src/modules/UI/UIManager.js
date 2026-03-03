@@ -252,6 +252,49 @@ export default class UIManager {
         };
     }
 
+    /**
+     * Shows a brief floating message at the top of the screen.
+     * Useful for warnings or quick feedback.
+     */
+    showToast(message) {
+        const toast = document.createElement('div');
+        toast.className = 'ui-toast';
+        toast.innerText = message;
+        toast.style.cssText = `
+            position: fixed;
+            top: 20%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.85);
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 30px;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
+            border: 2px solid #fbbf24;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            z-index: 10000;
+            pointer-events: none;
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        `;
+
+        document.body.appendChild(toast);
+
+        // Animate in
+        requestAnimationFrame(() => {
+            toast.style.opacity = '1';
+            toast.style.top = '25%';
+        });
+
+        // Auto remove
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.top = '20%';
+            setTimeout(() => toast.remove(), 300);
+        }, 2200);
+    }
+
     setupMobileEvents() {
         const combatScenes = ['DungeonScene', 'ArenaScene', 'RaidScene'];
         const getActiveKey = () => (this.scene?.scene?.key || this.scene?.sys?.settings?.key || "");
@@ -358,8 +401,18 @@ export default class UIManager {
                 const popupKey = btn.dataset.popup;
                 const currentKey = getActiveKey();
 
-                // 1. Prevent redundant clicks (Removed guard to allow closing overlays even on current scene)
-                // if (sceneKey && sceneKey === currentKey) return;
+                const combatScenes = ['DungeonScene', 'ArenaScene', 'RaidScene'];
+                const isCombatTarget = combatScenes.includes(sceneKey);
+
+                // PARTY VALIDATION: Must have 6 members to enter combat
+                if (isCombatTarget) {
+                    const partyManager = this.scene?.game?.partyManager;
+                    if (partyManager && !partyManager.isPartyFull()) {
+                        this.showToast("6명의 용병을 편성해주세요");
+                        this.showPartyFormation();
+                        return;
+                    }
+                }
 
                 // 2. Confirmation if in combat
                 if (combatScenes.includes(currentKey)) {
