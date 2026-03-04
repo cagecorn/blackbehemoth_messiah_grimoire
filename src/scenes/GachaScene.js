@@ -60,16 +60,10 @@ export default class GachaScene extends Phaser.Scene {
             z-index: 1000;
         `;
 
-        // Title Element
-        this.titleArea = document.createElement('div');
-        this.titleArea.innerHTML = `
-            <div style="font-size: 36px; font-weight: 900; color: #fbbf24; text-shadow: 0 4px 6px rgba(0,0,0,0.8); letter-spacing: 2px;">
-                용병 5연속 영입
-            </div>
-        `;
-        this.titleArea.style.cssText = "margin-top: -60px; text-align: center; transition: opacity 0.3s;";
-        this.uiContainer.appendChild(this.titleArea);
-
+        // Title Element removed to prevent overlap with global HUD
+        // Put in an empty div so justify-content: space-between still pushes the bottom button down
+        const topSpacer = document.createElement('div');
+        this.uiContainer.appendChild(topSpacer);
         // Bottom Action Area
         const bottomArea = document.createElement('div');
         bottomArea.style.cssText = `pointer-events: auto; margin-bottom: 50px; text-align: center; display: flex; flex-direction: column; gap: 15px;`;
