@@ -224,14 +224,24 @@ export default class GachaScene extends Phaser.Scene {
         const height = this.cameras.main.height;
         const centerY = height / 2 - 30;
 
-        // "W" Layout positions for 5 cards
-        const positions = [
-            { x: width * 0.15, y: centerY - 40 },
-            { x: width * 0.325, y: centerY + 40 },
-            { x: width * 0.50, y: centerY - 40 },
-            { x: width * 0.675, y: centerY + 40 },
-            { x: width * 0.85, y: centerY - 40 }
-        ];
+        let positions = [];
+        let cardScale = 1.0;
+
+        if (characters.length === 1) {
+            // Single Centered Pull (e.g. Pet)
+            positions = [{ x: width / 2, y: centerY }];
+            cardScale = 1.8; // Make it much larger
+        } else {
+            // "W" Layout positions for 5 cards
+            positions = [
+                { x: width * 0.15, y: centerY - 40 },
+                { x: width * 0.325, y: centerY + 40 },
+                { x: width * 0.50, y: centerY - 40 },
+                { x: width * 0.675, y: centerY + 40 },
+                { x: width * 0.85, y: centerY - 40 }
+            ];
+            cardScale = 1.0;
+        }
 
         let cardsRevealed = 0;
 
@@ -285,8 +295,8 @@ export default class GachaScene extends Phaser.Scene {
                 // Popup Animation (Rise up, spin and land)
                 this.tweens.add({
                     targets: cardContainer,
-                    scaleX: 1.1,
-                    scaleY: 1.1,
+                    scaleX: cardScale * 1.1,
+                    scaleY: cardScale * 1.1,
                     y: pos.y,
                     alpha: 1,
                     duration: 300,
@@ -294,8 +304,8 @@ export default class GachaScene extends Phaser.Scene {
                     onComplete: () => {
                         this.tweens.add({
                             targets: cardContainer,
-                            scaleX: 1,
-                            scaleY: 1,
+                            scaleX: cardScale,
+                            scaleY: cardScale,
                             duration: 100
                         });
                         cardsRevealed++;
@@ -343,12 +353,18 @@ export default class GachaScene extends Phaser.Scene {
                 display: flex; align-items: center; justify-content: flex-start; gap: 20px; 
                 background: rgba(0,0,0,0.3); padding: 15px; border-radius: 12px; border-left: 4px solid #f59e0b;
             `;
+
+            const isPet = !!merge.petId;
+            const data = isPet ? merge.petData : merge.charData;
+            const spritePath = isPet ? `assets/pet/${data.sprite}.png` : `assets/characters/party/${data.sprite}.png`;
+            const name = data.name.split(' (')[0];
+
             item.innerHTML = `
                 <div style="background: rgba(255,255,255,0.1); border-radius: 50%; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center;">
-                    <img src="assets/characters/party/${merge.charData.sprite}.png" style="width: 40px; height: 40px; object-fit: contain;">
+                    <img src="${spritePath}" style="width: 40px; height: 40px; object-fit: contain;">
                 </div>
                 <div style="text-align: left; flex: 1;">
-                    <div style="font-size: 18px; font-weight: bold; margin-bottom: 4px;">${merge.charData.name.split(' (')[0]}</div>
+                    <div style="font-size: 18px; font-weight: bold; margin-bottom: 4px;">${name}</div>
                     <div style="font-size: 14px; color: #cbd5e1;">
                         <span style="color: #94a3b8; text-decoration: line-through;">${merge.fromStar}성 3명</span> ➔ 
                         <span style="color: #fbbf24; font-weight: bold; font-size: 18px;">${merge.toStar}성 진화 완료</span>

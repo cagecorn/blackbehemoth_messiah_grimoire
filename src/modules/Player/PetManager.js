@@ -1,4 +1,6 @@
 import DogPet from './DogPet.js';
+import WolfPet from './WolfPet.js';
+import OwlPet from './OwlPet.js';
 
 /**
  * PetManager.js
@@ -31,10 +33,16 @@ export default class PetManager {
 
         if (petId === 'dog_pet') {
             this.activePet = new DogPet(this.scene, x, y, { level, stars });
-            this.pets.add(this.activePet);
+        } else if (petId === 'wolf_pet') {
+            this.activePet = new WolfPet(this.scene, x, y, { level, stars });
+        } else if (petId === 'owl_pet') {
+            this.activePet = new OwlPet(this.scene, x, y, { level, stars });
         } else {
             console.warn(`[PetManager] Unknown pet ID: ${petId}`);
+            return null;
         }
+
+        this.pets.add(this.activePet);
 
         return this.activePet;
     }

@@ -194,6 +194,8 @@ export default class BootScene extends Phaser.Scene {
 
         // Pet Assets
         this.load.image('dog_pet', 'assets/pet/dog_pet.png');
+        this.load.image('wolf_pet', 'assets/pet/wolf_pet.png');
+        this.load.image('owl_pet', 'assets/pet/owl_pet.png');
 
         // Load effect sprites
         this.load.image('guillotine_paper', 'assets/effect/guillotine_paper.png');

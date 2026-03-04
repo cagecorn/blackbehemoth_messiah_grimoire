@@ -60,6 +60,12 @@ class PartyManager {
 
     async reloadRoster() {
         this.playerRoster = await DBManager.getMercenaryRoster();
+        EventBus.emit(EventBus.EVENTS.INVENTORY_UPDATED);
+    }
+
+    async reloadPetRoster() {
+        this.playerPetRoster = await DBManager.get('settings', 'petRoster') || {};
+        EventBus.emit('PET_ROSTER_UPDATED');
     }
 
     getHighestStar(charId) {
@@ -150,6 +156,7 @@ class PartyManager {
         }
 
         await DBManager.set('settings', 'petRoster', this.playerPetRoster);
+        EventBus.emit('PET_ROSTER_UPDATED');
         return currentStar;
     }
 

@@ -390,23 +390,46 @@ export default class Mercenary extends Phaser.GameObjects.Container {
     }
 
     getTotalAtk() {
-        const base = (this.atk || 0) + (this.bonusAtk || 0);
-        // [NodeCharm] Enraged (😠) bonus: UP TO +50% based on missing HP
-        let nodeMult = 1.0;
+        const base = (this.atk || 0) + this.getEquipmentBonus('atk');
+        const additions = (this.bonusAtk || 0);
+
+        // Multipliers (Additive stacking: 1 + m1 + m2 + ...)
+        let multipliers = 0;
+
+        // [NodeCharm] Enraged (😠) bonus: UP TO +15% based on missing HP
         if (this.blackboard && this.blackboard.get('enraged_active')) {
             const missingHpRatio = 1 - (this.hp / this.maxHp);
-            nodeMult += missingHpRatio * 0.15; // Max 1.15x at 0% HP
+            multipliers += missingHpRatio * 0.15;
         }
-        const transMult = this.grimoire_transmult || 1.0;
+
+        // Grimoire / Transformation Mult
+        if (this.grimoire_transmult) {
+            multipliers += (this.grimoire_transmult - 1);
+        }
+
+        // Pet Passive
         const petBonus = this.scene.game.partyManager?.getGlobalPetBonus('atkMult') || 0;
-        return base * nodeMult * transMult * (1 + petBonus);
+        multipliers += petBonus;
+
+        return (base + additions) * (1 + multipliers);
     }
 
     getTotalMAtk() {
-        const base = this.mAtk + (this.bonusMAtk || 0) + this.getEquipmentBonus('mAtk');
+        const base = (this.mAtk || 0) + this.getEquipmentBonus('mAtk');
+        const additions = (this.bonusMAtk || 0);
+
+        let multipliers = 0;
+
+        // Tactical Command: +50%
+        if (this.isTacticalCommandActive) {
+            multipliers += 0.5;
+        }
+
+        // Pet Passive
         const petBonus = this.scene.game.partyManager?.getGlobalPetBonus('mAtkMult') || 0;
-        let final = (this.isTacticalCommandActive ? base * 1.5 : base) * (1 + petBonus);
-        return final;
+        multipliers += petBonus;
+
+        return (base + additions) * (1 + multipliers);
     }
 
     getTotalCrit() {
@@ -414,23 +437,22 @@ export default class Mercenary extends Phaser.GameObjects.Container {
     }
 
     getTotalDef() {
-        const base = this.def + (this.bonusDef || 0);
+        const base = (this.def || 0) + this.getEquipmentBonus('def');
+        const additions = (this.bonusDef || 0);
+
+        let multipliers = 0;
         // [NodeCharm] Bodyguard (😎) bonus: +10% Defense
-        const nodeMult = (this.blackboard && this.blackboard.get('guard_active')) ? 1.1 : 1.0;
-        return base * nodeMult;
-    }
+        if (this.blackboard && this.blackboard.get('guard_active')) {
+            multipliers += 0.1;
+        }
 
-    getTotalEva() {
-        return this.eva + (this.bonusEva || 0);
-    }
-
-    getTotalSpeed() {
-        const base = this.speed + (this.bonusSpeed || 0);
-        return this.isFrozen ? base * 0.5 : base;
+        return (base + additions) * (1 + multipliers);
     }
 
     getTotalMDef() {
-        return this.mDef + (this.bonusMDef || 0);
+        const base = (this.mDef || 0) + this.getEquipmentBonus('mDef');
+        const additions = (this.bonusMDef || 0);
+        return (base + additions);
     }
 
     getTotalAtkSpd() {

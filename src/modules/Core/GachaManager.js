@@ -1,5 +1,6 @@
 import DBManager from '../Database/DBManager.js';
 import { Characters, PetStats } from './EntityStats.js';
+import partyManager from './PartyManager.js';
 
 export default class GachaManager {
     static COST_PER_PULL = 100; // 5회 뽑기 총 500 다이아
@@ -61,6 +62,7 @@ export default class GachaManager {
 
         // 5. 업데이트된 로스터 저장
         await DBManager.saveMercenaryRoster(roster);
+        await partyManager.reloadRoster();
 
         return {
             success: true,
@@ -139,6 +141,7 @@ export default class GachaManager {
 
         // 5. Save
         await DBManager.set('settings', 'petRoster', petRoster);
+        await partyManager.reloadPetRoster();
 
         return {
             success: true,

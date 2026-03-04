@@ -4,7 +4,7 @@ import EventBus from '../Events/EventBus.js';
 import intentRouter from '../AI/IntentRouter.js';
 import localLLM from '../AI/LocalLLM.js';
 import embeddingGemma from '../AI/EmbeddingGemma.js';
-import { MercenaryClasses, Characters, PetStats } from '../Core/EntityStats.js';
+import { MercenaryClasses, Characters, PetStats, scaleStats } from '../Core/EntityStats.js';
 // partyManager will be accessed via this.scene.game.partyManager
 import ItemManager from '../Core/ItemManager.js';
 import CharmManager from '../Core/CharmManager.js';
@@ -245,6 +245,13 @@ export default class UIManager {
         // New: Best Round Tracking Update
         this.updateBestRounds();
         EventBus.on('BEST_ROUND_UPDATED', () => this.updateBestRounds());
+
+        // New: Pet Roster Sync
+        EventBus.on('PET_ROSTER_UPDATED', () => {
+            if (this.petStorageOverlay && !this.petStorageOverlay.classList.contains('hidden')) {
+                this.refreshPetStorage();
+            }
+        });
     }
 
     showConfirm(message, onConfirm, onCancel = null) {
@@ -687,23 +694,21 @@ export default class UIManager {
         const detailArea = document.getElementById('pet-detail-area');
         const partyManager = this.scene?.game?.partyManager;
         const state = partyManager.getPetState(petId);
-        const config = PetStats[petId.toUpperCase()];
+        const baseConfig = PetStats[petId.toUpperCase()];
         const highestStar = partyManager.getHighestPetStar(petId);
         const cost = partyManager.getPetLevelUpCost(petId, state.level);
 
-        // Scale stats by level and star
-        const starMult = 1 + (highestStar - 1) * 0.2; // 20% per star
-        const levelBonusAtk = (state.level - 1) * (config.growth?.atk || 1);
-        const levelBonusMAtk = (state.level - 1) * (config.growth?.mAtk || 0);
+        // Scale stats by level and star using centralized utility
+        const scaledConfig = scaleStats({ ...baseConfig, star: highestStar }, state.level);
 
-        const currentAtk = Math.floor((config.atk + levelBonusAtk) * starMult);
-        const currentMAtk = Math.floor((config.mAtk + levelBonusMAtk) * starMult);
+        const currentAtk = scaledConfig.atk;
+        const currentMAtk = scaledConfig.mAtk;
 
         detailArea.innerHTML = `
             <div style="text-align: center; border-bottom: 2px solid rgba(255,255,255,0.1); padding-bottom: 12px; display: flex; flex-direction: column; align-items: center; gap: 8px;">
-                <div style="color: #fbbf24; font-size: 16px; font-weight: 900;">★${highestStar} ${config.name}</div>
+                <div style="color: #fbbf24; font-size: 16px; font-weight: 900;">★${highestStar} ${baseConfig.name}</div>
                 <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
-                    <img src="assets/pet/${config.sprite}.png" style="width: 80px; height: 80px; object-fit: contain; image-rendering: pixelated;">
+                    <img src="assets/pet/${baseConfig.sprite}.png" style="width: 80px; height: 80px; object-fit: contain; image-rendering: pixelated;">
                 </div>
                 <div style="color: #6ee7b7; font-size: 13px; font-weight: bold;">LEVEL ${state.level}</div>
             </div>
@@ -711,13 +716,13 @@ export default class UIManager {
             <div style="display: flex; flex-direction: column; gap: 6px; font-size: 12px;">
                 <div style="display: flex; justify-content: space-between;"><span>공격력</span><span style="color: #ef4444; font-weight: bold;">${currentAtk}</span></div>
                 <div style="display: flex; justify-content: space-between;"><span>마법공격력</span><span style="color: #3b82f6; font-weight: bold;">${currentMAtk}</span></div>
-                <div style="display: flex; justify-content: space-between;"><span>이동속도</span><span>${config.speed}</span></div>
-                <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 4px;"><span>공격속도</span><span>${config.atkSpd}</span></div>
+                <div style="display: flex; justify-content: space-between;"><span>이동속도</span><span>${scaledConfig.speed}</span></div>
+                <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 4px;"><span>공격속도</span><span>${scaledConfig.atkSpd}ms</span></div>
             </div>
             
             <div style="background: rgba(0,0,0,0.5); padding: 12px; border-radius: 8px; font-size: 11px; line-height: 1.5; border-left: 3px solid #10b981;">
-                <div style="font-weight: bold; color: #10b981; margin-bottom: 4px;">[특수 패시브: ${config.passive.name}]</div>
-                <div style="color: #d1d5db;">${config.passive.description}</div>
+                <div style="font-weight: bold; color: #10b981; margin-bottom: 4px;">[특수 패시브: ${baseConfig.passive.name}]</div>
+                <div style="color: #d1d5db;">${baseConfig.passive.description}</div>
             </div>
             
             <button id="btn-feed-pet" class="shop-buy-btn" style="width: 100%; margin-top: auto; padding: 12px; height: auto; flex-direction: column; gap: 4px; border-radius: 8px;">
@@ -739,7 +744,7 @@ export default class UIManager {
 
             // Level Up
             await partyManager.feedPet(petId);
-            this.showToast(`${config.name} 레벨 업! ✨`);
+            this.showToast(`${baseConfig.name} 레벨 업! ✨`);
 
             // Refresh
             this.refreshPetStorage();

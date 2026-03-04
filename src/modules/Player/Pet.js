@@ -12,7 +12,7 @@ export default class Pet extends Phaser.GameObjects.Container {
         this.scene = scene;
 
         // Scale config based on level and stars
-        const config = scaleStats(baseConfig, stats.level, stats.stars);
+        const config = scaleStats({ ...baseConfig, star: stats.stars || 1 }, stats.level || 1);
         this.config = config;
 
         this.id = config.id || 'pet_' + Phaser.Math.Between(1000, 9999);
@@ -24,15 +24,22 @@ export default class Pet extends Phaser.GameObjects.Container {
         this.hp = config.hp || 100;
         this.maxHp = config.maxHp || 100;
         this.atk = config.atk || 0;
+        this.mAtk = config.mAtk || 0;
         this.speed = config.speed || 150;
         this.followSpeed = this.speed * 0.7; // Slightly slower when just following
         this.collectRange = config.collectRange || 50;
         this.detectRange = config.detectRange || 300;
         this.followRange = 60; // Stay near leader
         this.scaleValue = config.scale || 0.8;
+        this.team = 'player'; // Explicitly set for combat logic and data recording
 
         this.atkRange = config.atkRange || 40;
-        this.atkDelay = (config.atkSpd || 1.0) * 1000; // ms
+        this.atkDelay = config.atkSpd || 1000; // Expected in ms
+        this.acc = config.acc || 100;
+        this.eva = config.eva || 0;
+        this.crit = config.crit || 0;
+
+        console.log(`[Pet] ${this.unitName} stats: ATK=${this.atk}, ACC=${this.acc}, CRIT=${this.crit}, Range=${this.atkRange}`);
         this.lastAtkTime = 0;
         this.isAttacking = false;
 
@@ -237,8 +244,8 @@ export default class Pet extends Phaser.GameObjects.Container {
         // Attack Animation (Simple squash/stretch)
         this.scene.tweens.add({
             targets: this.sprite,
-            scaleY: this.sprite.scaleY * 0.8,
-            scaleX: this.sprite.scaleX * 1.2,
+            scaleY: this.sprite.scaleY * 0.7,
+            scaleX: this.sprite.scaleX * 1.3,
             duration: 100,
             yoyo: true,
             onComplete: () => {
@@ -251,13 +258,14 @@ export default class Pet extends Phaser.GameObjects.Container {
                 const damage = this.mAtk || 5;
                 const isCritical = Math.random() < 0.05;
 
+                console.log(`[Pet] ${this.unitName} ranged attack at ${target.id} (Damage: ${damage})`);
+
                 if (this.scene.projectileManager) {
                     this.scene.projectileManager.fire(
                         this.x, this.y, target.x, target.y,
                         damage, 'laser', true, this.scene.enemies, this, null, false, null, isCritical
                     );
                 } else if (target.takeDamage) {
-                    // Fallback
                     target.takeDamage(damage, this, false, null, isCritical);
                 }
 
@@ -285,12 +293,18 @@ export default class Pet extends Phaser.GameObjects.Container {
         // Visual Flip
         this.sprite.flipX = (target.x < this.x);
 
+        console.log(`[Pet] ${this.unitName} dash attack at ${target.id}`);
+
+        // Rotate sprite towards target for "headbutt" feel
+        const originalAngle = this.sprite.angle;
+        this.sprite.angle = Phaser.Math.RadToDeg(angle) + (this.sprite.flipX ? 180 : 0);
+
         // Afterimage Effect
         const afterimageTimer = this.scene.time.addEvent({
-            delay: 50,
+            delay: 40,
             callback: () => {
                 if (this.scene?.fxManager && this.active) {
-                    this.scene.fxManager.createAfterimage(this, 150, 0.4);
+                    this.scene.fxManager.createAfterimage(this, 120, 0.4);
                 }
             },
             repeat: 3
@@ -300,28 +314,33 @@ export default class Pet extends Phaser.GameObjects.Container {
             targets: this,
             x: dashX,
             y: dashY,
-            duration: 150,
-            ease: 'Power2',
+            duration: 120,
+            ease: 'Cubic.easeOut',
             onComplete: () => {
                 // Apply Damage
                 if (target.active && target.takeDamage) {
                     const damage = this.atk || 5;
-                    target.takeDamage(damage, this, false, null, Math.random() < 0.05);
+                    const isCritical = Math.random() * 100 < (this.crit || 5);
 
-                    // Small impact effect
+                    console.log(`[Pet] ${this.unitName} dash attack at ${target.id} (Damage: ${damage})`);
+                    target.takeDamage(damage, this, false, null, isCritical);
+
                     if (this.scene.particleManager) {
-                        this.scene.particleManager.createSparkle(target.x, target.y);
+                        this.scene.particleManager.createHitEffect(target.x, target.y);
                     }
                 }
 
-                // Return to start or just end attack
+                // Snap back to original rotation briefly for impact
+                this.sprite.angle = originalAngle;
+
+                // Return to start
                 this.scene.tweens.add({
                     targets: this,
                     x: startX,
                     y: startY,
                     duration: 150,
-                    ease: 'Power1',
-                    delay: 50,
+                    ease: 'Quad.easeIn',
+                    delay: 20,
                     onComplete: () => {
                         this.isAttacking = false;
                         this.startIdleBob();
