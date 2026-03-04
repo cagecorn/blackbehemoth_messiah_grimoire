@@ -951,6 +951,7 @@ export default class UIManager {
                 if (isDead) {
                     const overlay = document.createElement('div');
                     overlay.className = 'portrait-dead-overlay';
+                    overlay.onclick = (e) => e.stopPropagation(); // Stop overlay clicks from opening detail
 
                     const deadLabel = document.createElement('span');
                     deadLabel.className = 'portrait-dead-label';

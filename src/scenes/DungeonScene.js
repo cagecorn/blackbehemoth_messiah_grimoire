@@ -920,6 +920,8 @@ export default class DungeonScene extends Phaser.Scene {
                 unit = new Bao(this, x, y, leaderRef, config);
             } else if (characterConfig.id === 'aina' || characterConfig.characterId === 'aina') {
                 unit = new Aina(this, x, y, leaderRef, config);
+            } else if (characterConfig.id === 'veve' || characterConfig.characterId === 'veve') {
+                unit = new Veve(this, x, y, leaderRef, config);
             } else {
                 unit = new Wizard(this, x, y, leaderRef, config);
             }

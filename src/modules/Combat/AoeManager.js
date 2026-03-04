@@ -68,12 +68,14 @@ export default class AoeManager {
         const units = group.getChildren().filter(u => u && u.active && u.hp > 0);
         const affectedUnits = [];
 
-        console.log(`[AoeManager] AOE at (${Math.round(x)}, ${Math.round(y)}) with radius ${finalRadius}. Targets alive: ${units.length}, isUltimate: ${isUltimate}`);
+        console.log(`[AoeManager Debug] AOE at (${Math.round(x)}, ${Math.round(y)}) radius ${finalRadius}. Targets alive: ${units.length}, Attacker: ${attacker ? attacker.unitName : 'none'} (Team: ${attacker ? attacker.team : 'none'})`);
 
         units.forEach(unit => {
             const dist = Phaser.Math.Distance.Between(x, y, unit.x, unit.y);
+            console.log(`[AoeManager Debug] Checking Target: ${unit.unitName} (Team: ${unit.team}) at (${Math.round(unit.x)}, ${Math.round(unit.y)}), Distance: ${Math.round(dist)}`);
+
             if (dist <= finalRadius) {
-                console.log(`[AOE] HIT SUCCESS: ${unit.unitName} at dist ${Math.round(dist)}`);
+                console.log(`[AoeManager Debug] HIT SUCCESS: ${unit.unitName}`);
 
                 // 1. Primary Skill Element inheritance/synergy
                 let skillElement = element;

@@ -187,11 +187,15 @@ export default class Cyclone {
         const damage = mAtk * this.damageMultiplier;
 
         if (scene.aoeManager) {
+            console.log(`[Cyclone Debug] Triggering AOE hit from ${caster.unitName} (Team: ${caster.team}) at (${Math.round(x)}, ${Math.round(y)})`);
             const hitEnemies = scene.aoeManager.triggerAoe(x, y, radius, damage, caster, caster.targetGroup, true, false, 'wind');
+
+            console.log(`[Cyclone Debug] AOE Result: ${hitEnemies.length} targets hit.`);
 
             // Airborne CC
             if (scene.ccManager && hitEnemies.length > 0) {
                 hitEnemies.forEach(e => {
+                    console.log(`[Cyclone Debug] Applying Airborne CC to ${e.unitName}`);
                     scene.ccManager.applyAirborne(e, 1200, 150); // Slightly stronger CC
                 });
             }
