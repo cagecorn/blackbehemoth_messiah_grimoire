@@ -234,6 +234,7 @@ export default class DungeonScene extends Phaser.Scene {
         EventBus.on(EventBus.EVENTS.MONSTER_KILLED, this.handleMonsterKilledListener);
 
         // Resurrection Listener
+        this.pendingResurrections = new Set();
         this.handleResurrectionListener = this.handleResurrection.bind(this);
         EventBus.on(EventBus.EVENTS.MERCENARY_RESURRECT, this.handleResurrectionListener);
 
@@ -675,92 +676,111 @@ export default class DungeonScene extends Phaser.Scene {
 
     async handleResurrection(payload) {
         const { unitId, characterId, classId, cost } = payload;
-        console.log(`[DungeonScene] handleResurrection triggered for ${characterId} (Cost: ${cost}G)`);
 
-        // 1. Check & Deduct Gold
-        const coinItem = await DBManager.getInventoryItem('emoji_coin');
-        const currentGold = coinItem ? coinItem.amount : 0;
-
-        if (currentGold < cost) {
-            if (this.game.uiManager) this.game.uiManager.showToast('골드가 부족합니다! 💰');
+        // Anti-duplicate race condition guard
+        if (this.pendingResurrections.has(characterId)) {
+            console.warn(`[DungeonScene] Resurrection already in progress for ${characterId}. Ignoring.`);
             return;
         }
 
-        // 2. Deduct Gold
-        await DBManager.saveInventoryItem('emoji_coin', currentGold - cost);
-        console.log(`[DungeonScene] Gold deducted. Remaining: ${currentGold - cost}`);
-        EventBus.emit(EventBus.EVENTS.INVENTORY_UPDATED);
-        EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, `[부활] ${cost} 골드를 지불하고 용병을 부활시켰습니다. ✨`);
-
-        // 3. Increment Count for next time
-        this.resurrectionCosts[characterId] = (this.resurrectionCosts[characterId] || 0) + 1;
-
-        // 4. Find Respawn Location (Near leader or start)
-        const startPos = this.dungeonManager ? this.dungeonManager.getPlayerStartPosition() : { x: 400, y: 300 };
-        const spawnX = this.player ? this.player.x : startPos.x;
-        const spawnY = this.player ? this.player.y : startPos.y;
-
-        // 5. Spawn Logic (Modular Mapping)
-        const config = { ...Characters[characterId.toUpperCase()], team: 'player' };
-        let newUnit = null;
-
-        if (classId === 'warrior') {
-            newUnit = new Warrior(this, spawnX, spawnY, config);
-            if (!this.player || !this.player.active) this.player = newUnit;
-        } else if (characterId === 'wrinkle') {
-            newUnit = new Wrinkle(this, spawnX, spawnY, this.player, config);
-        } else if (characterId === 'nickle') {
-            newUnit = new Nickle(this, spawnX, spawnY, this.player, config);
-        } else if (classId === 'archer') {
-            newUnit = new Archer(this, spawnX, spawnY, this.player, config);
-        } else if (classId === 'healer') {
-            newUnit = new Healer(this, spawnX, spawnY, this.player, config);
-        } else if (classId === 'wizard') {
-            if (characterId === 'bao') {
-                newUnit = new Bao(this, spawnX, spawnY, this.player, config);
-            } else if (characterId === 'aina') {
-                newUnit = new Aina(this, spawnX, spawnY, this.player, config);
-            } else if (characterId === 'veve') {
-                newUnit = new Veve(this, spawnX, spawnY, this.player, config);
-            } else {
-                newUnit = new Wizard(this, spawnX, spawnY, this.player, config);
-            }
-        } else if (classId === 'bard') {
-            if (characterId === 'nana') {
-                newUnit = new Nana(this, spawnX, spawnY, this.player, config);
-            } else if (characterId === 'noah') {
-                newUnit = new Noah(this, spawnX, spawnY, this.player, config);
-            } else if (characterId === 'noel') {
-                newUnit = new Noel(this, spawnX, spawnY, this.player, config);
-            } else {
-                newUnit = new Bard(this, spawnX, spawnY, this.player, config);
-            }
+        // Check if unit is somehow alive already (safety check)
+        const alreadyAlive = this.mercenaries.getChildren().find(m => m.characterId === characterId && m.active && m.hp > 0);
+        if (alreadyAlive) {
+            console.warn(`[DungeonScene] ${characterId} is already alive in scene. Ignoring resurrection.`);
+            return;
         }
 
-        if (newUnit) {
-            newUnit.id = unitId; // Keep the same UI slot ID
-            this.mercenaries.add(newUnit);
-            if (newUnit.initAI) newUnit.initAI();
+        this.pendingResurrections.add(characterId);
+        console.log(`[DungeonScene] handleResurrection triggered for ${characterId} (Cost: ${cost}G)`);
 
-            // Link back to other units if it's the new warrior/leader
+        try {
+            // 1. Check & Deduct Gold
+            const coinItem = await DBManager.getInventoryItem('emoji_coin');
+            const currentGold = coinItem ? coinItem.amount : 0;
+
+            if (currentGold < cost) {
+                if (this.game.uiManager) this.game.uiManager.showToast('골드가 부족합니다! 💰');
+                return;
+            }
+
+            // 2. Deduct Gold
+            await DBManager.saveInventoryItem('emoji_coin', currentGold - cost);
+            console.log(`[DungeonScene] Gold deducted. Remaining: ${currentGold - cost}`);
+            EventBus.emit(EventBus.EVENTS.INVENTORY_UPDATED);
+            EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, `[부활] ${cost} 골드를 지불하고 용병을 부활시켰습니다. ✨`);
+
+            // 3. Increment Count for next time
+            this.resurrectionCosts[characterId] = (this.resurrectionCosts[characterId] || 0) + 1;
+
+            // 4. Find Respawn Location (Near leader or start)
+            const startPos = this.dungeonManager ? this.dungeonManager.getPlayerStartPosition() : { x: 400, y: 300 };
+            const spawnX = this.player ? this.player.x : startPos.x;
+            const spawnY = this.player ? this.player.y : startPos.y;
+
+            // 5. Spawn Logic (Modular Mapping)
+            const config = { ...Characters[characterId.toUpperCase()], team: 'player' };
+            let newUnit = null;
+
             if (classId === 'warrior') {
-                this.mercenaries.getChildren().forEach(m => {
-                    if (m !== newUnit) m.warrior = newUnit;
+                newUnit = new Warrior(this, spawnX, spawnY, config);
+                if (!this.player || !this.player.active) this.player = newUnit;
+            } else if (characterId === 'wrinkle') {
+                newUnit = new Wrinkle(this, spawnX, spawnY, this.player, config);
+            } else if (characterId === 'nickle') {
+                newUnit = new Nickle(this, spawnX, spawnY, this.player, config);
+            } else if (classId === 'archer') {
+                newUnit = new Archer(this, spawnX, spawnY, this.player, config);
+            } else if (classId === 'healer') {
+                newUnit = new Healer(this, spawnX, spawnY, this.player, config);
+            } else if (classId === 'wizard') {
+                if (characterId === 'bao') {
+                    newUnit = new Bao(this, spawnX, spawnY, this.player, config);
+                } else if (characterId === 'aina') {
+                    newUnit = new Aina(this, spawnX, spawnY, this.player, config);
+                } else if (characterId === 'veve') {
+                    newUnit = new Veve(this, spawnX, spawnY, this.player, config);
+                } else {
+                    newUnit = new Wizard(this, spawnX, spawnY, this.player, config);
+                }
+            } else if (classId === 'bard') {
+                if (characterId === 'nana') {
+                    newUnit = new Nana(this, spawnX, spawnY, this.player, config);
+                } else if (characterId === 'noah') {
+                    newUnit = new Noah(this, spawnX, spawnY, this.player, config);
+                } else if (characterId === 'noel') {
+                    newUnit = new Noel(this, spawnX, spawnY, this.player, config);
+                } else {
+                    newUnit = new Bard(this, spawnX, spawnY, this.player, config);
+                }
+            }
+
+            if (newUnit) {
+                newUnit.id = unitId; // Keep the same UI slot ID
+                this.mercenaries.add(newUnit);
+                if (newUnit.initAI) newUnit.initAI();
+
+                // Link back to other units if it's the new warrior/leader
+                if (classId === 'warrior') {
+                    this.mercenaries.getChildren().forEach(m => {
+                        if (m !== newUnit) m.warrior = newUnit;
+                    });
+                }
+
+                // Visual feedback
+                if (this.fxManager) {
+                    this.fxManager.spawnEffect('heal_aura', spawnX, spawnY);
+                }
+
+                // Refresh UI
+                EventBus.emit(EventBus.EVENTS.PARTY_DEPLOYED, {
+                    scene: this,
+                    mercenaries: this.mercenaries.getChildren()
+                        .filter(m => !m.config.hideInUI)
+                        .map(m => m.getState())
                 });
             }
-
-            // Visual feedback
-            if (this.fxManager) {
-                this.fxManager.spawnEffect('heal_aura', spawnX, spawnY);
-            }
-
-            // Refresh UI
-            EventBus.emit(EventBus.EVENTS.PARTY_DEPLOYED, {
-                scene: this,
-                mercenaries: this.mercenaries.getChildren()
-                    .filter(m => !m.config.hideInUI)
-                    .map(m => m.getState())
-            });
+        } finally {
+            this.pendingResurrections.delete(characterId);
         }
     }
 

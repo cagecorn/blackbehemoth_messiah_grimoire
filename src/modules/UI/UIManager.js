@@ -988,6 +988,13 @@ export default class UIManager {
 
                         btn.onclick = (e) => {
                             e.stopPropagation();
+                            if (btn.disabled) return;
+
+                            btn.disabled = true;
+                            btn.style.opacity = '0.5';
+                            btn.style.cursor = 'not-allowed';
+                            btn.innerHTML = `<span>부활 중...</span>`;
+
                             console.log(`[UIManager] Resurrect button clicked for ${merc.unitName} (Cost: ${currentCost}G)`);
                             EventBus.emit(EventBus.EVENTS.MERCENARY_RESURRECT, {
                                 unitId: merc.id,
