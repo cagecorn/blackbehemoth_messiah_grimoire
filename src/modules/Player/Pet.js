@@ -215,7 +215,55 @@ export default class Pet extends Phaser.GameObjects.Container {
         if (now - this.lastAtkTime < this.atkDelay || this.isAttacking) return;
 
         this.lastAtkTime = now;
-        this.performDashAttack();
+
+        // Decide attack type based on range
+        if (this.atkRange > 100) {
+            this.performRangedAttack();
+        } else {
+            this.performDashAttack();
+        }
+    }
+
+    performRangedAttack() {
+        if (!this.targetEnemy || !this.targetEnemy.active) return;
+        this.isAttacking = true;
+        this.stopWaddle();
+
+        const target = this.targetEnemy;
+
+        // Visual Flip
+        this.sprite.flipX = (target.x < this.x);
+
+        // Attack Animation (Simple squash/stretch)
+        this.scene.tweens.add({
+            targets: this.sprite,
+            scaleY: this.sprite.scaleY * 0.8,
+            scaleX: this.sprite.scaleX * 1.2,
+            duration: 100,
+            yoyo: true,
+            onComplete: () => {
+                if (!this.active || !target.active) {
+                    this.isAttacking = false;
+                    return;
+                }
+
+                // Fire Laser (Wizard style)
+                const damage = this.mAtk || 5;
+                const isCritical = Math.random() < 0.05;
+
+                if (this.scene.projectileManager) {
+                    this.scene.projectileManager.fire(
+                        this.x, this.y, target.x, target.y,
+                        damage, 'laser', true, this.scene.enemies, this, null, false, null, isCritical
+                    );
+                } else if (target.takeDamage) {
+                    // Fallback
+                    target.takeDamage(damage, this, false, null, isCritical);
+                }
+
+                this.isAttacking = false;
+            }
+        });
     }
 
     performDashAttack() {

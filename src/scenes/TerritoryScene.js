@@ -110,6 +110,12 @@ export default class TerritoryScene extends Phaser.Scene {
                         this.game.uiManager.showShop();
                     }
                 });
+            } else if (b.id === 'pet') {
+                el.addEventListener('click', () => {
+                    if (this.game.uiManager) {
+                        this.game.uiManager.showPetStorage();
+                    }
+                });
             } else {
                 el.addEventListener('click', () => {
                     if (this.game.uiManager) {

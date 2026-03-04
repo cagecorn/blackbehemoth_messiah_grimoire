@@ -4,6 +4,8 @@
  * Tracks level, exp, hp, and equipment across scenes.
  */
 import DBManager from '../Database/DBManager.js';
+import { PetStats } from './EntityStats.js';
+import EventBus from '../Events/EventBus.js';
 
 class PartyManager {
     constructor() {
@@ -21,7 +23,13 @@ class PartyManager {
         // Roster starts with the 10 available characters
         this.roster = allCharacters || [];
         this.playerRoster = await DBManager.getMercenaryRoster();
-        this.playerPetRoster = await DBManager.get('settings', 'petRoster') || { 'dog_pet': { '1': 1 } }; // Default dog_pet
+        this.playerPetRoster = await DBManager.get('settings', 'petRoster') || {};
+
+        // Ensure Dog Pet is in roster if empty or missing
+        if (Object.keys(this.playerPetRoster).length === 0 || !this.playerPetRoster['dog_pet']) {
+            this.playerPetRoster['dog_pet'] = { '1': 1 };
+            await DBManager.set('settings', 'petRoster', this.playerPetRoster);
+        }
 
         // Load Persistent State
         const savedParty = await DBManager.getParty();
@@ -104,6 +112,84 @@ class PartyManager {
         petData.activePet = petId;
         await DBManager.set('settings', 'playerPets', petData);
         console.log('[PartyManager] Active pet updated and saved:', petId);
+
+        // Re-sync UI or notify scene to update stats
+        EventBus.emit('PET_CHANGED', petId);
+    }
+
+    /**
+     * Summons a random pet.
+     * Cost is 1000 diamonds (checked in UI usually, but we handle logic here)
+     */
+    async summonPet() {
+        const petIds = ['dog_pet', 'wolf_pet', 'owl_pet'];
+        const randomId = petIds[Math.floor(Math.random() * petIds.length)];
+
+        await this.addPetToRoster(randomId, 1);
+        return randomId;
+    }
+
+    async addPetToRoster(petId, starCount = 1) {
+        if (!this.playerPetRoster[petId]) {
+            this.playerPetRoster[petId] = {};
+        }
+
+        this.playerPetRoster[petId][starCount] = (this.playerPetRoster[petId][starCount] || 0) + 1;
+
+        // Handle Star Up: 3 same star = 1 higher star
+        let currentStar = starCount;
+        while (this.playerPetRoster[petId][currentStar] >= 3) {
+            this.playerPetRoster[petId][currentStar] -= 3;
+            if (this.playerPetRoster[petId][currentStar] === 0) {
+                delete this.playerPetRoster[petId][currentStar];
+            }
+
+            currentStar++;
+            this.playerPetRoster[petId][currentStar] = (this.playerPetRoster[petId][currentStar] || 0) + 1;
+            console.log(`[PartyManager] Pet ${petId} Upgraded to ${currentStar} Star!`);
+        }
+
+        await DBManager.set('settings', 'petRoster', this.playerPetRoster);
+        return currentStar;
+    }
+
+    /**
+     * Feeds the pet monster meat to level it up.
+     */
+    async feedPet(petId, amount = 1) {
+        const state = this.getPetState(petId);
+        const cost = this.getPetLevelUpCost(petId, state.level);
+
+        // We assume inventory check is done in UI, but here we just update state
+        state.level += 1;
+        // Add some small stat bonus or just level up
+        await this.savePetState(petId, state);
+        return state;
+    }
+
+    getPetLevelUpCost(petId, level) {
+        // Base(20) * (1.5 ^ (level - 1))
+        return Math.floor(20 * Math.pow(1.5, level - 1));
+    }
+
+    /**
+     * Returns global bonuses from the active pet.
+     */
+    getGlobalPetBonus(statName) {
+        if (!this.activePet) return 0;
+
+        // Dynamically get the passive from PetStats
+        const petKey = this.activePet.toUpperCase();
+        const petConfig = PetStats[petKey]; // PetStats is already imported
+
+        if (!petConfig || !petConfig.passive || !petConfig.passive.effect) return 0;
+
+        const effect = petConfig.passive.effect;
+        if (statName === 'atkMult' && effect.atkMult) return effect.atkMult;
+        if (statName === 'mAtkMult' && effect.mAtkMult) return effect.mAtkMult;
+        if (statName === 'dropRateMod' && effect.dropRateMod) return effect.dropRateMod;
+
+        return 0;
     }
 
     async savePetState(id, state) {
@@ -119,19 +205,6 @@ class PartyManager {
         return this.petStates[id] || { level: 1, exp: 0 };
     }
 
-    /**
-     * Calculates the required "Monster Meat" for the next level.
-     * Formula: Base(20) * (1.5 ^ (level - 1))
-     */
-    getPetLevelUpCost(petId, currentLevel) {
-        const baseCost = 20;
-        return Math.floor(baseCost * Math.pow(1.5, currentLevel - 1));
-    }
-
-    /**
-     * Checks if all 6 slots in the active party are filled.
-     * @returns {boolean}
-     */
     isPartyFull() {
         return this.activeParty.filter(p => p !== null).length === 6;
     }
@@ -142,7 +215,6 @@ class PartyManager {
 
     /**
      * Updates or creates the state for a mercenary.
-     * @param {string} id 
      * @param {Object} state 
      */
     async saveState(id, state) {

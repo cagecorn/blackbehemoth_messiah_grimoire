@@ -872,6 +872,76 @@ export const PetStats = {
                 dropRateMod: 0.05
             }
         }
+    },
+    WOLF_PET: {
+        id: 'wolf_pet',
+        name: '울프펫',
+        sprite: 'wolf_pet',
+        hp: 120,
+        maxHp: 120,
+        atk: 10,
+        mAtk: 0,
+        speed: 180,
+        atkSpd: 0.8,
+        atkRange: 45,
+        rangeMin: 0,
+        rangeMax: 45,
+        acc: 100,
+        eva: 15,
+        crit: 8,
+        collectRange: 60,
+        detectRange: 2000,
+        scale: 0.5,
+        personality: '강인한 기운이 느껴지는 늑대 친구. 아군의 공격 본능을 일깨웁니다.',
+        growth: {
+            maxHp: 15,
+            atk: 3,
+            mAtk: 0,
+            def: 2,
+            mDef: 1
+        },
+        passive: {
+            name: '늑대의 포효',
+            description: '아군 전체의 공격력이 5% 상승합니다.',
+            effect: {
+                atkMult: 0.05
+            }
+        }
+    },
+    OWL_PET: {
+        id: 'owl_pet',
+        name: '올펫',
+        sprite: 'owl_pet',
+        hp: 80,
+        maxHp: 80,
+        atk: 2,
+        mAtk: 12,
+        speed: 160,
+        atkSpd: 1.2,
+        atkRange: 250,
+        rangeMin: 50,
+        rangeMax: 250,
+        acc: 110,
+        eva: 20,
+        crit: 10,
+        collectRange: 50,
+        detectRange: 2000,
+        scale: 0.4,
+        personality: '신비로운 지혜가 깃든 부엉이 친구. 마법의 흐름을 조율합니다.',
+        growth: {
+            maxHp: 8,
+            atk: 0.5,
+            mAtk: 4,
+            def: 1,
+            mDef: 3
+        },
+        passive: {
+            name: '지혜의 눈',
+            description: '아군 전체의 마법 공격력이 5% 상승합니다.',
+            effect: {
+                mAtkMult: 0.05
+            }
+        }
     }
 };
 

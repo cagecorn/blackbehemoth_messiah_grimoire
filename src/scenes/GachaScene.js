@@ -87,7 +87,28 @@ export default class GachaScene extends Phaser.Scene {
         };
         this.pullBtn.onclick = () => this.executeGacha();
 
+        // --- Pet Pull Button ---
+        this.petPullBtn = document.createElement('button');
+        this.petPullBtn.innerHTML = `펫 영입 (1마리)<br><span style="font-size: 16px; color: #fbbf24; text-shadow: 0 1px 2px rgba(0,0,0,1);">💎 ${GachaManager.COST_PET_PULL} 다이아</span>`;
+        this.petPullBtn.style.cssText = `
+            padding: 12px 40px; font-size: 18px; font-weight: bold;
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white; border: 3px solid #d1fae5; border-radius: 16px;
+            cursor: pointer; box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+            transition: transform 0.2s, background 0.2s;
+        `;
+        this.petPullBtn.onmouseover = () => {
+            this.petPullBtn.style.transform = 'scale(1.05)';
+            this.petPullBtn.style.background = 'linear-gradient(135deg, #34d399, #10b981)';
+        };
+        this.petPullBtn.onmouseout = () => {
+            this.petPullBtn.style.transform = 'scale(1)';
+            this.petPullBtn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+        };
+        this.petPullBtn.onclick = () => this.executePetGacha();
+
         bottomArea.appendChild(this.pullBtn);
+        bottomArea.appendChild(this.petPullBtn);
         this.uiContainer.appendChild(bottomArea);
 
         document.body.appendChild(this.uiContainer);
@@ -139,6 +160,29 @@ export default class GachaScene extends Phaser.Scene {
 
         // Start Animation Phase
         await this.playGachaAnimation(result.pulled, result.mergeResults);
+    }
+
+    async executePetGacha() {
+        this.petPullBtn.disabled = true;
+        this.petPullBtn.style.opacity = '0.5';
+
+        const result = await GachaManager.performPetGacha();
+
+        if (!result.success) {
+            this.game.uiManager?.showToast(result.message);
+            this.petPullBtn.disabled = false;
+            this.petPullBtn.style.opacity = '1';
+            return;
+        }
+
+        await this.updateGemsDisplay();
+        SoundEffects.playGachaSound();
+
+        // Simplified Pet Animation (Single Card)
+        await this.playGachaAnimation([result.pulled], result.mergeResult ? [result.mergeResult] : []);
+
+        this.petPullBtn.disabled = false;
+        this.petPullBtn.style.opacity = '1';
     }
 
     resetPullButton() {

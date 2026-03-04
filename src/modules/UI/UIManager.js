@@ -604,6 +604,160 @@ export default class UIManager {
         }
     }
 
+    async showPetStorage() {
+        if (this.petStorageOverlay) return;
+
+        const overlay = document.createElement('div');
+        overlay.id = 'pet-storage-overlay';
+        overlay.className = 'shop-overlay retro-scanline-overlay pet-storage-overlay';
+        this.petStorageOverlay = overlay;
+
+        const partyManager = this.scene?.game?.partyManager;
+        const petRoster = partyManager?.playerPetRoster || {};
+
+        overlay.innerHTML = `
+            <div class="shop-container pet-storage-container" style="max-width: 900px; width: 95vw;">
+                <div class="shop-header" style="background: linear-gradient(to right, #059669, #10b981);">
+                    <div class="shop-title">🐾 PET STORAGE (펫 보관함)</div>
+                    <button class="shop-close-btn" id="pet-storage-close">✕</button>
+                </div>
+                
+                <div class="shop-body pet-storage-body" id="pet-storage-body">
+                    <div class="pet-list-area" id="pet-list-area">
+                        <!-- Pet cards go here -->
+                    </div>
+                    
+                    <div class="pet-detail-area" id="pet-detail-area">
+                        <div class="pet-empty-detail">펫을<br>선택하세요</div>
+                    </div>
+                </div>
+                
+                <div class="shop-footer">
+                   <div class="shop-currency" id="pet-meat-display">🥩 0</div>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('app-container').appendChild(overlay);
+
+        // Close events
+        document.getElementById('pet-storage-close').onclick = () => this.hidePetStorage();
+        overlay.onclick = (e) => { if (e.target === overlay) this.hidePetStorage(); };
+
+        await this.refreshPetStorage();
+    }
+
+    async refreshPetStorage() {
+        if (!this.petStorageOverlay) return;
+
+        const listArea = document.getElementById('pet-list-area');
+        const partyManager = this.scene?.game?.partyManager;
+        const petRoster = partyManager?.playerPetRoster || {};
+
+        const meat = await DBManager.getInventoryItem('emoji_meat');
+        const meatDisplay = document.getElementById('pet-meat-display');
+        if (meatDisplay) meatDisplay.innerText = `🥩 ${meat ? meat.amount : 0}`;
+
+        let html = '';
+        Object.keys(PetStats).forEach(key => {
+            const pet = PetStats[key];
+            const starData = petRoster[pet.id];
+
+            if (starData) {
+                const highestStar = Math.max(...Object.keys(starData).map(Number));
+                html += `
+                    <div class="pet-card" data-id="${pet.id}" style="background: rgba(255,255,255,0.05); border: 2px solid var(--retro-border); border-radius: 12px; padding: 15px; cursor: pointer; text-align: center; position: relative; min-height: 110px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;">
+                        <div style="position:absolute; top:5px; right:8px; color:#fbbf24; font-weight:bold; font-size:12px; text-shadow: 1px 1px 2px #000;">★${highestStar}</div>
+                        <img src="assets/pet/${pet.sprite}.png" style="width: 64px; height: 64px; object-fit: contain; image-rendering: pixelated;">
+                        <div style="font-size: 11px; font-weight: bold; color: #fff;">${pet.name}</div>
+                    </div>
+                `;
+            }
+        });
+
+        listArea.innerHTML = html;
+
+        // Attach card events
+        listArea.querySelectorAll('.pet-card').forEach(card => {
+            card.onclick = () => this._renderPetDetail(card.dataset.id);
+        });
+    }
+
+    async _renderPetDetail(petId) {
+        const detailArea = document.getElementById('pet-detail-area');
+        const partyManager = this.scene?.game?.partyManager;
+        const state = partyManager.getPetState(petId);
+        const config = PetStats[petId.toUpperCase()];
+        const highestStar = partyManager.getHighestPetStar(petId);
+        const cost = partyManager.getPetLevelUpCost(petId, state.level);
+
+        // Scale stats by level and star
+        const starMult = 1 + (highestStar - 1) * 0.2; // 20% per star
+        const levelBonusAtk = (state.level - 1) * (config.growth?.atk || 1);
+        const levelBonusMAtk = (state.level - 1) * (config.growth?.mAtk || 0);
+
+        const currentAtk = Math.floor((config.atk + levelBonusAtk) * starMult);
+        const currentMAtk = Math.floor((config.mAtk + levelBonusMAtk) * starMult);
+
+        detailArea.innerHTML = `
+            <div style="text-align: center; border-bottom: 2px solid rgba(255,255,255,0.1); padding-bottom: 12px; display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                <div style="color: #fbbf24; font-size: 16px; font-weight: 900;">★${highestStar} ${config.name}</div>
+                <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
+                    <img src="assets/pet/${config.sprite}.png" style="width: 80px; height: 80px; object-fit: contain; image-rendering: pixelated;">
+                </div>
+                <div style="color: #6ee7b7; font-size: 13px; font-weight: bold;">LEVEL ${state.level}</div>
+            </div>
+            
+            <div style="display: flex; flex-direction: column; gap: 6px; font-size: 12px;">
+                <div style="display: flex; justify-content: space-between;"><span>공격력</span><span style="color: #ef4444; font-weight: bold;">${currentAtk}</span></div>
+                <div style="display: flex; justify-content: space-between;"><span>마법공격력</span><span style="color: #3b82f6; font-weight: bold;">${currentMAtk}</span></div>
+                <div style="display: flex; justify-content: space-between;"><span>이동속도</span><span>${config.speed}</span></div>
+                <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 4px;"><span>공격속도</span><span>${config.atkSpd}</span></div>
+            </div>
+            
+            <div style="background: rgba(0,0,0,0.5); padding: 12px; border-radius: 8px; font-size: 11px; line-height: 1.5; border-left: 3px solid #10b981;">
+                <div style="font-weight: bold; color: #10b981; margin-bottom: 4px;">[특수 패시브: ${config.passive.name}]</div>
+                <div style="color: #d1d5db;">${config.passive.description}</div>
+            </div>
+            
+            <button id="btn-feed-pet" class="shop-buy-btn" style="width: 100%; margin-top: auto; padding: 12px; height: auto; flex-direction: column; gap: 4px; border-radius: 8px;">
+                <div style="font-size: 15px; font-weight: bold;">🥩 고기 먹이기</div>
+                <div style="font-size: 10px; opacity: 0.9;">(소모: ${cost}개)</div>
+            </button>
+        `;
+
+        const feedBtn = document.getElementById('btn-feed-pet');
+        feedBtn.onclick = async () => {
+            const meatItem = await DBManager.getInventoryItem('emoji_meat');
+            if (!meatItem || meatItem.amount < cost) {
+                this.showToast('몬스터 고기가 부족합니다! 🥩');
+                return;
+            }
+
+            // Deduct meat
+            await DBManager.saveInventoryItem('emoji_meat', meatItem.amount - cost);
+
+            // Level Up
+            await partyManager.feedPet(petId);
+            this.showToast(`${config.name} 레벨 업! ✨`);
+
+            // Refresh
+            this.refreshPetStorage();
+            this._renderPetDetail(petId);
+        };
+    }
+
+    hidePetStorage() {
+        if (!this.petStorageOverlay) return;
+        this.petStorageOverlay.classList.add('fade-out');
+        setTimeout(() => {
+            if (this.petStorageOverlay) {
+                this.petStorageOverlay.remove();
+                this.petStorageOverlay = null;
+            }
+        }, 300);
+    }
+
     /**
      * Safer scene transition that stops all active scenes to prevent overlapping.
      */

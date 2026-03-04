@@ -398,12 +398,14 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             nodeMult += missingHpRatio * 0.15; // Max 1.15x at 0% HP
         }
         const transMult = this.grimoire_transmult || 1.0;
-        return base * nodeMult * transMult;
+        const petBonus = this.scene.game.partyManager?.getGlobalPetBonus('atkMult') || 0;
+        return base * nodeMult * transMult * (1 + petBonus);
     }
 
     getTotalMAtk() {
         const base = this.mAtk + (this.bonusMAtk || 0) + this.getEquipmentBonus('mAtk');
-        let final = this.isTacticalCommandActive ? base * 1.5 : base;
+        const petBonus = this.scene.game.partyManager?.getGlobalPetBonus('mAtkMult') || 0;
+        let final = (this.isTacticalCommandActive ? base * 1.5 : base) * (1 + petBonus);
         return final;
     }
 

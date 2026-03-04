@@ -1,8 +1,9 @@
 import DBManager from '../Database/DBManager.js';
-import { Characters } from './EntityStats.js';
+import { Characters, PetStats } from './EntityStats.js';
 
 export default class GachaManager {
     static COST_PER_PULL = 100; // 5회 뽑기 총 500 다이아
+    static COST_PET_PULL = 1000; // 펫 1회 뽑기 1000 다이아
 
     /**
      * 다이아를 소모하여 가챠를 수행하고, 로스터를 자동 변합(Merge)합니다.
@@ -99,6 +100,79 @@ export default class GachaManager {
                     }
 
                     isMerging = true; // 새로 승급한 별로 인해 다시루프
+                    break;
+                }
+            }
+        }
+    }
+
+    /**
+     * Performs a single pet gacha pull.
+     * @returns {Promise<{success: boolean, message: string, pulled: Object, mergeResult: Object}>}
+     */
+    static async performPetGacha() {
+        // 1. Check & Deduct Diamonds
+        const diamondData = await DBManager.getInventoryItem('emoji_gem');
+        const currentDiamonds = diamondData ? diamondData.amount : 0;
+
+        if (currentDiamonds < this.COST_PET_PULL) {
+            return { success: false, message: '다이아가 부족합니다. (1,000 다이아 필요)' };
+        }
+
+        await DBManager.saveInventoryItem('emoji_gem', currentDiamonds - this.COST_PET_PULL);
+
+        // 2. Random Selection
+        const petIds = ['dog_pet', 'wolf_pet', 'owl_pet'];
+        const selectedId = petIds[Math.floor(Math.random() * petIds.length)];
+
+        // 3. Load Pet Roster
+        const petRoster = await DBManager.get('settings', 'petRoster') || {};
+        const mergeResults = [];
+
+        if (!petRoster[selectedId]) {
+            petRoster[selectedId] = {};
+        }
+        petRoster[selectedId]['1'] = (petRoster[selectedId]['1'] || 0) + 1;
+
+        // 4. Merge Rule (3 -> 1)
+        this.processMergesForPet(selectedId, petRoster[selectedId], mergeResults);
+
+        // 5. Save
+        await DBManager.set('settings', 'petRoster', petRoster);
+
+        return {
+            success: true,
+            message: '펫 뽑기 완료!',
+            pulled: PetStats[selectedId.toUpperCase()],
+            mergeResult: mergeResults.length > 0 ? mergeResults[mergeResults.length - 1] : null
+        };
+    }
+
+    /**
+     * Recursive 3-merge for pets.
+     */
+    static processMergesForPet(petId, starData, mergeResults) {
+        let isMerging = true;
+        while (isMerging) {
+            isMerging = false;
+            const starLevels = Object.keys(starData).map(Number).sort((a, b) => a - b);
+
+            for (const star of starLevels) {
+                if (starData[star] >= 3) {
+                    starData[star] -= 3;
+                    if (starData[star] === 0) delete starData[star];
+
+                    const nextStar = star + 1;
+                    starData[nextStar] = (starData[nextStar] || 0) + 1;
+
+                    mergeResults.push({
+                        petId,
+                        petData: PetStats[petId.toUpperCase()],
+                        fromStar: star,
+                        toStar: nextStar
+                    });
+
+                    isMerging = true;
                     break;
                 }
             }
