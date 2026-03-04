@@ -16,6 +16,7 @@ import partyManager from './modules/Core/PartyManager.js';
 import { Characters } from './modules/Core/EntityStats.js';
 import EventBus from './modules/Events/EventBus.js';
 import combatTracker from './modules/Core/CombatTracker.js';
+import npcManager from './modules/Core/NPCManager.js';
 
 
 const config = {
@@ -64,6 +65,7 @@ const logManagerInstance = logManager; // renamed to instance to avoid confusion
     // embeddingGemma.init(); // Disabled as per user request
     // intentRouter.init();  // Disabled as per user request
     await partyManager.init(Object.values(Characters));
+    await npcManager.init();
 
     // Start the game after managers are ready
     const game = new Phaser.Game(config);
@@ -72,7 +74,8 @@ const logManagerInstance = logManager; // renamed to instance to avoid confusion
     game.uiManager = uiManager;
     game.logManager = logManagerInstance;
     game.partyManager = partyManager;
-    game.dbManager = DBManager; // If needed, but DBManager is static usually
+    game.npcManager = npcManager;
+    game.dbManager = DBManager;
 
     // --- Developer Debug Commands ---
     window.addDiamonds = async (amount = 99999) => {

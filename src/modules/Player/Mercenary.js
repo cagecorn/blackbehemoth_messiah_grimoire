@@ -1044,6 +1044,39 @@ export default class Mercenary extends Phaser.GameObjects.Container {
     die() {
         if (!this.active) return;
 
+        // --- Missionary NPC Ability (Auto-Revive) ---
+        // Access via this.scene.game.npcManager
+        const npcManager = this.scene?.game?.npcManager;
+        const activeNPC = npcManager?.getActiveNPC();
+        if (activeNPC && activeNPC.id === 'MISSIONARY' && activeNPC.stacks > 0) {
+            console.log(`%c[NPC] Missionary Intervention for ${this.unitName}! Stacks: ${activeNPC.stacks} -> ${activeNPC.stacks - 1}`, 'color: #ffd700; font-weight: bold;');
+
+            // Healer Full Revive
+            this.hp = this.maxHp;
+            this.active = true;
+            this.updateHealthBar();
+
+            // Visual feedback
+            if (this.scene.fxManager) {
+                this.scene.fxManager.spawnHolyAura(this.x, this.y);
+                this.scene.fxManager.showHealText(this, 'REVIVED!', '#ffffff');
+            }
+
+            // Shake effect
+            if (this.scene.cameras.main) {
+                this.scene.cameras.main.flash(500, 255, 215, 0, 0.3);
+            }
+
+            npcManager.consumeStack();
+
+            // Emit sound
+            import('../Core/SoundEffects.js').then(module => {
+                module.default.playUltimateSound();
+            });
+
+            return; // Exit die(), mercenary survives!
+        }
+
         // Clean up all CC visuals and timers immediately
         if (this.scene && this.scene.ccManager) {
             this.scene.ccManager.cleanUpAllCC(this);

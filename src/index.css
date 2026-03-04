@@ -4306,3 +4306,64 @@ input:checked+.slider-toggle:before {
         height: 44px !important;
     }
 }
+
+/* NPC HUD (Left-Top Combat Indicator) */
+#npc-hud {
+    padding: 5px 12px;
+    pointer-events: none;
+    z-index: 100;
+}
+
+.npc-hud-card {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: linear-gradient(135deg, rgba(30, 10, 10, 0.8), rgba(10, 5, 5, 0.9));
+    border: 1px solid var(--retro-amber);
+    padding: 5px 12px;
+    border-radius: 2px;
+    box-shadow: 3px 3px 0px rgba(0, 0, 0, 0.5), inset 0 0 10px rgba(255, 176, 0, 0.1);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    animation: npc-hud-appear 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes npc-hud-appear {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.npc-hud-card img {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+    image-rendering: pixelated;
+    filter: drop-shadow(0 0 5px rgba(255, 215, 0, 0.3));
+}
+
+.npc-hud-stacks {
+    font-family: var(--font-pixel);
+    font-size: 8px;
+    color: var(--retro-white);
+    text-shadow: 0 0 5px var(--retro-amber);
+}
+
+.npc-hire-overlay .shop-container {
+    background: linear-gradient(160deg, #1a1a2e 0%, #16213e 100%);
+    border: 3px solid #7c3aed;
+    box-shadow: 0 0 30px rgba(124, 58, 237, 0.3);
+}
+
+.npc-hire-card:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+    border-color: #fbbf24 !important;
+    transform: translateY(-2px);
+    transition: all 0.2s ease;
+}

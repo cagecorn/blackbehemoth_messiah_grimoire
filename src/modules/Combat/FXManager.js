@@ -710,4 +710,53 @@ export default class FXManager {
     showFireNovaEffect(target) {
         this.showElementalNovaEffect(target, 'fire');
     }
+
+    /**
+     * Missionary Revive Effect
+     */
+    spawnHolyAura(x, y) {
+        if (!this.scene.textures.exists('sparkle_fx')) {
+            const graphics = this.scene.add.graphics();
+            graphics.fillStyle(0xffffff, 1);
+            graphics.fillCircle(4, 4, 4);
+            graphics.generateTexture('sparkle_fx', 8, 8);
+            graphics.destroy();
+        }
+
+        const emitter = this.scene.add.particles(0, 0, 'sparkle_fx', {
+            x: x,
+            y: y,
+            speed: { min: 60, max: 150 },
+            angle: { min: 0, max: 360 },
+            scale: { start: 1.2, end: 0 },
+            alpha: { start: 1, end: 0 },
+            lifespan: 800,
+            tint: [0xffffdd, 0xffd700, 0xffffff],
+            blendMode: this._isBatterySaver ? 'NORMAL' : 'ADD',
+            quantity: 30,
+            emitting: false
+        });
+
+        emitter.setDepth(20000);
+        emitter.explode(30);
+
+        // Rising circles
+        for (let i = 0; i < 3; i++) {
+            const circle = this.scene.add.circle(x, y, 10 + i * 10, 0xffffff, 0.4);
+            circle.setDepth(19999);
+            this.scene.tweens.add({
+                targets: circle,
+                y: y - 120,
+                scale: 2.5,
+                alpha: 0,
+                duration: 1200,
+                delay: i * 150,
+                onComplete: () => circle.destroy()
+            });
+        }
+
+        this.scene.time.delayedCall(1500, () => {
+            if (emitter) emitter.destroy();
+        });
+    }
 }

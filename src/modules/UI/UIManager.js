@@ -9,6 +9,7 @@ import { MercenaryClasses, Characters, PetStats, scaleStats } from '../Core/Enti
 import ItemManager from '../Core/ItemManager.js';
 import CharmManager from '../Core/CharmManager.js';
 import ShopManager from './ShopManager.js';
+import npcManager from '../Core/NPCManager.js';
 
 export default class UIManager {
     constructor() {
@@ -22,6 +23,9 @@ export default class UIManager {
         this.isRefreshing = false;
         this.detailChannel = null; // Track currently focused detail channel
         this.portraits = {}; // unitId -> { element, statusKey, hp, ult }
+        this.npcHud = null;
+        this.npcHudIcon = null;
+        this.npcHudStacks = null;
         this.lastGold = -1;
         this.lastGem = -1;
 
@@ -32,6 +36,9 @@ export default class UIManager {
         // Mobile HUD Elements
         this.hudGold = document.getElementById('hud-gold');
         this.hudGem = document.getElementById('hud-gem');
+        this.npcHud = document.getElementById('npc-hud');
+        this.npcHudIcon = document.getElementById('npc-hud-icon');
+        this.npcHudStacks = document.getElementById('npc-hud-stacks');
         this.portraitBar = document.getElementById('portrait-bar');
 
 
@@ -67,6 +74,8 @@ export default class UIManager {
 
         // Bind the RAF loop
         this.rafLoop = this.rafLoop.bind(this);
+
+        this.initEventListeners();
     }
 
     init() {
@@ -252,6 +261,34 @@ export default class UIManager {
                 this.refreshPetStorage();
             }
         });
+    }
+
+    initEventListeners() {
+        EventBus.on('NPC_STACK_UPDATED', () => this.updateNPCHUD());
+        EventBus.on('NPC_HIRED', () => this.updateNPCHUD());
+
+        // Listen for scene changes to show/hide NPC HUD
+        EventBus.on(EventBus.EVENTS.SCENE_CHANGED, (sceneKey) => {
+            if (this.npcHud) {
+                const isCombat = (sceneKey === 'DungeonScene' || sceneKey === 'RaidScene');
+                this.npcHud.style.display = isCombat ? 'block' : 'none';
+                if (isCombat) this.updateNPCHUD();
+            }
+        });
+    }
+
+    updateNPCHUD() {
+        if (!this.npcHud || !this.npcHudIcon || !this.npcHudStacks) return;
+
+        const hiredNPC = npcManager.getHiredNPC();
+        if (hiredNPC) {
+            this.npcHud.style.display = 'block';
+            this.npcHudIcon.src = hiredNPC.icon;
+            this.npcHudStacks.innerText = hiredNPC.currentStacks;
+            this.npcHud.dataset.tooltip = `${hiredNPC.name} (${hiredNPC.currentStacks} 스택)\n${hiredNPC.description}`;
+        } else {
+            this.npcHud.style.display = 'none';
+        }
     }
 
     showConfirm(message, onConfirm, onCancel = null) {
@@ -752,6 +789,119 @@ export default class UIManager {
         };
     }
 
+    async showNPCHire() {
+        if (this.npcHireOverlay) return;
+
+        const overlay = document.createElement('div');
+        overlay.id = 'npc-hire-overlay';
+        overlay.className = 'shop-overlay retro-scanline-overlay npc-hire-overlay';
+        this.npcHireOverlay = overlay;
+
+        overlay.innerHTML = `
+            <div class="shop-container npc-hire-container" style="max-width: 800px; width: 90vw;">
+                <div class="shop-header" style="background: linear-gradient(to right, #7c3aed, #8b5cf6);">
+                    <div class="shop-title">🤝 NPC RECRUITMENT (NPC 고용)</div>
+                    <button class="shop-close-btn" id="npc-hire-close">✕</button>
+                </div>
+                
+                <div class="shop-body" style="padding: 20px; display: flex; flex-direction: column; gap: 20px;">
+                    <div id="npc-hire-list" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                        <!-- NPC cards will be injected here -->
+                    </div>
+                </div>
+                
+                <div class="shop-footer">
+                    <div class="shop-currency" id="npc-hire-gold-display">💰 0</div>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('app-container').appendChild(overlay);
+
+        document.getElementById('npc-hire-close').onclick = () => this.hideNPCHire();
+        overlay.onclick = (e) => { if (e.target === overlay) this.hideNPCHire(); };
+
+        this.refreshNPCHire();
+    }
+
+    async refreshNPCHire() {
+        const listContainer = document.getElementById('npc-hire-list');
+        const goldDisplay = document.getElementById('npc-hire-gold-display');
+        if (!listContainer) return;
+
+        const goldItem = await DBManager.getInventoryItem('emoji_coin');
+        if (goldDisplay) goldDisplay.innerText = `💰 ${goldItem ? goldItem.amount.toLocaleString() : 0}`;
+
+        const activeNPC = npcManager.getActiveNPC();
+        let html = '';
+
+        Object.values(npcManager.NPC_DATA).forEach(npc => {
+            const isHired = activeNPC && activeNPC.id === npc.id;
+            const statusText = isHired ? `<div style="color: #6ee7b7; font-weight: bold; font-size: 10px;">[현재 고용 중: ${activeNPC.stacks}회 남음]</div>` : '';
+
+            html += `
+                <div class="npc-hire-card" style="background: rgba(255,255,255,0.05); border: 2px solid ${isHired ? '#6ee7b7' : 'var(--retro-border)'}; border-radius: 15px; padding: 20px; display: flex; gap: 20px; align-items: center; position: relative;">
+                    <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
+                        <img src="assets/npc/${npc.sprite}.png" style="width: 80px; height: 80px; object-fit: contain; image-rendering: pixelated;">
+                    </div>
+                    <div style="flex: 1; display: flex; flex-direction: column; gap: 8px;">
+                        <div style="font-size: 16px; font-weight: bold; color: #fbbf24;">${npc.name}</div>
+                        <div style="font-size: 11px; color: #d1d5db; line-height: 1.4;">${npc.description}</div>
+                        ${statusText}
+                        <button class="shop-buy-btn npc-hire-btn" data-id="${npc.id}" style="width: 100%; margin-top: 10px; height: 40px; font-size: 12px; ${isHired ? 'opacity: 0.6; cursor: default;' : ''}">
+                            ${isHired ? '이미 고용됨' : `고용하기 (${npc.cost.toLocaleString()}G)`}
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+
+        listContainer.innerHTML = html;
+
+        listContainer.querySelectorAll('.npc-hire-btn').forEach(btn => {
+            btn.onclick = async () => {
+                const npcId = btn.dataset.id;
+                if (activeNPC && activeNPC.id === npcId) return;
+
+                const result = await npcManager.hireNPC(npcId);
+                this.showToast(result.message);
+                if (result.success) {
+                    this.refreshNPCHire();
+                    // Update Formation if open
+                    if (this.partyFormationOverlay) {
+                        this._updateNPCFormationSlot();
+                    }
+                }
+            };
+        });
+    }
+
+    hideNPCHire() {
+        if (!this.npcHireOverlay) return;
+        this.npcHireOverlay.classList.add('fade-out');
+        setTimeout(() => {
+            if (this.npcHireOverlay) {
+                this.npcHireOverlay.remove();
+                this.npcHireOverlay = null;
+            }
+        }, 300);
+    }
+
+    _updateNPCFormationSlot() {
+        const npcSlotEl = document.getElementById('formation-npc-slot');
+        if (!npcSlotEl) return;
+
+        const activeNPC = npcManager.getActiveNPC();
+        if (activeNPC) {
+            const npcData = npcManager.getNPCInfo(activeNPC.id);
+            npcSlotEl.innerHTML = `<img src="assets/npc/${npcData.sprite}.png" style="width: 80%; height: 80%; object-fit: contain;">`;
+            npcSlotEl.classList.add('filled');
+        } else {
+            npcSlotEl.innerHTML = 'N';
+            npcSlotEl.classList.remove('filled');
+        }
+    }
+
     hidePetStorage() {
         if (!this.petStorageOverlay) return;
         this.petStorageOverlay.classList.add('fade-out');
@@ -955,9 +1105,16 @@ export default class UIManager {
                 <div class="party-slot" data-slot="5">6</div>
             </div>
 
-            <div class="pet-slots-container" style="display: flex; justify-content: center; margin-bottom: 30px; border: 1px solid var(--retro-border); padding: 10px; background: rgba(0,0,0,0.3); width: 80%; max-width: 400px; position:relative;">
-                <div style="position:absolute; top:-10px; left:10px; background:var(--retro-bg); padding:0 5px; font-family:var(--font-pixel); font-size:8px; color:var(--retro-amber);">PET SLOT</div>
-                <div class="party-slot pet-slot" data-type="pet" style="width: 80px; height: 80px; border-style: solid; border-color: var(--retro-cyan);">P</div>
+            <div class="pet-slots-container" style="display: flex; justify-content: center; gap: 20px; margin-bottom: 30px; border: 1px solid var(--retro-border); padding: 10px; background: rgba(0,0,0,0.3); width: 80%; max-width: 450px; position:relative;">
+                <div style="position:absolute; top:-10px; left:10px; background:var(--retro-bg); padding:0 5px; font-family:var(--font-pixel); font-size:8px; color:var(--retro-amber);">SUPPORT SLOTS</div>
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 5px;">
+                    <div style="font-family: var(--font-pixel); font-size: 7px; color: var(--retro-cyan);">PET</div>
+                    <div class="party-slot pet-slot" data-type="pet" style="width: 70px; height: 70px; border-style: solid; border-color: var(--retro-cyan);">P</div>
+                </div>
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 5px;">
+                    <div style="font-family: var(--font-pixel); font-size: 7px; color: #fbbf24;">NPC</div>
+                    <div class="party-slot npc-slot" id="formation-npc-slot" style="width: 70px; height: 70px; border-style: solid; border-color: #fbbf24;">N</div>
+                </div>
             </div>
 
             <div class="mercenary-candidates">
@@ -1023,6 +1180,7 @@ export default class UIManager {
 
         currentSlots.forEach((_, i) => updateSlotUI(i));
         updatePetSlotUI();
+        this._updateNPCFormationSlot();
         updateUI(); // Bind candidate events
 
         // Drag & Drop for Mercenary Slots
@@ -1154,6 +1312,22 @@ export default class UIManager {
                     this.lastGem = amount;
                 }
             });
+        }
+    }
+
+    updateNPCHUD() {
+        if (!this.npcHud || !this.npcHudIcon || !this.npcHudStacks) return;
+
+        const activeNPC = npcManager.getActiveNPC();
+        if (activeNPC && activeNPC.stacks > 0) {
+            const npcData = npcManager.getNPCInfo(activeNPC.id);
+            this.npcHudIcon.src = `assets/npc/${npcData.sprite}.png`;
+            this.npcHudStacks.innerText = `${activeNPC.stacks} / ${activeNPC.totalStacks}`;
+            this.npcHud.style.opacity = '1';
+            this.npcHud.style.pointerEvents = 'auto';
+        } else {
+            this.npcHud.style.opacity = '0';
+            this.npcHud.style.pointerEvents = 'none';
         }
     }
 

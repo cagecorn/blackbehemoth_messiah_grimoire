@@ -161,4 +161,17 @@ export default class DBManager {
         }
         await tx.done;
     }
+
+    // --- Hired NPC Persistence ---
+    static async saveNPCState(state) {
+        if (!this.db) await this.initDB();
+        await this.db.put('settings', { id: 'hired_npc', state });
+        console.log('[DBManager] Saved NPC state:', state);
+    }
+
+    static async getNPCState() {
+        if (!this.db) await this.initDB();
+        const data = await this.db.get('settings', 'hired_npc');
+        return data ? data.state : null;
+    }
 }

@@ -60,6 +60,7 @@ export default class DungeonScene extends Phaser.Scene {
 
     init(data) {
         this.dungeonType = data?.dungeonType || 'CURSED_FOREST';
+        this.currentRound = data?.startRound || 1;
         // Reset state on every entry
         this.isResting = false;
         this.isUltimateActive = false;
@@ -706,6 +707,29 @@ export default class DungeonScene extends Phaser.Scene {
 
     handlePartyWipeout() {
         this.isResetting = true;
+
+        // --- Nun NPC Ability (Same-Round Restart) ---
+        const npcManager = this.game.npcManager;
+        const activeNPC = npcManager?.getActiveNPC();
+        if (activeNPC && activeNPC.id === 'NUN' && activeNPC.stacks > 0) {
+            console.log(`%c[NPC] Nun Intervention! Retrying Round ${this.currentRound}. Stacks: ${activeNPC.stacks} -> ${activeNPC.currentStacks - 1}`, 'color: #aa77ff; font-weight: bold;');
+
+            EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, `[NPC] 수녀의 기도로 라운드 ${this.currentRound}(으)로 시간을 되돌립니다! ✨`);
+
+            npcManager.consumeStack();
+
+            // Visual feedback - flash and shake
+            if (this.cameras.main) {
+                this.cameras.main.flash(1000, 200, 150, 255, 0.5);
+                this.cameras.main.shake(500, 0.01);
+            }
+
+            this.time.delayedCall(2000, () => {
+                if (this.game.partyManager) this.game.partyManager.healAll();
+                this.scene.restart({ dungeonType: this.dungeonType, startRound: this.currentRound });
+            });
+            return;
+        }
 
         // Stop current BGM
         if (this.bgm) this.bgm.stop();

@@ -38,6 +38,14 @@ const TERRITORY_BANNERS = [
         action: null,
     },
     {
+        id: 'npc-hire',
+        label: 'NPC 고용',
+        sublabel: 'NPC HIRE',
+        cutscene: 'assets/characters/party/king_cutscene.png', // Temporary cutscene, will adjust or use NPC assets later
+        accentColor: '#fbbf24',
+        action: null,
+    },
+    {
         id: 'achievement',
         label: '업적',
         sublabel: 'ACHIEVEMENTS',
@@ -108,6 +116,12 @@ export default class TerritoryScene extends Phaser.Scene {
                 el.addEventListener('click', () => {
                     if (this.game.uiManager) {
                         this.game.uiManager.showShop();
+                    }
+                });
+            } else if (b.id === 'npc-hire') {
+                el.addEventListener('click', () => {
+                    if (this.game.uiManager) {
+                        this.game.uiManager.showNPCHire();
                     }
                 });
             } else if (b.id === 'pet') {
@@ -191,13 +205,11 @@ export default class TerritoryScene extends Phaser.Scene {
                 </div>
                 <div class="patch-entry">
                     <div class="patch-date">▶ 2026-03-04</div>
-                    <div class="patch-item"><span class="patch-item-icon">🐾</span>펫 시스템 추가 : 이제 자원을 자동으로 루팅합니다. 펫을 눌러보세요!</div>
-                    <div class="patch-item"><span class="patch-item-icon">🔍</span>카메라 확대/축소 시스템 추가</div>
-                    <div class="patch-item"><span class="patch-item-icon">✨</span>용병 부활 시스템 추가 : 던전에서 골드를 지불하여 용병을 즉시 부활시킬 수 있습니다.</div>
-                    <div class="patch-item"><span class="patch-item-icon">🔄</span>던전 전멸 시 무한 루프 시스템 추가 : 전멸 시 1라운드부터 즉시 재시작합니다.</div>
-                    <div class="patch-item"><span class="patch-item-icon">🔋</span>배터리 절약(방치) 모드 추가 : 설정에서 그래픽 효과를 켜고 끌 수 있습니다.</div>
-                    <div class="patch-item"><span class="patch-item-icon">💾</span>용병 레벨/경험치 자동 저장 추가</div>
-                    <div class="patch-item"><span class="patch-item-icon">🎨</span>상단 UI 허브 레드 벨벳 테마 적용</div>
+                    <div class="patch-item"><span class="patch-item-icon">🤝</span>[고용 NPC] 시스템 도입 : 선교사(부활), 수녀(라운드 재시작)를 고용하여 자동 사냥을 강화하세요!</div>
+                    <div class="patch-item"><span class="patch-item-icon">🐾</span>펫 전투 시스템 도입 : 이제 펫도 전투에 참여하며 고유 패시브를 제공합니다.</div>
+                    <div class="patch-item"><span class="patch-item-icon">🎰</span>펫 뽑기 시스템 도입 : 레드 벨벳 테마의 뽑기에서 강력한 펫을 획득하세요.</div>
+                    <div class="patch-item"><span class="patch-item-icon">📦</span>펫 보관함 UI 구현 : 획득한 펫의 상세 능력 확인 및 레벨업이 가능합니다.</div>
+                    <div class="patch-item"><span class="patch-item-icon">🎨</span>레드 벨벳 UI 리뉴얼 : 메인 HUD 및 가챠 씬에 고급스러운 벨벳 테마가 적용되었습니다.</div>
                 </div>
             </div>
         `;
