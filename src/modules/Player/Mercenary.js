@@ -852,8 +852,10 @@ export default class Mercenary extends Phaser.GameObjects.Container {
 
         this.syncStatusUI();
 
-        // Auto-save EXP and Level progress to Database
-        DBManager.saveMercenaryState(this.id, this.getStateSnapshot());
+        // Auto-save EXP and Level progress to Database (Player only)
+        if (this.team === 'player' && DBManager) {
+            DBManager.saveMercenaryState(this.id, this.getState());
+        }
     }
 
     levelUp() {
