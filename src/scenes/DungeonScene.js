@@ -72,7 +72,7 @@ export default class DungeonScene extends Phaser.Scene {
             this.game.uiManager.scene = this;
         }
         console.log('DungeonScene started');
-        this.cameras.main.setBackgroundColor('#2d2d2d');
+        this.cameras.main.setBackgroundColor('#000000');
 
         // Enable multi-touch for pinch zoom
         this.input.addPointer(1);
@@ -975,7 +975,7 @@ export default class DungeonScene extends Phaser.Scene {
         }
 
         // Ensure main camera has the correct dark background
-        this.cameras.main.setBackgroundColor('#2d2d2d');
+        this.cameras.main.setBackgroundColor('#000000');
 
         console.log('[디버그] 대기 효과 적용 (구름 그림자 & 렌즈 플레어)');
     }

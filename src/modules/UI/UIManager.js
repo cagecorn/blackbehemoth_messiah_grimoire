@@ -172,6 +172,8 @@ export default class UIManager {
                     this.unitToChannel[merc.id] = channel;
                 }
             });
+
+            this.portraitsDirty = true;
         });
         EventBus.on(EventBus.EVENTS.DEBUG_SWAP_CHARACTER, (payload) => {
             const { classId, characterId, unitId } = payload;
@@ -812,6 +814,8 @@ export default class UIManager {
             Object.keys(this.portraits).forEach(id => {
                 const p = this.portraits[id];
                 // If it's a temporary preview or part of active party, keep it. Otherwise remove.
+                // We use characterId for party members, or internal ID for others.
+                const key = p.characterId || id;
                 if (!id.startsWith('preview-') && !currentParty.includes(p.characterId)) {
                     p.element.remove();
                     delete this.portraits[id];
@@ -819,8 +823,10 @@ export default class UIManager {
             });
         } else {
             const activeIds = activeMercs.map(m => m.id);
+            const activeCharIds = activeMercs.map(m => m.characterId).filter(Boolean);
             Object.keys(this.portraits).forEach(id => {
-                if (!activeIds.includes(id)) {
+                const p = this.portraits[id];
+                if (!activeIds.includes(id) && !activeCharIds.includes(p.characterId)) {
                     this.portraits[id].element.remove();
                     delete this.portraits[id];
                 }
@@ -858,12 +864,8 @@ export default class UIManager {
         displayList.forEach((merc, index) => {
             if (!merc) return;
 
-            const hpPercent = (merc.hp / merc.maxHp) * 100;
-            const ultPercent = (merc.ultGauge / merc.maxUltGauge) * 100;
-            const statuses = (typeof merc.getStatuses === 'function') ? merc.getStatuses() : [];
-            const statusKey = statuses.map(s => s.emoji).join(',');
-
-            let cache = this.portraits[merc.id];
+            const portraitKey = merc.characterId || merc.id;
+            let cache = this.portraits[portraitKey];
 
             if (!cache) {
                 // ── 초상화 생성 ──────────────────────────────────────────────
@@ -913,7 +915,7 @@ export default class UIManager {
                 };
 
                 this.portraitBar.appendChild(portrait);
-                cache = this.portraits[merc.id] = {
+                cache = this.portraits[portraitKey] = {
                     element: portrait,
                     statusKey: '',
                     hp: -1,
@@ -929,8 +931,13 @@ export default class UIManager {
                         statusRow: portrait.querySelector('.portrait-status-row'),
                     }
                 };
-                console.log(`[UIManager] Portrait created (retro-arcade): ${merc.unitName} id=${merc.id}`);
+                console.log(`[UIManager] Portrait created (retro-arcade): ${merc.unitName} key=${portraitKey}`);
             }
+
+            const hpPercent = (merc.hp / merc.maxHp) * 100;
+            const ultPercent = (merc.ultGauge / merc.maxUltGauge) * 100;
+            const statuses = (typeof merc.getStatuses === 'function') ? merc.getStatuses() : [];
+            const statusKey = statuses.map(s => s.emoji).join(',');
 
             const { element, dom } = cache;
             const isDead = merc.hp <= 0;
@@ -942,6 +949,7 @@ export default class UIManager {
                 if (existingOverlay) existingOverlay.remove();
 
                 if (isDead) {
+                    const overlay = document.createElement('div');
                     overlay.className = 'portrait-dead-overlay';
 
                     const deadLabel = document.createElement('span');

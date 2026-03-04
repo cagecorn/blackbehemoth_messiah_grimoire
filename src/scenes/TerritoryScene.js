@@ -240,7 +240,7 @@ export default class TerritoryScene extends Phaser.Scene {
             transform: translateX(-50%);
             width: min(90vw, 420px);
             max-height: 180px;
-            z-index: 1000;
+            z-index: 10050;
         `;
 
         this.patchNotesContainer.innerHTML = `
@@ -300,6 +300,12 @@ export default class TerritoryScene extends Phaser.Scene {
         window.addEventListener('touchmove', onTouchMove, { passive: false });
         window.addEventListener('mouseup', onMouseUp);
         window.addEventListener('touchend', onTouchEnd);
+
+        // Battery Saver Toggle Listener for Territory
+        EventBus.on(EventBus.EVENTS.BATTERY_SAVER_TOGGLED, (enabled) => {
+            // Potential Territory optimizations
+            console.log('[Territory] Battery Saver toggled:', enabled);
+        });
 
         document.body.appendChild(this.patchNotesContainer);
 
