@@ -74,6 +74,9 @@ export default class DungeonScene extends Phaser.Scene {
         console.log('DungeonScene started');
         this.cameras.main.setBackgroundColor('#2d2d2d');
 
+        // Enable multi-touch for pinch zoom
+        this.input.addPointer(1);
+
         // Play Random BGM
         const bgms = ['main_battle_bgm_1', 'main_battle_bgm_2', 'main_battle_bgm_3'];
         const randomBgm = Phaser.Utils.Array.GetRandom(bgms);
@@ -141,7 +144,16 @@ export default class DungeonScene extends Phaser.Scene {
         this.dungeonManager = new DungeonManager(this);
         this.dungeonManager.generateDungeon();
 
-        // Stage visual rendering
+        // --- Layers Setup ---
+        // Create a dedicated layer for UI elements that should NOT zoom or move.
+        this.uiLayer = this.add.container(0, 0).setDepth(100000).setScrollFactor(0);
+
+        // --- UI Camera Setup (Fixed Overlay) ---
+        // This camera stays at zoom 1 and doesn't scroll.
+        this.uiCamera = this.cameras.add(0, 0, this.scale.width, this.scale.height).setName('UICamera');
+        this.uiCamera.setScroll(0, 0);
+        this.uiCamera.setZoom(1);
+        // Cameras are transparent by default unless setBackgroundColor is used.
         // Background base 1536x1024 * 1.5 = 2304x1536
         const worldWidth = this.dungeonManager.dungeonInstance.width * 32;
         const worldHeight = this.dungeonManager.dungeonInstance.height * 32;
@@ -316,7 +328,25 @@ export default class DungeonScene extends Phaser.Scene {
             fontStyle: 'bold',
             stroke: '#000',
             strokeThickness: 5
-        }).setOrigin(0.5).setScrollFactor(0).setDepth(10000);
+        }).setOrigin(0.5);
+        this.uiLayer.add(this.roundText);
+
+        // --- Camera Rule: UI Visibility ---
+        // 1. Main camera ignores the UI layer completely
+        this.cameras.main.ignore(this.uiLayer);
+
+        // 2. UI camera ignores EVERYTHING except the UI layer
+        // First, ignore all existing children
+        this.children.list.forEach(child => {
+            if (child !== this.uiLayer) this.uiCamera.ignore(child);
+        });
+
+        // Second, dynamically ignore any future objects added to the scene
+        this.events.on('addedtogame', (child) => {
+            if (this.uiCamera && child !== this.uiLayer) {
+                this.uiCamera.ignore(child);
+            }
+        });
 
         // 1. Mercenaries collect Loot
         this.physics.add.overlap(this.mercenaries, this.lootManager.lootGroup, (mercenary, item) => {

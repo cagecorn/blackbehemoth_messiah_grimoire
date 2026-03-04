@@ -16,7 +16,11 @@ export default class DynamicCameraManager {
             jitterIntensity: 1.5,
             jitterSpeed: 0.05,
             shakeDecay: 0.95,
-            maxShake: 20
+            maxShake: 20,
+            minZoom: 0.5,
+            maxZoom: 2.5,
+            zoomLerp: 0.1,
+            zoomSensitivity: 0.005
         };
 
         // Internal State
@@ -24,6 +28,8 @@ export default class DynamicCameraManager {
         this.offsetX = 0;
         this.offsetY = 0;
         this.target = null;
+        this.targetZoom = this.camera.zoom;
+        this.prevPinchDist = 0;
 
         // Jitter state (Simplex-like noise simulation using simple sine waves)
         this.noiseTime = 0;
@@ -44,7 +50,35 @@ export default class DynamicCameraManager {
             EventBus.off(EventBus.EVENTS.CAMERA_SHAKE, this.handleShakeEvent);
         });
 
+        // Setup Input Listeners for Zoom
+        this.scene.input.on('wheel', (pointer, gameObjects, deltaX, deltaY, deltaZ) => {
+            this.handleWheelZoom(deltaY);
+        });
+
         console.log('[Camera] DynamicCameraManager Initialized. 🎬 Ready for some Bourne-style action.');
+    }
+
+    handleWheelZoom(deltaY) {
+        const zoomDelta = deltaY > 0 ? -0.1 : 0.1;
+        this.targetZoom = Phaser.Math.Clamp(this.targetZoom + zoomDelta, this.config.minZoom, this.config.maxZoom);
+    }
+
+    handlePinchZoom() {
+        const pointer1 = this.scene.input.pointer1;
+        const pointer2 = this.scene.input.pointer2;
+
+        if (pointer1.isDown && pointer2.isDown) {
+            const dist = Phaser.Math.Distance.Between(pointer1.x, pointer1.y, pointer2.x, pointer2.y);
+
+            if (this.prevPinchDist > 0) {
+                const delta = dist - this.prevPinchDist;
+                const zoomDelta = delta * this.config.zoomSensitivity;
+                this.targetZoom = Phaser.Math.Clamp(this.targetZoom + zoomDelta, this.config.minZoom, this.config.maxZoom);
+            }
+            this.prevPinchDist = dist;
+        } else {
+            this.prevPinchDist = 0;
+        }
     }
 
     setTarget(target) {
@@ -85,15 +119,13 @@ export default class DynamicCameraManager {
             this.shakeAmount = 0;
         }
 
-        // 3. Apply Offsets to Camera Follow Target (or the camera itself)
-        // We modify the followOffset to avoid interfering with the basic follow logic
+        // 3. Apply Offsets to Camera Follow Target
         this.camera.setFollowOffset(jitterX + impactX, jitterY + impactY);
 
-        /**
-         * [Bourne Style Logic]
-         * To truly feel like Bourne Identity, we could also slightly randomize the scrollFactor 
-         * or slightly adjust the zoom dynamically, but for now, the shaky offset is the core.
-             */
-
+        // 4. Update Zoom (Smooth Lerp)
+        this.handlePinchZoom();
+        if (Math.abs(this.camera.zoom - this.targetZoom) > 0.001) {
+            this.camera.zoom = Phaser.Math.Linear(this.camera.zoom, this.targetZoom, this.config.zoomLerp);
+        }
     }
 }

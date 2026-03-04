@@ -42,6 +42,7 @@ export default class TerritoryScene extends Phaser.Scene {
 
         // [DOM UI Wrapper]
         this.createDOMNavigation();
+        this.createPatchNotes();
 
         // Initialize Party Selection if not set (이제 자동 생성 안 함, 유저가 직접 아이콘을 눌러야 함)
         // this.checkPartyStatus();
@@ -220,7 +221,43 @@ export default class TerritoryScene extends Phaser.Scene {
                 this.navContainer.remove();
                 this.navContainer = null;
             }
+            if (this.patchNotesContainer) {
+                this.patchNotesContainer.remove();
+                this.patchNotesContainer = null;
+            }
         });
+    }
+
+    createPatchNotes() {
+        if (this.patchNotesContainer) this.patchNotesContainer.remove();
+
+        this.patchNotesContainer = document.createElement('div');
+        this.patchNotesContainer.className = 'patch-notes-container';
+        this.patchNotesContainer.style.cssText = `
+            position: absolute;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: min(90vw, 420px);
+            max-height: 180px;
+            z-index: 1000;
+        `;
+
+        this.patchNotesContainer.innerHTML = `
+            <div class="patch-notes-title">📋 패치 내역</div>
+            <div class="patch-notes-body">
+                <div class="patch-notes-content">
+                    <div class="patch-entry">
+                        <div class="patch-date">▶ 2026-03-04</div>
+                        <div class="patch-item"><span class="patch-item-icon">🐾</span>펫 시스템 추가 : 이제 자원을 자동으로 루팅합니다. 펫을 눌러보세요!</div>
+                        <div class="patch-item"><span class="patch-item-icon">🔍</span>카메라 확대/축소 시스템 추가</div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(this.patchNotesContainer);
+        console.log('[PatchNotes] 2026-03-04 공지사항이 출력되었습니다. (펫 시스템 & 카메라 줌)');
     }
 
     async checkPartyStatus() {
