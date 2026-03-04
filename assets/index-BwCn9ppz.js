@@ -6409,6 +6409,9 @@ return new `+this.key+`();
             <div id="territory-patch-body">
                 <div class="patch-entry">
                     <div class="patch-date">▶ 2026-03-05</div>
+                    <div class="patch-item"><span class="patch-item-icon">🐾</span>펫 전투 시스템 도입 : 이제 자원을 루팅할 뿐만 아니라 함께 전투에 참여합니다.</div>
+                    <div class="patch-item"><span class="patch-item-icon">🎰</span>펫 뽑기 시스템 도입 : 새로운 펫 영입을 위한 소환 기능이 추가되었습니다.</div>
+                    <div class="patch-item"><span class="patch-item-icon">📦</span>펫 보관함 UI 구현 : 영입한 펫을 관리하고 상세 정보를 확인할 수 있는 보관함이 추가되었습니다.</div>
                     <div class="patch-item"><span class="patch-item-icon">📊</span>전투 지표 그래프 패치 : 초당 공격력(DPS), 받은 데미지, 회복 수치를 실시간 그래프로 확인할 수 있습니다.</div>
                     <div class="patch-item"><span class="patch-item-icon">💀</span>신규 던전 "언데드 묘지" 패치 : 서늘한 기운이 감도는 신규 전장이 추가되었습니다.</div>
                     <div class="patch-item"><span class="patch-item-icon">💰</span>상점 기능 패치 : 각종 재화로 용병과 아이템을 구매할 수 있게 되었습니다.</div>
