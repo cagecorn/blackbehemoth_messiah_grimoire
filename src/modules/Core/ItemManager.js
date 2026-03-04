@@ -28,6 +28,7 @@ const ITEM_DATABASE = {
     'emoji_meat': { name: 'Monster Meat', type: ITEM_TYPES.MATERIAL, icon: 'emoji_meat' },
     'emoji_wood': { name: 'Wood Log', type: ITEM_TYPES.MATERIAL, icon: 'emoji_wood' },
     'emoji_herb': { name: 'Magic Herb', type: ITEM_TYPES.MATERIAL, icon: 'emoji_herb' },
+    'emoji_ticket': { name: '언데드 묘지 입장권', type: ITEM_TYPES.MATERIAL, icon: 'emoji_ticket', description: '언데드 묘지에 입장하기 위해 필요한 티켓입니다. 🎫', price: 10 },
     'emoji_burger': { name: 'Hamburger', type: ITEM_TYPES.MATERIAL, icon: 'emoji_burger', chapter: 'ACTIVE' },
     'emoji_fireworks': { name: 'Fire Nova (🎆)', type: ITEM_TYPES.MATERIAL, icon: 'emoji_fireworks', chapter: 'ACTIVE' },
     'emoji_sparkler': { name: 'Spark Nova (🎇)', type: ITEM_TYPES.MATERIAL, icon: 'emoji_sparkler', chapter: 'ACTIVE' },
@@ -126,8 +127,9 @@ export default class ItemManager {
             'emoji_coin': '1fa99.svg',
             'emoji_gem': '1f48e.svg',
             'emoji_meat': '1f356.svg',
-            'emoji_wood': '1fab5.svg',
+            'emoji_bone': '1f9b4.svg', // Added emoji_bone as per the user's implied intent
             'emoji_herb': '1f33f.svg',
+            'emoji_ticket': '1f3ab.svg',
             'emoji_burger': '1f354.svg',
             'emoji_fireworks': '1f386.svg',
             'emoji_sparkler': '1f387.svg',

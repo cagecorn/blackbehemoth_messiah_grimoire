@@ -8,6 +8,7 @@ import { MercenaryClasses, Characters } from '../Core/EntityStats.js';
 // partyManager will be accessed via this.scene.game.partyManager
 import ItemManager from '../Core/ItemManager.js';
 import CharmManager from '../Core/CharmManager.js';
+import ShopManager from './ShopManager.js';
 
 export default class UIManager {
     constructor() {
@@ -61,6 +62,8 @@ export default class UIManager {
         this.pendingGrimoireSlot = null;
         this.pendingGearSlot = null; // Track gear slot clicked in ChatChannel
         this.emojiFilter = 'ALL'; // Filter for Emoji Inventory
+
+        this.shopManager = new ShopManager(this);
 
         // Bind the RAF loop
         this.rafLoop = this.rafLoop.bind(this);
@@ -233,7 +236,11 @@ export default class UIManager {
         // Also update currency immediately on inventory changes
         EventBus.on(EventBus.EVENTS.INVENTORY_UPDATED, () => {
             this.hudDirty = true;
+            this.updateDungeonTickets();
         });
+
+        // Initial Tickets Update
+        this.updateDungeonTickets();
     }
 
     showConfirm(message, onConfirm, onCancel = null) {
@@ -587,6 +594,12 @@ export default class UIManager {
         this.popupOverlay.style.display = 'flex';
     }
 
+    showShop() {
+        if (this.shopManager) {
+            this.shopManager.show();
+        }
+    }
+
     /**
      * Safer scene transition that stops all active scenes to prevent overlapping.
      */
@@ -622,6 +635,32 @@ export default class UIManager {
 
         // Sync nav bar
         if (this.updateActiveNav) setTimeout(() => this.updateActiveNav(), 100);
+    }
+
+    async updateDungeonTickets() {
+        const ticket = await DBManager.getInventoryItem('emoji_ticket');
+        const count = ticket ? ticket.amount : 0;
+
+        // Find the Undead Graveyard dropdown item
+        const dropdownItems = document.querySelectorAll('.nav-dropdown-item');
+        dropdownItems.forEach(item => {
+            if (item.dataset.dungeon === 'UNDEAD_GRAVEYARD') {
+                let badge = item.querySelector('.dungeon-ticket-badge');
+                if (!badge) {
+                    badge = document.createElement('span');
+                    badge.className = 'dungeon-ticket-badge';
+                    item.appendChild(badge);
+                    item.style.position = 'relative'; // Ensure positioning
+                }
+                badge.innerText = `🎫 ${count}`;
+
+                if (count <= 0) {
+                    item.style.opacity = '0.5';
+                } else {
+                    item.style.opacity = '1';
+                }
+            }
+        });
     }
 
     /**

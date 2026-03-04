@@ -26,6 +26,9 @@ export default class LootManager {
             // Skeleton specific logic: Increased chance for bones
             if (isSkeleton && Math.random() < 0.6) {
                 randomDrop = 'emoji_bone';
+            } else if (this.scene.dungeonType === 'CURSED_FOREST' && Math.random() < 0.02) {
+                // Rare ticket drop in Cursed Forest (2%)
+                randomDrop = 'emoji_ticket';
             } else {
                 randomDrop = Phaser.Utils.Array.GetRandom(this.drops);
             }

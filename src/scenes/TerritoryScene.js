@@ -104,6 +104,12 @@ export default class TerritoryScene extends Phaser.Scene {
             if (!el) return;
             if (b.action) {
                 el.addEventListener('click', () => b.action());
+            } else if (b.id === 'shop') {
+                el.addEventListener('click', () => {
+                    if (this.game.uiManager) {
+                        this.game.uiManager.showShop();
+                    }
+                });
             } else {
                 el.addEventListener('click', () => {
                     if (this.game.uiManager) {

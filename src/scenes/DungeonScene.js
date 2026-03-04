@@ -70,7 +70,20 @@ export default class DungeonScene extends Phaser.Scene {
         if (this.game.partyManager) this.game.partyManager.healAll();
     }
 
-    create() {
+    async create() {
+        if (this.dungeonType === 'UNDEAD_GRAVEYARD') {
+            const ticket = await DBManager.getInventoryItem('emoji_ticket');
+            if (!ticket || ticket.amount <= 0) {
+                if (this.game.uiManager) this.game.uiManager.showToast('입장권이 필요합니다! 🎫');
+                this.scene.start('TerritoryScene');
+                return;
+            }
+            // Deduct Ticket
+            await DBManager.saveInventoryItem('emoji_ticket', ticket.amount - 1);
+            EventBus.emit(EventBus.EVENTS.INVENTORY_UPDATED);
+            EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, `[입장] 언데드 묘지 입장권 1장을 소모했습니다. 🎫`);
+        }
+
         if (this.game.uiManager) {
             this.game.uiManager.scene = this;
         }
