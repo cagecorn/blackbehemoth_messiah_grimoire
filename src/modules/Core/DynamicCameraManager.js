@@ -67,7 +67,7 @@ export default class DynamicCameraManager {
         const pointer1 = this.scene.input.pointer1;
         const pointer2 = this.scene.input.pointer2;
 
-        if (pointer1.isDown && pointer2.isDown) {
+        if (pointer1 && pointer2 && pointer1.isDown && pointer2.isDown) {
             const dist = Phaser.Math.Distance.Between(pointer1.x, pointer1.y, pointer2.x, pointer2.y);
 
             if (this.prevPinchDist > 0) {
