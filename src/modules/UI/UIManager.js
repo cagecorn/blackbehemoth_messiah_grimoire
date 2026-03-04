@@ -451,6 +451,48 @@ export default class UIManager {
             };
         });
 
+        // --- NEW: Dungeon Dropdown Logic ---
+        const dungeonBtn = document.getElementById('btn-dungeon-main');
+        const dungeonDropdown = document.getElementById('dungeon-dropdown');
+        const dropdownItems = document.querySelectorAll('.nav-dropdown-item');
+
+        if (dungeonBtn && dungeonDropdown) {
+            dungeonBtn.onclick = (e) => {
+                e.stopPropagation();
+                dungeonDropdown.classList.toggle('show');
+            };
+
+            // Close dropdown when clicking elsewhere
+            window.addEventListener('click', () => {
+                dungeonDropdown.classList.remove('show');
+            });
+        }
+
+        dropdownItems.forEach(item => {
+            item.onclick = (e) => {
+                e.stopPropagation();
+                const sceneKey = item.dataset.scene;
+                const dungeonType = item.dataset.dungeon;
+                const currentKey = getActiveKey();
+
+                const partyManager = this.scene?.game?.partyManager;
+                if (partyManager && !partyManager.isPartyFull()) {
+                    this.showToast("6명의 용병을 편성해주세요");
+                    this.showPartyFormation();
+                    return;
+                }
+
+                if (combatScenes.includes(currentKey)) {
+                    this.showConfirm("전투가 진행 중입니다. 정말로 나가시겠습니까?", () => {
+                        this.safeSceneStart(sceneKey, { dungeonType });
+                    });
+                } else {
+                    this.safeSceneStart(sceneKey, { dungeonType });
+                }
+                dungeonDropdown?.classList.remove('show');
+            };
+        });
+
         // Highlight active scene function
         this.updateActiveNav = () => {
             if (!this.scene || !this.scene.scene) return;
@@ -548,17 +590,17 @@ export default class UIManager {
     /**
      * Safer scene transition that stops all active scenes to prevent overlapping.
      */
-    safeSceneStart(sceneKey) {
+    safeSceneStart(sceneKey, data = null) {
         if (!this.scene) return;
 
-        console.log(`[UIManager] Safe start scene: ${sceneKey}`);
+        console.log(`[UIManager] Safe start scene: ${sceneKey}`, data);
 
         // Robust game/sceneManager access
         const game = this.scene.game || (this.scene.scene && this.scene.scene.game);
         if (!game || !game.scene) {
             console.warn(`[UIManager] Game or SceneManager not found. Direct start.`);
-            if (this.scene.scene) this.scene.scene.start(sceneKey);
-            else if (this.scene.start) this.scene.start(sceneKey);
+            if (this.scene.scene) this.scene.scene.start(sceneKey, data);
+            else if (this.scene.start) this.scene.start(sceneKey, data);
             return;
         }
 
@@ -572,8 +614,8 @@ export default class UIManager {
             }
         });
 
-        // Start the target scene
-        game.scene.start(sceneKey);
+        // Start the target scene with data
+        game.scene.start(sceneKey, data);
 
         // Ensure any popups are hidden
         this.hidePopup();

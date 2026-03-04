@@ -947,8 +947,56 @@ export const MonsterClasses = {
         fireRes: 0,
         iceRes: 0,
         lightningRes: 0
+    },
+    SKELETON_WARRIOR: {
+        id: 'skeleton_warrior',
+        name: 'Skeleton Warrior (스켈레톤 전사)',
+        sprite: 'skeleton_warrior_sprite',
+        maxHp: 120,
+        hp: 120,
+        atk: 18,
+        mAtk: 0,
+        def: 10,
+        mDef: 4,
+        speed: 70,
+        atkRange: 45,
+        atkSpd: 1400,
+        acc: 85,
+        eva: 5,
+        crit: 8,
+        physicsRadius: 20,
+        spriteSize: 64,
+        aiType: 'MELEE',
+        fireRes: -10, // Undead weakness
+        iceRes: 10,
+        lightningRes: 0
+    },
+    SKELETON_WIZARD: {
+        id: 'skeleton_wizard',
+        name: 'Skeleton Wizard (스켈레톤 위자드)',
+        sprite: 'skeleton_wizard_sprite',
+        maxHp: 70,
+        hp: 70,
+        atk: 5,
+        mAtk: 22,
+        def: 4,
+        mDef: 15,
+        speed: 75,
+        atkRange: 220,
+        rangeMin: 150,
+        rangeMax: 260,
+        atkSpd: 2200,
+        castSpd: 1800,
+        acc: 90,
+        eva: 12,
+        crit: 12,
+        physicsRadius: 18,
+        spriteSize: 64,
+        aiType: 'RANGED_MAGIC',
+        fireRes: -15,
+        iceRes: 15,
+        lightningRes: 5
     }
-    // New monsters like SLIME or ORC can be added here easily
 };
 
 export const GameConfig = {
@@ -986,6 +1034,13 @@ export const StageConfigs = {
         background: 'bg_raid',
         ambientColor: 0x00103a,  // 차가운 심연의 그림자 (레이드 분위기)
         ambientAlpha: 0.2
+    },
+    UNDEAD_GRAVEYARD: {
+        id: 'undead_graveyard',
+        name: '언데드 묘지',
+        background: 'bg_undead_graveyard',
+        ambientColor: 0x0a1a0a,  // 음산한 녹백색 (공동묘지 분위기)
+        ambientAlpha: 0.25
     }
 };
 

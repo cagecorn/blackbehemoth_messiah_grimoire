@@ -13,13 +13,22 @@ export default class LootManager {
     }
 
     // Called when an enemy dies
-    spawnLoot(x, y) {
-        console.log(`[LootManager] Spawning items at (${x.toFixed(1)}, ${y.toFixed(1)})`);
+    spawnLoot(x, y, monsterId = null) {
+        console.log(`[LootManager] Spawning items for ${monsterId} at (${x.toFixed(1)}, ${y.toFixed(1)})`);
         // Randomly pick 1 to 3 items to drop
         const dropCount = Phaser.Math.Between(1, 3);
 
+        const isSkeleton = monsterId && monsterId.includes('skeleton');
+
         for (let i = 0; i < dropCount; i++) {
-            const randomDrop = Phaser.Utils.Array.GetRandom(this.drops);
+            let randomDrop;
+
+            // Skeleton specific logic: Increased chance for bones
+            if (isSkeleton && Math.random() < 0.6) {
+                randomDrop = 'emoji_bone';
+            } else {
+                randomDrop = Phaser.Utils.Array.GetRandom(this.drops);
+            }
 
             // Spawn the Sprite
             const item = this.lootGroup.create(x, y, randomDrop);
@@ -94,7 +103,8 @@ export default class LootManager {
             'emoji_gem': '💎',
             'emoji_meat': '🍖',
             'emoji_wood': '🪵',
-            'emoji_herb': '🌿'
+            'emoji_herb': '🌿',
+            'emoji_bone': '🦴'
         };
         const unicodeEmoji = emojiMap[emojiId] || '❓';
 

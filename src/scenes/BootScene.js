@@ -106,6 +106,7 @@ export default class BootScene extends Phaser.Scene {
         this.load.svg('emoji_fireworks', 'assets/emojis/1f386.svg', { width: 64, height: 64 });
         this.load.svg('emoji_sparkler', 'assets/emojis/1f387.svg', { width: 64, height: 64 });
         this.load.svg('emoji_koinobori', 'assets/emojis/1f38f.svg', { width: 64, height: 64 });
+        this.load.svg('emoji_bone', 'assets/emojis/1f9b4.svg', { width: 64, height: 64 });
 
         // Tactical Node Charms Emojis
         this.load.svg('emoji_smiling_face_with_sunglasses', 'assets/emojis/1f60e.svg', { width: 64, height: 64 }); // 😎
@@ -167,6 +168,8 @@ export default class BootScene extends Phaser.Scene {
         this.load.image('goblin_boss_sprite', 'assets/characters/enemies/goblin_cutscene.png');
         this.load.image('goblin_sprite', 'assets/characters/enemies/goblin_sprite.png');
         this.load.image('orc_sprite', 'assets/characters/enemies/orc_sprite.png');
+        this.load.image('skeleton_warrior_sprite', 'assets/characters/enemies/skeleton_warrior_sprite.png');
+        this.load.image('skeleton_wizard_sprite', 'assets/characters/enemies/skeleton_wizard_sprite.png');
         this.load.image('guadian_angel_sprite', 'assets/characters/party/guadian_angel_sprite.png');
         this.load.image('siren_sprite', 'assets/characters/party/siren_sprite.png');
         this.load.image('lute_cutscene', 'assets/characters/party/lute_cutscene.png');
@@ -201,6 +204,7 @@ export default class BootScene extends Phaser.Scene {
         this.load.image('bg_cursed_forest', 'assets/background/battle-stage-cursed-forest.png');
         this.load.image('bg_arena', 'assets/background/battle-stage-arena.png');
         this.load.image('bg_raid', 'assets/background/battle_stage_raid.png');
+        this.load.image('bg_undead_graveyard', 'assets/background/battle-stage-graveyard.png');
 
         // Load UI/Icon assets
         this.load.image('logo_icon', 'assets/icon/logo_icon.png');

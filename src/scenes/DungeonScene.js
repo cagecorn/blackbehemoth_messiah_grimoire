@@ -3,6 +3,8 @@ import DungeonManager from '../modules/Dungeon/DungeonManager.js';
 import Warrior from '../modules/Player/Warrior.js';
 import Goblin from '../modules/AI/Goblin.js';
 import Orc from '../modules/AI/Orc.js';
+import SkeletonWarrior from '../modules/AI/SkeletonWarrior.js';
+import SkeletonWizard from '../modules/AI/SkeletonWizard.js';
 import MonsterHealer from '../modules/AI/MonsterHealer.js';
 import Archer from '../modules/Player/Archer.js';
 import Healer from '../modules/Player/Healer.js';
@@ -56,7 +58,8 @@ export default class DungeonScene extends Phaser.Scene {
         this.roundClearExp = 500;
     }
 
-    init() {
+    init(data) {
+        this.dungeonType = data?.dungeonType || 'CURSED_FOREST';
         // Reset state on every entry
         this.currentRound = 1;
         this.isResting = false;
@@ -157,7 +160,9 @@ export default class DungeonScene extends Phaser.Scene {
         // Background base 1536x1024 * 1.5 = 2304x1536
         const worldWidth = this.dungeonManager.dungeonInstance.width * 32;
         const worldHeight = this.dungeonManager.dungeonInstance.height * 32;
-        this.stageManager = new StageManager(this, StageConfigs.CURSED_FOREST);
+
+        const stageConfig = StageConfigs[this.dungeonType] || StageConfigs.CURSED_FOREST;
+        this.stageManager = new StageManager(this, stageConfig);
         this.stageManager.buildStage(worldWidth, worldHeight);
 
         // ★ Set world & camera bounds BEFORE spawning units
@@ -224,9 +229,25 @@ export default class DungeonScene extends Phaser.Scene {
         // Global Combat Events for Rewards - Store as reference for cleanup
         this.handleMonsterKilledListener = (payload) => {
             if (this.mercenaries && this.mercenaries.active) {
+                const monsterLevel = payload.level || 1;
+                const monsterId = payload.id || '';
+
+                // Base XP Scaling: killExp * (1 + (level - 1) * 0.1)
+                // Skeletons give 1.5x more XP
+                let calculatedExp = this.killExp * (1 + (monsterLevel - 1) * 0.1);
+
+                if (monsterId.includes('skeleton')) {
+                    calculatedExp *= 1.5;
+                }
+
+                calculatedExp = Math.floor(calculatedExp);
+
+                // Ensure a minimum of killExp
+                calculatedExp = Math.max(calculatedExp, this.killExp);
+
                 this.mercenaries.getChildren().forEach(merc => {
                     if (merc.active && merc.hp > 0) {
-                        merc.addExp(this.killExp);
+                        merc.addExp(calculatedExp);
                     }
                 });
             }
@@ -855,34 +876,57 @@ export default class DungeonScene extends Phaser.Scene {
             }
         };
 
-        // Spawn Goblins (Base 12 + 1 per round)
-        const goblinConfig = MonsterClasses.GOBLIN;
-        const goblinCount = 12 + (this.currentRound - 1) * 1;
-        for (let i = 0; i < goblinCount; i++) {
-            const offsetX = (i % 4) * 60;
-            const offsetY = Math.floor(i / 4) * 60;
-            const goblin = new Goblin(this, startPos.x + 150 + offsetX, startPos.y + offsetY - 80, this.player, monsterLevel);
-            applyEliteLogic(goblin);
-            this.enemies.add(goblin);
-        }
+        if (this.dungeonType === 'UNDEAD_GRAVEYARD') {
+            // --- Undead Graveyard Spawning ---
+            // Spawn Skeleton Warriors (Base 12 + 1 per round)
+            const skeletonCount = 12 + (this.currentRound - 1) * 1;
+            for (let i = 0; i < skeletonCount; i++) {
+                const offsetX = (i % 4) * 60;
+                const offsetY = Math.floor(i / 4) * 60;
+                const skeleton = new SkeletonWarrior(this, startPos.x + 150 + offsetX, startPos.y + offsetY - 80, this.player, monsterLevel);
+                applyEliteLogic(skeleton);
+                this.enemies.add(skeleton);
+            }
 
-        // Spawn Shamans (Base 2 + 1 every 2 rounds)
-        const shamanConfig = MonsterClasses.SHAMAN;
-        const shamanCount = 2 + Math.floor((this.currentRound - 1) / 2);
-        for (let i = 0; i < shamanCount; i++) {
-            const shaman = new MonsterHealer(this, startPos.x + 200 + (i * 80), startPos.y + 120, shamanConfig, this.player, monsterLevel);
-            applyEliteLogic(shaman);
-            this.enemies.add(shaman);
-        }
+            // Spawn Skeleton Wizards (Base 4 + 1 every round)
+            const wizardCount = 4 + (this.currentRound - 1);
+            for (let i = 0; i < wizardCount; i++) {
+                const offsetX = (i % 2) * 80;
+                const offsetY = Math.floor(i / 2) * 80;
+                const wiz = new SkeletonWizard(this, startPos.x + 400 + offsetX, startPos.y + offsetY - 40, this.player, monsterLevel);
+                applyEliteLogic(wiz);
+                this.enemies.add(wiz);
+            }
+        } else {
+            // --- Cursed Forest Spawning (Original Logic) ---
+            // Spawn Goblins (Base 12 + 1 per round)
+            const goblinCount = 12 + (this.currentRound - 1) * 1;
+            for (let i = 0; i < goblinCount; i++) {
+                const offsetX = (i % 4) * 60;
+                const offsetY = Math.floor(i / 4) * 60;
+                const goblin = new Goblin(this, startPos.x + 150 + offsetX, startPos.y + offsetY - 80, this.player, monsterLevel);
+                applyEliteLogic(goblin);
+                this.enemies.add(goblin);
+            }
 
-        // Spawn Orcs (Round 1: 2, then +0.5 per round)
-        const orcCount = 2 + Math.floor((this.currentRound - 1) / 2);
-        for (let i = 0; i < orcCount; i++) {
-            const offsetX = (i % 2) * 80;
-            const offsetY = Math.floor(i / 2) * 80;
-            const orc = new Orc(this, startPos.x + 400 + offsetX, startPos.y + offsetY - 40, this.player, monsterLevel);
-            applyEliteLogic(orc);
-            this.enemies.add(orc);
+            // Spawn Shamans (Base 2 + 1 every 2 rounds)
+            const shamanConfig = MonsterClasses.SHAMAN;
+            const shamanCount = 2 + Math.floor((this.currentRound - 1) / 2);
+            for (let i = 0; i < shamanCount; i++) {
+                const shaman = new MonsterHealer(this, startPos.x + 200 + (i * 80), startPos.y + 120, shamanConfig, this.player, monsterLevel);
+                applyEliteLogic(shaman);
+                this.enemies.add(shaman);
+            }
+
+            // Spawn Orcs (Round 1: 2, then +0.5 per round)
+            const orcCount = 2 + Math.floor((this.currentRound - 1) / 2);
+            for (let i = 0; i < orcCount; i++) {
+                const offsetX = (i % 2) * 80;
+                const offsetY = Math.floor(i / 2) * 80;
+                const orc = new Orc(this, startPos.x + 400 + offsetX, startPos.y + offsetY - 40, this.player, monsterLevel);
+                applyEliteLogic(orc);
+                this.enemies.add(orc);
+            }
         }
 
         // Boss Logic: Every 3 rounds (3, 6, 9...)

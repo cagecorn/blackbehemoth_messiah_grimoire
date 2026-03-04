@@ -460,8 +460,10 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
 
         this.lastAttackTime = now;
 
+        const isMagic = this.config.aiType === 'RANGED_MAGIC' || this.config.aiType === 'SUPPORT';
+
         // Calculate Damage
-        let finalDmg = this.getTotalAtk();
+        let finalDmg = isMagic ? this.getTotalMAtk() : this.getTotalAtk();
         const currentCrit = this.getTotalCrit();
         const isCritical = Math.random() * 100 < currentCrit;
         if (isCritical) {
@@ -474,10 +476,10 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
         }
 
         // Basic projectile firing via ProjectileManager
-        // For monsters, we use 'orc' or 'archer' type for now, or we can make it dynamic based on config
-        const projectileType = this.config.id === 'orc' ? 'archer' : 'archer';
+        // For monsters, we use 'laser' for magic types, 'archer' for others
+        const projectileType = isMagic ? 'laser' : 'archer';
 
-        this.scene.projectileManager.fire(this.x, this.y, target.x, target.y, finalDmg, projectileType, false, this.targetGroup, this, null, false, null, isCritical);
+        this.scene.projectileManager.fire(this.x, this.y, target.x, target.y, finalDmg, projectileType, isMagic, this.targetGroup, this, null, false, null, isCritical);
 
         return true;
     }
@@ -512,13 +514,15 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
         // --- Centralized Kill & Loot Logic ---
         EventBus.emit(EventBus.EVENTS.MONSTER_KILLED, {
             monsterId: this.sprite.texture.key,
-            attackerId: attackerId
+            attackerId: attackerId,
+            level: this.level,
+            id: this.config.id
         });
 
         if (this.scene && this.scene.lootManager) {
             // Use container world coordinates (x, y) which are more stable during death
-            console.log(`[BaseMonster] ${this.unitName} died at (${this.x.toFixed(1)}, ${this.y.toFixed(1)}). Spawning loot.`);
-            this.scene.lootManager.spawnLoot(this.x, this.y);
+            console.log(`[BaseMonster] ${this.unitName} (Lv.${this.level}) died at (${this.x.toFixed(1)}, ${this.y.toFixed(1)}). Spawning loot.`);
+            this.scene.lootManager.spawnLoot(this.x, this.y, this.config.id);
         }
 
         // Clean up all CC visuals and timers immediately
