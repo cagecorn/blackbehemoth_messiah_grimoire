@@ -241,6 +241,10 @@ export default class UIManager {
 
         // Initial Tickets Update
         this.updateDungeonTickets();
+
+        // New: Best Round Tracking Update
+        this.updateBestRounds();
+        EventBus.on('BEST_ROUND_UPDATED', () => this.updateBestRounds());
     }
 
     showConfirm(message, onConfirm, onCancel = null) {
@@ -661,6 +665,26 @@ export default class UIManager {
                 }
             }
         });
+    }
+
+    async updateBestRounds() {
+        const dropdownItems = document.querySelectorAll('.nav-dropdown-item');
+        for (const item of dropdownItems) {
+            const dungeonType = item.dataset.dungeon;
+            if (!dungeonType) continue;
+
+            const bestRound = await DBManager.getBestRound(dungeonType);
+            if (bestRound > 0) {
+                let badge = item.querySelector('.best-round-badge');
+                if (!badge) {
+                    badge = document.createElement('span');
+                    badge.className = 'best-round-badge';
+                    // Insert before the label (the text node)
+                    item.prepend(badge);
+                }
+                badge.innerText = `🚩 R${bestRound}`;
+            }
+        }
     }
 
     /**

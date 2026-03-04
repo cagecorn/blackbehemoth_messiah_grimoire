@@ -61,16 +61,28 @@ export default class DungeonScene extends Phaser.Scene {
     init(data) {
         this.dungeonType = data?.dungeonType || 'CURSED_FOREST';
         // Reset state on every entry
-        this.currentRound = 1;
         this.isResting = false;
         this.isUltimateActive = false;
         this.isResetting = false;
+        this.isInitializing = true;
 
         // Global Heal on Scene Entry
         if (this.game.partyManager) this.game.partyManager.healAll();
     }
 
-    async create() {
+    create() {
+        console.log('DungeonScene started');
+        this.cameras.main.setBackgroundColor('#000000');
+        this.isInitializing = true;
+
+        // Create Groups immediately (Sync)
+        this.mercenaries = this.physics.add.group();
+        this.enemies = this.physics.add.group();
+
+        this.initDungeon();
+    }
+
+    async initDungeon() {
         if (this.dungeonType === 'UNDEAD_GRAVEYARD') {
             const ticket = await DBManager.getInventoryItem('emoji_ticket');
             if (!ticket || ticket.amount <= 0) {
@@ -87,8 +99,6 @@ export default class DungeonScene extends Phaser.Scene {
         if (this.game.uiManager) {
             this.game.uiManager.scene = this;
         }
-        console.log('DungeonScene started');
-        this.cameras.main.setBackgroundColor('#000000');
 
         // Enable multi-touch for pinch zoom
         this.input.addPointer(1);
@@ -97,7 +107,7 @@ export default class DungeonScene extends Phaser.Scene {
         const bgms = ['main_battle_bgm_1', 'main_battle_bgm_2', 'main_battle_bgm_3'];
         const randomBgm = Phaser.Utils.Array.GetRandom(bgms);
         if (this.sound.get(randomBgm)) {
-            // Already initialized, don't re-add unless needed, but stopAll gives fresh start
+            // Already initialized
         }
         this.sound.stopAll();
         this.bgm = this.sound.add(randomBgm, { volume: 0.3, loop: true });
@@ -107,10 +117,8 @@ export default class DungeonScene extends Phaser.Scene {
         if (this.sound.context && this.bgm.gainNode) {
             try {
                 const ctx = this.sound.context;
-
-                // 1. Bitcrusher (WaveShaper)
                 const bitCrusher = ctx.createWaveShaper();
-                const bitDepth = 4; // 4-bit crunch
+                const bitDepth = 4;
                 const step = Math.pow(0.5, bitDepth);
                 const size = 4096;
                 const curve = new Float32Array(size);
@@ -120,12 +128,10 @@ export default class DungeonScene extends Phaser.Scene {
                 }
                 bitCrusher.curve = curve;
 
-                // 2. Lowpass Filter (Lo-Fi muffled sound)
                 const lowpass = ctx.createBiquadFilter();
                 lowpass.type = 'lowpass';
                 lowpass.frequency.value = 2000;
 
-                // 3. Distortion for crunchiness
                 const distNode = ctx.createWaveShaper();
                 function makeDistortionCurve(amount) {
                     let k = typeof amount === 'number' ? amount : 50;
@@ -138,19 +144,14 @@ export default class DungeonScene extends Phaser.Scene {
                     }
                     return c;
                 }
-                distNode.curve = makeDistortionCurve(20); // Mild distortion
+                distNode.curve = makeDistortionCurve(20);
                 distNode.oversample = '4x';
 
-                // Disconnect Phaser's default routing
                 this.bgm.gainNode.disconnect();
-
-                // Route: Gain -> Bitcrusher -> Distortion -> Lowpass -> Master Destination
                 this.bgm.gainNode.connect(bitCrusher);
                 bitCrusher.connect(distNode);
                 distNode.connect(lowpass);
                 lowpass.connect(this.sound.destination);
-
-                console.log('[Audio] 8-Bit BGM Filter Activated');
             } catch (e) {
                 console.warn('[Audio] Failed to apply BGM Bitcrusher:', e);
             }
@@ -192,9 +193,7 @@ export default class DungeonScene extends Phaser.Scene {
             if (bg) console.log(`BG: Pos(${bg.x},${bg.y}), Size(${bg.displayWidth},${bg.displayHeight})`);
         };
 
-        // Physics Groups (Initialize early for Managers)
-        this.mercenaries = this.physics.add.group();
-        this.enemies = this.physics.add.group();
+        // Initialize Managers (Continued)
 
         this.fxManager = new FXManager(this);
         this.ultimateManager = new UltimateManager(this);
@@ -470,6 +469,7 @@ export default class DungeonScene extends Phaser.Scene {
 
         EventBus.on(EventBus.EVENTS.DEBUG_SWAP_CHARACTER, this.handleDebugSwap, this);
         this.isResetting = false;
+        this.isInitializing = false;
     }
 
     handleDebugSwap(payload) {
@@ -541,7 +541,7 @@ export default class DungeonScene extends Phaser.Scene {
     }
 
     update(time, delta) {
-        if (this.isUltimateActive || this.isResetting) return;
+        if (this.isInitializing || this.isUltimateActive || this.isResetting) return;
 
         // --- CHECK: Party Wipeout (Auto-Restart Loop) ---
         if (this.mercenaries && this.mercenaries.countActive(true) === 0 && !this.isResetting && !this.isResting) {
@@ -562,6 +562,14 @@ export default class DungeonScene extends Phaser.Scene {
 
                 this.currentRound++;
                 if (this.roundText) this.roundText.setText(`DUNGEON ROUND ${this.currentRound}`);
+
+                // Save Best Round
+                DBManager.saveBestRound(this.dungeonType, this.currentRound).then(isNewBest => {
+                    if (isNewBest) {
+                        EventBus.emit('BEST_ROUND_UPDATED', { dungeonType: this.dungeonType, round: this.currentRound });
+                    }
+                });
+
                 this.isResting = false;
                 this.spawnWave();
             });

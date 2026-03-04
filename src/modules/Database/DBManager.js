@@ -80,6 +80,24 @@ export default class DBManager {
         await this.db.put(storeName, { ...data, id });
     }
 
+    // --- Dungeon Progress ---
+    static async getBestRound(dungeonId) {
+        if (!this.db) await this.initDB();
+        const data = await this.db.get('settings', `best_round_${dungeonId}`);
+        return data ? data.round : 0;
+    }
+
+    static async saveBestRound(dungeonId, round) {
+        if (!this.db) await this.initDB();
+        const currentBest = await this.getBestRound(dungeonId);
+        if (round > currentBest) {
+            await this.db.put('settings', { id: `best_round_${dungeonId}`, round });
+            console.log(`[DBManager] New best round for ${dungeonId}: ${round}`);
+            return true;
+        }
+        return false;
+    }
+
     // --- Party Persistence ---
     static async saveParty(activeParty) {
         if (!this.db) await this.initDB();
