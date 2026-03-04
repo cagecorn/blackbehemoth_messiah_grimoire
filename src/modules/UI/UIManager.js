@@ -1716,9 +1716,59 @@ export default class UIManager {
         return ItemManager.getSVGFilename(key);
     }
 
-    showStatusTooltip(status, anchorEl) {
-        // ... (existing status tooltip code)
+    showStatusTooltip(status, targetEl) {
+        if (!status || !targetEl) return;
+
+        // 1. Create or reuse tooltip element
+        let tooltip = document.getElementById('status-tooltip-popup');
+        if (!tooltip) {
+            tooltip = document.createElement('div');
+            tooltip.id = 'status-tooltip-popup';
+            tooltip.className = 'status-popup-tab';
+            document.getElementById('app-container').appendChild(tooltip);
+        }
+
+        // 2. Populate content
+        tooltip.innerHTML = `
+            <div class="status-popup-header">
+                <span class="status-popup-emoji">${status.emoji || '✨'}</span>
+                <span class="status-popup-title">${status.name}</span>
+            </div>
+            <div class="status-popup-desc">${status.description}</div>
+        `;
+
+        // 3. Position tooltip
+        const rect = targetEl.getBoundingClientRect();
+        const containerRect = document.getElementById('app-container').getBoundingClientRect();
+
+        // Position above the icon by default
+        let top = (rect.top - containerRect.top) - 10;
+        let left = (rect.left - containerRect.left) + (rect.width / 2);
+
+        tooltip.style.display = 'block';
+        tooltip.style.left = `${left}px`;
+        tooltip.style.top = `${top}px`;
+        tooltip.style.transform = 'translate(-50%, -100%)'; // Center horizontally and move above
+
+        // 4. Auto-hide logic
+        const hideTooltip = (e) => {
+            if (e && e.target && (targetEl.contains(e.target) || tooltip.contains(e.target))) {
+                return; // Don't hide if clicking the icon or the tooltip itself
+            }
+            tooltip.style.display = 'none';
+            document.removeEventListener('mousedown', hideTooltip);
+            document.removeEventListener('touchstart', hideTooltip);
+        };
+
+        // Delay attaching to avoid immediate closing from the same click
+        setTimeout(() => {
+            document.addEventListener('mousedown', hideTooltip);
+            document.addEventListener('touchstart', hideTooltip);
+        }, 10);
+
+        console.log(`[UIManager] Showed status tooltip: ${status.name}`);
     }
+
 
     setupSettingsEvents() {
         if (this.btnSettings) {

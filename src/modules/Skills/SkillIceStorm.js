@@ -210,22 +210,10 @@ export default class SkillIceStorm {
                         hitTarget.applyFreeze(3000); // 3s freeze
                     }
 
-                    // Impact Shard Particles
-                    const shardCount = 6;
-                    const emitter = scene.add.particles(hitTarget.x, hitTarget.y, 'emoji_snowball', {
-                        speed: { min: 100, max: 300 },
-                        angle: { min: 0, max: 360 },
-                        scale: { start: 0.2, end: 0 },
-                        alpha: { start: 0.8, end: 0 },
-                        lifespan: 400,
-                        gravityY: 400,
-                        tint: 0xccddff,
-                        quantity: shardCount
-                    });
-                    emitter.explode(shardCount);
-                    // Single burst cleanup handled by Phaser internally if not looping,
-                    // but we'll destroy it after lifespan just to be safe.
-                    scene.time.delayedCall(500, () => emitter.destroy());
+                    // Impact Shard Particles - Using FXManager for better pooling and cleanup
+                    if (scene.fxManager && scene.fxManager.spawnElementalParticles) {
+                        scene.fxManager.spawnElementalParticles(hitTarget.x, hitTarget.y, 'ice');
+                    }
                 }
             },
             true, 'ice' // isUltimate, element

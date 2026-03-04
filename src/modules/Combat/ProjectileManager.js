@@ -206,9 +206,9 @@ export default class ProjectileManager {
                     const config = (onHitCallback && typeof onHitCallback === 'object') ? onHitCallback : {};
                     const isPiercing = config.pierceCount && config.pierceCount > 0;
 
-                    if (!isPiercing || hitCount === 0 || (projectile.currentHits >= config.pierceCount)) {
-                        this.releaseProjectile(projectile);
-                    }
+                    // Always release if it's a fixed target LINEAR move, 
+                    // unless we implement "Through-Piercing" (which this is not).
+                    this.releaseProjectile(projectile);
                 }
             });
         } else {
@@ -244,9 +244,8 @@ export default class ProjectileManager {
                     const config = (onHitCallback && typeof onHitCallback === 'object') ? onHitCallback : {};
                     const isPiercing = config.pierceCount && config.pierceCount > 0;
 
-                    if (!isPiercing || hitCount === 0 || (projectile.currentHits >= config.pierceCount)) {
-                        this.releaseProjectile(projectile);
-                    }
+                    // Always release at end of ARC move
+                    this.releaseProjectile(projectile);
                 }
             });
         }
