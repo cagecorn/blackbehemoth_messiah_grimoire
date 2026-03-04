@@ -803,16 +803,59 @@ export default class UIManager {
             console.warn('[UIManager] Error getting active mercenaries:', e);
         }
 
-        // Clean up portraits for units no longer active
-        const activeIds = activeMercs.map(m => m.id);
-        Object.keys(this.portraits).forEach(id => {
-            if (!activeIds.includes(id)) {
-                this.portraits[id].element.remove();
-                delete this.portraits[id];
-            }
-        });
+        const sceneKey = this.scene?.scene?.key || this.scene?.sys?.settings?.key;
+        const partyManager = this.scene?.game?.partyManager;
 
-        activeMercs.forEach((merc, index) => {
+        // Clean up portraits for units no longer in the conceptual party 
+        if (partyManager) {
+            const currentParty = partyManager.getActiveParty();
+            Object.keys(this.portraits).forEach(id => {
+                const p = this.portraits[id];
+                // If it's a temporary preview or part of active party, keep it. Otherwise remove.
+                if (!id.startsWith('preview-') && !currentParty.includes(p.characterId)) {
+                    p.element.remove();
+                    delete this.portraits[id];
+                }
+            });
+        } else {
+            const activeIds = activeMercs.map(m => m.id);
+            Object.keys(this.portraits).forEach(id => {
+                if (!activeIds.includes(id)) {
+                    this.portraits[id].element.remove();
+                    delete this.portraits[id];
+                }
+            });
+        }
+
+        // We will now iterate by Party Slots if in DungeonScene, otherwise by activeMercs
+        let displayList = activeMercs;
+        if (sceneKey === 'DungeonScene' && partyManager) {
+            displayList = partyManager.getActiveParty()
+                .filter(charId => charId !== null)
+                .map(charId => {
+                    // Find if unit exists in scene
+                    const unit = activeMercs.find(m => m.characterId === charId);
+                    if (unit) return unit;
+
+                    // If not found, create a "ghost" mock object for the UI
+                    const state = partyManager.getState(charId);
+                    const charConfig = Characters[charId.toUpperCase()];
+                    return {
+                        id: `dead-${charId}`,
+                        characterId: charId,
+                        unitName: charConfig?.name || charId,
+                        hp: 0,
+                        maxHp: state?.maxHp || 100,
+                        ultGauge: 0,
+                        maxUltGauge: 100,
+                        className: charConfig?.classId || 'warrior',
+                        getStatuses: () => [],
+                        isGhost: true // flag to identify this is a dead placeholder
+                    };
+                });
+        }
+
+        displayList.forEach((merc, index) => {
             if (!merc) return;
 
             const hpPercent = (merc.hp / merc.maxHp) * 100;
@@ -878,6 +921,7 @@ export default class UIManager {
                     lastHpCount: -1,
                     lastHpClass: '',
                     isDead: null,
+                    characterId: merc.characterId, // Store characterId in cache
                     dom: {
                         segments: portrait.querySelectorAll('.portrait-hp-segment'),
                         ultFill: portrait.querySelector('.portrait-ult-fill'),
@@ -898,10 +942,41 @@ export default class UIManager {
                 if (existingOverlay) existingOverlay.remove();
 
                 if (isDead) {
-                    element.style.filter = 'grayscale(85%) brightness(0.45)';
-                    const overlay = document.createElement('div');
                     overlay.className = 'portrait-dead-overlay';
-                    overlay.innerHTML = '<span class="portrait-dead-label">DEAD</span>';
+
+                    const deadLabel = document.createElement('span');
+                    deadLabel.className = 'portrait-dead-label';
+                    deadLabel.innerText = '사망';
+                    overlay.appendChild(deadLabel);
+
+                    // Add Resurrect Button if in DungeonScene
+                    const sceneKey = this.scene?.scene?.key || this.scene?.sys?.settings?.key;
+                    if (sceneKey === 'DungeonScene') {
+                        const btn = document.createElement('button');
+                        btn.className = 'portrait-resurrect-btn';
+
+                        // Get cost from scene
+                        const baseCost = 500;
+                        const costMult = this.scene.resurrectionCosts ? (this.scene.resurrectionCosts[merc.characterId] || 0) : 0;
+                        const currentCost = baseCost * Math.pow(2, costMult);
+
+                        btn.innerHTML = `
+                            <span>부활</span>
+                            <span class="portrait-resurrect-cost">${currentCost}G</span>
+                        `;
+
+                        btn.onclick = (e) => {
+                            e.stopPropagation();
+                            EventBus.emit(EventBus.EVENTS.MERCENARY_RESURRECT, {
+                                unitId: merc.id,
+                                characterId: merc.characterId,
+                                classId: merc.className,
+                                cost: currentCost
+                            });
+                        };
+                        overlay.appendChild(btn);
+                    }
+
                     element.appendChild(overlay);
                     console.log(`[UIManager] Portrait DEAD: ${merc.unitName}`);
                 } else {
@@ -984,7 +1059,7 @@ export default class UIManager {
                 cache.statusKey = statusKey;
             }
 
-            // Ensure order matches activeMercs order
+            // Ensure order matches displayList order
             if (this.portraitBar.children[index] !== element) {
                 this.portraitBar.insertBefore(element, this.portraitBar.children[index]);
             }

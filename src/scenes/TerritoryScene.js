@@ -245,19 +245,72 @@ export default class TerritoryScene extends Phaser.Scene {
 
         this.patchNotesContainer.innerHTML = `
             <div class="patch-notes-title">📋 패치 내역</div>
-            <div class="patch-notes-body">
+            <div class="patch-notes-body" style="cursor: grab;">
                 <div class="patch-notes-content">
                     <div class="patch-entry">
                         <div class="patch-date">▶ 2026-03-04</div>
                         <div class="patch-item"><span class="patch-item-icon">🐾</span>펫 시스템 추가 : 이제 자원을 자동으로 루팅합니다. 펫을 눌러보세요!</div>
                         <div class="patch-item"><span class="patch-item-icon">🔍</span>카메라 확대/축소 시스템 추가</div>
+                        <div class="patch-item"><span class="patch-item-icon">✨</span>용병 부활 시스템 추가 : 던전에서 골드를 지불하여 용병을 즉시 부활시킬 수 있습니다.</div>
+                        <div class="patch-item"><span class="patch-item-icon">🔄</span>던전 전멸 시 무한 루프 시스템 추가 : 전멸 시 1라운드부터 즉시 재시작합니다.</div>
                     </div>
                 </div>
             </div>
         `;
 
+        // --- Drag-to-Scroll Logic ---
+        const scrollBody = this.patchNotesContainer.querySelector('.patch-notes-body');
+        let isDragging = false;
+        let startY;
+        let scrollTop;
+
+        const startDragging = (e) => {
+            isDragging = true;
+            const pageY = e.pageY || (e.touches && e.touches[0].pageY);
+            startY = pageY - scrollBody.offsetTop;
+            scrollTop = scrollBody.scrollTop;
+            scrollBody.style.cursor = 'grabbing';
+        };
+
+        const stopDragging = () => {
+            isDragging = false;
+            scrollBody.style.cursor = 'grab';
+        };
+
+        const moveDragging = (e) => {
+            if (!isDragging) return;
+            // Prevent default only if we're actually dragging to allow normal interactions if needed
+            const pageY = e.pageY || (e.touches && e.touches[0].pageY);
+            const y = pageY - scrollBody.offsetTop;
+            const walk = (y - startY) * 1.5; // Scroll speed multiplier
+            scrollBody.scrollTop = scrollTop - walk;
+        };
+
+        scrollBody.addEventListener('mousedown', startDragging);
+        scrollBody.addEventListener('touchstart', startDragging, { passive: true });
+
+        // Bind to window to ensure dragging continues even if mouse leaves the container
+        const onMouseMove = (e) => moveDragging(e);
+        const onTouchMove = (e) => moveDragging(e);
+        const onMouseUp = () => stopDragging();
+        const onTouchEnd = () => stopDragging();
+
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('touchmove', onTouchMove, { passive: false });
+        window.addEventListener('mouseup', onMouseUp);
+        window.addEventListener('touchend', onTouchEnd);
+
         document.body.appendChild(this.patchNotesContainer);
-        console.log('[PatchNotes] 2026-03-04 공지사항이 출력되었습니다. (펫 시스템 & 카메라 줌)');
+
+        // Clean up window listeners on scene shutdown
+        this.events.once('shutdown', () => {
+            window.removeEventListener('mousemove', onMouseMove);
+            window.removeEventListener('touchmove', onTouchMove);
+            window.removeEventListener('mouseup', onMouseUp);
+            window.removeEventListener('touchend', onTouchEnd);
+        });
+
+        console.log('[PatchNotes] 2026-03-04 패치 내역이 업데이트되었습니다. (부활 시스템 포함)');
     }
 
     async checkPartyStatus() {
