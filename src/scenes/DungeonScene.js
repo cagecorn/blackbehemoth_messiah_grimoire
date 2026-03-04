@@ -83,393 +83,416 @@ export default class DungeonScene extends Phaser.Scene {
     }
 
     async initDungeon() {
-        if (this.dungeonType === 'UNDEAD_GRAVEYARD') {
-            const ticket = await DBManager.getInventoryItem('emoji_ticket');
-            if (!ticket || ticket.amount <= 0) {
-                if (this.game.uiManager) this.game.uiManager.showToast('입장권이 필요합니다! 🎫');
-                this.scene.start('TerritoryScene');
-                return;
-            }
-            // Deduct Ticket
-            await DBManager.saveInventoryItem('emoji_ticket', ticket.amount - 1);
-            EventBus.emit(EventBus.EVENTS.INVENTORY_UPDATED);
-            EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, `[입장] 언데드 묘지 입장권 1장을 소모했습니다. 🎫`);
-        }
-
-        if (this.game.uiManager) {
-            this.game.uiManager.scene = this;
-        }
-
-        // Enable multi-touch for pinch zoom
-        this.input.addPointer(1);
-
-        // Play Random BGM
-        const bgms = ['main_battle_bgm_1', 'main_battle_bgm_2', 'main_battle_bgm_3'];
-        const randomBgm = Phaser.Utils.Array.GetRandom(bgms);
-        if (this.sound.get(randomBgm)) {
-            // Already initialized
-        }
-        this.sound.stopAll();
-        this.bgm = this.sound.add(randomBgm, { volume: 0.3, loop: true });
-        this.bgm.play();
-
-        // --- Retro Bitcrusher & Lowpass Filter for BGM ---
-        if (this.sound.context && this.bgm.gainNode) {
-            try {
-                const ctx = this.sound.context;
-                const bitCrusher = ctx.createWaveShaper();
-                const bitDepth = 4;
-                const step = Math.pow(0.5, bitDepth);
-                const size = 4096;
-                const curve = new Float32Array(size);
-                for (let i = 0; i < size; i++) {
-                    const x = (i * 2 / size) - 1;
-                    curve[i] = Math.round(x / step) * step;
-                }
-                bitCrusher.curve = curve;
-
-                const lowpass = ctx.createBiquadFilter();
-                lowpass.type = 'lowpass';
-                lowpass.frequency.value = 2000;
-
-                const distNode = ctx.createWaveShaper();
-                function makeDistortionCurve(amount) {
-                    let k = typeof amount === 'number' ? amount : 50;
-                    let n_samples = 44100;
-                    let c = new Float32Array(n_samples);
-                    let deg = Math.PI / 180;
-                    for (let i = 0; i < n_samples; ++i) {
-                        let x = i * 2 / n_samples - 1;
-                        c[i] = (3 + k) * x * 20 * deg / (Math.PI + k * Math.abs(x));
-                    }
-                    return c;
-                }
-                distNode.curve = makeDistortionCurve(20);
-                distNode.oversample = '4x';
-
-                this.bgm.gainNode.disconnect();
-                this.bgm.gainNode.connect(bitCrusher);
-                bitCrusher.connect(distNode);
-                distNode.connect(lowpass);
-                lowpass.connect(this.sound.destination);
-            } catch (e) {
-                console.warn('[Audio] Failed to apply BGM Bitcrusher:', e);
-            }
-        }
-
-        // Initialize Managers
-        this.dungeonManager = new DungeonManager(this);
-        this.dungeonManager.generateDungeon();
-
-        // --- Layers Setup ---
-        // Create a dedicated layer for UI elements that should NOT zoom or move.
-        this.uiLayer = this.add.container(0, 0).setDepth(100000).setScrollFactor(0);
-
-        // --- UI Camera Setup (Fixed Overlay) ---
-        // This camera stays at zoom 1 and doesn't scroll.
-        this.uiCamera = this.cameras.add(0, 0, this.scale.width, this.scale.height).setName('UICamera');
-        this.uiCamera.setScroll(0, 0);
-        this.uiCamera.setZoom(1);
-        // Cameras are transparent by default unless setBackgroundColor is used.
+        // --- 1. Foundational Logic: Set Dimensions & Bounds immediately ---
+        // This prevents race conditions where physics runs with default bounds while we await tickets.
         // Background base 1536x1024 * 1.5 = 2304x1536
-        const worldWidth = this.dungeonManager.dungeonInstance.width * 32;
-        const worldHeight = this.dungeonManager.dungeonInstance.height * 32;
+        // Tiles (32px): 2304/32 = 72, 1536/32 = 48 (Defined in DungeonManager)
+        const worldWidth = 72 * 32;
+        const worldHeight = 48 * 32;
 
-        const stageConfig = StageConfigs[this.dungeonType] || StageConfigs.CURSED_FOREST;
-        this.stageManager = new StageManager(this, stageConfig);
-        this.stageManager.buildStage(worldWidth, worldHeight);
-
-        // ★ Set world & camera bounds BEFORE spawning units
         this.cameras.main.setBounds(0, 0, worldWidth, worldHeight);
         this.physics.world.setBounds(0, 0, worldWidth, worldHeight);
 
-        console.log(`[Dungeon] World Size Scaled to 1.5x: ${worldWidth}x${worldHeight}`);
-
-        // --- Global Debug helper for user ---
-        window.showWorldBounds = () => {
-            console.log(`World Bounds: 0..${worldWidth}, 0..${worldHeight}`);
-            console.log(`Camera Bounds: ${this.cameras.main._bounds.x}..${this.cameras.main._bounds.width}`);
-            const bg = this.children.list.find(c => c.texture && c.texture.key.includes('bg'));
-            if (bg) console.log(`BG: Pos(${bg.x},${bg.y}), Size(${bg.displayWidth},${bg.displayHeight})`);
-        };
-
-        // Initialize Managers (Continued)
-
-        this.fxManager = new FXManager(this);
-        this.ultimateManager = new UltimateManager(this);
-        this.aoeManager = new AoeManager(this);
-        this.lootManager = new LootManager(this);
-        this.projectileManager = new ProjectileManager(this);
-        this.particleManager = new ParticleManager(this);
-        this.buffManager = new BuffManager(this);
-        this.ccManager = new CCManager(this);
-        this.shieldManager = new ShieldManager(this);
-        this.barkManager = new BarkManager(this);
-        this.petManager = new PetManager(this);
-
-        // ⚔️ Premium Skill FX Layer (with Global Bloom)
-        // This layer hosts all magical effects, projectiles, and skill visuals.
-        // It sits above units but below the UI/HUD.
-        this.skillFxLayer = this.add.container(0, 0);
-        this.skillFxLayer.setDepth(15000); // Between units (~5000-10000) and Damage Text (~20000)
-
-        if (this.skillFxLayer.postFX && localStorage.getItem('batterySaver') !== 'true') {
-            const bloom = this.skillFxLayer.postFX.addBloom(0xffffff, 1, 1, 1.2, 3);
-            console.log('[Visuals] Skill FX Bloom Pipeline Active! ✨ (Golden Glow enabled)');
-        }
-
-        // Create a named listener for Battery Saver for easy removal
-        this.onBatterySaverToggled = (enabled) => {
-            if (this.skillFxLayer && this.skillFxLayer.postFX) {
-                if (enabled) {
-                    this.skillFxLayer.postFX.clear();
-                    console.log('[Visuals] Battery Saver ON - Removed PostFX from Skill Layer.');
-                } else {
-                    if (this.skillFxLayer.postFX.list.length === 0) {
-                        this.skillFxLayer.postFX.addBloom(0xffffff, 1, 1, 1.2, 3);
-                        console.log('[Visuals] Battery Saver OFF - Restored PostFX Bloom.');
-                    }
-                }
-            }
-        };
-        EventBus.on(EventBus.EVENTS.BATTERY_SAVER_TOGGLED, this.onBatterySaverToggled, this);
-
-        // Listen for Character Swap
-        this.handleDebugSwapListener = this.handleDebugSwap.bind(this);
-        EventBus.on(EventBus.EVENTS.DEBUG_SWAP_CHARACTER, this.handleDebugSwapListener);
-
-        // Global Combat Events for Rewards - Store as reference for cleanup
-        this.handleMonsterKilledListener = (payload) => {
-            if (this.mercenaries && this.mercenaries.active) {
-                const monsterLevel = payload.level || 1;
-                const monsterId = payload.id || '';
-
-                // Base XP Scaling: killExp * (1 + (level - 1) * 0.1)
-                // Skeletons give 1.5x more XP
-                let calculatedExp = this.killExp * (1 + (monsterLevel - 1) * 0.1);
-
-                if (monsterId.includes('skeleton')) {
-                    calculatedExp *= 1.5;
-                }
-
-                calculatedExp = Math.floor(calculatedExp);
-
-                // Ensure a minimum of killExp
-                calculatedExp = Math.max(calculatedExp, this.killExp);
-
-                this.mercenaries.getChildren().forEach(merc => {
-                    if (merc.active && merc.hp > 0) {
-                        merc.addExp(calculatedExp);
-                    }
-                });
-            }
-        };
-        EventBus.on(EventBus.EVENTS.MONSTER_KILLED, this.handleMonsterKilledListener);
-
-        // Resurrection Listener
-        this.pendingResurrections = new Set();
-        this.handleResurrectionListener = this.handleResurrection.bind(this);
-        EventBus.on(EventBus.EVENTS.MERCENARY_RESURRECT, this.handleResurrectionListener);
-
-        // Cleanup on scene shutdown - CENTRALIZED CLEANUP
-        this.events.once('shutdown', () => {
-            EventBus.off(EventBus.EVENTS.BATTERY_SAVER_TOGGLED, this.onBatterySaverToggled, this);
-            EventBus.off(EventBus.EVENTS.DEBUG_SWAP_CHARACTER, this.handleDebugSwapListener);
-            EventBus.off(EventBus.EVENTS.MONSTER_KILLED, this.handleMonsterKilledListener);
-            EventBus.off(EventBus.EVENTS.MERCENARY_RESURRECT, this.handleResurrectionListener);
-
-            if (this.fxManager) this.fxManager.destroy();
-            if (this.weatherManager) this.weatherManager.destroy();
-            if (this.ambientMoteManager) this.ambientMoteManager.destroy();
-
-            console.log('[DungeonScene] Total Shutdown: Removed EventBus listeners + Cleaned up Managers.');
-        });
-
-        // Spawn Party from PartyManager
-        const activeParty = this.game.partyManager.getActiveParty();
-        const startPos = this.dungeonManager.getPlayerStartPosition();
-
-        let playerLeader = null;
-        activeParty.forEach((charId, i) => {
-            if (!charId) return;
-
-            const charConfig = Object.values(Characters).find(c => c.id === charId);
-            if (!charConfig) return;
-
-            const x = startPos.x - (i * 40);
-            const y = startPos.y;
-            let unit = null;
-
-            if (charConfig.classId === 'warrior') {
-                unit = new Warrior(this, x, y, charConfig);
-                if (!playerLeader) {
-                    playerLeader = unit;
-                    this.player = unit;
-                }
-            } else if (charId === 'wrinkle') {
-                unit = new Wrinkle(this, x, y, playerLeader, charConfig);
-            } else if (charId === 'nickle') {
-                unit = new Nickle(this, x, y, playerLeader, charConfig);
-            } else if (charConfig.classId === 'archer') {
-                unit = new Archer(this, x, y, playerLeader, charConfig);
-            } else if (charConfig.classId === 'healer') {
-                unit = new Healer(this, x, y, playerLeader, charConfig);
-            } else if (charConfig.classId === 'wizard') {
-                if (charId === 'bao') {
-                    unit = new Bao(this, x, y, playerLeader, charConfig);
-                } else if (charId === 'aina') {
-                    unit = new Aina(this, x, y, playerLeader, charConfig);
-                } else if (charId === 'veve') {
-                    unit = new Veve(this, x, y, playerLeader, charConfig);
-                } else {
-                    unit = new Wizard(this, x, y, playerLeader, charConfig);
-                }
-            } else if (charConfig.classId === 'bard') {
-                if (charId === 'nana') {
-                    unit = new Nana(this, x, y, playerLeader, charConfig);
-                } else if (charId === 'noah') {
-                    unit = new Noah(this, x, y, playerLeader, charConfig);
-                } else if (charId === 'noel') {
-                    unit = new Noel(this, x, y, playerLeader, charConfig);
-                } else {
-                    unit = new Bard(this, x, y, playerLeader, charConfig);
-                }
-            }
-
-            if (unit) {
-                this.mercenaries.add(unit);
-            }
-        });
-
-        // Initialize Camera Target (follows centroid of party)
-        this.cameraTarget = this.add.container(startPos.x, startPos.y);
-
-        // Initialize Dynamic Camera Manager
+        // --- 2. Emergency Camera Setup: Enable basic zoom/controls immediately ---
+        // Create a temporary camera target at center so user can zoom/pan during ticket check
+        this.cameraTarget = this.add.container(worldWidth / 2, worldHeight / 2);
         this.dynamicCamera = new DynamicCameraManager(this, this.cameras.main);
         this.dynamicCamera.setTarget(this.cameraTarget);
 
-        // If no leader was found (e.g. no warrior selected), just pick the first one
-        if (!this.player && this.mercenaries.countActive(true) > 0) {
-            this.player = this.mercenaries.getChildren()[0];
-        }
+        console.log(`[Dungeon] Initializing World Bounds: ${worldWidth}x${worldHeight}`);
 
-        // Initialize Pet after party spawn
-        this.initPet();
+        try {
+            if (this.dungeonType === 'UNDEAD_GRAVEYARD') {
+                const ticket = await DBManager.getInventoryItem('emoji_ticket');
+                if (!ticket || ticket.amount <= 0) {
+                    if (this.game.uiManager) this.game.uiManager.showToast('입장권이 필요합니다! 🎫');
+                    this.scene.start('TerritoryScene');
+                    return;
+                }
+                // Deduct Ticket
+                await DBManager.saveInventoryItem('emoji_ticket', ticket.amount - 1);
+                EventBus.emit(EventBus.EVENTS.INVENTORY_UPDATED);
+                EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, `[입장] 언데드 묘지 입장권 1장을 소모했습니다. 🎫`);
+            }
 
-        // First wave of monsters (Now that player is spawned)
-        this.spawnWave();
+            if (this.game.uiManager) {
+                this.game.uiManager.scene = this;
+            }
 
-        // Initialize Resurrection Costs (Reset on Scene Start or Party Wipe)
-        this.resurrectionCosts = {};
+            // Enable multi-touch for pinch zoom
+            this.input.addPointer(1);
 
-        // Listen for Resurrection Clicked in HUD
-        EventBus.on(EventBus.EVENTS.MERCENARY_RESURRECT, this.handleResurrection, this);
+            // Play Random BGM
+            const bgms = ['main_battle_bgm_1', 'main_battle_bgm_2', 'main_battle_bgm_3'];
+            const randomBgm = Phaser.Utils.Array.GetRandom(bgms);
+            if (this.sound.get(randomBgm)) {
+                // Already initialized
+            }
+            this.sound.stopAll();
+            this.bgm = this.sound.add(randomBgm, { volume: 0.3, loop: true });
+            this.bgm.play();
 
-        this.events.once('shutdown', () => {
-            EventBus.off(EventBus.EVENTS.MERCENARY_RESURRECT, this.handleResurrection, this);
-        });
+            // --- Retro Bitcrusher & Lowpass Filter for BGM ---
+            if (this.sound.context && this.bgm.gainNode) {
+                try {
+                    const ctx = this.sound.context;
+                    const bitCrusher = ctx.createWaveShaper();
+                    const bitDepth = 4;
+                    const step = Math.pow(0.5, bitDepth);
+                    const size = 4096;
+                    const curve = new Float32Array(size);
+                    for (let i = 0; i < size; i++) {
+                        const x = (i * 2 / size) - 1;
+                        curve[i] = Math.round(x / step) * step;
+                    }
+                    bitCrusher.curve = curve;
 
-        // Sync UI after spawn
-        this.time.delayedCall(500, () => {
-            EventBus.emit(EventBus.EVENTS.PARTY_DEPLOYED, {
-                scene: this,
-                mercenaries: this.mercenaries.getChildren()
-                    .filter(m => !m.config.hideInUI)
-                    .map(m => m.getState())
+                    const lowpass = ctx.createBiquadFilter();
+                    lowpass.type = 'lowpass';
+                    lowpass.frequency.value = 2000;
+
+                    const distNode = ctx.createWaveShaper();
+                    function makeDistortionCurve(amount) {
+                        let k = typeof amount === 'number' ? amount : 50;
+                        let n_samples = 44100;
+                        let c = new Float32Array(n_samples);
+                        let deg = Math.PI / 180;
+                        for (let i = 0; i < n_samples; ++i) {
+                            let x = i * 2 / n_samples - 1;
+                            c[i] = (3 + k) * x * 20 * deg / (Math.PI + k * Math.abs(x));
+                        }
+                        return c;
+                    }
+                    distNode.curve = makeDistortionCurve(20);
+                    distNode.oversample = '4x';
+
+                    this.bgm.gainNode.disconnect();
+                    this.bgm.gainNode.connect(bitCrusher);
+                    bitCrusher.connect(distNode);
+                    distNode.connect(lowpass);
+                    lowpass.connect(this.sound.destination);
+                } catch (e) {
+                    console.warn('[Audio] Failed to apply BGM Bitcrusher:', e);
+                }
+            }
+
+            // Initialize Managers
+            this.dungeonManager = new DungeonManager(this);
+            this.dungeonManager.generateDungeon();
+
+            // --- Layers Setup ---
+            // Create a dedicated layer for UI elements that should NOT zoom or move.
+            this.uiLayer = this.add.container(0, 0).setDepth(100000).setScrollFactor(0);
+
+            // --- UI Camera Setup (Fixed Overlay) ---
+            // This camera stays at zoom 1 and doesn't scroll.
+            this.uiCamera = this.cameras.add(0, 0, this.scale.width, this.scale.height).setName('UICamera');
+            this.uiCamera.setScroll(0, 0);
+            this.uiCamera.setZoom(1);
+
+            const stageConfig = StageConfigs[this.dungeonType] || StageConfigs.CURSED_FOREST;
+            this.stageManager = new StageManager(this, stageConfig);
+            this.stageManager.buildStage(worldWidth, worldHeight);
+
+            // Bounds are already set at the start, but we re-verify for consistency with dynamically generated dungeons
+            const finalWidth = this.dungeonManager.dungeonInstance.width * 32;
+            const finalHeight = this.dungeonManager.dungeonInstance.height * 32;
+            this.cameras.main.setBounds(0, 0, finalWidth, finalHeight);
+            this.physics.world.setBounds(0, 0, finalWidth, finalHeight);
+
+            console.log(`[Dungeon] Stage Built: ${finalWidth}x${finalHeight}`);
+
+            // --- Global Debug helper for user ---
+            window.showWorldBounds = () => {
+                console.log(`World Bounds: 0..${worldWidth}, 0..${worldHeight}`);
+                console.log(`Camera Bounds: ${this.cameras.main._bounds.x}..${this.cameras.main._bounds.width}`);
+                const bg = this.children.list.find(c => c.texture && c.texture.key.includes('bg'));
+                if (bg) console.log(`BG: Pos(${bg.x},${bg.y}), Size(${bg.displayWidth},${bg.displayHeight})`);
+            };
+
+            // Initialize Managers (Continued)
+
+            this.fxManager = new FXManager(this);
+            this.ultimateManager = new UltimateManager(this);
+            this.aoeManager = new AoeManager(this);
+            this.lootManager = new LootManager(this);
+            this.projectileManager = new ProjectileManager(this);
+            this.particleManager = new ParticleManager(this);
+            this.buffManager = new BuffManager(this);
+            this.ccManager = new CCManager(this);
+            this.shieldManager = new ShieldManager(this);
+            this.barkManager = new BarkManager(this);
+            this.petManager = new PetManager(this);
+
+            // ⚔️ Premium Skill FX Layer (with Global Bloom)
+            // This layer hosts all magical effects, projectiles, and skill visuals.
+            // It sits above units but below the UI/HUD.
+            this.skillFxLayer = this.add.container(0, 0);
+            this.skillFxLayer.setDepth(15000); // Between units (~5000-10000) and Damage Text (~20000)
+
+            if (this.skillFxLayer.postFX && localStorage.getItem('batterySaver') !== 'true') {
+                const bloom = this.skillFxLayer.postFX.addBloom(0xffffff, 1, 1, 1.2, 3);
+                console.log('[Visuals] Skill FX Bloom Pipeline Active! ✨ (Golden Glow enabled)');
+            }
+
+            // Create a named listener for Battery Saver for easy removal
+            this.onBatterySaverToggled = (enabled) => {
+                if (this.skillFxLayer && this.skillFxLayer.postFX) {
+                    if (enabled) {
+                        this.skillFxLayer.postFX.clear();
+                        console.log('[Visuals] Battery Saver ON - Removed PostFX from Skill Layer.');
+                    } else {
+                        if (this.skillFxLayer.postFX.list.length === 0) {
+                            this.skillFxLayer.postFX.addBloom(0xffffff, 1, 1, 1.2, 3);
+                            console.log('[Visuals] Battery Saver OFF - Restored PostFX Bloom.');
+                        }
+                    }
+                }
+            };
+            EventBus.on(EventBus.EVENTS.BATTERY_SAVER_TOGGLED, this.onBatterySaverToggled, this);
+
+            // Listen for Character Swap
+            this.handleDebugSwapListener = this.handleDebugSwap.bind(this);
+            EventBus.on(EventBus.EVENTS.DEBUG_SWAP_CHARACTER, this.handleDebugSwapListener);
+
+            // Global Combat Events for Rewards - Store as reference for cleanup
+            this.handleMonsterKilledListener = (payload) => {
+                if (this.mercenaries && this.mercenaries.active) {
+                    const monsterLevel = payload.level || 1;
+                    const monsterId = payload.id || '';
+
+                    // Base XP Scaling: killExp * (1 + (level - 1) * 0.1)
+                    // Skeletons give 1.5x more XP
+                    let calculatedExp = this.killExp * (1 + (monsterLevel - 1) * 0.1);
+
+                    if (monsterId.includes('skeleton')) {
+                        calculatedExp *= 1.5;
+                    }
+
+                    calculatedExp = Math.floor(calculatedExp);
+
+                    // Ensure a minimum of killExp
+                    calculatedExp = Math.max(calculatedExp, this.killExp);
+
+                    this.mercenaries.getChildren().forEach(merc => {
+                        if (merc.active && merc.hp > 0) {
+                            merc.addExp(calculatedExp);
+                        }
+                    });
+                }
+            };
+            EventBus.on(EventBus.EVENTS.MONSTER_KILLED, this.handleMonsterKilledListener);
+
+            // Resurrection Listener
+            this.pendingResurrections = new Set();
+            this.handleResurrectionListener = this.handleResurrection.bind(this);
+            EventBus.on(EventBus.EVENTS.MERCENARY_RESURRECT, this.handleResurrectionListener);
+
+            // Cleanup on scene shutdown - CENTRALIZED CLEANUP
+            this.events.once('shutdown', () => {
+                EventBus.off(EventBus.EVENTS.BATTERY_SAVER_TOGGLED, this.onBatterySaverToggled, this);
+                EventBus.off(EventBus.EVENTS.DEBUG_SWAP_CHARACTER, this.handleDebugSwapListener);
+                EventBus.off(EventBus.EVENTS.MONSTER_KILLED, this.handleMonsterKilledListener);
+                EventBus.off(EventBus.EVENTS.MERCENARY_RESURRECT, this.handleResurrectionListener);
+
+                if (this.fxManager) this.fxManager.destroy();
+                if (this.weatherManager) this.weatherManager.destroy();
+                if (this.ambientMoteManager) this.ambientMoteManager.destroy();
+
+                console.log('[DungeonScene] Total Shutdown: Removed EventBus listeners + Cleaned up Managers.');
             });
-        });
 
-        // ESC to return (or close popups)
-        this.input.keyboard.on('keydown-ESC', () => {
-            // Access UIManager via the game object (assuming it's attached there or globally accessible)
-            if (this.sys.game.uiManager && this.sys.game.uiManager.popupOverlay && this.sys.game.uiManager.popupOverlay.style.display === 'flex') {
-                this.sys.game.uiManager.hidePopup();
-            } else {
-                this.scene.start('TerritoryScene');
+            // Spawn Party from PartyManager
+            const activeParty = this.game.partyManager.getActiveParty();
+            const startPos = this.dungeonManager.getPlayerStartPosition();
+
+            let playerLeader = null;
+            activeParty.forEach((charId, i) => {
+                if (!charId) return;
+
+                const charConfig = Object.values(Characters).find(c => c.id === charId);
+                if (!charConfig) return;
+
+                const x = startPos.x - (i * 40);
+                const y = startPos.y;
+                let unit = null;
+
+                if (charConfig.classId === 'warrior') {
+                    unit = new Warrior(this, x, y, charConfig);
+                    if (!playerLeader) {
+                        playerLeader = unit;
+                        this.player = unit;
+                    }
+                } else if (charId === 'wrinkle') {
+                    unit = new Wrinkle(this, x, y, playerLeader, charConfig);
+                } else if (charId === 'nickle') {
+                    unit = new Nickle(this, x, y, playerLeader, charConfig);
+                } else if (charConfig.classId === 'archer') {
+                    unit = new Archer(this, x, y, playerLeader, charConfig);
+                } else if (charConfig.classId === 'healer') {
+                    unit = new Healer(this, x, y, playerLeader, charConfig);
+                } else if (charConfig.classId === 'wizard') {
+                    if (charId === 'bao') {
+                        unit = new Bao(this, x, y, playerLeader, charConfig);
+                    } else if (charId === 'aina') {
+                        unit = new Aina(this, x, y, playerLeader, charConfig);
+                    } else if (charId === 'veve') {
+                        unit = new Veve(this, x, y, playerLeader, charConfig);
+                    } else {
+                        unit = new Wizard(this, x, y, playerLeader, charConfig);
+                    }
+                } else if (charConfig.classId === 'bard') {
+                    if (charId === 'nana') {
+                        unit = new Nana(this, x, y, playerLeader, charConfig);
+                    } else if (charId === 'noah') {
+                        unit = new Noah(this, x, y, playerLeader, charConfig);
+                    } else if (charId === 'noel') {
+                        unit = new Noel(this, x, y, playerLeader, charConfig);
+                    } else {
+                        unit = new Bard(this, x, y, playerLeader, charConfig);
+                    }
+                }
+
+                if (unit) {
+                    this.mercenaries.add(unit);
+                }
+            });
+
+            // Initialize Camera Target (follows centroid of party if units exist)
+            if (this.mercenaries.countActive(true) > 0) {
+                this.cameraTarget.setPosition(startPos.x, startPos.y);
             }
-        });
 
-        // UI Indicators
-        this.roundText = this.add.text(this.cameras.main.width / 2, 55, `DUNGEON ROUND ${this.currentRound}`, {
-            fontSize: '24px',
-            fill: '#fff',
-            fontStyle: 'bold',
-            stroke: '#000',
-            strokeThickness: 5
-        }).setOrigin(0.5);
-        this.uiLayer.add(this.roundText);
-
-        // --- Camera Rule: UI Visibility ---
-        // 1. Main camera ignores the UI layer completely
-        this.cameras.main.ignore(this.uiLayer);
-
-        // 2. UI camera ignores EVERYTHING except the UI layer
-        // First, ignore all existing children
-        this.children.list.forEach(child => {
-            if (child !== this.uiLayer) this.uiCamera.ignore(child);
-        });
-
-        // Second, dynamically ignore any future objects added to the scene
-        this.events.on('addedtogame', (child) => {
-            if (this.uiCamera && child !== this.uiLayer) {
-                this.uiCamera.ignore(child);
+            // If no leader was found (e.g. no warrior selected), just pick the first one
+            if (!this.player && this.mercenaries.countActive(true) > 0) {
+                this.player = this.mercenaries.getChildren()[0];
             }
-        });
 
-        // 1. Mercenaries collect Loot
-        this.physics.add.overlap(this.mercenaries, this.lootManager.lootGroup, (mercenary, item) => {
-            this.lootManager.collectLoot(mercenary, item);
-        });
+            // Initialize Pet after party spawn
+            this.initPet();
 
-        // 1.1 Pet collects Loot (Uses group to prevent null crash)
-        this.physics.add.overlap(this.petManager.pets, this.lootManager.lootGroup, (pet, item) => {
-            this.lootManager.collectLoot(pet, item);
-        });
+            // First wave of monsters (Now that player is spawned)
+            this.spawnWave();
 
-        // 2. Unit Separation (Repulsion Logic to prevent stacking/spinning)
-        this.physics.add.overlap(this.mercenaries, this.mercenaries, (u1, u2) => {
-            if (u1 !== u2) SeparationManager.applyRepulsion(u1, u2, 40);
-        });
+            // Initialize Resurrection Costs (Reset on Scene Start or Party Wipe)
+            this.resurrectionCosts = {};
 
-        this.physics.add.overlap(this.enemies, this.enemies, (u1, u2) => {
-            if (u1 !== u2) SeparationManager.applyRepulsion(u1, u2, 40);
-        });
+            // Listen for Resurrection Clicked in HUD
+            EventBus.on(EventBus.EVENTS.MERCENARY_RESURRECT, this.handleResurrection, this);
 
-        this.physics.add.overlap(this.mercenaries, this.enemies, (u1, u2) => {
-            SeparationManager.applyRepulsion(u1, u2, 60); // Stronger repulsion for enemies
-        });
+            this.events.once('shutdown', () => {
+                EventBus.off(EventBus.EVENTS.MERCENARY_RESURRECT, this.handleResurrection, this);
+            });
 
-        // 3. Wall Collisions
-        if (this.dungeonManager && this.dungeonManager.renderer && this.dungeonManager.renderer.wallLayer) {
-            this.physics.add.collider(this.mercenaries, this.dungeonManager.renderer.wallLayer);
-            this.physics.add.collider(this.enemies, this.dungeonManager.renderer.wallLayer);
+            // Sync UI after spawn
+            this.time.delayedCall(500, () => {
+                EventBus.emit(EventBus.EVENTS.PARTY_DEPLOYED, {
+                    scene: this,
+                    mercenaries: this.mercenaries.getChildren()
+                        .filter(m => !m.config.hideInUI)
+                        .map(m => m.getState())
+                });
+            });
+
+            // ESC to return (or close popups)
+            this.input.keyboard.on('keydown-ESC', () => {
+                // Access UIManager via the game object (assuming it's attached there or globally accessible)
+                if (this.sys.game.uiManager && this.sys.game.uiManager.popupOverlay && this.sys.game.uiManager.popupOverlay.style.display === 'flex') {
+                    this.sys.game.uiManager.hidePopup();
+                } else {
+                    this.scene.start('TerritoryScene');
+                }
+            });
+
+            // UI Indicators
+            this.roundText = this.add.text(this.cameras.main.width / 2, 55, `DUNGEON ROUND ${this.currentRound}`, {
+                fontSize: '24px',
+                fill: '#fff',
+                fontStyle: 'bold',
+                stroke: '#000',
+                strokeThickness: 5
+            }).setOrigin(0.5);
+            this.uiLayer.add(this.roundText);
+
+            // --- Camera Rule: UI Visibility ---
+            // 1. Main camera ignores the UI layer completely
+            this.cameras.main.ignore(this.uiLayer);
+
+            // 2. UI camera ignores EVERYTHING except the UI layer
+            // First, ignore all existing children
+            this.children.list.forEach(child => {
+                if (child !== this.uiLayer) this.uiCamera.ignore(child);
+            });
+
+            // Second, dynamically ignore any future objects added to the scene
+            this.events.on('addedtogame', (child) => {
+                if (this.uiCamera && child !== this.uiLayer) {
+                    this.uiCamera.ignore(child);
+                }
+            });
+
+            // 1. Mercenaries collect Loot
+            this.physics.add.overlap(this.mercenaries, this.lootManager.lootGroup, (mercenary, item) => {
+                this.lootManager.collectLoot(mercenary, item);
+            });
+
+            // 1.1 Pet collects Loot (Uses group to prevent null crash)
+            this.physics.add.overlap(this.petManager.pets, this.lootManager.lootGroup, (pet, item) => {
+                this.lootManager.collectLoot(pet, item);
+            });
+
+            // 2. Unit Separation (Repulsion Logic to prevent stacking/spinning)
+            this.physics.add.overlap(this.mercenaries, this.mercenaries, (u1, u2) => {
+                if (u1 !== u2) SeparationManager.applyRepulsion(u1, u2, 40);
+            });
+
+            this.physics.add.overlap(this.enemies, this.enemies, (u1, u2) => {
+                if (u1 !== u2) SeparationManager.applyRepulsion(u1, u2, 40);
+            });
+
+            this.physics.add.overlap(this.mercenaries, this.enemies, (u1, u2) => {
+                SeparationManager.applyRepulsion(u1, u2, 60); // Stronger repulsion for enemies
+            });
+
+            // 3. Wall Collisions
+            if (this.dungeonManager && this.dungeonManager.renderer && this.dungeonManager.renderer.wallLayer) {
+                this.physics.add.collider(this.mercenaries, this.dungeonManager.renderer.wallLayer);
+                this.physics.add.collider(this.enemies, this.dungeonManager.renderer.wallLayer);
+            }
+
+            // Sync UI with initial character names after a short delay to ensure UI is ready
+            this.time.delayedCall(500, () => {
+                // We no longer trigger hardcoded debug swaps here
+            });
+
+            // --- 'Fake Aesthetic'
+
+            // ── 날씨 시스템 초기화 ────────────────────────────────
+            this.weatherManager = new WeatherManager(this);
+            // 씬 로드 후 2초 뒤 자연스럽게 비 시작 (현재 비활성화 처리)
+            // this.time.delayedCall(2000, () => {
+            //    this.weatherManager.setWeather('rain', { fadeDuration: 3000 });
+            // });
+
+            // ── 환경 부유 먼지 (3레이어 Parallax) ──
+            this.ambientMoteManager = new AmbientMoteManager(this);
+
+            this.setupFakeAestheticOverlays();
+
+            // 🎬 Start Intro Blur Effect
+            this.applyIntroBlur();
+
+            EventBus.on(EventBus.EVENTS.DEBUG_SWAP_CHARACTER, this.handleDebugSwap, this);
+            this.isResetting = false;
+
+        } catch (error) {
+            console.error('[Dungeon] Critical Initialization Error:', error);
+            if (this.game.uiManager) this.game.uiManager.showToast('초기화 중 오류가 발생했습니다.');
+            this.scene.start('TerritoryScene');
+        } finally {
+            this.isInitializing = false;
+            console.log(`[Dungeon] Initialization Complete. Stance: READY.`);
         }
-
-        // Sync UI with initial character names after a short delay to ensure UI is ready
-        this.time.delayedCall(500, () => {
-            // We no longer trigger hardcoded debug swaps here
-        });
-
-        // --- 'Fake Aesthetic'
-
-        // ── 날씨 시스템 초기화 ────────────────────────────────
-        this.weatherManager = new WeatherManager(this);
-        // 씬 로드 후 2초 뒤 자연스럽게 비 시작 (현재 비활성화 처리)
-        // this.time.delayedCall(2000, () => {
-        //    this.weatherManager.setWeather('rain', { fadeDuration: 3000 });
-        // });
-
-        // ── 환경 부유 먼지 (3레이어 Parallax) ──
-        this.ambientMoteManager = new AmbientMoteManager(this);
-
-        this.setupFakeAestheticOverlays();
-
-        // 🎬 Start Intro Blur Effect
-        this.applyIntroBlur();
-
-        EventBus.on(EventBus.EVENTS.DEBUG_SWAP_CHARACTER, this.handleDebugSwap, this);
-        this.isResetting = false;
-        this.isInitializing = false;
     }
 
     handleDebugSwap(payload) {
@@ -541,6 +564,18 @@ export default class DungeonScene extends Phaser.Scene {
     }
 
     update(time, delta) {
+        // --- 1. Essential Background Updates (Run even during initialization) ---
+        if (this.dynamicCamera) {
+            this.dynamicCamera.update(time, delta);
+        }
+        if (this.weatherManager) {
+            this.weatherManager.update(time, delta);
+        }
+        if (this.ambientMoteManager) {
+            this.ambientMoteManager.update();
+        }
+
+        // --- 2. Gameplay Guard ---
         if (this.isInitializing || this.isUltimateActive || this.isResetting) return;
 
         // --- CHECK: Party Wipeout (Auto-Restart Loop) ---
@@ -651,17 +686,21 @@ export default class DungeonScene extends Phaser.Scene {
 
         this.updateCameraFollow();
 
-        if (this.dynamicCamera) {
-            this.dynamicCamera.update(time, delta);
+        // --- Debug: Boundary Check (Dev Only) ---
+        if (this.currentRound % 5 === 0 && Math.random() < 0.01) { // Occasional check
+            const allUnits = this.mercenaries.getChildren().concat(this.enemies.getChildren());
+            allUnits.forEach(u => {
+                const bounds = this.physics?.world?.bounds;
+                if (u.active && bounds && (u.x < 0 || u.x > bounds.width || u.y < 0 || u.y > bounds.height)) {
+                    console.warn(`[Dungeon] Unit ${u.unitName} (${u.id}) detected OUT OF BOUNDS at (${u.x.toFixed(0)}, ${u.y.toFixed(0)})! Resetting...`);
+                    u.x = Phaser.Math.Clamp(u.x, 100, bounds.width - 100);
+                    u.y = Phaser.Math.Clamp(u.y, 100, bounds.height - 100);
+                }
+            });
         }
-        if (this.weatherManager) {
-            this.weatherManager.update(time, delta);
-        }
+
         if (this.stageManager) {
             this.stageManager.update(time, delta);
-        }
-        if (this.ambientMoteManager) {
-            this.ambientMoteManager.update();
         }
     }
 
