@@ -1,11 +1,57 @@
 import Phaser from 'phaser';
 import EventBus from '../modules/Events/EventBus.js';
 
+// ============================================================
+// Banner definitions — easy to extend by adding more entries
+// ============================================================
+const TERRITORY_BANNERS = [
+    {
+        id: 'companion',
+        label: '용병 도감',
+        sublabel: 'ROSTER',
+        cutscene: 'assets/characters/party/king_cutscene.png',
+        accentColor: '#c0843a',
+        action: null, // 기능 미정
+    },
+    {
+        id: 'shop',
+        label: '상점',
+        sublabel: 'SHOP',
+        cutscene: 'assets/characters/party/lute_cutscene.png',
+        accentColor: '#3a7fc0',
+        action: null,
+    },
+    {
+        id: 'equipment',
+        label: '장비창',
+        sublabel: 'EQUIPMENT',
+        cutscene: 'assets/characters/party/aren_cutscene.png',
+        accentColor: '#7a3ac0',
+        action: null,
+    },
+    {
+        id: 'pet',
+        label: '펫 보관함',
+        sublabel: 'PETS',
+        cutscene: 'assets/characters/party/nana_cutscene.png',
+        accentColor: '#3ac06e',
+        action: null,
+    },
+    {
+        id: 'achievement',
+        label: '업적',
+        sublabel: 'ACHIEVEMENTS',
+        cutscene: 'assets/characters/party/silvi_cutscene.png',
+        accentColor: '#c03a3a',
+        action: null,
+    },
+];
+
 export default class TerritoryScene extends Phaser.Scene {
     constructor() {
         super('TerritoryScene');
-        this.partyOverlay = null;
         this.navContainer = null;
+        this.patchNotesContainer = null;
     }
 
     create() {
@@ -19,203 +65,84 @@ export default class TerritoryScene extends Phaser.Scene {
         this.bgm = this.sound.add('territory_bgm', { volume: 0.4, loop: true });
         this.bgm.play();
 
-        // Background
-        const bg = this.add.image(0, 0, 'bg_territory').setOrigin(0, 0);
-        bg.setDisplaySize(width, height);
+        // Solid dark background (canvas) — banners cover the viewport via DOM
+        this.add.rectangle(0, 0, width, height, 0x0a0506).setOrigin(0, 0);
 
-        // Logo & Title
-        const title = this.add.image(width / 2, height * 0.13, 'title_icon').setOrigin(0.5);
-        const logo = this.add.image(width / 2, height * 0.25, 'logo_icon').setOrigin(0.5);
-
-        // Animate both for a nice premium feel
-        title.setAlpha(0).setScale(0.7);
-        logo.setAlpha(0).setScale(0.8);
-
-        this.tweens.add({
-            targets: [title, logo],
-            alpha: 1,
-            scale: 1,
-            duration: 1200,
-            ease: 'Back.easeOut',
-            delay: (target, key, index) => index * 300 // Stagger them
-        });
-
-        // [DOM UI Wrapper]
-        this.createDOMNavigation();
-        this.createPatchNotes();
-
-        // Initialize Party Selection if not set (이제 자동 생성 안 함, 유저가 직접 아이콘을 눌러야 함)
-        // this.checkPartyStatus();
-
+        // Slight sparkle for depth
         this.createSparkleParticles();
 
-        // Force UI sync to hide portrait bar
+        // DOM layers
+        this.createBannerList();
+        this.createPatchNotes();
+
+        // Suppress portrait bar
         this.events.once('update', () => {
-            EventBus.emit('PARTY_DEPLOYED', {
-                scene: this,
-                mercenaries: []
-            });
+            EventBus.emit('PARTY_DEPLOYED', { scene: this, mercenaries: [] });
         });
+
+        console.log('[TerritoryScene] 영지 씬 생성 완료 — 키치 배너 레이아웃');
     }
 
+    // ─── Sparkle particles (same as before) ──────────────────────────────────
     createSparkleParticles() {
         const particles = this.add.particles(0, 0, 'emoji_sparkles', {
             x: { min: 0, max: this.cameras.main.width },
             y: { min: 0, max: this.cameras.main.height },
             lifespan: { min: 2000, max: 4000 },
-            speedY: { min: -10, max: -30 }, // Drift upwards slowly
-            speedX: { min: -10, max: 10 },  // Slight horizontal drift
+            speedY: { min: -10, max: -30 },
+            speedX: { min: -10, max: 10 },
             scale: { start: 0.1, end: 0.8 },
             alpha: {
                 onEmit: () => 0,
                 onUpdate: (particle, key, t) => {
-                    // Fast fade in for 20%, slow fade out for remaining 80%
                     if (t < 0.2) return t * 5;
                     return 1 - ((t - 0.2) / 0.8);
                 }
             },
             blendMode: 'ADD',
-            frequency: 300, // Spawn a new particle every 300ms
-            tint: 0xffffff  // White sparkles
+            frequency: 300,
+            tint: 0xffffff
         });
 
-        // Effect for Sparkles
         if (particles.postFX) {
             particles.postFX.addBlur(1, 1, 1);
             particles.postFX.addGlow(0xffffff, 2.5, 0, false, 0.1, 10);
         }
-
-        // Add a secondary subtle glowing orb effect
-        const orbs = this.add.particles(0, 0, 'emoji_crystal_ball', {
-            x: { min: 0, max: this.cameras.main.width },
-            y: { min: 0, max: this.cameras.main.height },
-            lifespan: { min: 4000, max: 8000 },
-            speedY: { min: -5, max: -15 },
-            speedX: { min: -20, max: 20 },
-            scale: { start: 0.05, end: 0.3 },
-            alpha: {
-                onEmit: () => 0,
-                onUpdate: (particle, key, t) => {
-                    // Slower fade in, smooth fade out, max opacity 0.4
-                    return Math.sin(t * Math.PI) * 0.4;
-                }
-            },
-            blendMode: 'SCREEN',
-            frequency: 800,
-            tint: 0xddffff // Slight cyan tint for magical feel
-        });
-
-        // Effect for Orbs
-        if (orbs.postFX) {
-            orbs.postFX.addBlur(2, 1, 1);
-            orbs.postFX.addGlow(0xddffff, 3.0, 0, false, 0.1, 12);
-        }
     }
 
-    createDOMNavigation() {
+    // ─── Kitsch Banner List ───────────────────────────────────────────────────
+    createBannerList() {
         if (this.navContainer) this.navContainer.remove();
 
-        this.navContainer = document.createElement('div');
-        this.navContainer.className = 'territory-nav-container';
-        this.navContainer.style.cssText = `
-            position: absolute;
-            top: 55%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            grid-template-rows: repeat(3, 1fr);
-            gap: 15px;
-            z-index: 1000;
-            width: min(90vw, 420px);
-            aspect-ratio: 1 / 1;
-            pointer-events: none;
+        const wrap = document.createElement('div');
+        wrap.id = 'territory-banner-wrap';
+        wrap.innerHTML = `
+            <div id="territory-banner-inner">
+                ${TERRITORY_BANNERS.map((b, i) => this._buildBannerHTML(b, i)).join('')}
+            </div>
         `;
 
-        const handleSceneChange = (targetScene) => {
-            const combatScenes = ['DungeonScene', 'ArenaScene', 'RaidScene'];
-            if (combatScenes.includes(targetScene)) {
-                const partyManager = this.game.partyManager;
-                if (partyManager && !partyManager.isPartyFull()) {
-                    if (this.game.uiManager) {
-                        this.game.uiManager.showToast("6명의 용병을 편성해주세요");
-                        this.game.uiManager.showPartyFormation();
-                    }
-                    return;
-                }
-            }
+        const container = document.getElementById('app-container') || document.body;
+        container.appendChild(wrap);
+        this.navContainer = wrap;
 
-            if (this.navContainer) this.navContainer.remove();
-            this.navContainer = null;
-            this.scene.start(targetScene);
-        };
-
-        const buttons = [
-            // Row 1
-            { id: 'gacha', icon: 'gacha_icon.png', label: '용병 뽑기', action: () => handleSceneChange('GachaScene') },
-            { id: 'party', icon: 'party_management_icon.png', label: '파티 편성', action: () => this.showPartySelection() },
-            null,
-            // Row 2
-            { id: 'dungeon', icon: 'dungeon_icon.png', label: '던전 입장', action: () => handleSceneChange('DungeonScene') },
-            { id: 'arena', icon: 'arena_icon.png', label: '아레나 입장', action: () => handleSceneChange('ArenaScene') },
-            { id: 'raid', icon: 'raid_icon.png', label: '레이드 입장', action: () => handleSceneChange('RaidScene') },
-            // Row 3
-            null, null, null
-        ];
-
-        buttons.forEach((btn, index) => {
-            const cell = document.createElement('div');
-            cell.style.cssText = `
-                width: 100%;
-                height: 100%;
-                border-radius: 16px;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                position: relative;
-                transition: all 0.2s;
-            `;
-
-            if (btn) {
-                // 활성화된 버튼 셀
-                cell.style.background = 'rgba(0, 0, 0, 0.4)';
-                cell.style.border = '2px solid rgba(255, 255, 255, 0.3)';
-                cell.style.pointerEvents = 'auto';
-                cell.style.cursor = 'pointer';
-                cell.style.boxShadow = '0 4px 10px rgba(0,0,0,0.5)';
-
-                const img = document.createElement('img');
-                img.src = `assets/icon/${btn.icon}`;
-                img.alt = btn.label;
-                img.style.cssText = 'width: 70%; height: 70%; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8));';
-                cell.appendChild(img);
-
-                // Tooltip (Optional, shows on hover)
-                cell.title = btn.label;
-
-                cell.onmouseover = () => {
-                    cell.style.transform = 'scale(1.05) translateY(-2px)';
-                    cell.style.borderColor = 'rgba(255, 255, 255, 0.8)';
-                    cell.style.background = 'rgba(0, 0, 0, 0.6)';
-                    cell.style.boxShadow = '0 6px 15px rgba(0,0,0,0.7)';
-                };
-                cell.onmouseout = () => {
-                    cell.style.transform = 'scale(1) translateY(0)';
-                    cell.style.borderColor = 'rgba(255, 255, 255, 0.3)';
-                    cell.style.background = 'rgba(0, 0, 0, 0.4)';
-                    cell.style.boxShadow = '0 4px 10px rgba(0,0,0,0.5)';
-                };
-                cell.onclick = btn.action;
+        // Attach click handlers
+        TERRITORY_BANNERS.forEach((b) => {
+            const el = document.getElementById(`banner-${b.id}`);
+            if (!el) return;
+            if (b.action) {
+                el.addEventListener('click', () => b.action());
             } else {
-                // 빈 그리드 셀 (투명도 더 낮게)
-                cell.style.background = 'rgba(0, 0, 0, 0.15)';
-                cell.style.border = '1px dashed rgba(255, 255, 255, 0.1)';
+                el.addEventListener('click', () => {
+                    if (this.game.uiManager) {
+                        this.game.uiManager.showToast('준비 중입니다 🔧');
+                    }
+                    console.log(`[Territory] 배너 클릭: ${b.label} (기능 미정)`);
+                });
             }
-            this.navContainer.appendChild(cell);
         });
 
-        document.body.appendChild(this.navContainer);
-
+        // Clean up on scene shutdown
         this.events.on('shutdown', () => {
             if (this.navContainer) {
                 this.navContainer.remove();
@@ -228,111 +155,77 @@ export default class TerritoryScene extends Phaser.Scene {
         });
     }
 
+    _buildBannerHTML(banner, index) {
+        const delay = index * 80;
+        return `
+            <div
+                id="banner-${banner.id}"
+                class="territory-banner"
+                style="
+                    --accent: ${banner.accentColor};
+                    animation-delay: ${delay}ms;
+                ">
+                <div class="territory-banner-img-wrap">
+                    <img
+                        src="${banner.cutscene}"
+                        alt="${banner.label}"
+                        class="territory-banner-img"
+                        draggable="false"
+                    />
+                    <div class="territory-banner-shine"></div>
+                </div>
+                <div class="territory-banner-label-wrap">
+                    <span class="territory-banner-sublabel">${banner.sublabel}</span>
+                    <span class="territory-banner-label">${banner.label}</span>
+                    <span class="territory-banner-arrow">▶</span>
+                </div>
+            </div>
+        `;
+    }
+
+    // ─── Patch Notes floating tab ─────────────────────────────────────────────
     createPatchNotes() {
         if (this.patchNotesContainer) this.patchNotesContainer.remove();
 
-        this.patchNotesContainer = document.createElement('div');
-        this.patchNotesContainer.className = 'patch-notes-container';
-        this.patchNotesContainer.style.cssText = `
-            position: absolute;
-            bottom: 80px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: min(90vw, 420px);
-            max-height: 180px;
-            z-index: 900;
-        `;
-
-        this.patchNotesContainer.innerHTML = `
-            <div class="patch-notes-title">📋 패치 내역</div>
-            <div class="patch-notes-body" style="cursor: grab;">
-                <div class="patch-notes-content">
-                    <div class="patch-entry">
-                        <div class="patch-date">▶ 2026-03-04</div>
-                        <div class="patch-item"><span class="patch-item-icon">🐾</span>펫 시스템 추가 : 이제 자원을 자동으로 루팅합니다. 펫을 눌러보세요!</div>
-                        <div class="patch-item"><span class="patch-item-icon">🔍</span>카메라 확대/축소 시스템 추가</div>
-                        <div class="patch-item"><span class="patch-item-icon">✨</span>용병 부활 시스템 추가 : 던전에서 골드를 지불하여 용병을 즉시 부활시킬 수 있습니다.</div>
-                        <div class="patch-item"><span class="patch-item-icon">🔄</span>던전 전멸 시 무한 루프 시스템 추가 : 전멸 시 1라운드부터 즉시 재시작합니다.</div>
-                        <div class="patch-item"><span class="patch-item-icon">🔋</span>배터리 절약(방치) 모드 추가 : 설정에서 그래픽 효과를 켜고 끌 수 있습니다.</div>
-                    </div>
+        const wrap = document.createElement('div');
+        wrap.id = 'territory-patch-notes';
+        wrap.innerHTML = `
+            <div id="territory-patch-tab">
+                <span>📋 패치 내역</span>
+                <button id="territory-patch-close" title="닫기">✕</button>
+            </div>
+            <div id="territory-patch-body">
+                <div class="patch-entry">
+                    <div class="patch-date">▶ 2026-03-04</div>
+                    <div class="patch-item"><span class="patch-item-icon">🐾</span>펫 시스템 추가 : 이제 자원을 자동으로 루팅합니다. 펫을 눌러보세요!</div>
+                    <div class="patch-item"><span class="patch-item-icon">🔍</span>카메라 확대/축소 시스템 추가</div>
+                    <div class="patch-item"><span class="patch-item-icon">✨</span>용병 부활 시스템 추가 : 던전에서 골드를 지불하여 용병을 즉시 부활시킬 수 있습니다.</div>
+                    <div class="patch-item"><span class="patch-item-icon">🔄</span>던전 전멸 시 무한 루프 시스템 추가 : 전멸 시 1라운드부터 즉시 재시작합니다.</div>
+                    <div class="patch-item"><span class="patch-item-icon">🔋</span>배터리 절약(방치) 모드 추가 : 설정에서 그래픽 효과를 켜고 끌 수 있습니다.</div>
+                    <div class="patch-item"><span class="patch-item-icon">💾</span>용병 레벨/경험치 자동 저장 추가</div>
+                    <div class="patch-item"><span class="patch-item-icon">🎨</span>상단 UI 허브 레드 벨벳 테마 적용</div>
                 </div>
             </div>
         `;
 
-        // --- Drag-to-Scroll Logic ---
-        const scrollBody = this.patchNotesContainer.querySelector('.patch-notes-body');
-        let isDragging = false;
-        let startY;
-        let scrollTop;
+        const container = document.getElementById('app-container') || document.body;
+        container.appendChild(wrap);
+        this.patchNotesContainer = wrap;
 
-        const startDragging = (e) => {
-            isDragging = true;
-            const pageY = e.pageY || (e.touches && e.touches[0].pageY);
-            startY = pageY - scrollBody.offsetTop;
-            scrollTop = scrollBody.scrollTop;
-            scrollBody.style.cursor = 'grabbing';
-        };
+        // X close button
+        const closeBtn = document.getElementById('territory-patch-close');
+        closeBtn.addEventListener('click', () => {
+            wrap.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
+            wrap.style.opacity = '0';
+            wrap.style.transform = 'translateY(-12px)';
+            setTimeout(() => wrap.remove(), 280);
+            console.log('[PatchNotes] 패치 노트 닫힘');
+        });
 
-        const stopDragging = () => {
-            isDragging = false;
-            scrollBody.style.cursor = 'grab';
-        };
-
-        const moveDragging = (e) => {
-            if (!isDragging) return;
-            // Prevent default only if we're actually dragging to allow normal interactions if needed
-            const pageY = e.pageY || (e.touches && e.touches[0].pageY);
-            const y = pageY - scrollBody.offsetTop;
-            const walk = (y - startY) * 1.5; // Scroll speed multiplier
-            scrollBody.scrollTop = scrollTop - walk;
-        };
-
-        scrollBody.addEventListener('mousedown', startDragging);
-        scrollBody.addEventListener('touchstart', startDragging, { passive: true });
-
-        // Bind to window to ensure dragging continues even if mouse leaves the container
-        const onMouseMove = (e) => moveDragging(e);
-        const onTouchMove = (e) => moveDragging(e);
-        const onMouseUp = () => stopDragging();
-        const onTouchEnd = () => stopDragging();
-
-        window.addEventListener('mousemove', onMouseMove);
-        window.addEventListener('touchmove', onTouchMove, { passive: false });
-        window.addEventListener('mouseup', onMouseUp);
-        window.addEventListener('touchend', onTouchEnd);
-
-        // Battery Saver Toggle Listener for Territory
         EventBus.on(EventBus.EVENTS.BATTERY_SAVER_TOGGLED, (enabled) => {
-            // Potential Territory optimizations
             console.log('[Territory] Battery Saver toggled:', enabled);
         });
 
-        document.body.appendChild(this.patchNotesContainer);
-
-        // Clean up window listeners on scene shutdown
-        this.events.once('shutdown', () => {
-            window.removeEventListener('mousemove', onMouseMove);
-            window.removeEventListener('touchmove', onTouchMove);
-            window.removeEventListener('mouseup', onMouseUp);
-            window.removeEventListener('touchend', onTouchEnd);
-        });
-
-        console.log('[PatchNotes] 2026-03-04 패치 내역이 업데이트되었습니다. (부활 시스템 포함)');
-    }
-
-    async checkPartyStatus() {
-        const partyManager = this.game.partyManager;
-        const activeParty = partyManager.getActiveParty();
-
-        // If party is completely empty
-        if (activeParty.every(p => p === null)) {
-            this.showPartySelection();
-        }
-    }
-
-    async showPartySelection() {
-        if (this.game.uiManager) {
-            this.game.uiManager.showPartyFormation();
-        }
+        console.log('[PatchNotes] 2026-03-04 패치 내역이 업데이트되었습니다.');
     }
 }
