@@ -68,28 +68,28 @@ export default class AoeManager {
         const units = group.getChildren().filter(u => u && u.active && u.hp > 0);
         const affectedUnits = [];
 
-        console.log(`[AoeManager Debug] AOE at (${Math.round(x)}, ${Math.round(y)}) radius ${finalRadius}. Targets alive: ${units.length}, Attacker: ${attacker ? attacker.unitName : 'none'} (Team: ${attacker ? attacker.team : 'none'})`);
+        console.log(`[AoeManager Debug] --- AOE TRIGGERED ---`);
+        console.log(`[AoeManager Debug] Origin: (${Math.round(x)}, ${Math.round(y)}), Radius: ${finalRadius}`);
+        console.log(`[AoeManager Debug] Damage: ${damage}, Magic: ${isMagic}, Element: ${element}`);
+        console.log(`[AoeManager Debug] Attacker: ${attacker ? attacker.unitName : 'none'} (Team: ${attacker ? attacker.team : 'none'})`);
+        console.log(`[AoeManager Debug] Target Group: ${targetGroup === this.scene.mercenaries ? 'Mercenaries' : (targetGroup === this.scene.enemies ? 'Enemies' : 'Custom')}, Count: ${units.length}`);
 
         units.forEach(unit => {
             const dist = Phaser.Math.Distance.Between(x, y, unit.x, unit.y);
-            console.log(`[AoeManager Debug] Checking Target: ${unit.unitName} (Team: ${unit.team}) at (${Math.round(unit.x)}, ${Math.round(unit.y)}), Distance: ${Math.round(dist)}`);
+            const inRange = dist <= finalRadius;
 
-            if (dist <= finalRadius) {
-                console.log(`[AoeManager Debug] HIT SUCCESS: ${unit.unitName}`);
+            console.log(`[AoeManager Debug] Checking Target: ${unit.unitName} (Team: ${unit.team}) dist: ${Math.round(dist)} -> ${inRange ? 'HIT' : 'OUT'}`);
 
+            if (inRange) {
                 // 1. Primary Skill Element inheritance/synergy
                 let skillElement = element;
                 let weaponElementHit = null;
 
                 if (weaponElement) {
                     if (!skillElement) {
-                        // Neutral skill inherits weapon element
                         skillElement = weaponElement;
-                        console.log(`[AoeManager] Neutral skill inherited weapon element: ${weaponElement}`);
                     } else {
-                        // Skill has inherent element, weapon adds synergy hit (even if same element)
                         weaponElementHit = weaponElement;
-                        console.log(`[AoeManager] Weapon synergy: adding ${weaponElement} to ${skillElement} skill.`);
                     }
                 }
 
@@ -111,7 +111,7 @@ export default class AoeManager {
             }
         });
 
-        console.log(`[AoeManager] AOE complete. Hit ${affectedUnits.length} targets.`);
+        console.log(`[AoeManager Debug] --- AOE COMPLETE (Hit ${affectedUnits.length}) ---`);
         return affectedUnits;
     }
 }

@@ -756,6 +756,20 @@ export default class DungeonScene extends Phaser.Scene {
 
             if (newUnit) {
                 newUnit.id = unitId; // Keep the same UI slot ID
+
+                // --- Resurrection Polish ---
+                // 1. Force 100% HP (prevents loading stale dead state)
+                newUnit.hp = newUnit.maxHp;
+
+                // 2. Clear all persistent CC effects (Shock, Burn, etc.)
+                if (newUnit.cleanse) newUnit.cleanse();
+
+                // 3. Clear temporary stat buffs
+                if (this.buffManager) this.buffManager.removeBuffs(newUnit);
+
+                // 4. Clear active shields
+                if (this.shieldManager) this.shieldManager.removeShield(newUnit);
+
                 this.mercenaries.add(newUnit);
                 if (newUnit.initAI) newUnit.initAI();
 

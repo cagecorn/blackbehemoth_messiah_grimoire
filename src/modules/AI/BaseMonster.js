@@ -87,7 +87,7 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
             }
         }
 
-        this.charmTimers = Array(9).fill(0);
+        this.charmTimers = Array(9).fill(99999); // Initialized to high value to trigger immediately on spawn
 
         // Combat Timers
         this.lastAttackTime = 0;
@@ -205,8 +205,11 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
         }
 
         // 2. Intercept with Shield
+        let damageBeforeShield = finalDamage;
+        let absorbedByShield = 0;
         if (this.scene.shieldManager) {
             finalDamage = this.scene.shieldManager.takeDamage(this, finalDamage);
+            absorbedByShield = damageBeforeShield - finalDamage;
         }
 
         if (finalDamage > 0) {
@@ -247,11 +250,15 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
             }
         }
 
-        console.info(`%c[Combat] %c${this.unitName}%c was hit for %c${finalDamage.toFixed(1)}%c physical damage. (HP: ${this.hp.toFixed(1)}/${this.maxHp})`,
+        const elementTag = element ? `[${element.toUpperCase()}] ` : '';
+        const shieldInfolocal = absorbedByShield > 0 ? ` (Shield absorbed ${absorbedByShield.toFixed(1)})` : '';
+        const damageMsg = finalDamage > 0
+            ? `was hit for ${finalDamage.toFixed(1)} ${elementTag}physical damage${shieldInfolocal}.`
+            : `completely absorbed ${elementTag}physical damage via Defense/Shield!`;
+
+        console.info(`%c[Combat] %c${this.unitName}%c ${damageMsg} (HP: ${this.hp.toFixed(1)}/${this.maxHp})`,
             'color: #ffaa00; font-weight: bold;',
             'color: #ff5555;',
-            'color: #e0e0e0;',
-            'color: #ffffff; font-weight: bold;',
             'color: #e0e0e0;'
         );
 
@@ -304,8 +311,11 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
         }
 
         // 2. Intercept with Shield
+        let damageBeforeShield = finalDamage;
+        let absorbedByShield = 0;
         if (this.scene.shieldManager) {
             finalDamage = this.scene.shieldManager.takeDamage(this, finalDamage);
+            absorbedByShield = damageBeforeShield - finalDamage;
         }
 
         if (finalDamage > 0) {
@@ -346,11 +356,15 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
             }
         }
 
-        console.info(`%c[Combat] %c${this.unitName}%c was hit for %c${finalDamage.toFixed(1)}%c magic damage. (HP: ${this.hp.toFixed(1)}/${this.maxHp})`,
+        const elementTag = element ? `[${element.toUpperCase()}] ` : '';
+        const shieldInfolocal = absorbedByShield > 0 ? ` (Shield absorbed ${absorbedByShield.toFixed(1)})` : '';
+        const damageMsg = finalDamage > 0
+            ? `was hit for ${finalDamage.toFixed(1)} ${elementTag}magic damage${shieldInfolocal}.`
+            : `completely absorbed ${elementTag}magic damage via MDef/Shield!`;
+
+        console.info(`%c[Combat] %c${this.unitName}%c ${damageMsg} (HP: ${this.hp.toFixed(1)}/${this.maxHp})`,
             'color: #ffaa00; font-weight: bold;',
             'color: #ff5555;',
-            'color: #e0e0e0;',
-            'color: #ffffff; font-weight: bold;',
             'color: #e0e0e0;'
         );
 
@@ -390,6 +404,25 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
         this.hp += amount;
         if (this.hp > this.maxHp) this.hp = this.maxHp;
         this.updateHealthBar();
+    }
+
+    /**
+     * Standard heal method used by managers and charms.
+     */
+    heal(amount, isSilent = false) {
+        if (!this.active || this.hp <= 0 || amount <= 0) return;
+
+        this.hp += amount;
+        if (this.hp > this.maxHp) this.hp = this.maxHp;
+
+        this.updateHealthBar();
+
+        if (this.scene.fxManager) {
+            if (!isSilent) {
+                this.scene.fxManager.showDamageText(this, '+' + Math.round(amount), '#00ff00');
+            }
+            this.scene.fxManager.showHealEffect(this);
+        }
     }
 
     updateHealthBar() {
@@ -531,7 +564,11 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
                 this.charmTimers[index] += delta;
                 if (this.charmTimers[index] >= charm.interval) {
                     this.charmTimers[index] = 0;
-                    charm.effect(this);
+                    try {
+                        charm.effect(this);
+                    } catch (e) {
+                        console.error(`[Charm Error] Failed to execute ${charmId} for ${this.unitName}:`, e);
+                    }
                 }
             }
         });

@@ -50,6 +50,19 @@ export default class ShieldManager {
     }
 
     /**
+     * Removes a shield from a target.
+     */
+    removeShield(target) {
+        if (!target) return;
+        if (this.shields.has(target)) {
+            this.shields.delete(target);
+            if (target.syncStatusUI) target.syncStatusUI();
+            if (target.updateHealthBar) target.updateHealthBar();
+            console.log(`[ShieldManager] Shield removed for ${target.unitName || target.id}.`);
+        }
+    }
+
+    /**
      * Intercepts damage. Returns any remaining (unabsorbed) damage.
      * @param {Phaser.GameObjects.Container} target 
      * @param {number} damage 

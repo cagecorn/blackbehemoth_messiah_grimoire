@@ -124,7 +124,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             }
         }
 
-        this.charmTimers = Array(9).fill(0); // Tick timers for periodic effects
+        this.charmTimers = Array(9).fill(99999); // Initialized to high value to trigger immediately on spawn
 
         this.acc = config.acc || 100;
         this.eva = config.eva || 0;
@@ -675,8 +675,11 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         }
 
         // 2. Intercept with Shield
+        let damageBeforeShield = finalDamage;
+        let absorbedByShield = 0;
         if (this.scene.shieldManager) {
             finalDamage = this.scene.shieldManager.takeDamage(this, finalDamage);
+            absorbedByShield = damageBeforeShield - finalDamage;
         }
 
         if (finalDamage > 0) {
@@ -713,7 +716,13 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             }
         }
 
-        console.info(`[Combat] ${this.unitName} took ${finalDamage.toFixed(1)} physical damage.`);
+        const elementTag = element ? `[${element.toUpperCase()}] ` : '';
+        const shieldInfo = absorbedByShield > 0 ? ` (Shield absorbed ${absorbedByShield.toFixed(1)})` : '';
+        const damageMsg = finalDamage > 0
+            ? `took ${finalDamage.toFixed(1)} ${elementTag}physical damage${shieldInfo}.`
+            : `completely absorbed ${elementTag}physical damage via Defense/Shield!`;
+
+        console.log(`[Combat] ${this.unitName} ${damageMsg}`);
 
         this.playHitEffect();
 
@@ -743,8 +752,11 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         }
 
         // 2. Intercept with Shield
+        let damageBeforeShield = finalDamage;
+        let absorbedByShield = 0;
         if (this.scene.shieldManager) {
             finalDamage = this.scene.shieldManager.takeDamage(this, finalDamage);
+            absorbedByShield = damageBeforeShield - finalDamage;
         }
 
         if (finalDamage > 0) {
@@ -786,7 +798,13 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             }
         }
 
-        console.info(`[Combat] ${this.unitName} took ${finalDamage.toFixed(1)} magic damage.`);
+        const elementTag = element ? `[${element.toUpperCase()}] ` : '';
+        const shieldInfo = absorbedByShield > 0 ? ` (Shield absorbed ${absorbedByShield.toFixed(1)})` : '';
+        const damageMsg = finalDamage > 0
+            ? `took ${finalDamage.toFixed(1)} ${elementTag}magic damage${shieldInfo}.`
+            : `completely absorbed ${elementTag}magic damage via MDef/Shield!`;
+
+        console.log(`[Combat] ${this.unitName} ${damageMsg}`);
 
         this.playHitEffect();
 
@@ -1135,12 +1153,15 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             if (this.charmTimers[index] >= charm.interval) {
                 this.charmTimers[index] = 0;
 
-                // Visual Feedback for Charm Activation
                 if (this.scene.fxManager) {
                     this.scene.fxManager.showEmojiPopup(this, charm.emoji || '✨');
                 }
 
-                charm.effect(this);
+                try {
+                    charm.effect(this);
+                } catch (e) {
+                    console.error(`[Charm Error] Failed to execute ${itemId} for ${this.unitName}:`, e);
+                }
             }
         });
     }

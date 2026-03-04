@@ -87,6 +87,27 @@ export default class BuffManager {
         return this.activeBuffs.some(b => b.target === target && b.type === type);
     }
 
+    /**
+     * Clears all active buffs for a specific target.
+     * Useful for resurrection or full cleanse.
+     */
+    removeBuffs(target) {
+        if (!target) return;
+
+        for (let i = this.activeBuffs.length - 1; i >= 0; i--) {
+            const buff = this.activeBuffs[i];
+            if (buff.target === target) {
+                // Revert stats
+                this.modifyTargetStats(target, buff.amounts, -1);
+                // Remove from list
+                this.activeBuffs.splice(i, 1);
+            }
+        }
+
+        if (target.syncStatusUI) target.syncStatusUI();
+        console.log(`[BuffManager] All buffs cleared for ${target.unitName || target.id}.`);
+    }
+
     update(time, delta) {
         for (let i = this.activeBuffs.length - 1; i >= 0; i--) {
             const buff = this.activeBuffs[i];
