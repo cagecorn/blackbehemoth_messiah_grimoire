@@ -3153,10 +3153,11 @@ input:checked+.slider-toggle:before {
 
 /* --- HUD Scene Navigation Bar — Retro Arcade --- */
 #hud-scene-nav {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: space-between;
     gap: 3px;
-    padding: 5px 10px 8px;
+    padding: 5px 6px 8px;
     pointer-events: auto;
     background: #0a0505;
     border-top: 1px solid rgba(255, 176, 0, 0.15);
@@ -3165,6 +3166,8 @@ input:checked+.slider-toggle:before {
         0 4px 0px rgba(0, 0, 0, 0.8),
         inset 0 0 15px rgba(0, 0, 0, 0.5);
     position: relative;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 /* Crosshatch retro pattern */
@@ -3186,11 +3189,13 @@ input:checked+.slider-toggle:before {
 }
 
 .nav-btn {
+    flex: 1;
+    min-width: 0;
     background: linear-gradient(to bottom, rgba(55, 12, 16, 0.75), rgba(25, 6, 8, 0.85));
     border: 2px solid rgba(120, 25, 30, 0.45);
     color: rgba(255, 210, 160, 0.55);
     font-family: var(--font-vt);
-    font-size: 14px;
+    font-size: 13px;
     padding: 6px 0;
     cursor: pointer;
     text-align: center;
@@ -3198,8 +3203,9 @@ input:checked+.slider-toggle:before {
     position: relative;
     overflow: hidden;
     border-radius: 0px;
+    white-space: nowrap;
     text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.9);
-    letter-spacing: 1px;
+    letter-spacing: 0.5px;
     box-shadow:
         2px 2px 0px rgba(0, 0, 0, 0.5),
         inset 0 1px 0 rgba(255, 255, 255, 0.04);
