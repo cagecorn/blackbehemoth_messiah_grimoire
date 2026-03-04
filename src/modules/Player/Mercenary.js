@@ -134,8 +134,8 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         // Check for existing state in PartyManager (Only for player team)
         if (this.team === 'player') {
             const savedState = this.scene.game.partyManager.getState(this.id);
+
             if (savedState) {
-                console.log(`[Mercenary] Loading persistent state for ${this.unitName} (${this.id})`, savedState);
                 this.level = savedState.level || this.level;
                 this.exp = savedState.exp || this.exp;
                 this.hp = savedState.hp !== undefined ? savedState.hp : this.hp;

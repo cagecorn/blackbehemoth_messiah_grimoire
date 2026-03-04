@@ -76,7 +76,8 @@ export default class DBManager {
 
     static async save(storeName, id, data) {
         if (!this.db) await this.initDB();
-        await this.db.put(storeName, { id, ...data });
+        // Storage ID must come AFTER spread to avoid overwrite
+        await this.db.put(storeName, { ...data, id });
     }
 
     // --- Party Persistence ---
@@ -94,9 +95,11 @@ export default class DBManager {
     // --- Mercenary State Persistence ---
     static async saveMercenaryState(id, state) {
         if (!this.db) await this.initDB();
-        // Create a copy without methods/circular refs if any
+        // Create a copy without methods/circular refs
         const plainState = JSON.parse(JSON.stringify(state));
-        await this.db.put('party', { id: `state_${id}`, ...plainState });
+        // Important: Storage ID must come AFTER spread to avoid being overwritten by record.id
+        await this.db.put('party', { ...plainState, id: `state_${id}` });
+        console.log(`[DBManager] Saved mercenary state for ${id}:`, plainState);
     }
 
     static async getAllMercenaryStates() {
