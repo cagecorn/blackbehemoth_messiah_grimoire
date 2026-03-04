@@ -6398,7 +6398,7 @@ return new `+this.key+`();
                 <div class="territory-banner-label-wrap">
                     <span class="territory-banner-sublabel">${m.sublabel}</span>
                     <span class="territory-banner-label">${m.label}</span>
-                    <span class="territory-banner-arrow">▶</span>
+                    <span class="territory-banner-arrow">▸</span>
                 </div>
             </div>
         `}createPatchNotes(){this.patchNotesContainer&&this.patchNotesContainer.remove();const m=document.createElement("div");m.id="territory-patch-notes",m.innerHTML=`
