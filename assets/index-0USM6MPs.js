@@ -6381,7 +6381,7 @@ return new `+this.key+`();
         `,(document.getElementById("app-container")||document.body).appendChild(m),this.navContainer=m,oi.forEach(A=>{const R=document.getElementById(`banner-${A.id}`);R&&(A.action?R.addEventListener("click",()=>A.action()):R.addEventListener("click",()=>{this.game.uiManager&&this.game.uiManager.showToast("준비 중입니다 🔧"),console.log(`[Territory] 배너 클릭: ${A.label} (기능 미정)`)}))}),this.events.on("shutdown",()=>{this.navContainer&&(this.navContainer.remove(),this.navContainer=null),this.patchNotesContainer&&(this.patchNotesContainer.remove(),this.patchNotesContainer=null)})}_buildBannerHTML(m,C){const A=C*80;return`
             <div
                 id="banner-${m.id}"
-                class="territory-banner"
+                class="territory-banner retro-scanline-overlay"
                 style="
                     --accent: ${m.accentColor};
                     animation-delay: ${A}ms;
