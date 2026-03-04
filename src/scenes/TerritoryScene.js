@@ -132,7 +132,7 @@ export default class TerritoryScene extends Phaser.Scene {
         return `
             <div
                 id="banner-${banner.id}"
-                class="territory-banner"
+                class="territory-banner retro-scanline-overlay"
                 style="
                     --accent: ${banner.accentColor};
                     animation-delay: ${delay}ms;

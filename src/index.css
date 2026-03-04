@@ -19,6 +19,49 @@
     --font-pixel: 'Press Start 2P', monospace;
     --font-vt: 'VT323', monospace;
     --font-pretendard: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', sans-serif;
+
+    /* Retro Utils */
+    --pixel-border-width: 3px;
+    --pixel-border-color: var(--retro-amber);
+    --pixel-border-shadow: rgba(0, 0, 0, 0.4);
+}
+
+/* ================================================================
+   RETRO UTILS
+   ================================================================ */
+
+.retro-pixel-border {
+    border: var(--pixel-border-width) solid var(--pixel-border-color);
+    box-shadow:
+        var(--pixel-border-width) var(--pixel-border-width) 0px var(--pixel-border-shadow),
+        inset var(--pixel-border-width) var(--pixel-border-width) 0px rgba(255, 255, 255, 0.1);
+    position: relative;
+}
+
+.retro-scanline-overlay {
+    position: relative;
+    overflow: hidden;
+}
+
+.retro-scanline-overlay::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: repeating-linear-gradient(0deg,
+            rgba(0, 0, 0, 0.05),
+            rgba(0, 0, 0, 0.05) 1px,
+            transparent 1px,
+            transparent 2px);
+    pointer-events: none;
+    z-index: 5;
+}
+
+.retro-dither-bg {
+    background-image: radial-gradient(var(--retro-border) 1px, transparent 0);
+    background-size: 2px 2px;
 }
 
 /* Global Scrollbar Styles ??Retro */
@@ -1944,16 +1987,33 @@ body {
 }
 
 #hud-top {
-    padding: 6px 12px;
-    /* ?怨밸릭 ??媛??????곕벡??*/
+    padding: 8px 12px;
     display: flex;
     justify-content: space-between;
     align-items: center;
     pointer-events: auto;
-    /* Muted Red Velvet Gradient */
-    background: linear-gradient(to bottom, rgba(45, 10, 15, 0.98), rgba(22, 5, 8, 0.96));
-    border-bottom: 2px solid rgba(200, 130, 40, 0.65);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.8), 0 1px 0 rgba(255, 255, 255, 0.06) inset;
+    /* Retro Dark Velvet */
+    background: linear-gradient(135deg, #1e0a0a, #0a0505);
+    border-bottom: 3px solid var(--retro-amber);
+    box-shadow: 0 4px 0px rgba(0, 0, 0, 0.6);
+    position: relative;
+    z-index: 10;
+}
+
+#hud-top::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: repeating-linear-gradient(0deg,
+            rgba(0, 0, 0, 0.05),
+            rgba(0, 0, 0, 0.05) 1px,
+            transparent 1px,
+            transparent 2px);
+    pointer-events: none;
+    opacity: 0.5;
 }
 
 .hud-stat {
@@ -3063,16 +3123,27 @@ input:checked+.slider-toggle:before {
 /* --- HUD Scene Navigation Bar --- */
 /* --- HUD Scene Navigation Bar --- */
 #hud-scene-nav {
-    /* auto-fit: adding more .nav-btn elements automatically expands the grid */
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
     gap: 4px;
-    padding: 6px 12px 6px;
+    padding: 6px 12px 10px;
     pointer-events: auto;
-    /* Muted Ruby Red velvet background */
-    background: linear-gradient(to bottom, rgba(35, 8, 12, 0.96), rgba(18, 4, 6, 0.98));
-    border-bottom: 2px solid rgba(180, 110, 30, 0.6);
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    background: #0a0505;
+    border-bottom: 3px solid var(--retro-amber);
+    box-shadow: 0 4px 0px rgba(0, 0, 0, 0.6);
+    position: relative;
+}
+
+#hud-scene-nav::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 0);
+    background-size: 3px 3px;
+    pointer-events: none;
 }
 
 .nav-btn {
@@ -3408,29 +3479,28 @@ input:checked+.slider-toggle:before {
 }
 
 .territory-banner-sublabel {
-    font-family: var(--font-pretendard);
-    font-size: 12px;
-    font-weight: 700;
+    font-family: var(--font-pixel);
+    font-size: 8px;
+    font-weight: normal;
     color: var(--accent, rgba(255, 200, 100, 0.7));
-    letter-spacing: 5px;
+    letter-spacing: 2px;
     text-transform: uppercase;
-    opacity: 0.5;
-    font-style: normal;
-    margin-bottom: -2px;
+    opacity: 0.7;
+    margin-bottom: 0px;
+    text-shadow: 1px 1px 0px rgba(0, 0, 0, 0.8);
 }
 
 .territory-banner-label {
-    font-family: var(--font-pretendard);
-    font-size: 38px;
-    font-weight: 900;
-    font-style: italic;
+    font-family: var(--font-vt);
+    font-size: 32px;
+    font-weight: bold;
     color: #fff;
-    letter-spacing: -1.5px;
+    letter-spacing: 1px;
     text-shadow:
-        3px 3px 0px rgba(0, 0, 0, 0.8),
-        0 0 20px var(--accent, transparent);
-    line-height: 0.95;
-    transition: all 0.3s ease;
+        2px 2px 0px rgba(0, 0, 0, 0.9),
+        0 0 10px var(--accent, transparent);
+    line-height: 1;
+    transition: all 0.2s steps(4);
     text-transform: uppercase;
 }
 
