@@ -18,8 +18,8 @@
     <link rel="stylesheet" as="style" crossorigin
         href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
     <!-- Custom CSS for DOM Overlay -->
-  <script type="module" crossorigin src="./assets/index-BCNMjgT2.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-C6B74u-n.css">
+  <script type="module" crossorigin src="./assets/index-DN9ybvzz.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-B674YD9Z.css">
 </head>
 
 <body>
@@ -124,7 +124,15 @@
                     <button class="nav-btn" data-scene="TerritoryScene">영지</button>
                     <button class="nav-btn" data-scene="GachaScene">뽑기</button>
                     <button class="nav-btn" data-popup="party">편성</button>
-                    <button class="nav-btn" data-scene="DungeonScene">던전</button>
+                    <div class="nav-dropdown-wrapper">
+                        <button class="nav-btn" id="btn-dungeon-main">던전</button>
+                        <div class="nav-dropdown" id="dungeon-dropdown">
+                            <button class="nav-dropdown-item" data-scene="DungeonScene"
+                                data-dungeon="CURSED_FOREST">저주받은 숲</button>
+                            <button class="nav-dropdown-item" data-scene="DungeonScene"
+                                data-dungeon="UNDEAD_GRAVEYARD">언데드 묘지</button>
+                        </div>
+                    </div>
                     <button class="nav-btn" data-scene="ArenaScene">아레나</button>
                     <button class="nav-btn" data-scene="RaidScene">레이드</button>
                 </div>
