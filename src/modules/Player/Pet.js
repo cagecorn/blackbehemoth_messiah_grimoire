@@ -45,6 +45,14 @@ export default class Pet extends Phaser.GameObjects.Container {
             this.shadow = this.scene.fxManager.createShadow(this);
         }
 
+        // --- Interaction ---
+        this.setInteractive(new Phaser.Geom.Circle(0, 0, 40), Phaser.Geom.Circle.Contains);
+        this.on('pointerdown', (pointer) => {
+            // Stop propagation so we don't click anything under the pet
+            pointer.event.stopPropagation();
+            this.playHappyReaction();
+        });
+
         // Idle Bob (from Mercenary.js style)
         this.startIdleBob();
 
@@ -188,6 +196,54 @@ export default class Pet extends Phaser.GameObjects.Container {
         if (this.sprite) this.sprite.angle = 0;
 
         this.startIdleBob();
+    }
+
+    playHappyReaction() {
+        if (!this.active || this.isJumping) return;
+        this.isJumping = true;
+
+        // 1. Happy Jump Animation
+        this.stopIdleBob();
+        this.scene.tweens.add({
+            targets: this.sprite,
+            y: -30,
+            duration: 200,
+            yoyo: true,
+            ease: 'Back.easeOut',
+            onComplete: () => {
+                this.isJumping = false;
+                if (!this.isWaddling) this.startIdleBob();
+            }
+        });
+
+        // 2. Emoji & Text Popups
+        if (this.scene.fxManager) {
+            // Heart Emoji
+            this.scene.fxManager.showEmojiPopup(this, '❤️');
+
+            // "Yippee!" Text
+            const scale = this.scaleValue;
+            const text = this.scene.add.text(this.x, this.y - 70 * scale, 'Yippee!', {
+                fontSize: '28px',
+                fill: '#ff66aa',
+                fontStyle: 'bold',
+                stroke: '#fff',
+                strokeThickness: 4,
+                resolution: 2
+            }).setOrigin(0.5);
+            text.setDepth(20005);
+
+            this.scene.tweens.add({
+                targets: text,
+                y: text.y - 50,
+                alpha: 0,
+                duration: 1000,
+                ease: 'Power2',
+                onComplete: () => text.destroy()
+            });
+        }
+
+        console.log(`[Pet] ${this.unitName} is happy! 야호!`);
     }
 
     destroy() {
