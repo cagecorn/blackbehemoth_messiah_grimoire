@@ -100,6 +100,8 @@ export default class UltimateManager {
             .setDepth(30000)
             .setAlpha(0);
 
+        if (this.scene.uiLayer) this.scene.uiLayer.add(overlay);
+
         this.scene.tweens.add({
             targets: overlay,
             alpha: 1,
@@ -125,6 +127,8 @@ export default class UltimateManager {
             .setScale(scale)
             .setTint(0xffffff);
 
+        if (this.scene.uiLayer) this.scene.uiLayer.add(closeUp);
+
         // Skill Name Text - positioned over the sprite on the left side
         const text = this.scene.add.text(30, height - 450, `[ ${skillName} ]`, {
             fontSize: '52px',
@@ -135,6 +139,8 @@ export default class UltimateManager {
             fontFamily: 'Arial Black',
             wordWrap: { width: width - 60, useAdvancedWrap: true }
         }).setScrollFactor(0).setDepth(30002).setAlpha(0);
+
+        if (this.scene.uiLayer) this.scene.uiLayer.add(text);
 
         return new Promise(res => {
             // Slide in unit
@@ -157,6 +163,8 @@ export default class UltimateManager {
             // Flash effect
             const flash = this.scene.add.rectangle(width / 2, height / 2, width, height, 0xffffff, 1)
                 .setScrollFactor(0).setDepth(30005).setAlpha(0);
+
+            if (this.scene.uiLayer) this.scene.uiLayer.add(flash);
 
             this.scene.tweens.add({
                 targets: flash,
