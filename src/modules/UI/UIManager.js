@@ -1741,14 +1741,38 @@ export default class UIManager {
         const rect = targetEl.getBoundingClientRect();
         const containerRect = document.getElementById('app-container').getBoundingClientRect();
 
-        // Position above the icon by default
-        let top = (rect.top - containerRect.top) - 10;
-        let left = (rect.left - containerRect.left) + (rect.width / 2);
-
+        // Initial Position: Above the icon by default
         tooltip.style.display = 'block';
-        tooltip.style.left = `${left}px`;
-        tooltip.style.top = `${top}px`;
-        tooltip.style.transform = 'translate(-50%, -100%)'; // Center horizontally and move above
+        tooltip.style.visibility = 'hidden'; // Hide while measuring
+
+        // Measure tooltip
+        const tooltipWidth = tooltip.offsetWidth;
+        const tooltipHeight = tooltip.offsetHeight;
+
+        // Base horizontal center
+        let centerX = (rect.left - containerRect.left) + (rect.width / 2);
+        // Base top (above icon)
+        let baseY = (rect.top - containerRect.top) - 10;
+
+        // Clamp Horizontal (Left/Right)
+        let finalLeft = centerX - (tooltipWidth / 2);
+        const minLeft = 10;
+        const maxLeft = containerRect.width - tooltipWidth - 10;
+        finalLeft = Math.max(minLeft, Math.min(maxLeft, finalLeft));
+
+        // Clamp Vertical (Top) - If it goes off top, move it below the icon
+        let finalTop = baseY - tooltipHeight;
+        if (finalTop < 5) {
+            // Move below the icon: rect.bottom + 10 padding
+            finalTop = (rect.bottom - containerRect.top) + 10;
+        }
+
+        // Apply final coordinates WITHOUT transform translate
+        tooltip.style.left = `${finalLeft}px`;
+        tooltip.style.top = `${finalTop}px`;
+        tooltip.style.transform = 'none'; // Clear any centering transform
+        tooltip.style.visibility = 'visible';
+
 
         // 4. Auto-hide logic
         const hideTooltip = (e) => {
