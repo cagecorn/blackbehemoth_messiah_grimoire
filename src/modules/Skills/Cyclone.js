@@ -137,10 +137,19 @@ export default class Cyclone {
             duration: duration,
             ease: 'Linear',
             onUpdate: () => {
-                const currentDist = dist * movement.t;
-                // General direction towards target
-                const lx = startX + Math.cos(angle) * currentDist;
-                const ly = startY + Math.sin(angle) * currentDist;
+                // Dynamic tracking: update target position if still alive/active
+                let curTargetX = targetX;
+                let curTargetY = targetY;
+                if (target && target.active && target.hp > 0) {
+                    curTargetX = target.x;
+                    curTargetY = target.y;
+                }
+
+                const currentDistX = (curTargetX - startX) * movement.t;
+                const currentDistY = (curTargetY - startY) * movement.t;
+
+                const lx = startX + currentDistX;
+                const ly = startY + currentDistY;
 
                 // "Drunk Walk" / Wandering offset
                 // Using multiple sine waves with different frequencies for unpredictable movement
