@@ -6,9 +6,9 @@ import { PetStats } from '../Core/EntityStats.js';
  * Implementation of the "Dog Pet" unit.
  */
 export default class DogPet extends Pet {
-    constructor(scene, x, y) {
+    constructor(scene, x, y, stats) {
         const config = PetStats.DOG_PET;
-        super(scene, x, y, config);
+        super(scene, x, y, config, stats);
 
         console.log(`[DogPet] Created at (${x}, ${y})`);
     }

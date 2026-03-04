@@ -80,6 +80,10 @@ export default class DBManager {
         await this.db.put(storeName, { ...data, id });
     }
 
+    static async set(storeName, id, data) {
+        return this.save(storeName, id, data);
+    }
+
     // --- Dungeon Progress ---
     static async getBestRound(dungeonId) {
         if (!this.db) await this.initDB();

@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import DBManager from '../Database/DBManager.js';
 import globalEventBus from '../Events/EventBus.js';
-import { GameConfig } from '../Core/EntityStats.js';
+import { GameConfig, PetStats } from '../Core/EntityStats.js';
 
 export default class LootManager {
     constructor(scene) {
@@ -16,7 +16,21 @@ export default class LootManager {
     spawnLoot(x, y, monsterId = null) {
         console.log(`[LootManager] Spawning items for ${monsterId} at (${x.toFixed(1)}, ${y.toFixed(1)})`);
         // Randomly pick 1 to 3 items to drop
-        const dropCount = Phaser.Math.Between(1, 3);
+        let dropCount = Phaser.Math.Between(1, 3);
+
+        // Pet Bonus: e.g. Dog Pet +5% drop rate
+        const partyManager = this.scene.game?.partyManager;
+        if (partyManager) {
+            const activePetId = partyManager.getActivePet();
+            const petKey = activePetId?.toUpperCase();
+            const petData = PetStats[petKey];
+            if (petData && petData.passive?.effect?.dropRateMod) {
+                if (Math.random() < petData.passive.effect.dropRateMod) {
+                    dropCount++;
+                    console.log(`[LootManager] Pet Passive (${petData.name}): Extra drop granted!`);
+                }
+            }
+        }
 
         const isSkeleton = monsterId && monsterId.includes('skeleton');
 

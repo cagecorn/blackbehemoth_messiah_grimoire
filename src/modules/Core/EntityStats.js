@@ -835,11 +835,43 @@ export const PetStats = {
         id: 'dog_pet',
         name: '도그펫',
         sprite: 'dog_pet', // Loaded as an image in BootScene
+
+        // Base Stats
+        hp: 100,
+        maxHp: 100,
+        atk: 5,
+        mAtk: 0,
         speed: 220,        // Faster collection
+        atkSpd: 1.0,
+        atkRange: 40,
+        rangeMin: 0,
+        rangeMax: 40,
+        castSpd: 1.0,
+        acc: 100,
+        eva: 10,
+        crit: 5,
         collectRange: 80,  // Pick up range
         detectRange: 2000, // Effectively global for the dungeon
         scale: 0.45,       // Smaller than before (was 0.6)
-        personality: '뽈뽈뽈 뒤뚱뒤뚱 움직이는 귀여운 강아지 친구. 떨어진 자원을 척척 줍습니다.'
+        personality: '뽈뽈뽈 뒤뚱뒤뚱 움직이는 귀여운 강아지 친구. 떨어진 자원을 척척 줍습니다.',
+
+        // Growth per level
+        growth: {
+            maxHp: 10,
+            atk: 1,
+            mAtk: 0,
+            def: 1,
+            mDef: 1
+        },
+
+        // Passives
+        passive: {
+            name: '충직한 보물탐험가',
+            description: '던전에서 아이템 드랍율이 5% 상승합니다.',
+            effect: {
+                dropRateMod: 0.05
+            }
+        }
     }
 };
 

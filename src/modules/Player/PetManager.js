@@ -24,8 +24,13 @@ export default class PetManager {
 
         console.log(`[PetManager] Spawning pet: ${petId}`);
 
+        const partyManager = this.scene.game?.partyManager;
+        const state = partyManager ? partyManager.getPetState(petId) : null;
+        const stars = partyManager ? partyManager.getHighestPetStar(petId) : 1;
+        const level = state ? (state.level || 1) : 1;
+
         if (petId === 'dog_pet') {
-            this.activePet = new DogPet(this.scene, x, y);
+            this.activePet = new DogPet(this.scene, x, y, { level, stars });
             this.pets.add(this.activePet);
         } else {
             console.warn(`[PetManager] Unknown pet ID: ${petId}`);

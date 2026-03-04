@@ -10,6 +10,9 @@ class PartyManager {
         this.mercenaryStates = {}; // Map of characterId -> state object (runtime stats)
         this.activeParty = [null, null, null, null, null, null]; // 6 slots for mercenary IDs
         this.roster = []; // 10 candidates
+        this.activePet = 'dog_pet'; // Default pet
+        this.petStates = {}; // Map of petId -> state object
+        this.playerPetRoster = {}; // Map of petId -> { star: count } similar to mercenaries
         this.CHARM_GRID_SIZE = 9;
     }
 
@@ -18,6 +21,7 @@ class PartyManager {
         // Roster starts with the 10 available characters
         this.roster = allCharacters || [];
         this.playerRoster = await DBManager.getMercenaryRoster();
+        this.playerPetRoster = await DBManager.get('settings', 'petRoster') || { 'dog_pet': { '1': 1 } }; // Default dog_pet
 
         // Load Persistent State
         const savedParty = await DBManager.getParty();
@@ -30,6 +34,19 @@ class PartyManager {
         if (savedStates) {
             this.mercenaryStates = savedStates;
             console.log('[PartyManager] Loaded saved mercenary states');
+        }
+
+        const savedPetStates = await DBManager.get('settings', 'petStates');
+        if (savedPetStates) {
+            this.petStates = savedPetStates;
+            console.log('[PartyManager] Loaded saved pet states');
+        }
+
+        // Load Pet State
+        const petData = await DBManager.get('settings', 'playerPets');
+        if (petData && petData.activePet) {
+            this.activePet = petData.activePet;
+            console.log('[PartyManager] Loaded active pet:', this.activePet);
         }
     }
 
@@ -45,6 +62,13 @@ class PartyManager {
 
         // 데이터가 key(대문자)로 들어갔는지 charId(원형)로 들어갔는지 안전하게 체크
         const rosterData = this.playerRoster[key] || this.playerRoster[charId];
+        const stars = Object.keys(rosterData).map(Number);
+        return stars.length > 0 ? Math.max(...stars) : 1;
+    }
+
+    getHighestPetStar(petId) {
+        const rosterData = this.playerPetRoster[petId];
+        if (!rosterData) return 1; // Default 1 for dog_pet if missing? or 0
         const stars = Object.keys(rosterData).map(Number);
         return stars.length > 0 ? Math.max(...stars) : 1;
     }
@@ -67,6 +91,41 @@ class PartyManager {
 
     getActiveParty() {
         return this.activeParty;
+    }
+
+    getActivePet() {
+        return this.activePet;
+    }
+
+    async setActivePet(petId) {
+        this.activePet = petId;
+        // Persist pet change
+        const petData = (await DBManager.get('settings', 'playerPets')) || { activePet: 'dog_pet' };
+        petData.activePet = petId;
+        await DBManager.set('settings', 'playerPets', petData);
+        console.log('[PartyManager] Active pet updated and saved:', petId);
+    }
+
+    async savePetState(id, state) {
+        this.petStates[id] = {
+            ...this.petStates[id],
+            ...state,
+            lastUpdate: Date.now()
+        };
+        await DBManager.set('settings', 'petStates', this.petStates);
+    }
+
+    getPetState(id) {
+        return this.petStates[id] || { level: 1, exp: 0 };
+    }
+
+    /**
+     * Calculates the required "Monster Meat" for the next level.
+     * Formula: Base(20) * (1.5 ^ (level - 1))
+     */
+    getPetLevelUpCost(petId, currentLevel) {
+        const baseCost = 20;
+        return Math.floor(baseCost * Math.pow(1.5, currentLevel - 1));
     }
 
     /**

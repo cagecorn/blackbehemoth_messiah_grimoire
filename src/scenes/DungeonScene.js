@@ -1162,8 +1162,8 @@ export default class DungeonScene extends Phaser.Scene {
 
     async initPet() {
         try {
-            const petData = await DBManager.get('settings', 'playerPets');
-            const activePetId = petData ? petData.activePet : 'dog_pet';
+            const partyManager = this.game?.partyManager;
+            const activePetId = partyManager ? partyManager.getActivePet() : 'dog_pet';
 
             const startPos = this.dungeonManager.getPlayerStartPosition();
             const pet = this.petManager.spawnPet(activePetId, startPos.x, startPos.y);

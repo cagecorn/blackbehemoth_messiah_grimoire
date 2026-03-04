@@ -53,7 +53,7 @@ export default function applyHealerAI(unit, getAllyGroup, getEnemyGroup) {
         let nearest = null;
         let minDist = Infinity;
         for (const enemy of children) {
-            if (!enemy.active || enemy.hp <= 0) continue;
+            if (!enemy.active || enemy.hp <= 0 || enemy.className === 'pet') continue;
             const dist = Phaser.Math.Distance.Between(unit.x, unit.y, enemy.x, enemy.y);
             const r1 = unit.body ? unit.body.radius : 0;
             const r2 = enemy.body ? enemy.body.radius : 0;

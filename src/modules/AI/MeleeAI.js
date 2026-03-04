@@ -44,8 +44,8 @@ export default function applyMeleeAI(agent, targetListGetter, initialState = 'AG
             if (!t || !t.active || !t.body) {
                 continue;
             }
-            // 체력이 0 이하인 유닛 스킵
-            if (t.hp !== undefined && t.hp <= 0) {
+            // 체력이 0 이하이거나 펫인 유닛 스킵
+            if ((t.hp !== undefined && t.hp <= 0) || t.className === 'pet') {
                 continue;
             }
 

@@ -69,9 +69,11 @@ export default function applyRangedAI(unit, skillNode = null) {
         let avgX = 0;
         let avgY = 0;
         let count = 0;
-
         for (const enemy of enemies) {
-            if (!enemy.active || enemy.hp <= 0) continue;
+            // 체력이 0 이하이거나 펫인 유닛 스킵
+            if (!enemy.active || (enemy.hp !== undefined && enemy.hp <= 0) || enemy.className === 'pet') {
+                continue;
+            }
             const dist = Phaser.Math.Distance.Between(unit.x, unit.y, enemy.x, enemy.y);
             if (dist < 120) {
                 avgX += enemy.x;

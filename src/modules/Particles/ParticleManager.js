@@ -81,6 +81,13 @@ export default class ParticleManager {
     }
 
     /**
+     * Alias for createSparkle to provide a more intuitive name for combat impacts.
+     */
+    createHitEffect(x, y) {
+        this.createSparkle(x, y);
+    }
+
+    /**
      * 지속 오라 이펙트 (버프/상태이상 지속 표시용).
      * @param {Phaser.GameObjects.GameObject} target
      * @param {string} texture

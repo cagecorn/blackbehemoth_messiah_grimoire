@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { scaleStats } from '../Core/EntityStats.js';
 
 /**
  * Pet.js
@@ -6,9 +7,12 @@ import Phaser from 'phaser';
  * Pets automatically move towards dropped loot and collect it.
  */
 export default class Pet extends Phaser.GameObjects.Container {
-    constructor(scene, x, y, config) {
+    constructor(scene, x, y, baseConfig, stats = { level: 1, stars: 1 }) {
         super(scene, x, y);
         this.scene = scene;
+
+        // Scale config based on level and stars
+        const config = scaleStats(baseConfig, stats.level, stats.stars);
         this.config = config;
 
         this.id = config.id || 'pet_' + Phaser.Math.Between(1000, 9999);
@@ -16,7 +20,10 @@ export default class Pet extends Phaser.GameObjects.Container {
         this.className = 'pet'; // Added for compatibility with LootManager.js
         this.leader = null;    // Reference to the player/leader
 
-        // Stats
+        // Stats from scaled config
+        this.hp = config.hp || 100;
+        this.maxHp = config.maxHp || 100;
+        this.atk = config.atk || 0;
         this.speed = config.speed || 150;
         this.followSpeed = this.speed * 0.7; // Slightly slower when just following
         this.collectRange = config.collectRange || 50;
@@ -24,8 +31,14 @@ export default class Pet extends Phaser.GameObjects.Container {
         this.followRange = 60; // Stay near leader
         this.scaleValue = config.scale || 0.8;
 
+        this.atkRange = config.atkRange || 40;
+        this.atkDelay = (config.atkSpd || 1.0) * 1000; // ms
+        this.lastAtkTime = 0;
+        this.isAttacking = false;
+
         // State
         this.targetLoot = null;
+        this.targetEnemy = null;
         this.isWaddling = false;
 
         // Setup Physics & Rendering
@@ -86,20 +99,30 @@ export default class Pet extends Phaser.GameObjects.Container {
     update() {
         if (!this.active || !this.body) return;
 
-        // 1. Check for target loot
+        // 1. Check for target loot (Highest Priority)
         if (!this.targetLoot || !this.targetLoot.active || this.targetLoot.isCollected || !this.targetLoot.canBeCollected) {
-            this.findNewTarget();
+            this.findNewLootTarget();
         }
 
-        // 2. Move towards target
         if (this.targetLoot) {
-            this.moveToTarget();
-        } else {
+            this.targetEnemy = null; // Prioritize loot
+            this.moveToLootTarget();
+            return;
+        }
+
+        // 2. Check for enemies (Combat Priority)
+        if (!this.targetEnemy || !this.targetEnemy.active || (this.targetEnemy.hp !== undefined && this.targetEnemy.hp <= 0)) {
+            this.findNewCombatTarget();
+        }
+
+        if (this.targetEnemy && !this.isAttacking) {
+            this.moveToCombatTarget();
+        } else if (!this.isAttacking) {
             this.idleBehavior();
         }
     }
 
-    findNewTarget() {
+    findNewLootTarget() {
         const lootItems = this.scene.lootManager?.lootGroup?.getChildren() || [];
         let closest = null;
         let minDist = this.detectRange;
@@ -122,7 +145,7 @@ export default class Pet extends Phaser.GameObjects.Container {
         }
     }
 
-    moveToTarget() {
+    moveToLootTarget() {
         const dist = Phaser.Math.Distance.Between(this.x, this.y, this.targetLoot.x, this.targetLoot.y);
 
         if (dist <= this.collectRange) {
@@ -144,6 +167,129 @@ export default class Pet extends Phaser.GameObjects.Container {
         this.sprite.flipX = this.body.velocity.x < 0;
 
         this.startWaddle();
+    }
+
+    findNewCombatTarget() {
+        const enemies = this.scene.enemies?.getChildren() || [];
+        let closest = null;
+        let minDist = this.detectRange; // Reuse detect range for combat too
+
+        enemies.forEach(enemy => {
+            if (enemy.active && enemy.hp > 0) {
+                const dist = Phaser.Math.Distance.Between(this.x, this.y, enemy.x, enemy.y);
+                if (dist < minDist) {
+                    minDist = dist;
+                    closest = enemy;
+                }
+            }
+        });
+
+        this.targetEnemy = closest;
+    }
+
+    moveToCombatTarget() {
+        if (!this.targetEnemy) return;
+
+        const dist = Phaser.Math.Distance.Between(this.x, this.y, this.targetEnemy.x, this.targetEnemy.y);
+        const atkRange = this.atkRange;
+
+        if (dist <= atkRange) {
+            this.body.setVelocity(0, 0);
+            this.stopWaddle();
+            this.tryAttack();
+            return;
+        }
+
+        // Move toward enemy
+        const angle = Phaser.Math.Angle.Between(this.x, this.y, this.targetEnemy.x, this.targetEnemy.y);
+        this.body.setVelocity(
+            Math.cos(angle) * this.speed,
+            Math.sin(angle) * this.speed
+        );
+        this.sprite.flipX = this.body.velocity.x < 0;
+        this.startWaddle();
+    }
+
+    tryAttack() {
+        const now = this.scene.time.now;
+        if (now - this.lastAtkTime < this.atkDelay || this.isAttacking) return;
+
+        this.lastAtkTime = now;
+        this.performDashAttack();
+    }
+
+    performDashAttack() {
+        if (!this.targetEnemy || !this.targetEnemy.active) return;
+        this.isAttacking = true;
+        this.stopWaddle();
+        this.stopIdleBob();
+
+        const target = this.targetEnemy;
+        const startX = this.x;
+        const startY = this.y;
+
+        // Dash toward target position + a bit extra to "strike through"
+        const angle = Phaser.Math.Angle.Between(this.x, this.y, target.x, target.y);
+        const dashDist = 40;
+        const dashX = target.x + Math.cos(angle) * 10;
+        const dashY = target.y + Math.sin(angle) * 10;
+
+        // Visual Flip
+        this.sprite.flipX = (target.x < this.x);
+
+        // Afterimage Effect
+        const afterimageTimer = this.scene.time.addEvent({
+            delay: 50,
+            callback: () => {
+                if (this.scene?.fxManager && this.active) {
+                    this.scene.fxManager.createAfterimage(this, 150, 0.4);
+                }
+            },
+            repeat: 3
+        });
+
+        this.scene.tweens.add({
+            targets: this,
+            x: dashX,
+            y: dashY,
+            duration: 150,
+            ease: 'Power2',
+            onComplete: () => {
+                // Apply Damage
+                if (target.active && target.takeDamage) {
+                    const damage = this.atk || 5;
+                    target.takeDamage(damage, this, false, null, Math.random() < 0.05);
+
+                    // Small impact effect
+                    if (this.scene.particleManager) {
+                        this.scene.particleManager.createSparkle(target.x, target.y);
+                    }
+                }
+
+                // Return to start or just end attack
+                this.scene.tweens.add({
+                    targets: this,
+                    x: startX,
+                    y: startY,
+                    duration: 150,
+                    ease: 'Power1',
+                    delay: 50,
+                    onComplete: () => {
+                        this.isAttacking = false;
+                        this.startIdleBob();
+                    }
+                });
+            }
+        });
+    }
+
+    /**
+     * Pets are invincible.
+     */
+    takeDamage(damage, source) {
+        // No-op. Pets do not take damage.
+        console.log(`[Pet] ${this.unitName} is invincible! (Ignored ${damage} damage)`);
+        return false;
     }
 
     idleBehavior() {

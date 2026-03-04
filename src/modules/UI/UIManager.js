@@ -4,7 +4,7 @@ import EventBus from '../Events/EventBus.js';
 import intentRouter from '../AI/IntentRouter.js';
 import localLLM from '../AI/LocalLLM.js';
 import embeddingGemma from '../AI/EmbeddingGemma.js';
-import { MercenaryClasses, Characters } from '../Core/EntityStats.js';
+import { MercenaryClasses, Characters, PetStats } from '../Core/EntityStats.js';
 // partyManager will be accessed via this.scene.game.partyManager
 import ItemManager from '../Core/ItemManager.js';
 import CharmManager from '../Core/CharmManager.js';
@@ -708,24 +708,84 @@ export default class UIManager {
         overlay.id = 'party-formation-overlay';
         overlay.className = 'party-selection-overlay';
         this.partyFormationOverlay = overlay;
+        this.partyViewState = 'MERCE'; // Initial view
 
-        let candidatesHtml = '';
-        Object.values(Characters).forEach(char => {
-            const star = partyManager.getHighestStar(char.id);
-            if (star === 0) return; // Not owned
+        const currentSlots = [...partyManager.getActiveParty()];
+        let currentPet = partyManager.getActivePet();
 
-            const starHtml = `<div style="position:absolute; top:4px; right:4px; font-size:12px; font-weight:bold; color:#fbbf24; text-shadow:0 1px 2px #000;">★${star}</div>`;
-            candidatesHtml += `
-                <div class="mercenary-card" draggable="true" data-id="${char.id}" style="position:relative;">
-                    ${starHtml}
-                    <img src="assets/characters/party/${char.sprite}.png" alt="${char.name}">
-                    <div class="merc-name">${char.name.split(' (')[0]}</div>
-                </div>
-            `;
-        });
+        const renderCandidates = (type) => {
+            let candidatesHtml = '';
+            if (type === 'MERCE') {
+                Object.values(Characters).forEach(char => {
+                    const star = partyManager.getHighestStar(char.id);
+                    if (star === 0) return; // Not owned
+                    const isSelected = currentSlots.includes(char.id);
+
+                    const starHtml = `<div style="position:absolute; top:4px; right:4px; font-size:12px; font-weight:bold; color:#fbbf24; text-shadow:0 1px 2px #000;">★${star}</div>`;
+                    candidatesHtml += `
+                        <div class="mercenary-card ${isSelected ? 'selected' : ''}" draggable="true" data-id="${char.id}" style="position:relative;">
+                            ${starHtml}
+                            <img src="assets/characters/party/${char.sprite}.png" alt="${char.name}">
+                            <div class="merc-name">${char.name.split(' (')[0]}</div>
+                        </div>
+                    `;
+                });
+            } else {
+                // PET View
+                Object.values(PetStats).forEach(pet => {
+                    const isSelected = currentPet === pet.id;
+                    const star = partyManager.getHighestPetStar(pet.id);
+                    const starHtml = star > 0 ? `<div style="position:absolute; top:4px; right:4px; font-size:12px; font-weight:bold; color:#fbbf24; text-shadow:0 1px 2px #000;">★${star}</div>` : '';
+
+                    candidatesHtml += `
+                        <div class="mercenary-card ${isSelected ? 'selected' : ''}" draggable="true" data-id="${pet.id}" style="position:relative;">
+                            ${starHtml}
+                            <img src="assets/pet/${pet.sprite}.png" alt="${pet.name}">
+                            <div class="merc-name">${pet.name}</div>
+                        </div>
+                    `;
+                });
+            }
+            return candidatesHtml;
+        };
+
+        const updateUI = () => {
+            const container = overlay.querySelector('.mercenary-candidates');
+            container.innerHTML = renderCandidates(this.partyViewState);
+
+            // Re-bind events to cards
+            const cards = container.querySelectorAll('.mercenary-card');
+            cards.forEach(card => {
+                card.addEventListener('dragstart', (e) => e.dataTransfer.setData('sourceId', card.dataset.id));
+                card.onclick = () => {
+                    const id = card.dataset.id;
+                    if (this.partyViewState === 'MERCE') {
+                        if (currentSlots.includes(id)) return;
+                        let emptyIndex = currentSlots.indexOf(null);
+                        if (emptyIndex !== -1) {
+                            currentSlots[emptyIndex] = id;
+                            updateSlotUI(emptyIndex);
+                            updateUI();
+                        }
+                    } else {
+                        // Switch Pet
+                        currentPet = id;
+                        updatePetSlotUI();
+                        updateUI();
+                    }
+                };
+            });
+
+            // Update Toggle Style
+            overlay.querySelector('#btn-toggle-merce').classList.toggle('active', this.partyViewState === 'MERCE');
+            overlay.querySelector('#btn-toggle-pet').classList.toggle('active', this.partyViewState === 'PET');
+        };
 
         overlay.innerHTML = `
-            <div class="party-selection-title">원정대 편성 (슬롯에 드래그하거나 클릭하여 배치)</div>
+            <div class="party-selection-header" style="width: 100%; display: flex; justify-content: center; gap: 20px; margin-bottom: 20px;">
+                <button id="btn-toggle-merce" class="tab-btn active" style="flex: 1; max-width: 150px; font-size: 11px;">[ 용병 ]</button>
+                <button id="btn-toggle-pet" class="tab-btn" style="flex: 1; max-width: 150px; font-size: 11px;">[ 펫 ]</button>
+            </div>
             
             <div class="party-slots">
                 <div class="party-slot" data-slot="0">1</div>
@@ -736,8 +796,13 @@ export default class UIManager {
                 <div class="party-slot" data-slot="5">6</div>
             </div>
 
+            <div class="pet-slots-container" style="display: flex; justify-content: center; margin-bottom: 30px; border: 1px solid var(--retro-border); padding: 10px; background: rgba(0,0,0,0.3); width: 80%; max-width: 400px; position:relative;">
+                <div style="position:absolute; top:-10px; left:10px; background:var(--retro-bg); padding:0 5px; font-family:var(--font-pixel); font-size:8px; color:var(--retro-amber);">PET SLOT</div>
+                <div class="party-slot pet-slot" data-type="pet" style="width: 80px; height: 80px; border-style: solid; border-color: var(--retro-cyan);">P</div>
+            </div>
+
             <div class="mercenary-candidates">
-                ${candidatesHtml}
+                ${renderCandidates('MERCE')}
             </div>
             
             <div style="display: flex; gap: 10px; width: 100%; justify-content: center; margin-top: 10px;">
@@ -748,9 +813,8 @@ export default class UIManager {
 
         document.body.appendChild(overlay);
 
-        const currentSlots = [...partyManager.getActiveParty()];
-        const slotEls = overlay.querySelectorAll('.party-slot');
-        const cards = overlay.querySelectorAll('.mercenary-card');
+        const slotEls = overlay.querySelectorAll('.party-slot:not(.pet-slot)');
+        const petSlotEl = overlay.querySelector('.pet-slot');
 
         const updateSlotUI = (index) => {
             const charId = currentSlots[index];
@@ -775,45 +839,82 @@ export default class UIManager {
             }
         };
 
-        currentSlots.forEach((_, i) => updateSlotUI(i));
-
-        cards.forEach(card => {
-            card.addEventListener('dragstart', (e) => e.dataTransfer.setData('characterId', card.dataset.id));
-            card.onclick = () => {
-                const charId = card.dataset.id;
-                if (currentSlots.includes(charId)) return;
-                let emptyIndex = currentSlots.indexOf(null);
-                if (emptyIndex !== -1) {
-                    currentSlots[emptyIndex] = charId;
-                    updateSlotUI(emptyIndex);
+        const updatePetSlotUI = () => {
+            if (currentPet) {
+                const pet = Object.values(PetStats).find(p => p.id === currentPet);
+                if (pet) {
+                    petSlotEl.innerHTML = `<img src="assets/pet/${pet.sprite}.png" alt="${pet.name}" style="width: 80%; height: 80%;">`;
+                    petSlotEl.classList.add('filled');
+                    return;
                 }
-            };
-        });
+            }
+            petSlotEl.innerHTML = 'P';
+            petSlotEl.classList.remove('filled');
+        };
 
+        // Toggle Listeners
+        overlay.querySelector('#btn-toggle-merce').onclick = () => {
+            this.partyViewState = 'MERCE';
+            updateUI();
+        };
+        overlay.querySelector('#btn-toggle-pet').onclick = () => {
+            this.partyViewState = 'PET';
+            updateUI();
+        };
+
+        currentSlots.forEach((_, i) => updateSlotUI(i));
+        updatePetSlotUI();
+        updateUI(); // Bind candidate events
+
+        // Drag & Drop for Mercenary Slots
         slotEls.forEach((slot, i) => {
             slot.addEventListener('dragover', (e) => e.preventDefault());
             slot.addEventListener('drop', (e) => {
                 e.preventDefault();
-                const charId = e.dataTransfer.getData('characterId');
-                if (charId) {
-                    const existingIndex = currentSlots.indexOf(charId);
+                const id = e.dataTransfer.getData('sourceId');
+                if (id && this.partyViewState === 'MERCE') {
+                    const existingIndex = currentSlots.indexOf(id);
                     if (existingIndex !== -1 && existingIndex !== i) {
                         currentSlots[existingIndex] = null;
                         updateSlotUI(existingIndex);
                     }
-                    currentSlots[i] = charId;
+                    currentSlots[i] = id;
                     updateSlotUI(i);
+                    updateUI();
                 }
             });
             slot.onclick = () => {
                 currentSlots[i] = null;
                 updateSlotUI(i);
+                updateUI();
             };
         });
 
+        // Drag & Drop for Pet Slot
+        petSlotEl.addEventListener('dragover', (e) => e.preventDefault());
+        petSlotEl.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const id = e.dataTransfer.getData('sourceId');
+            if (id && this.partyViewState === 'PET') {
+                currentPet = id;
+                updatePetSlotUI();
+                updateUI();
+            }
+        });
+        petSlotEl.onclick = () => {
+            // Can pets be unequipped? The requirement says DogPet is default.
+            // Let's allow clearing it if needed, or just keep it.
+            // Requirement says "DogPet is equipped by default", maybe we shouldn't allow null if we only have one pet.
+            // For now, allow clearing.
+            currentPet = null;
+            updatePetSlotUI();
+            updateUI();
+        };
+
         const confirmBtn = overlay.querySelector('.party-confirm-btn');
-        confirmBtn.onclick = () => {
+        confirmBtn.onclick = async () => {
             currentSlots.forEach((id, i) => partyManager.setPartySlot(i, id));
+            await partyManager.setActivePet(currentPet || 'dog_pet');
 
             // Sync with Mobile HUD
             EventBus.emit(EventBus.EVENTS.PARTY_DEPLOYED, {

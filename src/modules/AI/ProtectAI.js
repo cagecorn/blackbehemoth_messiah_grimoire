@@ -79,7 +79,7 @@ export default function applyProtectAI(agent, allyGroupGetter, enemyGroupGetter)
         let minDist = 220; // Only care about enemies within 220px of target
 
         for (const enemy of children) {
-            if (!enemy.active || enemy.hp <= 0) continue;
+            if (!enemy.active || enemy.hp <= 0 || enemy.className === 'pet') continue;
 
             const distToAlly = Phaser.Math.Distance.Between(enemy.x, enemy.y, protectTarget.x, protectTarget.y);
 
