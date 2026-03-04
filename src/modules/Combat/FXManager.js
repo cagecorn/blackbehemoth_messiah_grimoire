@@ -22,12 +22,19 @@ export default class FXManager {
         this._isBatterySaver = localStorage.getItem('batterySaver') === 'true';
 
         // Listen for Battery Saver Toggle
+        this._onBatterySaverToggled = this.onBatterySaverToggled.bind(this);
         import('../Events/EventBus.js').then(module => {
-            const EventBus = module.default;
-            EventBus.on(EventBus.EVENTS.BATTERY_SAVER_TOGGLED, this.onBatterySaverToggled, this);
+            this.EventBus = module.default;
+            this.EventBus.on(this.EventBus.EVENTS.BATTERY_SAVER_TOGGLED, this._onBatterySaverToggled);
         });
 
         console.log(`[FXPool] 초기화 완료. DamageText Pool: ${FXManager.DAMAGE_TEXT_POOL_SIZE}개 사전 생성. ✅`);
+    }
+
+    destroy() {
+        if (this.EventBus) {
+            this.EventBus.off(this.EventBus.EVENTS.BATTERY_SAVER_TOGGLED, this._onBatterySaverToggled);
+        }
     }
 
     onBatterySaverToggled(enabled) {

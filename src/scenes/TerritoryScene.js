@@ -68,8 +68,6 @@ export default class TerritoryScene extends Phaser.Scene {
         // Solid dark background (canvas) — banners cover the viewport via DOM
         this.add.rectangle(0, 0, width, height, 0x0a0506).setOrigin(0, 0);
 
-        // Slight sparkle for depth
-        this.createSparkleParticles();
 
         // DOM layers
         this.createBannerList();
@@ -83,32 +81,6 @@ export default class TerritoryScene extends Phaser.Scene {
         console.log('[TerritoryScene] 영지 씬 생성 완료 — 키치 배너 레이아웃');
     }
 
-    // ─── Sparkle particles (same as before) ──────────────────────────────────
-    createSparkleParticles() {
-        const particles = this.add.particles(0, 0, 'emoji_sparkles', {
-            x: { min: 0, max: this.cameras.main.width },
-            y: { min: 0, max: this.cameras.main.height },
-            lifespan: { min: 2000, max: 4000 },
-            speedY: { min: -10, max: -30 },
-            speedX: { min: -10, max: 10 },
-            scale: { start: 0.1, end: 0.8 },
-            alpha: {
-                onEmit: () => 0,
-                onUpdate: (particle, key, t) => {
-                    if (t < 0.2) return t * 5;
-                    return 1 - ((t - 0.2) / 0.8);
-                }
-            },
-            blendMode: 'ADD',
-            frequency: 300,
-            tint: 0xffffff
-        });
-
-        if (particles.postFX) {
-            particles.postFX.addBlur(1, 1, 1);
-            particles.postFX.addGlow(0xffffff, 2.5, 0, false, 0.1, 10);
-        }
-    }
 
     // ─── Kitsch Banner List ───────────────────────────────────────────────────
     createBannerList() {

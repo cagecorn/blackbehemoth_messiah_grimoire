@@ -196,23 +196,26 @@ export default class DungeonScene extends Phaser.Scene {
         this.skillFxLayer = this.add.container(0, 0);
         this.skillFxLayer.setDepth(15000); // Between units (~5000-10000) and Damage Text (~20000)
 
-        if (this.skillFxLayer.postFX && !localStorage.getItem('batterySaver') === 'true') {
+        if (this.skillFxLayer.postFX && localStorage.getItem('batterySaver') !== 'true') {
             const bloom = this.skillFxLayer.postFX.addBloom(0xffffff, 1, 1, 1.2, 3);
             console.log('[Visuals] Skill FX Bloom Pipeline Active! ✨ (Golden Glow enabled)');
         }
 
-        // Listen for Battery Saver Toggle to dynamic disable PostFX
-        EventBus.on(EventBus.EVENTS.BATTERY_SAVER_TOGGLED, (enabled) => {
-            if (enabled && this.skillFxLayer.postFX) {
-                this.skillFxLayer.postFX.clear();
-                console.log('[Visuals] Battery Saver ON - Removed PostFX from Skill Layer.');
-            } else if (!enabled && this.skillFxLayer.postFX) {
-                if (this.skillFxLayer.postFX.list.length === 0) {
-                    this.skillFxLayer.postFX.addBloom(0xffffff, 1, 1, 1.2, 3);
-                    console.log('[Visuals] Battery Saver OFF - Restored PostFX Bloom.');
+        // Create a named listener for Battery Saver for easy removal
+        this.onBatterySaverToggled = (enabled) => {
+            if (this.skillFxLayer && this.skillFxLayer.postFX) {
+                if (enabled) {
+                    this.skillFxLayer.postFX.clear();
+                    console.log('[Visuals] Battery Saver ON - Removed PostFX from Skill Layer.');
+                } else {
+                    if (this.skillFxLayer.postFX.list.length === 0) {
+                        this.skillFxLayer.postFX.addBloom(0xffffff, 1, 1, 1.2, 3);
+                        console.log('[Visuals] Battery Saver OFF - Restored PostFX Bloom.');
+                    }
                 }
             }
-        }, this);
+        };
+        EventBus.on(EventBus.EVENTS.BATTERY_SAVER_TOGGLED, this.onBatterySaverToggled, this);
 
         // Listen for Character Swap
         this.handleDebugSwapListener = this.handleDebugSwap.bind(this);
@@ -220,7 +223,6 @@ export default class DungeonScene extends Phaser.Scene {
 
         // Global Combat Events for Rewards - Store as reference for cleanup
         this.handleMonsterKilledListener = (payload) => {
-            // Distribute EXP to all active mercenaries
             if (this.mercenaries && this.mercenaries.active) {
                 this.mercenaries.getChildren().forEach(merc => {
                     if (merc.active && merc.hp > 0) {
@@ -231,13 +233,22 @@ export default class DungeonScene extends Phaser.Scene {
         };
         EventBus.on(EventBus.EVENTS.MONSTER_KILLED, this.handleMonsterKilledListener);
 
-        // Cleanup on scene shutdown
+        // Resurrection Listener
+        this.handleResurrectionListener = this.handleResurrection.bind(this);
+        EventBus.on(EventBus.EVENTS.MERCENARY_RESURRECT, this.handleResurrectionListener);
+
+        // Cleanup on scene shutdown - CENTRALIZED CLEANUP
         this.events.once('shutdown', () => {
+            EventBus.off(EventBus.EVENTS.BATTERY_SAVER_TOGGLED, this.onBatterySaverToggled, this);
             EventBus.off(EventBus.EVENTS.DEBUG_SWAP_CHARACTER, this.handleDebugSwapListener);
             EventBus.off(EventBus.EVENTS.MONSTER_KILLED, this.handleMonsterKilledListener);
+            EventBus.off(EventBus.EVENTS.MERCENARY_RESURRECT, this.handleResurrectionListener);
+
+            if (this.fxManager) this.fxManager.destroy();
             if (this.weatherManager) this.weatherManager.destroy();
             if (this.ambientMoteManager) this.ambientMoteManager.destroy();
-            console.log('[DungeonScene] Cleaned up EventBus listeners + WeatherManager + AmbientMotes.');
+
+            console.log('[DungeonScene] Total Shutdown: Removed EventBus listeners + Cleaned up Managers.');
         });
 
         // Spawn Party from PartyManager
