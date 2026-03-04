@@ -149,7 +149,7 @@ export default class TerritoryScene extends Phaser.Scene {
                 <div class="territory-banner-label-wrap">
                     <span class="territory-banner-sublabel">${banner.sublabel}</span>
                     <span class="territory-banner-label">${banner.label}</span>
-                    <span class="territory-banner-arrow">▶</span>
+                    <span class="territory-banner-arrow">▸</span>
                 </div>
             </div>
         `;
