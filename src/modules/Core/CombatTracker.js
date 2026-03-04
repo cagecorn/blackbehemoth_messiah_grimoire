@@ -1,4 +1,5 @@
 import EventBus from '../Events/EventBus.js';
+import partyManager from './PartyManager.js';
 
 /**
  * CombatTracker.js
@@ -50,6 +51,9 @@ class CombatTracker {
             this.stats = {};
         }
         this.lastGlobalUpdateTime = now;
+
+        // Only track entities that exist in the Party Manager (excludes pets, clones, bosses)
+        if (!partyManager.getState(unitId)) return;
 
         if (!this.stats[unitId]) {
             this.stats[unitId] = {
