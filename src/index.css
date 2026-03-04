@@ -1,4 +1,4 @@
-/* ================================================================
+﻿/* ================================================================
    RETRO UI SYSTEM ??CSS Variables
    Palette: CRT Green + Amber + Dark Panel
    ================================================================ */
@@ -74,12 +74,12 @@ body {
 /* 
   ================================================================
   HD-2D Visual Effects Overlays (Octopath Traveler Style)
-  ?꾨왂: GPU-accelerated CSS only. JavaScript/Canvas ?곗궛 ?놁쓬.
-  ?곗궛 鍮꾩슜: ~0 (釉뚮씪?곗? ?⑹꽦 ?덉씠???꾩엫)
+  ?袁⑥셽: GPU-accelerated CSS only. JavaScript/Canvas ?怨쀪텦 ??곸벉.
+  ?怨쀪텦 ??쑴?? ~0 (?됰슢??怨? ??밴쉐 ??됱뵠???袁⑹뿫)
   ================================================================
 */
 
-/* SVG 湲곕컲 Film Grain ?꾪꽣 ?뺤쓽 (DOM???④꺼吏??뺥깭濡?異붽?) */
+/* SVG 疫꿸퀡而?Film Grain ?袁り숲 ?類ㅼ벥 (DOM????ｊ볼筌??類κ묶嚥??곕떽?) */
 .hd2d-film-grain-filter {
     position: absolute;
     width: 0;
@@ -97,7 +97,7 @@ body {
     z-index: 10;
 }
 
-/* 1. Vignette: 洹뱀옣 ?ㅽ룷?몃씪?댄듃 ?④낵 - 媛?μ옄由щ? ?대몼寃?*/
+/* 1. Vignette: 域밸?????쎈７?紐껋뵬??꾨뱜 ??ｋ궢 - 揶쎛?關?꾤뵳?? ??紐쇔칰?*/
 .vignette {
     background: radial-gradient(ellipse at center,
             transparent 45%,
@@ -105,7 +105,7 @@ body {
             rgba(0, 0, 0, 0.55) 100%);
 }
 
-/* 2. Tilt-Shift: ?붿삤?쇰쭏 ?щ룄 ?쒗쁽 (???꾨옒 釉붾윭) */
+/* 2. Tilt-Shift: ?遺우궎??곗춳 ??猷???쀬겱 (???袁⑥삋 ?됰뗀?? */
 .tilt-shift {
     display: flex;
     flex-direction: column;
@@ -127,7 +127,7 @@ body {
     -webkit-mask-image: linear-gradient(to top, black 0%, transparent 100%);
 }
 
-/* 3. Soft Bloom: 諛앹? ?곸뿭??????鍮쏅쾲吏?*/
+/* 3. Soft Bloom: 獄쏆빘? ?怨몃열??????????룆苡뀐쭪?*/
 .soft-bloom {
     backdrop-filter: blur(3px) brightness(1.15) contrast(1.05);
     -webkit-backdrop-filter: blur(3px) brightness(1.15) contrast(1.05);
@@ -135,21 +135,21 @@ body {
     opacity: 0.2;
 }
 
-/* 4. Color Grading: ?덊듃濡?遺꾩쐞湲?洹몃씪?곗씠???ㅻ쾭?덉씠
-   ?곕쾭(醫뚯긽?? ???щ챸(以묒븰) ????諛붿씠?щ젢(?고븯??
-   CRT/SNES ?꾨쫫 吏덇컧怨??댁슦?ъ??꾨줉 soft-light ?⑹꽦
+/* 4. Color Grading: ??딅뱜嚥??브쑴?욄묾?域밸챶??怨쀬뵠????살쒔??됱뵠
+   ?怨뺤쒔(?ル슣湲?? ????梨?餓λ쵐釉? ????獄쏅뗄??????怨좊릭??
+   CRT/SNES ?袁⑥カ 筌욌뜃而㎪???곸뒭????袁⑥쨯 soft-light ??밴쉐
 */
 .color-grading {
     background:
-        /* 醫뚯긽?? ?곕쑜???곕쾭/?명뵾??(?덊듃濡??섏씠?쇱씠?? */
+        /* ?ル슣湲?? ?怨뺤몴???怨뺤쒔/?紐낅돗??(??딅뱜嚥???륁뵠??깆뵠?? */
         radial-gradient(ellipse at 15% 15%,
             rgba(255, 176, 60, 0.13) 0%,
             transparent 55%),
-        /* ?고븯?? ??諛붿씠?щ젢/?몃뵒怨?(?덊듃濡???꾩슦) */
+        /* ?怨좊릭?? ??獄쏅뗄??????紐껊탵??(??딅뱜嚥????袁⑹뒭) */
         radial-gradient(ellipse at 85% 85%,
             rgba(70, 30, 110, 0.16) 0%,
             transparent 55%),
-        /* ?꾩껜 ?媛곸꽑: ?명뵾?꾟넂荑?釉붾（ ?먮쫫 */
+        /* ?袁⑷퍥 ??揶쏄낯苑? ?紐낅돗?袁잙꼥???됰뗀竊??癒?カ */
         linear-gradient(145deg,
             rgba(200, 140, 60, 0.06) 0%,
             transparent 35%,
@@ -158,7 +158,7 @@ body {
     mix-blend-mode: soft-light;
 }
 
-/* 5. Scanlines: ??議곕??섍퀬 ?좊챸???덊듃濡??꾨쫫 ?쇱씤 */
+/* 5. Scanlines: ??鈺곌퀡???랁??醫딆구????딅뱜嚥??袁⑥カ ??깆뵥 */
 .scanlines {
     background: repeating-linear-gradient(to bottom,
             transparent 0px,
@@ -168,9 +168,9 @@ body {
     background-size: 100% 2px;
 }
 
-/* 6. Film Grain: SVG feTurbulence 湲곕컲 ?몄씠利??좊땲硫붿씠??
-   ?ν넗?⑥뒪 ?몃옒釉붾윭 ?뱀쑀???꾨쫫 洹몃젅??吏덇컧 援ы쁽.
-   CSS @keyframes濡??몄씠利??쒕뱶瑜?吏?띿쟻?쇰줈 諛붽퓭 ?댁븘?덈뒗 ?낆옄媛먯쓣 ??
+/* 6. Film Grain: SVG feTurbulence 疫꿸퀡而??紐꾩뵠筌??醫딅빍筌롫뗄???
+   ?館???λ뮞 ?紐껋삋?됰뗀???諭????袁⑥カ 域밸챶???筌욌뜃而??닌뗭겱.
+   CSS @keyframes嚥??紐꾩뵠筌???뺣굡??筌왖??우읅??곗쨮 獄쏅떽????곷툡??덈뮉 ??놁쁽揶쏅Ŋ????
 */
 .film-grain {
     opacity: 0.045;
@@ -359,9 +359,9 @@ body {
     margin-right: 4px;
 }
 
-/* 7. Chromatic Aberration: RGB 梨꾨꼸 誘몄꽭 遺꾨━ (?뚯쫰 ?됱닔李?
-   吏꾩쭨 愿묓븰 ?뚯쫰泥섎읆 RGB 梨꾨꼸??議곌툑???닿툔?섎뒗 ?④낵.
-   mix-blend-mode濡??붾㈃???먰뿰?ㅻ읇寃??⑹꽦.
+/* 7. Chromatic Aberration: RGB 筌?쑬瑗?沃섎챷苑??브쑬??(???グ ??깅땾筌?
+   筌욊쑴彛??용쵑釉????グ筌ｌ꼶??RGB 筌?쑬瑗??鈺곌퀗?????욱닎??롫뮉 ??ｋ궢.
+   mix-blend-mode嚥??遺얇늺???癒곕염??살쓦野???밴쉐.
 */
 .chromatic-r {
     background: rgba(255, 0, 0, 0.018);
@@ -375,7 +375,7 @@ body {
     mix-blend-mode: screen;
 }
 
-/* ?щ줈留덊떛 而⑦뀒?대꼫: ??梨꾨꼸???섎굹???덉씠?대줈 臾띠쓬 */
+/* ??以덌쭕?딅뼓 ?뚢뫂???瑗? ??筌?쑬瑗????롪돌????됱뵠??以??얜씈??*/
 .chromatic-aberration {
     overflow: hidden;
 }
@@ -1935,23 +1935,24 @@ body {
 
 #hud-top {
     padding: 6px 12px;
-    /* ?곹븯 ?щ갚 ???異뺤냼 */
+    /* ?怨밸릭 ??媛??????곕벡??*/
     display: flex;
     justify-content: space-between;
     align-items: center;
     pointer-events: auto;
-    background: linear-gradient(to bottom, rgba(22, 16, 4, 0.97), rgba(14, 10, 2, 0.95));
-    border-bottom: 2px solid var(--retro-amber);
-    box-shadow: 0 2px 8px rgba(255, 176, 0, 0.2), 0 1px 0 rgba(255, 255, 255, 0.04) inset;
+    /* Muted Red Velvet Gradient */
+    background: linear-gradient(to bottom, rgba(45, 10, 15, 0.98), rgba(22, 5, 8, 0.96));
+    border-bottom: 2px solid rgba(200, 130, 40, 0.65);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.8), 0 1px 0 rgba(255, 255, 255, 0.06) inset;
 }
 
 .hud-stat {
     display: flex;
     align-items: center;
     gap: 6px;
-    /* 媛꾧꺽 異뺤냼 */
+    /* 揶쏄쑨爰??곕벡??*/
     font-size: 16px;
-    /* ?고듃 異뺤냼 (22px -> 16px) */
+    /* ?怨좊뱜 ?곕벡??(22px -> 16px) */
     font-family: var(--font-vt);
     color: var(--retro-gold);
     text-shadow: 0 0 8px var(--retro-gold);
@@ -1959,7 +1960,7 @@ body {
 
 .hud-stat img {
     width: 16px;
-    /* ?꾩씠肄?異뺤냼 (22px -> 16px) */
+    /* ?袁⑹뵠???곕벡??(22px -> 16px) */
     height: 16px;
     image-rendering: pixelated;
 }
@@ -1970,27 +1971,27 @@ body {
 }
 
 #hud-menu-btns button {
-    /* Premium gold-bordered icon button */
-    background: rgba(255, 176, 0, 0.06);
-    border: 1px solid rgba(255, 176, 0, 0.35);
+    /* Premium dark velvet button with subtle gold/crimson accents */
+    background: linear-gradient(to bottom, rgba(65, 15, 20, 0.75), rgba(35, 8, 12, 0.85));
+    border: 1px solid rgba(200, 130, 40, 0.45);
     border-radius: 4px;
     width: 32px;
     height: 32px;
     font-size: 15px;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: all 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     display: flex;
     align-items: center;
     justify-content: center;
     color: var(--retro-amber);
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 220, 80, 0.08);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.7), inset 0 1px 1px rgba(255, 180, 100, 0.15);
 }
 
 #hud-menu-btns button:hover {
-    background: rgba(255, 176, 0, 0.18);
-    border-color: var(--retro-amber);
-    box-shadow: 0 0 10px rgba(255, 176, 0, 0.35);
-    transform: translateY(-1px);
+    background: linear-gradient(to bottom, rgba(90, 20, 25, 0.85), rgba(50, 12, 16, 0.92));
+    border-color: rgba(220, 160, 60, 0.8);
+    box-shadow: 0 0 12px rgba(200, 130, 40, 0.5), inset 0 2px 4px rgba(255, 220, 150, 0.2);
+    transform: translateY(-2px);
 }
 
 #hud-bottom {
@@ -2005,15 +2006,15 @@ body {
 }
 
 /* ================================================================
-   PORTRAIT BAR ???덊듃濡??꾩??대뱶 + ?몃젴誘??쇳빀 ?ㅽ???
-   而⑥뀎: 80~90s ?꾩??대뱶 寃⑺닾寃뚯엫 HUD (KOF/SF) + ?꾨???湲濡쒖슦
+   PORTRAIT BAR ????딅뱜嚥??袁???諭?+ ?紐껋졃沃???노? ?????
+   ?뚢뫁?? 80~90s ?袁???諭?野꺿뫚?얍칰??뿫 HUD (KOF/SF) + ?袁???疫꼲嚥≪뮇??
    ================================================================ */
 
 #portrait-bar {
     display: none !important;
-    /* 湲곕낯 ?덈뱺 */
+    /* 疫꿸퀡????덈군 */
     grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
-    /* 6??1??媛뺤젣 */
+    /* 6??1??揶쏅벡??*/
     grid-auto-rows: auto !important;
     gap: 3px !important;
     background: linear-gradient(to top, rgba(5, 5, 8, 0.98), rgba(12, 12, 18, 0.94));
@@ -2035,24 +2036,24 @@ body {
     display: none !important;
 }
 
-/* 媛??곸썒 移대뱶: grid cell??苑?梨꾩썙吏?*/
+/* 揶??怨몄뜏 燁삳?諭? grid cell????筌?쑴?숋쭪?*/
 .unit-portrait {
     display: flex;
     flex-direction: column;
-    /* ?몃줈 諛⑺뼢 ?섏뿴 */
+    /* ?紐껋쨮 獄쎻뫚堉???뤿였 */
     align-items: center;
     justify-content: space-between;
     gap: 3px;
     width: 100%;
     height: 100%;
-    /* 遺紐?洹몃━?????苑?李④쾶 */
+    /* ?봔筌?域밸챶?????????筌△몿苡?*/
     border-radius: 0px;
     background: rgba(10, 10, 15, 0.9);
     position: relative;
     cursor: pointer;
     overflow: hidden;
     padding: 3px 2px;
-    /* 醫뚯슦 ?⑤뵫??理쒕???以꾩엫 */
+    /* ?ル슣????ㅻ뎃??筌ㅼ뮆???餓κ쑴??*/
     box-sizing: border-box;
     border: 1px solid var(--retro-border2);
     box-shadow: 1px 1px 0px var(--retro-border);
@@ -2098,7 +2099,7 @@ body {
     }
 }
 
-/* 珥덉긽???대?吏 諛뺤뒪: ?몃줈?뺤뿉 留욊쾶 ?쎄컙 ?뺣? */
+/* ?λ뜆湲?????筌왖 獄쏅벡?? ?紐껋쨮?類ㅻ퓠 筌띿쉳苡???꾩퍢 ?類? */
 .portrait-img-box {
     width: 36px;
     height: 36px;
@@ -2122,17 +2123,17 @@ body {
     filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
 }
 
-/* 移대뱶 ?ㅻⅨ履??뺣낫 釉붾줉 -> ?섎떒 ?뺣낫 釉붾줉 */
+/* 燁삳?諭???삘뀲筌??類ｋ궖 ?됰뗀以?-> ??롫뼊 ?類ｋ궖 ?됰뗀以?*/
 .portrait-info {
     display: flex;
     flex-direction: column;
     gap: 2px;
     width: 100%;
-    /* 遺紐??덈퉬??留욎땄 */
+    /* ?봔筌???덊돩??筌띿쉸??*/
     min-width: 0;
     overflow: hidden;
     align-items: center;
-    /* ?띿뒪??諛?諛?以묒븰 ?뺣젹 */
+    /* ??용뮞??獄?獄?餓λ쵐釉??類ｌ졊 */
 }
 
 .portrait-name-chip {
@@ -2150,7 +2151,7 @@ body {
     text-align: center;
 }
 
-/* HP ?쇰꺼 ??(HP ?섏튂 ?レ옄) */
+/* HP ??곌볼 ??(HP ??륂뒄 ??ъ쁽) */
 .portrait-hp-label {
     font-family: var(--font-vt);
     font-size: clamp(11px, 2.5vw, 14px);
@@ -2158,17 +2159,17 @@ body {
     font-weight: bold;
 }
 
-/* HP ?멸렇癒쇳듃 諛?而⑦뀒?대꼫 */
+/* HP ?硫몃젃?믪눛??獄??뚢뫂???瑗?*/
 .portrait-hp-bar {
     display: flex;
     gap: 1px;
-    /* 1.5px -> 1px 異뺤냼 */
+    /* 1.5px -> 1px ?곕벡??*/
     align-items: center;
     height: 6px;
-    /* 7px -> 6px 異뺤냼 */
+    /* 7px -> 6px ?곕벡??*/
 }
 
-/* HP ?멸렇癒쇳듃 ??移?*/
+/* HP ?硫몃젃?믪눛????燁?*/
 .portrait-hp-segment {
     flex: 1;
     height: 100%;
@@ -2178,21 +2179,21 @@ body {
     image-rendering: pixelated;
 }
 
-/* HP ?쒖꽦 ?멸렇癒쇳듃 ??湲곕낯(嫄닿컯: ?쒖븞) */
+/* HP ??뽮쉐 ?硫몃젃?믪눛????疫꿸퀡??椰꾨떯而? ??뽯툧) */
 .portrait-hp-segment.active-hp {
     background: var(--retro-cyan);
     box-shadow: 0 0 3px rgba(0, 229, 204, 0.5);
     border-color: rgba(0, 229, 204, 0.3);
 }
 
-/* HP ?쒖꽦 ?멸렇癒쇳듃 ??寃쎄퀬(?곕쾭) */
+/* HP ??뽮쉐 ?硫몃젃?믪눛????野껋럡???怨뺤쒔) */
 .portrait-hp-segment.active-hp-warn {
     background: var(--retro-amber);
     box-shadow: 0 0 3px rgba(255, 176, 0, 0.5);
     border-color: rgba(255, 176, 0, 0.3);
 }
 
-/* HP ?쒖꽦 ?멸렇癒쇳듃 ???꾪뿕(?덈뱶) */
+/* HP ??뽮쉐 ?硫몃젃?믪눛?????袁る퓮(??덈굡) */
 .portrait-hp-segment.active-hp-danger {
     background: var(--retro-red);
     box-shadow: 0 0 4px rgba(255, 68, 68, 0.7);
@@ -2210,18 +2211,18 @@ body {
     }
 }
 
-/* 沅곴레湲?諛?而⑦뀒?대꼫 */
+/* 亦낃낫?덃묾?獄??뚢뫂???瑗?*/
 .portrait-ult-bar {
     width: 100%;
     height: 4px;
-    /* 5px -> 4px 異뺤냼 */
+    /* 5px -> 4px ?곕벡??*/
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(100, 60, 160, 0.3);
     position: relative;
     overflow: hidden;
 }
 
-/* 沅곴레湲?諛?梨꾩? */
+/* 亦낃낫?덃묾?獄?筌?쑴? */
 .portrait-ult-fill {
     height: 100%;
     width: 0%;
@@ -2231,7 +2232,7 @@ body {
     position: relative;
 }
 
-/* ULT READY ?곹깭 ??泥댁? 諛붽? 苑?李???*/
+/* ULT READY ?怨밴묶 ??筌ｋ똻? 獄쏅떽? ??筌???*/
 .portrait-ult-fill.ult-ready {
     background: linear-gradient(to right, rgba(255, 176, 0, 0.9), rgba(255, 220, 80, 1));
     box-shadow: 0 0 8px rgba(255, 200, 0, 0.8);
@@ -2250,11 +2251,11 @@ body {
     }
 }
 
-/* ULT ?쇰꺼 (READY! ?띿뒪?? */
+/* ULT ??곌볼 (READY! ??용뮞?? */
 .portrait-ult-label {
     font-family: var(--font-pixel);
     font-size: 5px;
-    /* ?띿뒪???ш린 醫 ??異뺤냼 */
+    /* ??용뮞????由??ヂ ???곕벡??*/
     letter-spacing: 0.2px;
     color: var(--retro-purple);
     line-height: 1;
@@ -2262,7 +2263,7 @@ body {
     white-space: nowrap;
     width: 100%;
     text-align: center;
-    /* ?몃줈??移대뱶??留욎떠 以묒븰 ?뺣젹 */
+    /* ?紐껋쨮??燁삳?諭??筌띿쉸??餓λ쵐釉??類ｌ졊 */
 }
 
 .portrait-ult-label.ult-ready-label {
@@ -2284,16 +2285,16 @@ body {
     }
 }
 
-/* ?곹깭?댁긽 ?꾩씠肄???*/
+/* ?怨밴묶??곴맒 ?袁⑹뵠????*/
 .portrait-status-row {
     display: flex;
     gap: 2px;
     flex-wrap: wrap;
     min-height: 10px;
-    /* ?믪씠 ?쎄컙 異뺤냼 */
+    /* ?誘れ뵠 ??꾩퍢 ?곕벡??*/
     width: 100%;
     justify-content: center;
-    /* 以묒븰 ?뺣젹 */
+    /* 餓λ쵐釉??類ｌ졊 */
     align-items: center;
 }
 
@@ -2305,10 +2306,10 @@ body {
     transition: transform 0.1s;
     position: relative;
     margin-left: -4px;
-    /* ?꾩씠肄?寃뱀묠 (Overlap) ?④낵 */
+    /* ?袁⑹뵠??野껊?臾?(Overlap) ??ｋ궢 */
 }
 
-/* 泥?踰덉㎏ ?꾩씠肄섏? ?쇱そ ?щ갚 ?쒓굅 */
+/* 筌?甕곕뜆???袁⑹뵠?꾩꼷? ??긱걹 ??媛???볤탢 */
 .portrait-status-mini:first-child {
     margin-left: 0;
 }
@@ -2316,10 +2317,10 @@ body {
 .portrait-status-mini:hover {
     transform: scale(1.3);
     z-index: 10;
-    /* 留덉슦???ㅻ쾭 ??媛???욎쑝濡??ㅺ쾶 ??*/
+    /* 筌띾뜆?????살쒔 ??揶쎛????롮몵嚥???븐쓺 ??*/
 }
 
-/* ?щ쭩 ?ㅻ쾭?덉씠 */
+/* ??彛???살쒔??됱뵠 */
 .portrait-dead-overlay {
     position: absolute;
     inset: 0;
@@ -3050,33 +3051,36 @@ input:checked+.slider-toggle:before {
 
 
 /* --- HUD Scene Navigation Bar --- */
+/* --- HUD Scene Navigation Bar --- */
 #hud-scene-nav {
     /* auto-fit: adding more .nav-btn elements automatically expands the grid */
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
-    gap: 3px;
-    padding: 3px 10px 5px;
+    gap: 4px;
+    padding: 6px 12px 6px;
     pointer-events: auto;
-    background: linear-gradient(to bottom, rgba(14, 10, 2, 0.98), rgba(8, 6, 0, 0.97));
-    border-bottom: 2px solid rgba(255, 176, 0, 0.45);
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.5);
+    /* Muted Ruby Red velvet background */
+    background: linear-gradient(to bottom, rgba(35, 8, 12, 0.96), rgba(18, 4, 6, 0.98));
+    border-bottom: 2px solid rgba(180, 110, 30, 0.6);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 .nav-btn {
-    background: rgba(255, 176, 0, 0.04);
-    border: 1px solid rgba(255, 176, 0, 0.18);
-    color: rgba(255, 220, 140, 0.6);
+    background: linear-gradient(to bottom, rgba(55, 12, 16, 0.75), rgba(25, 6, 8, 0.85));
+    border: 1px solid rgba(120, 25, 30, 0.5);
+    color: rgba(255, 210, 160, 0.6);
     font-family: var(--font-vt);
     font-size: 14px;
-    padding: 5px 0;
+    padding: 6px 0;
     cursor: pointer;
     text-align: center;
-    transition: all 0.15s ease;
+    transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     position: relative;
     overflow: hidden;
     border-radius: 3px;
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9);
     letter-spacing: 0.5px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 2px 4px rgba(0, 0, 0, 0.6);
 }
 
 /* Gold glint underline */
@@ -3084,45 +3088,50 @@ input:checked+.slider-toggle:before {
     content: '';
     position: absolute;
     bottom: 0;
-    left: 10%;
-    width: 80%;
-    height: 1px;
-    background: linear-gradient(to right, transparent, var(--retro-amber), transparent);
+    left: 5%;
+    width: 90%;
+    height: 2px;
+    background: linear-gradient(to right, transparent, rgba(230, 160, 50, 0.8), transparent);
     transform: scaleX(0);
     opacity: 0;
-    transition: transform 0.25s ease, opacity 0.25s ease;
+    transition: transform 0.3s ease, opacity 0.3s ease;
 }
 
 .nav-btn:hover {
-    background: rgba(255, 176, 0, 0.14);
-    color: var(--retro-amber);
-    border-color: rgba(255, 176, 0, 0.6);
-    box-shadow: 0 0 8px rgba(255, 176, 0, 0.2), inset 0 0 6px rgba(255, 176, 0, 0.07);
-    text-shadow: 0 0 8px rgba(255, 176, 0, 0.6);
+    background: linear-gradient(to bottom, rgba(80, 16, 22, 0.85), rgba(40, 8, 12, 0.92));
+    color: rgba(255, 230, 180, 0.9);
+    border-color: rgba(180, 40, 50, 0.6);
+    box-shadow: 0 0 12px rgba(180, 40, 50, 0.4), inset 0 2px 6px rgba(255, 200, 200, 0.15);
+    transform: translateY(-2px);
 }
 
 .nav-btn:hover::after {
     transform: scaleX(1);
-    opacity: 1;
+    opacity: 0.5;
 }
 
 .nav-btn.active {
-    background: rgba(255, 176, 0, 0.18);
+    background: linear-gradient(to bottom, rgba(110, 20, 28, 0.95), rgba(60, 10, 16, 0.98));
     color: var(--retro-amber);
-    border-color: rgba(255, 176, 0, 0.7);
-    box-shadow: 0 0 10px rgba(255, 176, 0, 0.25), inset 0 0 10px rgba(255, 176, 0, 0.08);
-    text-shadow: 0 0 10px rgba(255, 176, 0, 0.7);
+    border-color: rgba(200, 130, 40, 0.7);
+    box-shadow: 0 0 16px rgba(180, 40, 50, 0.5), inset 0 2px 8px rgba(255, 220, 220, 0.2), 0 4px 10px rgba(0, 0, 0, 0.7);
+    text-shadow: 0 0 12px rgba(220, 150, 40, 0.8);
     font-weight: bold;
+    transform: translateY(-2px);
 }
 
 .nav-btn.active::after {
     transform: scaleX(1);
     opacity: 1;
+    height: 3px;
+    background: linear-gradient(to right, transparent, var(--retro-amber), transparent);
 }
 
 .nav-btn:active {
     transform: translateY(1px);
-    background: rgba(255, 176, 0, 0.28);
+    background: rgba(20, 5, 8, 0.95);
+    box-shadow: inset 0 4px 8px rgba(0, 0, 0, 0.9);
+    border-color: rgba(100, 20, 25, 0.7);
 }
 
 /* --- HUD Header Grouping Fix --- */
@@ -3133,13 +3142,9 @@ input:checked+.slider-toggle:before {
     width: 100%;
 }
 
-#hud-top {
-    border-bottom: none !important;
-    box-shadow: none !important;
-}
 
 #hud-scene-nav {
-    border-top: 1px solid rgba(255, 176, 0, 0.15);
+    border-top: 1px solid rgba(255, 100, 100, 0.15);
 }
 
 /* --- Confirmation Modal Styling --- */
