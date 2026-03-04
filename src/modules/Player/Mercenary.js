@@ -238,7 +238,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             repeat: -1,
         });
 
-        console.log(`[IdleBob] ${this.unitName} 아이들 밥 시작 ✨`);
+        // console.log(`[IdleBob] ${this.unitName} 아이들 밥 시작 ✨`);
     }
 
     /**
