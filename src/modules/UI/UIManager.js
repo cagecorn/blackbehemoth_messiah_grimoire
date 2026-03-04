@@ -909,11 +909,6 @@ export default class UIManager {
                     </div>
                 `;
 
-                portrait.onclick = () => {
-                    const channel = this.unitToChannel[merc.id];
-                    if (channel) this.showCharacterDetail(channel);
-                };
-
                 this.portraitBar.appendChild(portrait);
                 cache = this.portraits[portraitKey] = {
                     element: portrait,
@@ -923,7 +918,7 @@ export default class UIManager {
                     lastHpCount: -1,
                     lastHpClass: '',
                     isDead: null,
-                    characterId: merc.characterId, // Store characterId in cache
+                    characterId: merc.characterId,
                     dom: {
                         segments: portrait.querySelectorAll('.portrait-hp-segment'),
                         ultFill: portrait.querySelector('.portrait-ult-fill'),
@@ -933,6 +928,23 @@ export default class UIManager {
                 };
                 console.log(`[UIManager] Portrait created (retro-arcade): ${merc.unitName} key=${portraitKey}`);
             }
+
+            // ── RE-BIND CLICK HANDLER EVERY SYNC (Fixes Closure Bug) ───────
+            cache.element.onclick = (e) => {
+                // Prevent detail popup if clicking the resurrection overlay or button
+                if (e.target.closest('.portrait-dead-overlay') || e.target.closest('.portrait-resurrect-btn')) {
+                    console.log('[UIManager] Click ignored (overlay/btn target)');
+                    return;
+                }
+                // Prevent detail popup if unit is dead (merc.hp <= 0 or isGhost)
+                if (merc.hp <= 0) {
+                    console.log(`[UIManager] Click ignored (Unit ${merc.unitName} is dead)`);
+                    return;
+                }
+
+                const channel = this.unitToChannel[merc.id];
+                if (channel) this.showCharacterDetail(channel);
+            };
 
             const hpPercent = (merc.hp / merc.maxHp) * 100;
             const ultPercent = (merc.ultGauge / merc.maxUltGauge) * 100;
@@ -976,6 +988,7 @@ export default class UIManager {
 
                         btn.onclick = (e) => {
                             e.stopPropagation();
+                            console.log(`[UIManager] Resurrect button clicked for ${merc.unitName} (Cost: ${currentCost}G)`);
                             EventBus.emit(EventBus.EVENTS.MERCENARY_RESURRECT, {
                                 unitId: merc.id,
                                 characterId: merc.characterId,

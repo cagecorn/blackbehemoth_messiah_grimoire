@@ -664,6 +664,7 @@ export default class DungeonScene extends Phaser.Scene {
 
     async handleResurrection(payload) {
         const { unitId, characterId, classId, cost } = payload;
+        console.log(`[DungeonScene] handleResurrection triggered for ${characterId} (Cost: ${cost}G)`);
 
         // 1. Check & Deduct Gold
         const coinItem = await DBManager.getInventoryItem('emoji_coin');
@@ -676,6 +677,7 @@ export default class DungeonScene extends Phaser.Scene {
 
         // 2. Deduct Gold
         await DBManager.saveInventoryItem('emoji_coin', currentGold - cost);
+        console.log(`[DungeonScene] Gold deducted. Remaining: ${currentGold - cost}`);
         EventBus.emit(EventBus.EVENTS.INVENTORY_UPDATED);
         EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, `[부활] ${cost} 골드를 지불하고 용병을 부활시켰습니다. ✨`);
 
