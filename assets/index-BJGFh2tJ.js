@@ -6403,7 +6403,7 @@ return new `+this.key+`();
             transform: translateX(-50%);
             width: min(90vw, 420px);
             max-height: 180px;
-            z-index: 10050;
+            z-index: 900;
         `,this.patchNotesContainer.innerHTML=`
             <div class="patch-notes-title">📋 패치 내역</div>
             <div class="patch-notes-body" style="cursor: grab;">
