@@ -2784,9 +2784,91 @@ body {
     }
 }
 
+/* --- Combat Graph Window --- */
+.combat-graph-window {
+    position: relative;
+    z-index: 20;
+    /* Ensure it stays above character background sprite */
+    margin: 5px 15px 10px;
+    background: rgba(15, 15, 10, 0.8);
+    /* Slightly darker and more opaque retro panel */
+    border: 1px solid var(--retro-border2);
+    border-radius: 4px;
+    /* More squared off for retro feel */
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+.combat-stat-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 18px;
+}
+
+.combat-icon {
+    font-size: 12px;
+    width: 16px;
+    text-align: center;
+}
+
+.combat-bar-container {
+    flex: 1;
+    height: 14px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+}
+
+.combat-bar {
+    height: 100%;
+    transition: width 0.3s ease;
+    border-radius: 4px;
+}
+
+.combat-bar.damage {
+    background: linear-gradient(90deg, #ff4444, #ff8844);
+}
+
+.combat-bar.received {
+    background: linear-gradient(90deg, #4488ff, #44ccff);
+}
+
+.combat-bar.heal {
+    background: linear-gradient(90deg, #44ff88, #88ff44);
+}
+
+.combat-label {
+    position: absolute;
+    left: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 9px;
+    font-weight: bold;
+    color: #fff;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+    pointer-events: none;
+    white-space: nowrap;
+}
+
+.combat-rank {
+    font-size: 10px;
+    font-weight: bold;
+    width: 25px;
+    text-align: right;
+    color: #aaa;
+}
+
+.combat-rank.rank-dmg {
+    color: #ffaa66;
+}
+
 /*
   Balanced Cinematic Filter Suite (Restored)
-  Warm Bloom + Deep Vignette + Soft Chromatic Aberration
 */
 .fake-filter-system {
     position: absolute;

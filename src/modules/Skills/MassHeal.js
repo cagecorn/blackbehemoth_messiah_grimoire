@@ -68,7 +68,7 @@ export default class MassHeal {
                 const sceneOk = ally.scene && ally.scene.scene && ally.scene.scene.isActive();
                 if (ally && ally.active && ally.hp > 0 && sceneOk) {
                     // Heal the ally
-                    ally.receiveHeal(healAmount);
+                    ally.receiveHeal(healAmount, caster.id);
                     healedCount++;
 
                     // Show text

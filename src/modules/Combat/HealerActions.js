@@ -26,7 +26,7 @@ export const HealerActions = {
             }
         }
 
-        target.receiveHeal(healAmount);
+        target.receiveHeal(healAmount, unit.id);
 
         // Perk: 정화 (Purify) — 5% chance to cleanse 1 debuff on basic heal
         if (unit.activatedPerks && unit.activatedPerks.includes('emoji_bubbles')) {

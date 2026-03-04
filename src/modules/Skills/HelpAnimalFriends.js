@@ -91,8 +91,8 @@ export default class HelpAnimalFriends {
                 scene.fxManager.showDamageText(target, 'SPEED UP!', '#55ff55');
             };
             case 'emoji_pig': return (target, owner, scene) => {
-                const heal = target.maxHp * 0.2;
-                target.receiveHeal(heal);
+                const heal = target.maxHp * 0.2; // Heal
+                target.receiveHeal(heal, owner.id);
                 scene.fxManager.showHealText(target, `+${Math.round(heal)}`, '#55ff55');
             };
             case 'emoji_tiger': return (target, owner, scene) => {

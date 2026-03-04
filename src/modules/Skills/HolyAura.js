@@ -148,7 +148,7 @@ export default class HolyAura {
                     const dist = Phaser.Math.Distance.Between(caster.x, caster.y, ally.x, ally.y);
                     if (dist <= radius) {
                         if (ally.heal) {
-                            ally.heal(healAmount);
+                            ally.heal(healAmount, false, caster.id);
                         }
                     }
                 }

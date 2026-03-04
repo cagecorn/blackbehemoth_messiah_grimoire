@@ -3,6 +3,7 @@
  * Represents a single chat interface for a party member.
  */
 import ItemManager from '../Core/ItemManager.js';
+import EventBus from '../Events/EventBus.js';
 
 export default class ChatChannel {
     constructor(id, classId, characters, name, spritePath, parentElement, onCommand, onSwap, uiManager) {
@@ -84,6 +85,34 @@ export default class ChatChannel {
 
             <!-- Dashboard Menu View (Always Visible) -->
             <div class="chat-dashboard-view" id="dashboard-${id}" style="display: flex;">
+                <!-- Combat Graph Window (Real-time Tracker) -->
+                <div class="combat-graph-window" id="combat-graph-${id}">
+                    <div class="combat-stat-row">
+                        <span class="combat-icon">⚔️</span>
+                        <div class="combat-bar-container">
+                            <div class="combat-bar damage" id="bar-dmg-${id}" style="width: 0%"></div>
+                            <span class="combat-label">DPS: <span id="val-dmg-${id}">0</span></span>
+                        </div>
+                        <span class="combat-rank rank-dmg" id="rank-dmg-${id}">-등</span>
+                    </div>
+                    <div class="combat-stat-row">
+                        <span class="combat-icon">🛡️</span>
+                        <div class="combat-bar-container">
+                            <div class="combat-bar received" id="bar-rec-${id}" style="width: 0%"></div>
+                            <span class="combat-label">TANK: <span id="val-rec-${id}">0</span></span>
+                        </div>
+                        <span class="combat-rank rank-rec" id="rank-rec-${id}">-등</span>
+                    </div>
+                    <div class="combat-stat-row">
+                        <span class="combat-icon">✨</span>
+                        <div class="combat-bar-container">
+                            <div class="combat-bar heal" id="bar-heal-${id}" style="width: 0%"></div>
+                            <span class="combat-label">HPS: <span id="val-heal-${id}">0</span></span>
+                        </div>
+                        <span class="combat-rank rank-heal" id="rank-heal-${id}">-등</span>
+                    </div>
+                </div>
+
                 <div class="dashboard-grid">
                     <button class="dash-item highlight" data-view="grimoire">
                         <span class="dash-icon">📖</span>
@@ -238,6 +267,7 @@ export default class ChatChannel {
         parentElement.appendChild(this.element);
 
         this.setupDragDrop();
+        EventBus.on(EventBus.EVENTS.COMBAT_TRACKER_UPDATE, this.handleCombatTrackerUpdate, this);
         this.statusContainer = this.element.querySelector('.status-container.status-effects');
         this.buffContainer = this.element.querySelector('.status-container.buffs');
         this.statusRow = this.element.querySelector('.status-row-second');
@@ -904,6 +934,46 @@ export default class ChatChannel {
 
         const list = this.grimoire[chapterId];
         return list ? list.findIndex(c => c === null) : -1;
+    }
+
+    handleCombatTrackerUpdate(data) {
+        const targetId = this.linkedUnitId || `unit_${this.characterId}`;
+        console.log(`[ChatChannel ${this.id}] Update received for targetId: ${targetId}`, data);
+        if (!data || !data[targetId]) return;
+        const s = data[targetId];
+        const id = this.id;
+
+        // Update Values
+        const dmgVal = document.getElementById(`val-dmg-${id}`);
+        const recVal = document.getElementById(`val-rec-${id}`);
+        const healVal = document.getElementById(`val-heal-${id}`);
+        if (dmgVal) dmgVal.innerText = Math.round(s.dps).toLocaleString();
+        if (recVal) recVal.innerText = Math.round(s.tps).toLocaleString();
+        if (healVal) healVal.innerText = Math.round(s.hps).toLocaleString();
+
+        // Update Ranks
+        const dmgRank = document.getElementById(`rank-dmg-${id}`);
+        const recRank = document.getElementById(`rank-rec-${id}`);
+        const healRank = document.getElementById(`rank-heal-${id}`);
+        if (dmgRank) dmgRank.innerText = `${s.dpsRank}등`;
+        if (recRank) recRank.innerText = `${s.tpsRank}등`;
+        if (healRank) healRank.innerText = `${s.hpsRank}등`;
+
+        // Update Bar Widths (Relative to top performer in that category for visual scale)
+        // Find max in each category
+        let maxDps = 1, maxTps = 1, maxHps = 1;
+        Object.values(data).forEach(u => {
+            maxDps = Math.max(maxDps, u.dps);
+            maxTps = Math.max(maxTps, u.tps);
+            maxHps = Math.max(maxHps, u.hps);
+        });
+
+        const dmgBar = document.getElementById(`bar-dmg-${id}`);
+        const recBar = document.getElementById(`bar-rec-${id}`);
+        const healBar = document.getElementById(`bar-heal-${id}`);
+        if (dmgBar) dmgBar.style.width = `${(s.dps / maxDps) * 100}%`;
+        if (recBar) recBar.style.width = `${(s.tps / maxTps) * 100}%`;
+        if (healBar) healBar.style.width = `${(s.hps / maxHps) * 100}%`;
     }
 
     findEmptyCharmSlot() {

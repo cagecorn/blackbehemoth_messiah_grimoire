@@ -683,6 +683,11 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             absorbedByShield = damageBeforeShield - finalDamage;
         }
 
+        // Record damage received for combat tracker (including what was absorbed by shield)
+        if (damageBeforeShield > 0) {
+            EventBus.emit(EventBus.EVENTS.COMBAT_DATA_RECORD, { type: 'received', amount: damageBeforeShield, unitId: this.id });
+        }
+
         if (finalDamage > 0) {
             this.hp -= finalDamage;
             if (this.hp < 0) this.hp = 0;
@@ -758,6 +763,11 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         if (this.scene.shieldManager) {
             finalDamage = this.scene.shieldManager.takeDamage(this, finalDamage);
             absorbedByShield = damageBeforeShield - finalDamage;
+        }
+
+        // Record damage received for combat tracker (including what was absorbed by shield)
+        if (damageBeforeShield > 0) {
+            EventBus.emit(EventBus.EVENTS.COMBAT_DATA_RECORD, { type: 'received', amount: damageBeforeShield, unitId: this.id });
         }
 
         if (finalDamage > 0) {
@@ -897,7 +907,12 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, `${this.unitName} 레벨 업! (LV ${this.level}) ✨`);
     }
 
-    receiveHeal(amount) {
+    receiveHeal(amount, healerId = null) {
+        // Record healing for combat tracker
+        if (healerId && amount > 0) {
+            EventBus.emit(EventBus.EVENTS.COMBAT_DATA_RECORD, { type: 'heal', amount: amount, unitId: healerId });
+        }
+
         this.hp += amount;
         if (this.hp > this.maxHp) this.hp = this.maxHp;
         this.updateHealthBar();
@@ -917,8 +932,13 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         }
     }
 
-    heal(amount, isSilent = false) {
+    heal(amount, isSilent = false, healerId = null) {
         if (!this.active || this.hp <= 0 || amount <= 0) return;
+
+        // Record healing for combat tracker
+        if (healerId) {
+            EventBus.emit(EventBus.EVENTS.COMBAT_DATA_RECORD, { type: 'heal', amount: amount, unitId: healerId });
+        }
 
         this.hp += amount;
         if (this.hp > this.maxHp) this.hp = this.maxHp;

@@ -47,8 +47,8 @@ export default class Noel extends Bard {
                 scene.time.delayedCall(i * 1000, () => {
                     if (ally.active && ally.hp > 0) {
                         // Heal for 10% of Noel's MAtk per second
-                        const heal = noelMAtk * 0.1;
-                        ally.receiveHeal(heal);
+                        // Heal ally
+                        ally.receiveHeal(heal, this.id);
                         if (scene.fxManager) scene.fxManager.showHealText(ally, `+${Math.round(heal)}`, '#55ff55');
                     }
                 });

@@ -15,6 +15,7 @@ import intentRouter from './modules/AI/IntentRouter.js';
 import partyManager from './modules/Core/PartyManager.js';
 import { Characters } from './modules/Core/EntityStats.js';
 import EventBus from './modules/Events/EventBus.js';
+import combatTracker from './modules/Core/CombatTracker.js';
 
 
 const config = {
@@ -59,6 +60,7 @@ const logManagerInstance = logManager; // renamed to instance to avoid confusion
 
     // Boot up Global Managers
     globalBlackboard.init();
+    combatTracker.init();
     // embeddingGemma.init(); // Disabled as per user request
     // intentRouter.init();  // Disabled as per user request
     await partyManager.init(Object.values(Characters));

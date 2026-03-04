@@ -216,6 +216,12 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
             this.hp -= finalDamage;
             if (this.hp < 0) this.hp = 0;
 
+            // Record damage dealt for the attacker (mercenary)
+            const attackerId = (attacker && typeof attacker === 'object') ? (attacker.id || attacker.className) : (attacker);
+            if (attackerId && attacker && typeof attacker === 'object' && attacker.team === 'player') {
+                EventBus.emit(EventBus.EVENTS.COMBAT_DATA_RECORD, { type: 'damage', amount: finalDamage, unitId: attackerId });
+            }
+
             // Lifesteal for Blood Rage
             if (attacker && typeof attacker === 'object' && attacker.isBloodRaging && attacker.heal) {
                 attacker.heal(finalDamage * 0.35);
@@ -321,6 +327,12 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
         if (finalDamage > 0) {
             this.hp -= finalDamage;
             if (this.hp < 0) this.hp = 0;
+
+            // Record damage dealt for the attacker (mercenary)
+            const attackerId = (attacker && typeof attacker === 'object') ? (attacker.id || attacker.className) : (attacker);
+            if (attackerId && attacker && typeof attacker === 'object' && attacker.team === 'player') {
+                EventBus.emit(EventBus.EVENTS.COMBAT_DATA_RECORD, { type: 'damage', amount: finalDamage, unitId: attackerId });
+            }
 
             // Lifesteal for Blood Rage
             if (attacker && typeof attacker === 'object' && attacker.isBloodRaging && attacker.heal) {
