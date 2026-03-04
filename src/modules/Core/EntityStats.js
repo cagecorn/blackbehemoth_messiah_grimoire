@@ -824,6 +824,19 @@ export const SummonStats = {
     }
 };
 
+export const PetStats = {
+    DOG_PET: {
+        id: 'dog_pet',
+        name: '도그펫',
+        sprite: 'dog_pet', // Loaded as an image in BootScene
+        speed: 220,        // Faster collection
+        collectRange: 80,  // Pick up range
+        detectRange: 2000, // Effectively global for the dungeon
+        scale: 0.45,       // Smaller than before (was 0.6)
+        personality: '뽈뽈뽈 뒤뚱뒤뚱 움직이는 귀여운 강아지 친구. 떨어진 자원을 척척 줍습니다.'
+    }
+};
+
 export const MonsterClasses = {
     GOBLIN: {
         id: 'goblin',

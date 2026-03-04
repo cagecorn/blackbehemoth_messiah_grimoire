@@ -188,6 +188,9 @@ export default class BootScene extends Phaser.Scene {
         this.load.image('veve_cutscene', 'assets/characters/party/veve_cutscene.png');
         this.load.image('veve_ultimate_sprite', 'assets/characters/party/veve_ultimate_sprite.png');
 
+        // Pet Assets
+        this.load.image('dog_pet', 'assets/pet/dog_pet.png');
+
         // Load effect sprites
         this.load.image('guillotine_paper', 'assets/effect/guillotine_paper.png');
         this.load.svg('emoji_rock', 'assets/emojis/1f5ff.svg', { width: 32, height: 32 });
@@ -320,6 +323,13 @@ export default class BootScene extends Phaser.Scene {
                 console.log('[BootScene] Initializing default active party');
                 const defaultParty = ['aren', 'ella', 'sera', 'merlin', 'lute', 'silvi'];
                 await DBManager.saveParty(defaultParty);
+            }
+
+            // --- Default Pet (New Players) ---
+            const existingPets = await DBManager.get('settings', 'playerPets');
+            if (!existingPets) {
+                console.log('[BootScene] Initializing default pet: dog_pet');
+                await DBManager.save('settings', 'playerPets', { pets: ['dog_pet'], activePet: 'dog_pet' });
             }
 
             // --- Re-sync Managers ---

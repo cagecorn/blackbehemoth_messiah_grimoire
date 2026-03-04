@@ -33,6 +33,8 @@ import AmbientMoteManager from '../modules/Environment/AmbientMoteManager.js';
 import DynamicCameraManager from '../modules/Core/DynamicCameraManager.js';
 import EventBus from '../modules/Events/EventBus.js';
 import BarkManager from '../modules/AI/BarkManager.js';
+import PetManager from '../modules/Player/PetManager.js';
+import DBManager from '../modules/Database/DBManager.js';
 // partyManager will be accessed via this.game.partyManager
 
 
@@ -174,6 +176,7 @@ export default class DungeonScene extends Phaser.Scene {
         this.ccManager = new CCManager(this);
         this.shieldManager = new ShieldManager(this);
         this.barkManager = new BarkManager(this);
+        this.petManager = new PetManager(this);
 
         // ⚔️ Premium Skill FX Layer (with Global Bloom)
         // This layer hosts all magical effects, projectiles, and skill visuals.
@@ -280,6 +283,9 @@ export default class DungeonScene extends Phaser.Scene {
             this.player = this.mercenaries.getChildren()[0];
         }
 
+        // Initialize Pet after party spawn
+        this.initPet();
+
         // First wave of monsters (Now that player is spawned)
         this.spawnWave();
 
@@ -315,6 +321,11 @@ export default class DungeonScene extends Phaser.Scene {
         // 1. Mercenaries collect Loot
         this.physics.add.overlap(this.mercenaries, this.lootManager.lootGroup, (mercenary, item) => {
             this.lootManager.collectLoot(mercenary, item);
+        });
+
+        // 1.1 Pet collects Loot (Uses group to prevent null crash)
+        this.physics.add.overlap(this.petManager.pets, this.lootManager.lootGroup, (pet, item) => {
+            this.lootManager.collectLoot(pet, item);
         });
 
         // 2. Unit Separation (Repulsion Logic to prevent stacking/spinning)
@@ -792,5 +803,20 @@ export default class DungeonScene extends Phaser.Scene {
                 console.log('[Visuals] Intro Blur Concluded. Screen is clear. ✨');
             }
         });
+    }
+
+    async initPet() {
+        try {
+            const petData = await DBManager.get('settings', 'playerPets');
+            const activePetId = petData ? petData.activePet : 'dog_pet';
+
+            const startPos = this.dungeonManager.getPlayerStartPosition();
+            const pet = this.petManager.spawnPet(activePetId, startPos.x, startPos.y);
+            if (pet) {
+                pet.leader = this.player;
+            }
+        } catch (e) {
+            console.error('[DungeonScene] Failed to initialize pet:', e);
+        }
     }
 }
