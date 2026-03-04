@@ -240,7 +240,7 @@ export default class TerritoryScene extends Phaser.Scene {
             transform: translateX(-50%);
             width: min(90vw, 420px);
             max-height: 180px;
-            z-index: 10050;
+            z-index: 900;
         `;
 
         this.patchNotesContainer.innerHTML = `
