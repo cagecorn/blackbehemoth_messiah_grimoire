@@ -130,6 +130,11 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         this.eva = config.eva || 0;
         this.crit = config.crit || 0;
 
+        // Stat Growth Rates & Star Multiplier
+        this.starLevel = config.star || 1;
+        this.starMultiplier = Math.pow(1.2, this.starLevel - 1);
+        this.growth = config.growth || { maxHp: 10, atk: 2, def: 1 };
+
 
         // Check for existing state in PartyManager (Only for player team)
         if (this.team === 'player') {
@@ -892,11 +897,23 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         this.level++;
         this.expToNextLevel = this.calculateExpToNextLevel(this.level);
 
-        // Stats increase on level up
-        this.maxHp += 10;
+        // Stats increase on level up using growth rates from EntityStats.js
+        // Multiplied by starMultiplier for consistent scaling with stars
+        const growth = this.growth || { maxHp: 10, atk: 2, def: 1 };
+        const multi = this.starMultiplier || 1.0;
+
+        if (growth.maxHp) this.maxHp += Math.floor(growth.maxHp * multi);
         this.hp = this.maxHp;
-        this.atk += 2;
-        this.def += 1;
+        if (growth.atk) this.atk += growth.atk * multi;
+        if (growth.mAtk) this.mAtk += growth.mAtk * multi;
+        if (growth.def) this.def += growth.def * multi;
+        if (growth.mDef) this.mDef += growth.mDef * multi;
+        if (growth.speed) this.speed += growth.speed * multi;
+        if (growth.atkSpd) this.atkSpd += growth.atkSpd * multi;
+        if (growth.castSpd) this.castSpd += growth.castSpd * multi;
+        if (growth.acc) this.acc += growth.acc * multi;
+        if (growth.eva) this.eva += growth.eva * multi;
+        if (growth.crit) this.crit += growth.crit * multi;
 
         console.log(`[Level] ${this.unitName} LEVELED UP to ${this.level}!`);
 

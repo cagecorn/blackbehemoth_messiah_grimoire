@@ -654,7 +654,6 @@ export default class UIManager {
                     badge = document.createElement('span');
                     badge.className = 'dungeon-ticket-badge';
                     item.appendChild(badge);
-                    item.style.position = 'relative'; // Ensure positioning
                 }
                 badge.innerText = `🎫 ${count}`;
 

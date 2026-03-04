@@ -32,7 +32,8 @@ export const MercenaryClasses = {
         aiType: 'MELEE',
         fireRes: 0,
         iceRes: 0,
-        lightningRes: 0
+        lightningRes: 0,
+        growth: { maxHp: 20, atk: 3, mAtk: 0.5, def: 2, mDef: 1, acc: 0.5, eva: 0.5 }
     },
     ARCHER: {
         id: 'archer',
@@ -59,7 +60,8 @@ export const MercenaryClasses = {
         aiType: 'RANGED',
         fireRes: 0,
         iceRes: 0,
-        lightningRes: 0
+        lightningRes: 0,
+        growth: { maxHp: 10, atk: 3, mAtk: 0.5, def: 1, mDef: 1, acc: 2, eva: 2, atkSpd: -5 }
     },
     HEALER: {
         id: 'healer',
@@ -86,7 +88,8 @@ export const MercenaryClasses = {
         aiType: 'SUPPORT',
         fireRes: 0,
         iceRes: 0,
-        lightningRes: 0
+        lightningRes: 0,
+        growth: { maxHp: 8, atk: 0.5, mAtk: 3, def: 0.5, mDef: 2, acc: 1, eva: 1 }
     },
     WIZARD: {
         id: 'wizard',
@@ -113,7 +116,8 @@ export const MercenaryClasses = {
         aiType: 'RANGED',
         fireRes: 0,
         iceRes: 0,
-        lightningRes: 0
+        lightningRes: 0,
+        growth: { maxHp: 8, atk: 0.5, mAtk: 4, def: 0.5, mDef: 1.5, acc: 2, eva: 1 }
     },
     BARD: {
         id: 'bard',
@@ -140,7 +144,8 @@ export const MercenaryClasses = {
         aiType: 'SUPPORT',
         fireRes: 0,
         iceRes: 0,
-        lightningRes: 0
+        lightningRes: 0,
+        growth: { maxHp: 12, atk: 1.5, mAtk: 1.5, def: 1.5, mDef: 1.5, acc: 0.5, eva: 0.5 }
     }
 };
 
@@ -497,6 +502,7 @@ export const Characters = {
         mAtk: 40,
         def: 15,
         castSpd: 1200,
+        growth: { maxHp: 18, atk: 1, mAtk: 3.5, def: 1.5, mDef: 2, acc: 0.5, eva: 0.5 },
         personality: '심각한 망상증 성기사. 자기가 세상의 주인공이고 나머지는 조연이라 생각한다. 평소엔 친절한 맏형이지만, 악한 존재 앞에선 미친개로 돌변하여 폭주한다.',
         relationships: {
             aren: '나의 충실한 부하 1호(라고 멋대로 생각함).',
@@ -1068,9 +1074,10 @@ export function scaleStats(config, level) {
 
     const newConfig = { ...base };
 
-    // Star scaling: Each star above 1 adds a cumulative 50% multiplier to base stats
+    // Star scaling: Each star above 1 adds a cumulative 20% multiplier (1.2x) to base stats
     const starLevel = config.star || 1;
-    const starMultiplier = Math.pow(1.5, starLevel - 1);
+    const bonusStars = starLevel - 1;
+    const starMultiplier = Math.pow(1.2, bonusStars);
 
     if (level <= 1) {
         newConfig.maxHp = Math.floor(base.maxHp * starMultiplier);
@@ -1079,27 +1086,48 @@ export function scaleStats(config, level) {
         newConfig.mAtk = Math.floor((base.mAtk || 0) * starMultiplier);
         newConfig.def = Math.floor((base.def || 0) * starMultiplier);
         newConfig.mDef = Math.floor((base.mDef || 0) * starMultiplier);
+
+        // Apply Utility Bonuses even at Level 1
+        if (bonusStars > 0) {
+            newConfig.crit = (newConfig.crit || 0) + (bonusStars * 2);
+            newConfig.acc = (newConfig.acc || 0) + (bonusStars * 5);
+            newConfig.eva = (newConfig.eva || 0) + (bonusStars * 3);
+            newConfig.atkSpd = Math.max(100, (newConfig.atkSpd || 1000) - (bonusStars * 50));
+        }
+
         newConfig.level = 1;
         return newConfig;
     }
 
     newConfig.level = level;
 
-    // Apply level scaling first
+    // Apply level scaling first using growth property (if exists)
     const levelFactor = level - 1;
-    const scaledMaxHp = base.maxHp + (levelFactor * 30);
-    const scaledAtk = base.atk + (levelFactor * 3);
-    const scaledMAtk = (base.mAtk || 0) + (levelFactor * 3);
-    const scaledDef = base.def + (levelFactor * 2);
-    const scaledMDef = (base.mDef || 0) + (levelFactor * 2);
+    const growth = config.growth || { maxHp: 10, atk: 2, mAtk: 1, def: 1, mDef: 1 };
 
-    // Then apply star multiplier
+    const scaledMaxHp = base.maxHp + (levelFactor * (growth.maxHp || 0));
+    const scaledAtk = (base.atk || 0) + (levelFactor * (growth.atk || 0));
+    const scaledMAtk = (base.mAtk || 0) + (levelFactor * (growth.mAtk || 0));
+    const scaledDef = (base.def || 0) + (levelFactor * (growth.def || 0));
+    const scaledMDef = (base.mDef || 0) + (levelFactor * (growth.mDef || 0));
+
+    // Then apply star multiplier (배수 = 1.2 ^ (별의 개수 - 1))
+    // starMultiplier and bonusStars already declared above
+
     newConfig.maxHp = Math.floor(scaledMaxHp * starMultiplier);
     newConfig.hp = newConfig.maxHp;
     newConfig.atk = Math.floor(scaledAtk * starMultiplier);
     newConfig.mAtk = Math.floor(scaledMAtk * starMultiplier);
     newConfig.def = Math.floor(scaledDef * starMultiplier);
     newConfig.mDef = Math.floor(scaledMDef * starMultiplier);
+
+    // [Option C] Utility Bonuses: Fixed additions for stars above 1
+    if (bonusStars > 0) {
+        newConfig.crit = (newConfig.crit || 0) + (bonusStars * 2);    // +2% Crit per star
+        newConfig.acc = (newConfig.acc || 0) + (bonusStars * 5);      // +5 Acc per star
+        newConfig.eva = (newConfig.eva || 0) + (bonusStars * 3);      // +3 Eva per star
+        newConfig.atkSpd = Math.max(100, (newConfig.atkSpd || 1000) - (bonusStars * 50)); // -50ms AtkSpd (Faster)
+    }
 
     return newConfig;
 }
