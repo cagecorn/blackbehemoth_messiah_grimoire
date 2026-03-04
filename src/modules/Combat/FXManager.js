@@ -19,8 +19,25 @@ export default class FXManager {
 
         // ── 2. Elemental Particle Emitter Cache ─────────────────
         this._elementalEmitters = {};
+        this._isBatterySaver = localStorage.getItem('batterySaver') === 'true';
+
+        // Listen for Battery Saver Toggle
+        import('../Events/EventBus.js').then(module => {
+            const EventBus = module.default;
+            EventBus.on(EventBus.EVENTS.BATTERY_SAVER_TOGGLED, this.onBatterySaverToggled, this);
+        });
 
         console.log(`[FXPool] 초기화 완료. DamageText Pool: ${FXManager.DAMAGE_TEXT_POOL_SIZE}개 사전 생성. ✅`);
+    }
+
+    onBatterySaverToggled(enabled) {
+        this._isBatterySaver = enabled;
+        // Update existing emitters blend modes
+        Object.values(this._elementalEmitters).forEach(emitter => {
+            if (emitter && emitter.active) {
+                emitter.setBlendMode(enabled ? Phaser.BlendModes.NORMAL : Phaser.BlendModes.ADD);
+            }
+        });
     }
 
     // ============================================================
@@ -98,7 +115,7 @@ export default class FXManager {
                 alpha: { start: 0.75, end: 0 },
                 angle: { min: 0, max: 360 },
                 lifespan: { min: 400, max: 700 },
-                blendMode: 'ADD',
+                blendMode: this._isBatterySaver ? 'NORMAL' : 'ADD',
                 quantity: FXManager.ELEMENTAL_PARTICLE_COUNT,
                 emitting: false,
             });
@@ -295,7 +312,7 @@ export default class FXManager {
             lifespan: 800,
             gravityY: -50,
             tint: [0xffff00, 0xffa500, 0xffffff],
-            blendMode: 'ADD',
+            blendMode: this._isBatterySaver ? 'NORMAL' : 'ADD',
             quantity: 2,
             frequency: 50,
             duration: 500
@@ -480,7 +497,7 @@ export default class FXManager {
             lifespan: 1000,
             gravityY: -100,
             tint: [0x55ff55, 0x00ff00, 0xaaffaa],
-            blendMode: 'ADD',
+            blendMode: this._isBatterySaver ? 'NORMAL' : 'ADD',
             quantity: 10,
             emitting: false
         });
@@ -633,7 +650,7 @@ export default class FXManager {
             alpha: { start: 1, end: 0 },
             lifespan: 600,
             tint: colors,
-            blendMode: 'ADD',
+            blendMode: this._isBatterySaver ? 'NORMAL' : 'ADD',
             quantity: 5,
             emitting: false
         });

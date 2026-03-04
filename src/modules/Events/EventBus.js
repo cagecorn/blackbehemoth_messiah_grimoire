@@ -25,7 +25,8 @@ class EventBus extends Phaser.Events.EventEmitter {
             ULT_TRIGGER: 'ULT_TRIGGER',
             PARTY_DEPLOYED: 'PARTY_DEPLOYED',
             CAMERA_SHAKE: 'CAMERA_SHAKE',
-            MERCENARY_RESURRECT: 'MERCENARY_RESURRECT'
+            MERCENARY_RESURRECT: 'MERCENARY_RESURRECT',
+            BATTERY_SAVER_TOGGLED: 'BATTERY_SAVER_TOGGLED'
         };
     }
 }

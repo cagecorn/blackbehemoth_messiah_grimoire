@@ -253,6 +253,7 @@ export default class TerritoryScene extends Phaser.Scene {
                         <div class="patch-item"><span class="patch-item-icon">🔍</span>카메라 확대/축소 시스템 추가</div>
                         <div class="patch-item"><span class="patch-item-icon">✨</span>용병 부활 시스템 추가 : 던전에서 골드를 지불하여 용병을 즉시 부활시킬 수 있습니다.</div>
                         <div class="patch-item"><span class="patch-item-icon">🔄</span>던전 전멸 시 무한 루프 시스템 추가 : 전멸 시 1라운드부터 즉시 재시작합니다.</div>
+                        <div class="patch-item"><span class="patch-item-icon">🔋</span>배터리 절약(방치) 모드 추가 : 설정에서 그래픽 효과를 켜고 끌 수 있습니다.</div>
                     </div>
                 </div>
             </div>

@@ -44,6 +44,18 @@ export default class WeatherManager {
         this._ambientDarken = null;   // 씬 내 어둠 오버레이 (Phaser Graphics)
         this._windAngle = 0;          // 현재 바람 각도 (도, 약간 랜덤 변화)
         this._windTimer = 0;
+        this._isBatterySaver = localStorage.getItem('batterySaver') === 'true';
+
+        // Listen for Battery Saver Toggle
+        import('../Events/EventBus.js').then(module => {
+            const EventBus = module.default;
+            EventBus.on(EventBus.EVENTS.BATTERY_SAVER_TOGGLED, (enabled) => {
+                this._isBatterySaver = enabled;
+                if (enabled) {
+                    this._stopCurrentWeather(1500);
+                }
+            }, this);
+        });
 
         console.log('[WeatherManager] 초기화 완료. ☁️');
     }
@@ -61,6 +73,12 @@ export default class WeatherManager {
     setWeather(type, options = {}) {
         const fadeDuration = options.fadeDuration ?? 2000;
         if (this.currentWeather === type) return;
+
+        // Battery Saver Check: Don't start weather if enabled
+        if (this._isBatterySaver && type !== 'none') {
+            console.log('[WeatherManager] Battery Saver ON - Skipping weather effect.');
+            return;
+        }
 
         console.log(`[WeatherManager] 날씨 전환: ${this.currentWeather} → ${type}`);
 

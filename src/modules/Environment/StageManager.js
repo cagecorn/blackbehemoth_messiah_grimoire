@@ -14,6 +14,36 @@ export default class StageManager {
     constructor(scene, config) {
         this.scene = scene;
         this.config = config;
+        this._isBatterySaver = localStorage.getItem('batterySaver') === 'true';
+
+        // Listen for Battery Saver Toggle
+        import('../Events/EventBus.js').then(module => {
+            const EventBus = module.default;
+            EventBus.on(EventBus.EVENTS.BATTERY_SAVER_TOGGLED, this.onBatterySaverToggled, this);
+        });
+    }
+
+    onBatterySaverToggled(enabled) {
+        this._isBatterySaver = enabled;
+        this.applyBatterySaverSettings();
+    }
+
+    applyBatterySaverSettings() {
+        // 1. Ambient Overlay Blend Mode
+        if (this.ambientOverlay) {
+            this.ambientOverlay.setBlendMode(this._isBatterySaver ? Phaser.BlendModes.NORMAL : Phaser.BlendModes.MULTIPLY);
+            this.ambientOverlay.setAlpha(this._isBatterySaver ? Math.min(this.config.ambientAlpha ?? 0.2, 0.1) : (this.config.ambientAlpha ?? 0.2));
+        }
+
+        // 2. Cloud Shadows (Hide if enabled)
+        if (this.cloudLayer) {
+            this.cloudLayer.setVisible(!this._isBatterySaver);
+        }
+
+        // 3. Lens Flare (Hide if enabled)
+        if (this.flareSprite) {
+            this.flareSprite.setVisible(!this._isBatterySaver);
+        }
     }
 
     buildStage(worldWidth, worldHeight) {
@@ -49,8 +79,9 @@ export default class StageManager {
             );
             ambientOverlay.setDepth(-999); // 배경 바로 위, 모든 캐릭터 아래
             ambientOverlay.setBlendMode(Phaser.BlendModes.MULTIPLY);
+            this.ambientOverlay = ambientOverlay;
 
-            console.log(`[StageManager] 앰비언트 오버레이 적용: 색상 0x${this.config.ambientColor.toString(16).toUpperCase()}, 불투명도 ${alpha * 100}%`);
+            console.log(`[StageManager] 앰비언트 오버레이 적용: 색상+ 0x${this.config.ambientColor.toString(16).toUpperCase()}, 불투명도 ${alpha * 100}%`);
         }
 
         // ── 3. 절차적 구름 그림자 오버레이 ────────────────────────
@@ -58,6 +89,9 @@ export default class StageManager {
 
         // ── 4. 은은한 렌즈 플레어 오버레이 ────────────────────────
         this.createLensFlare(worldWidth, worldHeight);
+
+        // --- Apply initial battery saver state ---
+        this.applyBatterySaverSettings();
     }
 
     createCloudShadows(worldWidth, worldHeight) {

@@ -12,7 +12,27 @@ export default class ParticleManager {
     constructor(scene) {
         this.scene = scene;
         this._emitterCache = new Map(); // texture key → ParticleEmitter
+        this._isBatterySaver = localStorage.getItem('batterySaver') === 'true';
+
+        // Listen for Battery Saver Toggle
+        import('../Events/EventBus.js').then(module => {
+            const EventBus = module.default;
+            EventBus.on(EventBus.EVENTS.BATTERY_SAVER_TOGGLED, this.onBatterySaverToggled, this);
+        });
+
         console.log('[ParticleManager] 초기화 완료. Emitter 캐시 모드 활성화. ✅');
+    }
+
+    onBatterySaverToggled(enabled) {
+        this._isBatterySaver = enabled;
+        // Update existing cached emitters blend modes
+        this._emitterCache.forEach(emitter => {
+            if (emitter && emitter.active) {
+                // If the emitter was originally 'ADD', switch it.
+                // We assume these are 'ADD' based on current code.
+                emitter.setBlendMode(enabled ? Phaser.BlendModes.NORMAL : Phaser.BlendModes.ADD);
+            }
+        });
     }
 
     /**
@@ -30,6 +50,7 @@ export default class ParticleManager {
         if (!this._emitterCache.has(textureKey)) {
             const emitter = this.scene.add.particles(0, 0, textureKey, {
                 ...config,
+                blendMode: (this._isBatterySaver && (config.blendMode === 'ADD' || config.blendMode === Phaser.BlendModes.ADD)) ? 'NORMAL' : (config.blendMode || 'NORMAL'),
                 emitting: false
             });
             this._emitterCache.set(textureKey, emitter);

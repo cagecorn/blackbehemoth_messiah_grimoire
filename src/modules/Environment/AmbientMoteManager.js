@@ -75,8 +75,23 @@ export default class AmbientMoteManager {
         this.scene = scene;
         /** @type {Phaser.GameObjects.Particles.ParticleEmitter[]} */
         this.emitters = [];
+        this._isBatterySaver = localStorage.getItem('batterySaver') === 'true';
         this._ensureTexture();
         this._createLayers();
+
+        // Battery Saver Toggle Listener
+        import('../Events/EventBus.js').then(module => {
+            const EventBus = module.default;
+            EventBus.on(EventBus.EVENTS.BATTERY_SAVER_TOGGLED, (enabled) => {
+                this._isBatterySaver = enabled;
+                if (enabled) {
+                    this.emitters.forEach(e => e.emitter.setAlpha(0));
+                } else {
+                    this.emitters.forEach(e => e.emitter.setAlpha(1));
+                }
+            }, this);
+        });
+
         console.log(`[AmbientMoteManager] ${MOTE_LAYERS.length}레이어 Parallax 부유 먼지 활성화 ✨`);
     }
 
@@ -113,6 +128,12 @@ export default class AmbientMoteManager {
         // 카메라 뷰포트 기준으로 랜덤 위치에 파티클 방출
         // emitZone은 뷰포트 범위 + 여유분
 
+        if (this._isBatterySaver) {
+            console.log('[AmbientMoteManager] Battery Saver ON - Skipping particle creation.');
+            // We still create them but keep them invisible if we want to support dynamic switching easily,
+            // or just skip. Let's create them but set alpha 0 if battery saver is on.
+        }
+
         MOTE_LAYERS.forEach(layer => {
             const emitter = this.scene.add.particles(0, 0, MOTE_TEXTURE_KEY, {
                 speed: { min: layer.speedMin, max: layer.speedMax },
@@ -142,6 +163,10 @@ export default class AmbientMoteManager {
             emitter.setDepth(layer.depth);
 
             this.emitters.push({ emitter, config: layer });
+
+            if (this._isBatterySaver) {
+                emitter.setAlpha(0);
+            }
         });
     }
 

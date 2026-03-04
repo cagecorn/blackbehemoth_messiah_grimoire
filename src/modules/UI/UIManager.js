@@ -1747,6 +1747,17 @@ export default class UIManager {
                             </label>
                         </div>
                     </div>
+
+                    <!-- Battery Saver (NEW) -->
+                    <div class="settings-row">
+                        <div class="settings-label-row">
+                            <span class="settings-label">방치 모드 (Battery Saver)</span>
+                            <label class="switch">
+                                <input type="checkbox" id="check-battery-saver" ${localStorage.getItem('batterySaver') === 'true' ? 'checked' : ''}>
+                                <span class="slider-toggle"></span>
+                            </label>
+                        </div>
+                    </div>
                 </div>
             `;
 
@@ -1796,6 +1807,17 @@ export default class UIManager {
             const vibCheck = document.getElementById('check-vibration');
             vibCheck.onchange = (e) => {
                 sfx.setVibrationEnabled(e.target.checked);
+            };
+
+            // Battery Saver Listener
+            const batteryCheck = document.getElementById('check-battery-saver');
+            batteryCheck.onchange = (e) => {
+                const enabled = e.target.checked;
+                localStorage.setItem('batterySaver', enabled);
+                EventBus.emit(EventBus.EVENTS.BATTERY_SAVER_TOGGLED, enabled);
+                if (this.showToast) {
+                    this.showToast(enabled ? '방치 모드 활성화 (성능 우선) 🔋' : '방치 모드 비활성화 (품질 우선) ✨');
+                }
             };
         });
     }

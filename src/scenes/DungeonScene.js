@@ -196,10 +196,23 @@ export default class DungeonScene extends Phaser.Scene {
         this.skillFxLayer = this.add.container(0, 0);
         this.skillFxLayer.setDepth(15000); // Between units (~5000-10000) and Damage Text (~20000)
 
-        if (this.skillFxLayer.postFX) {
+        if (this.skillFxLayer.postFX && !localStorage.getItem('batterySaver') === 'true') {
             const bloom = this.skillFxLayer.postFX.addBloom(0xffffff, 1, 1, 1.2, 3);
             console.log('[Visuals] Skill FX Bloom Pipeline Active! ✨ (Golden Glow enabled)');
         }
+
+        // Listen for Battery Saver Toggle to dynamic disable PostFX
+        EventBus.on(EventBus.EVENTS.BATTERY_SAVER_TOGGLED, (enabled) => {
+            if (enabled && this.skillFxLayer.postFX) {
+                this.skillFxLayer.postFX.clear();
+                console.log('[Visuals] Battery Saver ON - Removed PostFX from Skill Layer.');
+            } else if (!enabled && this.skillFxLayer.postFX) {
+                if (this.skillFxLayer.postFX.list.length === 0) {
+                    this.skillFxLayer.postFX.addBloom(0xffffff, 1, 1, 1.2, 3);
+                    console.log('[Visuals] Battery Saver OFF - Restored PostFX Bloom.');
+                }
+            }
+        }, this);
 
         // Listen for Character Swap
         this.handleDebugSwapListener = this.handleDebugSwap.bind(this);
@@ -971,7 +984,10 @@ export default class DungeonScene extends Phaser.Scene {
      * Applies a cinematic intro blur that fades away.
      */
     applyIntroBlur() {
-        if (!this.cameras.main.postFX) return;
+        if (!this.cameras.main.postFX || localStorage.getItem('batterySaver') === 'true') {
+            console.log('[Visuals] Battery Saver ON or PostFX unsupported - Skipping intro blur.');
+            return;
+        }
 
         // Add a temporary blur effect
         const blur = this.cameras.main.postFX.addBlur(2, 4, 4, 1, 0xffffff, 4);
