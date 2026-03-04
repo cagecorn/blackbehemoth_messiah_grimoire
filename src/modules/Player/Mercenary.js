@@ -156,6 +156,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
                     if (savedState.activatedPerks) this.grimoire[GrimoireManager.CHAPTERS.CLASS] = savedState.activatedPerks;
                 }
                 this.expToNextLevel = this.calculateExpToNextLevel(this.level);
+                this.syncStatusUI();
             }
         }
 
@@ -1423,6 +1424,8 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             y: this.y,
             hp: this.hp,
             maxHp: this.maxHp,
+            level: this.level,
+            exp: this.exp,
             atk: this.atk,
             mAtk: this.mAtk,
             def: this.def,
