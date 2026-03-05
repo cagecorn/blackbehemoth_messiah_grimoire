@@ -4474,8 +4474,8 @@ input:checked+.slider-toggle:before {
 
 #messiah-hud {
     position: absolute;
-    top: 60px;
-    /* Below top right toggles */
+    top: 130px;
+    /* Same as NPC HUD on PC to stay below nav bar */
     right: 10px;
     width: 60px;
     z-index: 1000;
@@ -4581,8 +4581,11 @@ input:checked+.slider-toggle:before {
     position: absolute;
     top: 105px;
     /* Just below navigation */
-    left: 50%;
-    transform: translateX(-50%) translateY(0) scale(1);
+    left: 0;
+    right: 0;
+    margin-inline: auto;
+    width: fit-content;
+    /* Centering without transform to avoid transition glitches */
     z-index: 9999;
     pointer-events: none;
     visibility: hidden;
@@ -4599,6 +4602,7 @@ input:checked+.slider-toggle:before {
         opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1),
         visibility 0.3s,
         transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transform: translateY(0) scale(1);
 }
 
 #hud-round-display.active {
@@ -4609,7 +4613,7 @@ input:checked+.slider-toggle:before {
 #hud-round-display.hidden {
     opacity: 0;
     visibility: hidden;
-    transform: translateX(-50%) translateY(-20px) scale(0.9);
+    transform: translateY(-20px) scale(0.9);
 }
 
 .round-display-bg {
@@ -4675,14 +4679,15 @@ input:checked+.slider-toggle:before {
     #hud-round-display {
         top: 115px;
         /* Safely between NPC and Messiah HUDs vertically */
-        left: 50%;
-        transform: translateX(-50%);
+        left: 0;
+        right: 0;
+        margin-inline: auto;
         min-width: 140px;
         padding: 4px 10px;
     }
 
     #hud-round-display.hidden {
-        transform: translateX(-50%) translateY(-10px) scale(0.9);
+        transform: translateY(-10px) scale(0.9);
     }
 
     #hud-round-text {

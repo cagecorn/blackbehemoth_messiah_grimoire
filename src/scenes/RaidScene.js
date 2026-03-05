@@ -336,9 +336,6 @@ export default class RaidScene extends Phaser.Scene {
 
         this.time.delayedCall(5000, () => {
             this.spawnBoss();
-            if (this.statusText) {
-                this.statusText.setText(`레이드 단계 #${this.raidCount}`);
-            }
         });
     }
 
