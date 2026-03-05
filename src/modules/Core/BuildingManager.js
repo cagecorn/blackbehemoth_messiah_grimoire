@@ -90,12 +90,6 @@ class BuildingManager {
         const currentAmount = item ? item.amount : 0;
         await DBManager.saveInventoryItem(config.resource, currentAmount + amount);
 
-        // Signal UI for the "pop-up" animation
-        console.log(`[BuildingManager] Emitting production anim for slot ${slotIndex}, icon: ${config.resource}`);
-        EventBus.emit('BUILDING_PRODUCED_ANIM', {
-            slotIndex,
-            iconId: config.resource // Use consistent naming
-        });
 
         EventBus.emit(EventBus.EVENTS.INVENTORY_UPDATED);
     }

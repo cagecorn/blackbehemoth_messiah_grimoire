@@ -67,6 +67,10 @@ export default class DungeonScene extends Phaser.Scene {
         this.isResetting = false;
         this.isInitializing = true;
 
+        // Reset particle pools to avoid "sys" TypeErrors from dead objects
+        this.resParticlePool = [];
+        this.messiahTextPool = [];
+
         // Global Heal on Scene Entry
         if (this.game.partyManager) this.game.partyManager.healAll();
     }
@@ -196,21 +200,10 @@ export default class DungeonScene extends Phaser.Scene {
             this.dungeonManager = new DungeonManager(this);
             this.dungeonManager.generateDungeon();
 
-            // --- Layers Setup ---
-            // Create a dedicated layer for UI elements that should NOT zoom or move.
-            this.uiLayer = this.add.container(0, 0).setDepth(100000).setScrollFactor(0);
-
-            // --- UI Camera Setup (Fixed Overlay) ---
-            // This camera stays at zoom 1 and doesn't scroll.
-            this.uiCamera = this.cameras.add(0, 0, this.scale.width, this.scale.height).setName('UICamera');
-            this.uiCamera.setScroll(0, 0);
-            this.uiCamera.setZoom(1);
-
             const stageConfig = StageConfigs[this.dungeonType] || StageConfigs.CURSED_FOREST;
             this.stageManager = new StageManager(this, stageConfig);
             this.stageManager.buildStage(worldWidth, worldHeight);
 
-            // Bounds are already set at the start, but we re-verify for consistency with dynamically generated dungeons
             const finalWidth = this.dungeonManager.dungeonInstance.width * 32;
             const finalHeight = this.dungeonManager.dungeonInstance.height * 32;
             this.cameras.main.setBounds(0, 0, finalWidth, finalHeight);
@@ -249,6 +242,10 @@ export default class DungeonScene extends Phaser.Scene {
             if (this.skillFxLayer.postFX && localStorage.getItem('batterySaver') !== 'true') {
                 const bloom = this.skillFxLayer.postFX.addBloom(0xffffff, 1, 1, 1.2, 3);
                 console.log('[Visuals] Skill FX Bloom Pipeline Active! ✨ (Golden Glow enabled)');
+            }
+
+            if (this.game.uiManager) {
+                this.game.uiManager.scene = this;
             }
 
             // Create a named listener for Battery Saver for easy removal
@@ -426,22 +423,10 @@ export default class DungeonScene extends Phaser.Scene {
                 this.game.uiManager.updateRoundDisplay(`DUNGEON ROUND ${this.currentRound}`);
             }
 
-            // --- Camera Rule: UI Visibility ---
-            // 1. Main camera ignores the UI layer completely
-            this.cameras.main.ignore(this.uiLayer);
-
-            // 2. UI camera ignores EVERYTHING except the UI layer
-            // First, ignore all existing children
-            this.children.list.forEach(child => {
-                if (child !== this.uiLayer) this.uiCamera.ignore(child);
-            });
-
-            // Second, dynamically ignore any future objects added to the scene
-            this.events.on('addedtogame', (child) => {
-                if (this.uiCamera && child !== this.uiLayer) {
-                    this.uiCamera.ignore(child);
-                }
-            });
+            // UI Indicators (Now DOM-Based via UIManager)
+            if (this.game.uiManager) {
+                this.game.uiManager.updateRoundDisplay(`DUNGEON ROUND ${this.currentRound}`);
+            }
 
             // 1. Mercenaries collect Loot
             this.physics.add.overlap(this.mercenaries, this.lootManager.lootGroup, (mercenary, item) => {
@@ -1455,42 +1440,5 @@ export default class DungeonScene extends Phaser.Scene {
      * @param {number} y Screen Y
      * @param {string} iconId Asset key
      */
-    spawnResourceParticle(x, y, iconId) {
-        if (!this.active || !this.cameras || !this.add) return;
 
-        if (!this.resParticlePool) this.resParticlePool = [];
-
-        let p = this.resParticlePool.pop();
-        if (!p) {
-            p = this.add.image(0, 0, iconId);
-            p.setDepth(200000); // Super top depth
-            p.setScrollFactor(0); // Fixed screen position
-
-            // Critical Fix: Tell the main camera to ignore this particle 
-            // so it only shows up on the uiCamera (preventing duplication).
-            if (this.uiCamera) {
-                this.cameras.main.ignore(p);
-            }
-        }
-
-        p.setTexture(iconId);
-        p.setPosition(x, y);
-        p.setAlpha(1);
-        p.setScale(0.2); // Miniature feel (was 0.4)
-        p.setVisible(true);
-
-        // Animate: Pop up, float, and fade
-        this.tweens.add({
-            targets: p,
-            y: y - 60,
-            alpha: 0,
-            scale: 0.6,
-            duration: 1500,
-            ease: 'Cubic.out',
-            onComplete: () => {
-                p.setVisible(false);
-                this.resParticlePool.push(p);
-            }
-        });
-    }
 }

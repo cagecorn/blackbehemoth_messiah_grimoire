@@ -408,46 +408,6 @@ export default class RaidScene extends Phaser.Scene {
         });
     }
 
-    /**
-     * Spawns a production particle on the Phaser canvas.
-     * @param {number} x Screen X
-     * @param {number} y Screen Y
-     * @param {string} iconId Asset key
-     */
-    spawnResourceParticle(x, y, iconId) {
-        if (!this.resParticlePool) this.resParticlePool = [];
-
-        let p = this.resParticlePool.pop();
-        if (!p) {
-            p = this.add.image(0, 0, iconId);
-            p.setDepth(200000); // Super top depth
-            p.setScrollFactor(0); // Fixed screen position
-
-            // Critical Fix: Only render on uiCamera to bypass zoom/scroll misalignment
-            if (this.uiCamera) {
-                this.cameras.main.ignore(p);
-            }
-        }
-
-        p.setTexture(iconId);
-        p.setPosition(x, y);
-        p.setAlpha(1);
-        p.setScale(0.2); // Miniature feel (was 0.4)
-        p.setVisible(true);
-
-        this.tweens.add({
-            targets: p,
-            y: y - 60,
-            alpha: 0,
-            scale: 0.6,
-            duration: 1500,
-            ease: 'Cubic.out',
-            onComplete: () => {
-                p.setVisible(false);
-                this.resParticlePool.push(p);
-            }
-        });
-    }
 
     handleMessiahTouch(pointer) {
         if (!this.game.messiahManager) return;

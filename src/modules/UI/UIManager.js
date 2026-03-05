@@ -286,7 +286,7 @@ export default class UIManager {
 
         // New: Building System Events
         EventBus.on('BUILDINGS_UPDATED', () => this.updateBuildingGrid());
-        EventBus.on('BUILDING_PRODUCED_ANIM', (payload) => this.playBuildingAnim(payload));
+
     }
 
     setupBuildingEvents() {
@@ -473,34 +473,6 @@ export default class UIManager {
         }).join('');
     }
 
-    playBuildingAnim({ slotIndex, iconId }) {
-        if (!this.buildingGrid || !this.showProductionAnim) return;
-        const slotEl = this.buildingGrid.children[slotIndex];
-        if (!slotEl) return;
-
-        // Find current Phaser scene
-        const game = this.scene?.game || (this.scene?.scene && this.scene?.scene.game);
-        if (!game) return;
-        const activeScene = game.scene.getScenes(true)[0];
-        if (!activeScene || !activeScene.spawnResourceParticle) return;
-
-        // Calculate screen position relative to the canvas element
-        const rect = slotEl.getBoundingClientRect();
-        const canvas = game.canvas;
-        if (!canvas) return;
-        const canvasRect = canvas.getBoundingClientRect();
-
-        // CSS pixel coordinates within the canvas
-        const cssX = rect.left + rect.width / 2 - canvasRect.left;
-        const cssY = rect.top - canvasRect.top;
-
-        // Convert CSS pixels to Phaser internal coordinates (600x1067)
-        // Phaser's displayScale tells us the ratio of internal units per CSS pixel
-        const phaserX = cssX * activeScene.scale.displayScale.x;
-        const phaserY = cssY * activeScene.scale.displayScale.y;
-
-        activeScene.spawnResourceParticle(phaserX, phaserY, iconId);
-    }
 
     initEventListeners() {
         EventBus.on('NPC_STACK_UPDATED', () => this.updateNPCHUD());
@@ -508,12 +480,15 @@ export default class UIManager {
 
         // Listen for scene changes to show/hide NPC HUD
         EventBus.on(EventBus.EVENTS.SCENE_CHANGED, (sceneKey) => {
+            console.log(`[UIManager] SCENE_CHANGED: ${sceneKey}`);
             const isCombat = (sceneKey === 'DungeonScene' || sceneKey === 'RaidScene' || sceneKey === 'ArenaScene');
             const isArena = (sceneKey === 'ArenaScene');
 
             if (this.npcHud) {
-                this.npcHud.style.display = isCombat ? 'block' : 'none';
-                if (isCombat) this.updateNPCHUD();
+                const npcDisplay = (isCombat && !isArena) ? 'block' : 'none';
+                console.log(`[UIManager] Setting NPC HUD display to: ${npcDisplay}`);
+                this.npcHud.style.display = npcDisplay;
+                if (isCombat && !isArena) this.updateNPCHUD();
             }
 
             // Hide Messiah HUD in Arena
@@ -539,6 +514,15 @@ export default class UIManager {
 
     updateNPCHUD() {
         if (!this.npcHud || !this.npcHudIcon || !this.npcHudStacks) {
+            return;
+        }
+
+        // Hide NPC HUD in Arena
+        const sceneKey = this.scene?.scene?.key || this.scene?.sys?.settings?.key;
+        console.log(`[UIManager] updateNPCHUD called. Current Scene: ${sceneKey}`);
+        if (sceneKey === 'ArenaScene') {
+            console.log('[UIManager] Forcing NPC HUD hide (ArenaScene detected)');
+            this.npcHud.style.display = 'none';
             return;
         }
 
@@ -1866,16 +1850,18 @@ export default class UIManager {
     updateMessiahHUD() {
         if (!this.messiahHud || !this.messiahHudIcon || !this.messiahHudStacks || !this.messiahCooldownFill) return;
 
-        // Only show in combat scenes
+        // Only show in combat scenes (except Arena)
         const sceneKey = this.scene?.scene?.key || this.scene?.sys?.settings?.key;
         const isCombat = (sceneKey === 'DungeonScene' || sceneKey === 'RaidScene' || sceneKey === 'ArenaScene');
+        const isArena = (sceneKey === 'ArenaScene');
 
-        if (!isCombat) {
-            if (this.messiahHud.classList.contains('active')) {
-                this.messiahHud.classList.remove('active');
-                this.lastMessiahPowerId = null;
-                this.lastMessiahStacks = -1;
+        if (!isCombat || isArena) {
+            if (this.messiahHud) {
+                if (this.messiahHud.classList.contains('active')) this.messiahHud.classList.remove('active');
+                this.messiahHud.style.display = 'none';
             }
+            this.lastMessiahPowerId = null;
+            this.lastMessiahStacks = -1;
             return;
         }
 
@@ -3165,4 +3151,46 @@ export default class UIManager {
             console.error('[UIManager] Error saving settings:', err);
         }
     }
+
+    /**
+     * Show a centered splash message (Victory, Defeat, etc.) using DOM
+     */
+    showSplashMessage(text, color = '#FFD700', duration = 3000) {
+        const overlay = document.createElement('div');
+        overlay.id = 'splash-overlay';
+        overlay.style.cssText = `
+            position: absolute;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.5);
+            pointer-events: none;
+            z-index: 10000;
+            color: ${color};
+            font-family: 'Outfit', sans-serif;
+            font-size: 80px;
+            font-weight: 900;
+            text-shadow: 0 0 10px rgba(0,0,0,0.5), 0 0 20px ${color};
+            white-space: nowrap;
+            opacity: 0;
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            text-transform: uppercase;
+            letter-spacing: 5px;
+        `;
+        overlay.innerText = text;
+        document.body.appendChild(overlay);
+
+        // Animate in
+        requestAnimationFrame(() => {
+            overlay.style.opacity = '1';
+            overlay.style.transform = 'translate(-50%, -50%) scale(1)';
+        });
+
+        // Animate out
+        setTimeout(() => {
+            overlay.style.opacity = '0';
+            overlay.style.transform = 'translate(-50%, -51%) scale(1.1)';
+            setTimeout(() => overlay.remove(), 500);
+        }, duration - 500);
+    }
+
 }

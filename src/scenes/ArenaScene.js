@@ -50,6 +50,10 @@ export default class ArenaScene extends Phaser.Scene {
 
         // Global Heal on Scene Entry
         if (this.game.partyManager) this.game.partyManager.healAll();
+
+        // 1. Reset particle pools to avoid "sys" TypeErrors from dead objects
+        this.resParticlePool = [];
+        this.messiahTextPool = [];
     }
 
     create() {
@@ -65,7 +69,6 @@ export default class ArenaScene extends Phaser.Scene {
         // Stage visual rendering
         this.stageManager = new StageManager(this, StageConfigs.ARENA);
         this.stageManager.buildStage(worldWidth, worldHeight);
-
 
         // Physics Groups
         this.mercenaries = this.physics.add.group();
@@ -99,13 +102,6 @@ export default class ArenaScene extends Phaser.Scene {
             this.game.uiManager.updateRoundDisplay(`ARENA BATTLE #${this.battleCount}`);
         }
 
-        // --- UI Camera Setup (Fixed Overlay) ---
-        // This camera stays at zoom 1 and doesn't scroll, used for fixed HUD/Animations.
-        this.uiCamera = this.cameras.add(0, 0, this.scale.width, this.scale.height).setName('UICamera');
-        this.uiCamera.setScroll(0, 0);
-        this.uiCamera.setZoom(1);
-
-
         // ESC to return
         this.input.keyboard.on('keydown-ESC', () => {
             this.scene.start('TerritoryScene');
@@ -135,9 +131,6 @@ export default class ArenaScene extends Phaser.Scene {
             if (this.game.uiManager) this.game.uiManager.updateRoundDisplay(null);
             console.log('[ArenaScene] Cleaned up AmbientMotes and HUD.');
         });
-
-        // --- Messiah Touch Interaction (Disabled in Arena) ---
-        // this.input.on('pointerdown', this.handleMessiahTouch, this);
 
         // Messiah Pools
         this.messiahTextPool = [];
@@ -408,7 +401,13 @@ export default class ArenaScene extends Phaser.Scene {
             let targetZoom = Math.min(zoomX, zoomY);
             targetZoom = Phaser.Math.Clamp(targetZoom, 0.5, 1.2);
 
+            if (this.dynamicCamera.targetZoom !== targetZoom) {
+                console.log(`[Arena] Camera Update: Center(${centerX.toFixed(0)}, ${centerY.toFixed(0)}) Zoom: ${targetZoom.toFixed(2)} Units: ${count}`);
+            }
+
             this.dynamicCamera.targetZoom = targetZoom;
+        } else {
+            console.warn('[Arena] No active units for camera follow!');
         }
     }
 
@@ -419,13 +418,9 @@ export default class ArenaScene extends Phaser.Scene {
 
         EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, `[아레나] ${resultText} 3초 뒤 다음 전투가 시작됩니다.`);
 
-        this.add.text(this.cameras.main.width / 2, this.cameras.main.height / 2, resultText, {
-            fontSize: '64px',
-            fill: color,
-            fontStyle: 'bold',
-            stroke: '#000',
-            strokeThickness: 8
-        }).setOrigin(0.5).setDepth(2000).setScrollFactor(0).setAlpha(0).setAlpha(1);
+        if (this.game.uiManager) {
+            this.game.uiManager.showSplashMessage(resultText, color);
+        }
 
         this.time.delayedCall(3000, () => {
             this.battleCount++;
@@ -433,46 +428,6 @@ export default class ArenaScene extends Phaser.Scene {
         });
     }
 
-    /**
-     * Spawns a production particle on the Phaser canvas.
-     * @param {number} x Screen X
-     * @param {number} y Screen Y
-     * @param {string} iconId Asset key
-     */
-    spawnResourceParticle(x, y, iconId) {
-        if (!this.resParticlePool) this.resParticlePool = [];
-
-        let p = this.resParticlePool.pop();
-        if (!p) {
-            p = this.add.image(0, 0, iconId);
-            p.setDepth(200000); // Super top depth
-            p.setScrollFactor(0); // Fixed screen position
-
-            // Critical Fix: Only render on uiCamera to bypass zoom/scroll misalignment
-            if (this.uiCamera) {
-                this.cameras.main.ignore(p);
-            }
-        }
-
-        p.setTexture(iconId);
-        p.setPosition(x, y);
-        p.setAlpha(1);
-        p.setScale(0.2); // Miniature feel (was 0.4)
-        p.setVisible(true);
-
-        this.tweens.add({
-            targets: p,
-            y: y - 60,
-            alpha: 0,
-            scale: 0.6,
-            duration: 1500,
-            ease: 'Cubic.out',
-            onComplete: () => {
-                p.setVisible(false);
-                this.resParticlePool.push(p);
-            }
-        });
-    }
 
     handleMessiahTouch(pointer) {
         if (!this.game.messiahManager) return;
