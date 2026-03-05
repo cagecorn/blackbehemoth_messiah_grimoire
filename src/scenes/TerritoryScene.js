@@ -100,9 +100,17 @@ export default class TerritoryScene extends Phaser.Scene {
 
     // ─── Kitsch Banner List ───────────────────────────────────────────────────
     createBannerList() {
-        if (this.navContainer) this.navContainer.remove();
+        // --- DIRTY FLAG / REUSE LOGIC ---
+        let wrap = document.getElementById('territory-banner-wrap');
+        if (wrap) {
+            console.log('[TerritoryScene] Reusing existing banner wrap.');
+            wrap.style.display = 'block';
+            this.navContainer = wrap;
+            return; // Already exists, skipping intensive HTML build
+        }
 
-        const wrap = document.createElement('div');
+        console.log('[TerritoryScene] Creating new banner list.');
+        wrap = document.createElement('div');
         wrap.id = 'territory-banner-wrap';
         wrap.innerHTML = `
             <div id="territory-banner-inner">
@@ -154,15 +162,13 @@ export default class TerritoryScene extends Phaser.Scene {
             }
         });
 
-        // Clean up on scene shutdown
+        // Clean up on scene shutdown: ONLY HIDE, DON'T REMOVE (for faster re-entry)
         this.events.on('shutdown', () => {
             if (this.navContainer) {
-                this.navContainer.remove();
-                this.navContainer = null;
+                this.navContainer.style.display = 'none';
             }
             if (this.patchNotesContainer) {
-                this.patchNotesContainer.remove();
-                this.patchNotesContainer = null;
+                this.patchNotesContainer.style.display = 'none';
             }
         });
     }
@@ -170,78 +176,7 @@ export default class TerritoryScene extends Phaser.Scene {
     _buildBannerHTML(banner, index) {
         const delay = index * 80;
 
-        // Configuration for "Constellation"
-        const mainStarCount = 4 + Math.floor(Math.random() * 2); // 4-5 connected stars
-        const decorStarCount = 10 + Math.floor(Math.random() * 5); // extra floating stars
-
-        let starsHTML = '';
-        let linesHTML = '';
-        const points = [];
-
-        // 1. Generate Main Stars (the ones to be connected)
-        for (let i = 0; i < mainStarCount; i++) {
-            // Keep main points somewhat grouped but spread
-            const x = 10 + Math.random() * 80;
-            const y = 20 + Math.random() * 60;
-            points.push({ x, y });
-
-            const twinkleDelay = Math.random() * 4;
-            const twinkleDuration = 3 + Math.random() * 2;
-
-            starsHTML += `
-                <div class="star size-3" style="
-                    left: ${x}%;
-                    top: ${y}%;
-                    animation-delay: ${twinkleDelay}s;
-                    animation-duration: ${twinkleDuration}s;
-                "></div>
-            `;
-        }
-
-        // 2. Draw lines between points in sequence
-        for (let i = 0; i < points.length - 1; i++) {
-            const p1 = points[i];
-            const p2 = points[i + 1];
-
-            // Calculate distance and angle for CSS transform
-            // Since we are using %, we assume a reference dimension for the math
-            // Banner is ~480px wide (max) and 110px high. 
-            // We'll use these as rough ratios for angle calculation.
-            const dx = (p2.x - p1.x) * 4.8; // Normalized px
-            const dy = (p2.y - p1.y) * 1.1;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-            const angle = Math.atan2(dy, dx) * 180 / Math.PI;
-            const lineDelay = Math.random() * 2;
-
-            linesHTML += `
-                <div class="constellation-line" style="
-                    left: ${p1.x}%;
-                    top: ${p1.y}%;
-                    width: ${distance}px;
-                    transform: rotate(${angle}deg);
-                    animation-delay: ${lineDelay}s;
-                "></div>
-            `;
-        }
-
-        // 3. Optional: Add a few decorative floating stars
-        for (let i = 0; i < decorStarCount; i++) {
-            const x = Math.random() * 100;
-            const y = Math.random() * 100;
-            const size = 1 + Math.floor(Math.random() * 2);
-            const twinkleDelay = Math.random() * 5;
-
-            starsHTML += `
-                <div class="star size-${size}" style="
-                    left: ${x}%;
-                    top: ${y}%;
-                    animation-delay: ${twinkleDelay}s;
-                "></div>
-            `;
-        }
-
-        // 4. Nebula Tinting (derive from accent)
-        // Simple hex-to-rgba-like tint (alpha 0.15)
+        // Configuration for Nebula Tinting (derive from accent)
         const nebulaTint1 = `${banner.accentColor}25`; // ~15% alpha hex
         const nebulaTint2 = `${banner.accentColor}15`; // ~8% alpha hex
 
@@ -255,13 +190,9 @@ export default class TerritoryScene extends Phaser.Scene {
                     --nebula-color-2: ${nebulaTint2};
                     animation-delay: ${delay}ms;
                 ">
-                <!-- Cosmic Ocean Background -->
-                <div class="territory-banner-nebula"></div>
+                <!-- Optimized Background -->
+                <div class="territory-banner-nebula-static" style="background: radial-gradient(circle at 20% 40%, ${nebulaTint1} 0%, transparent 70%); opacity: 0.3;"></div>
                 <div class="territory-banner-img-wrap">
-                    <div class="territory-banner-stars">
-                        ${linesHTML}
-                        ${starsHTML}
-                    </div>
                     <img
                         src="${banner.cutscene}"
                         alt="${banner.label}"
@@ -281,9 +212,15 @@ export default class TerritoryScene extends Phaser.Scene {
 
     // ─── Patch Notes floating tab ─────────────────────────────────────────────
     createPatchNotes() {
-        if (this.patchNotesContainer) this.patchNotesContainer.remove();
+        // --- DIRTY FLAG / REUSE LOGIC ---
+        let wrap = document.getElementById('territory-patch-notes');
+        if (wrap) {
+            wrap.style.display = 'block';
+            this.patchNotesContainer = wrap;
+            return;
+        }
 
-        const wrap = document.createElement('div');
+        wrap = document.createElement('div');
         wrap.id = 'territory-patch-notes';
         wrap.innerHTML = `
             <div id="territory-patch-tab">

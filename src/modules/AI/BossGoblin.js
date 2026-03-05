@@ -7,8 +7,8 @@ import { MonsterClasses } from '../Core/EntityStats.js';
  * Giant goblin boss for Raid.
  */
 export default class BossGoblin extends BaseMonster {
-    constructor(scene, x, y, target) {
-        super(scene, x, y, MonsterClasses.BOSS_GOBLIN, target);
+    constructor(scene, x, y, config, target) {
+        super(scene, x, y, config || MonsterClasses.BOSS_GOBLIN, target);
         this.initAI();
     }
 

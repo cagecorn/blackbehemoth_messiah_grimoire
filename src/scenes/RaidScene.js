@@ -21,11 +21,10 @@ import ShieldManager from '../modules/Combat/ShieldManager.js';
 import BuffManager from '../modules/Core/BuffManager.js';
 import SeparationManager from '../modules/Core/SeparationManager.js';
 import BarkManager from '../modules/AI/BarkManager.js';
-import { Characters } from '../modules/Core/EntityStats.js';
+import { Characters, StageConfigs, MonsterClasses, scaleStats } from '../modules/Core/EntityStats.js';
 import EventBus from '../modules/Events/EventBus.js';
 // partyManager will be accessed via this.game.partyManager
 import StageManager from '../modules/Environment/StageManager.js';
-import { StageConfigs } from '../modules/Core/EntityStats.js';
 import AmbientMoteManager from '../modules/Environment/AmbientMoteManager.js';
 import DynamicCameraManager from '../modules/Core/DynamicCameraManager.js';
 
@@ -211,10 +210,16 @@ export default class RaidScene extends Phaser.Scene {
         const bossY = centerY;
 
         const playerLeader = this.mercenaries.getChildren().find(u => u.className === 'warrior');
-        this.boss = new BossGoblin(this, bossX, bossY, playerLeader);
+
+        // --- SCALE BOSS STATS ---
+        const scaledConfig = scaleStats(MonsterClasses.BOSS_GOBLIN, this.raidCount);
+        // ------------------------
+
+        this.boss = new BossGoblin(this, bossX, bossY, scaledConfig, playerLeader);
         this.enemies.add(this.boss);
 
-        console.log(`[Raid] Boss spawned at stage ${this.raidCount}. HP: ${this.boss.hp}`);
+        console.log(`[Raid] Boss spawned at stage ${this.raidCount}.`);
+        console.table(this.boss.getCombatSnapshot());
         this.isRespawning = false;
         this.isStarting = false; // Flag to indicate spawning is done
         EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, `[레이드] 대왕 고블린이 나타났습니다! 👺`);

@@ -1163,77 +1163,71 @@ export const StageConfigs = {
  * @returns {Object} A new config object with scaled stats.
  */
 export function scaleStats(config, level) {
-    if (!config) return { level: level || 1 };
+    if (!config) return { level: level || 1, hp: 100, maxHp: 100, atk: 10, mAtk: 10, def: 5, mDef: 5, speed: 100, atkSpd: 1500, atkRange: 100, rangeMin: 0, rangeMax: 100, castSpd: 1000, acc: 90, eva: 5, crit: 5, id: 'unknown' };
 
-    // Ensure basic defaults exist before scaling
+    // Standardized 16 Stats Defaults
     const base = {
-        maxHp: 100,
-        atk: 10,
-        mAtk: 10,
-        def: 5,
-        mDef: 5,
-        fireRes: 0,
-        iceRes: 0,
-        lightningRes: 0,
+        id: config.id || 'unknown',
+        hp: config.hp || config.maxHp || 100,
+        maxHp: config.maxHp || 100,
+        atk: config.atk || 10,
+        mAtk: config.mAtk || 10,
+        def: config.def || 5,
+        mDef: config.mDef || 5,
+        speed: config.speed || 100,
+        atkSpd: config.atkSpd || 1500,
+        atkRange: config.atkRange || 100,
+        rangeMin: config.rangeMin || 0,
+        rangeMax: config.rangeMax || config.atkRange || 100,
+        castSpd: config.castSpd || 1000,
+        acc: config.acc || 90,
+        eva: config.eva || 5,
+        crit: config.crit || 5,
         ...config
     };
 
     const newConfig = { ...base };
+    const levelFactor = level - 1;
 
     // Star scaling: Each star above 1 adds a cumulative 20% multiplier (1.2x) to base stats
     const starLevel = config.star || 1;
     const bonusStars = starLevel - 1;
     const starMultiplier = Math.pow(1.2, bonusStars);
 
-    if (level <= 1) {
-        newConfig.maxHp = Math.floor(base.maxHp * starMultiplier);
-        newConfig.hp = newConfig.maxHp;
-        newConfig.atk = Math.floor((base.atk || 0) * starMultiplier);
-        newConfig.mAtk = Math.floor((base.mAtk || 0) * starMultiplier);
-        newConfig.def = Math.floor((base.def || 0) * starMultiplier);
-        newConfig.mDef = Math.floor((base.mDef || 0) * starMultiplier);
+    // Apply Level Scaling based on growth
+    const growth = config.growth || {
+        maxHp: base.maxHp * 0.1,
+        atk: base.atk * 0.1,
+        mAtk: base.mAtk * 0.1,
+        def: base.def * 0.05,
+        mDef: base.mDef * 0.05,
+        acc: 1,
+        eva: 0.5,
+        crit: 0.2
+    };
 
-        // Apply Utility Bonuses even at Level 1
-        if (bonusStars > 0) {
-            newConfig.crit = (newConfig.crit || 0) + (bonusStars * 2);
-            newConfig.acc = (newConfig.acc || 0) + (bonusStars * 5);
-            newConfig.eva = (newConfig.eva || 0) + (bonusStars * 3);
-            newConfig.atkSpd = Math.max(100, (newConfig.atkSpd || 1000) - (bonusStars * 50));
-        }
+    // Calculate Scaled Values
+    newConfig.maxHp = Math.floor((base.maxHp + (levelFactor * (growth.maxHp || 0))) * starMultiplier);
+    newConfig.hp = newConfig.maxHp;
+    newConfig.atk = Math.floor((base.atk + (levelFactor * (growth.atk || 0))) * starMultiplier);
+    newConfig.mAtk = Math.floor((base.mAtk + (levelFactor * (growth.mAtk || 0))) * starMultiplier);
+    newConfig.def = Math.floor((base.def + (levelFactor * (growth.def || 0))) * starMultiplier);
+    newConfig.mDef = Math.floor((base.mDef + (levelFactor * (growth.mDef || 0))) * starMultiplier);
 
-        newConfig.level = 1;
-        return newConfig;
-    }
+    // Speed & Utility Scaling
+    newConfig.speed = base.speed + (levelFactor * 0.5); // Minor speed increase
+    newConfig.acc = Math.floor((base.acc + (levelFactor * (growth.acc || 0))) + (bonusStars * 5));
+    newConfig.eva = (base.eva + (levelFactor * (growth.eva || 0))) + (bonusStars * 3);
+    newConfig.crit = (base.crit + (levelFactor * (growth.crit || 0))) + (bonusStars * 2);
+
+    // attackDelay (atkSpd) reduces as level increases (higher level = faster attacks)
+    // Decreases by 1% per level, max 50% reduction
+    const atkSpdReduction = Math.min(0.5, levelFactor * 0.01);
+    newConfig.atkSpd = Math.floor(base.atkSpd * (1 - atkSpdReduction));
+    newConfig.castSpd = Math.floor(base.castSpd * (1 - atkSpdReduction));
 
     newConfig.level = level;
-
-    // Apply level scaling first using growth property (if exists)
-    const levelFactor = level - 1;
-    const growth = config.growth || { maxHp: 10, atk: 2, mAtk: 1, def: 1, mDef: 1 };
-
-    const scaledMaxHp = base.maxHp + (levelFactor * (growth.maxHp || 0));
-    const scaledAtk = (base.atk || 0) + (levelFactor * (growth.atk || 0));
-    const scaledMAtk = (base.mAtk || 0) + (levelFactor * (growth.mAtk || 0));
-    const scaledDef = (base.def || 0) + (levelFactor * (growth.def || 0));
-    const scaledMDef = (base.mDef || 0) + (levelFactor * (growth.mDef || 0));
-
-    // Then apply star multiplier (배수 = 1.2 ^ (별의 개수 - 1))
-    // starMultiplier and bonusStars already declared above
-
-    newConfig.maxHp = Math.floor(scaledMaxHp * starMultiplier);
-    newConfig.hp = newConfig.maxHp;
-    newConfig.atk = Math.floor(scaledAtk * starMultiplier);
-    newConfig.mAtk = Math.floor(scaledMAtk * starMultiplier);
-    newConfig.def = Math.floor(scaledDef * starMultiplier);
-    newConfig.mDef = Math.floor(scaledMDef * starMultiplier);
-
-    // [Option C] Utility Bonuses: Fixed additions for stars above 1
-    if (bonusStars > 0) {
-        newConfig.crit = (newConfig.crit || 0) + (bonusStars * 2);    // +2% Crit per star
-        newConfig.acc = (newConfig.acc || 0) + (bonusStars * 5);      // +5 Acc per star
-        newConfig.eva = (newConfig.eva || 0) + (bonusStars * 3);      // +3 Eva per star
-        newConfig.atkSpd = Math.max(100, (newConfig.atkSpd || 1000) - (bonusStars * 50)); // -50ms AtkSpd (Faster)
-    }
+    newConfig.star = starLevel;
 
     return newConfig;
 }

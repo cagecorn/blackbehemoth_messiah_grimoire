@@ -17,44 +17,31 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
 
         // Identity
         this.id = config.id + '_' + Phaser.Math.Between(1000, 9999);
-        this.className = config.id; // Keeping original className
+        this.baseId = config.id;
+        this.className = config.id;
         this.unitName = config.name;
         this.level = config.level || 1;
         if (this.level > 1) {
             this.unitName = `Lv.${this.level} ${config.name}`;
         }
 
-        // Stats
-        this.maxHp = config.maxHp;
-        this.hp = config.hp || config.maxHp;
-
+        // --- Standardized 16 Stats Mapping ---
+        this.maxHp = config.maxHp || 100;
+        this.hp = config.hp !== undefined ? config.hp : this.maxHp;
         this.atk = config.atk || 0;
         this.mAtk = config.mAtk || 0;
         this.def = config.def || 0;
         this.mDef = config.mDef || 0;
-        this.fireRes = config.fireRes || 0;
-        this.iceRes = config.iceRes || 0;
-        this.lightningRes = config.lightningRes || 0;
-
-        this.bonusDR = 0;
-        this.bonusAtk = 0;
-        this.bonusMAtk = 0;
-        this.bonusDef = 0;
-        this.bonusMDef = 0;
-        this.bonusFireRes = 0;
-        this.bonusIceRes = 0;
-        this.bonusLightningRes = 0;
-
         this.speed = config.speed || 50;
+        this.atkSpd = config.atkSpd || 1500;
         this.atkRange = config.atkRange || 40;
         this.rangeMin = config.rangeMin || 0;
         this.rangeMax = config.rangeMax || this.atkRange;
-        this.atkSpd = config.atkSpd || 1500;
         this.castSpd = config.castSpd || 1000;
-
         this.acc = config.acc || 100;
         this.eva = config.eva || 0;
         this.crit = config.crit || 0;
+        // ------------------------------------
         // Status Tracking
         this.isStunned = false;
         this.isAirborne = false;

@@ -108,6 +108,7 @@ export default class BootScene extends Phaser.Scene {
         this.load.svg('emoji_koinobori', 'assets/emojis/1f38f.svg', { width: 64, height: 64 });
         this.load.svg('emoji_bone', 'assets/emojis/1f9b4.svg', { width: 64, height: 64 });
         this.load.svg('emoji_ticket', 'assets/emojis/1f3ab.svg', { width: 64, height: 64 }); // 🎫
+        this.load.svg('emoji_essence', 'assets/emojis/2728.svg', { width: 64, height: 64 }); // ✨ Divine Essence
 
         // Tactical Node Charms Emojis
         this.load.svg('emoji_smiling_face_with_sunglasses', 'assets/emojis/1f60e.svg', { width: 64, height: 64 }); // 😎
