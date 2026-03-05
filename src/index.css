@@ -2658,7 +2658,7 @@ body {
 /* --- Status Description Popup (Mobile Friendly) --- */
 .status-popup-tab {
     position: absolute;
-    z-index: 11000;
+    z-index: 18000;
     background: rgba(15, 15, 20, 0.85);
     backdrop-filter: blur(15px);
     -webkit-backdrop-filter: blur(15px);
