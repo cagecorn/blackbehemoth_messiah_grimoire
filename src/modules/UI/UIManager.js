@@ -28,6 +28,11 @@ export default class UIManager {
         this.npcHudStacks = null;
         this.lastGold = -1;
         this.lastGem = -1;
+        this.lastNpcId = null;
+        this.lastNpcStacks = -1;
+        this.lastMessiahPowerId = null;
+        this.lastMessiahStacks = -1;
+        this.lastMessiahAuto = null;
 
         // Dirty Flags for Performance (Replacing Polling)
         this.hudDirty = true;
@@ -1580,28 +1585,44 @@ export default class UIManager {
     updateNPCHUD() {
         if (!this.npcHud || !this.npcHudIcon || !this.npcHudStacks) return;
 
-        const activeNPC = npcManager.getActiveNPC();
-        if (activeNPC && activeNPC.stacks > 0) {
-            const npcData = npcManager.getNPCInfo(activeNPC.id);
-            this.npcHudIcon.src = `assets/npc/${npcData.sprite}.png`;
-            this.npcHudStacks.innerText = `${activeNPC.stacks}회`;
-            this.npcHud.style.opacity = '1';
-            this.npcHud.style.pointerEvents = 'auto';
+        const hiredNPC = npcManager.getHiredNPC();
+        if (hiredNPC && hiredNPC.currentStacks > 0) {
+            // Check Dirty State
+            if (this.lastNpcId !== hiredNPC.id || this.lastNpcStacks !== hiredNPC.currentStacks) {
+                if (this.lastNpcId !== hiredNPC.id) {
+                    this.npcHudIcon.src = hiredNPC.icon;
+                    this.lastNpcId = hiredNPC.id;
+                }
+                this.npcHudStacks.innerText = hiredNPC.currentStacks;
+                this.lastNpcStacks = hiredNPC.currentStacks;
+                this.npcHud.dataset.tooltip = `${hiredNPC.name} (${hiredNPC.currentStacks} 스택)\n${hiredNPC.description}`;
+
+                if (this.npcHud.style.display !== 'block') {
+                    this.npcHud.style.display = 'block';
+                }
+            }
         } else {
-            this.npcHud.style.opacity = '0';
-            this.npcHud.style.pointerEvents = 'none';
+            if (this.npcHud.style.display !== 'none') {
+                this.npcHud.style.display = 'none';
+                this.lastNpcId = null;
+                this.lastNpcStacks = -1;
+            }
         }
     }
 
     updateMessiahHUD() {
         if (!this.messiahHud || !this.messiahHudIcon || !this.messiahHudStacks || !this.messiahCooldownFill) return;
 
-        // Only show in DungeonScene
+        // Only show in combat scenes
         const sceneKey = this.scene?.scene?.key || this.scene?.sys?.settings?.key;
-        if (sceneKey !== 'DungeonScene') {
-            this.messiahHud.style.display = 'none';
-            this.messiahHud.style.opacity = '0';
-            this.messiahHud.style.pointerEvents = 'none';
+        const isCombat = (sceneKey === 'DungeonScene' || sceneKey === 'RaidScene' || sceneKey === 'ArenaScene');
+
+        if (!isCombat) {
+            if (this.messiahHud.style.display !== 'none') {
+                this.messiahHud.style.display = 'none';
+                this.lastMessiahPowerId = null;
+                this.lastMessiahStacks = -1;
+            }
             return;
         }
 
@@ -1611,34 +1632,50 @@ export default class UIManager {
 
         const power = mm.getActivePower();
         if (!power) {
-            this.messiahHud.style.display = 'none';
-            this.messiahHud.style.opacity = '0';
-            this.messiahHud.style.pointerEvents = 'none';
+            if (this.messiahHud.style.display !== 'none') this.messiahHud.style.display = 'none';
             return;
         }
 
-        this.messiahHud.style.display = 'block';
-        this.messiahHud.style.opacity = '1';
-        this.messiahHud.style.pointerEvents = 'auto';
+        if (this.messiahHud.style.display !== 'block') {
+            this.messiahHud.style.display = 'block';
+        }
 
-        this.messiahHudIcon.innerText = power.emoji;
-        this.messiahHudStacks.innerText = `${mm.stacks}/${mm.maxStacks}`;
+        // 1. Power/Emoji/Stacks Dirty Check
+        const stackStr = `${mm.stacks}/${mm.maxStacks}`;
+        if (this.lastMessiahPowerId !== power.id || this.lastMessiahStacks !== mm.stacks) {
+            if (this.lastMessiahPowerId !== power.id) {
+                this.messiahHudIcon.innerText = power.emoji;
+                this.lastMessiahPowerId = power.id;
+            }
+            this.messiahHudStacks.innerText = stackStr;
+            this.lastMessiahStacks = mm.stacks;
+        }
 
-        if (this.messiahAutoBtn) {
+        // 2. Auto Mode Dirty Check
+        if (this.lastMessiahAuto !== mm.isAutoMode) {
             if (mm.isAutoMode) {
                 this.messiahAutoBtn.classList.add('active');
             } else {
                 this.messiahAutoBtn.classList.remove('active');
             }
+            this.lastMessiahAuto = mm.isAutoMode;
         }
 
-        // Calculate Cooldown Fill Percentage
+        // 3. Cooldown Bar (Updates frequently, but only if change > threshold)
         if (mm.stacks >= mm.maxStacks) {
-            this.messiahCooldownFill.style.width = '100%';
+            if (this.lastMessiahCooldown !== 100) {
+                this.messiahCooldownFill.style.width = '100%';
+                this.lastMessiahCooldown = 100;
+            }
         } else {
             const actualCooldown = mm.baseCooldown * (1000 / mm.stats.castSpd);
             const percentage = Math.min(100, Math.max(0, (mm.cooldownTimer / actualCooldown) * 100));
-            this.messiahCooldownFill.style.width = `${percentage}%`;
+
+            // Only update DOM if percentage changed significantly (e.g. 0.5%)
+            if (Math.abs((this.lastMessiahCooldown || 0) - percentage) > 0.5) {
+                this.messiahCooldownFill.style.width = `${percentage.toFixed(1)}%`;
+                this.lastMessiahCooldown = percentage;
+            }
         }
     }
 
