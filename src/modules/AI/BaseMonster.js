@@ -19,8 +19,9 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
         this.id = config.id + '_' + Phaser.Math.Between(1000, 9999);
         this.className = config.id; // Keeping original className
         this.unitName = config.name;
-        if (config.level && config.level > 1) {
-            this.unitName = `Lv.${config.level} ${config.name}`;
+        this.level = config.level || 1;
+        if (this.level > 1) {
+            this.unitName = `Lv.${this.level} ${config.name}`;
         }
 
         // Stats
@@ -521,8 +522,9 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
 
         if (this.scene && this.scene.lootManager) {
             // Use container world coordinates (x, y) which are more stable during death
+            // Passing 'this' to provide full context (level, isElite, id, etc.)
             console.log(`[BaseMonster] ${this.unitName} (Lv.${this.level}) died at (${this.x.toFixed(1)}, ${this.y.toFixed(1)}). Spawning loot.`);
-            this.scene.lootManager.spawnLoot(this.x, this.y, this.config.id);
+            this.scene.lootManager.spawnLoot(this.x, this.y, this);
         }
 
         // Clean up all CC visuals and timers immediately

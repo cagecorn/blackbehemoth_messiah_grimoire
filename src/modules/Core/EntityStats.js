@@ -1127,28 +1127,32 @@ export const StageConfigs = {
         background: 'bg_cursed_forest',
         // 옥토패스 스타일 앰비언트 분위기: 보라-청록 그림자 오버레이
         ambientColor: 0x1a003a,  // 깊은 보라 (저주받은 숲 분위기)
-        ambientAlpha: 0.22       // 22% 불투명도 (배경을 완전히 가리지 않음)
+        ambientAlpha: 0.22,      // 22% 불투명도 (배경을 완전히 가리지 않음)
+        goldMultiplier: 1.0
     },
     ARENA: {
         id: 'arena',
         name: '용맹의 결투장',
         background: 'bg_arena',
         ambientColor: 0x3a1000,  // 따뜻한 노을빛 (결투장 분위기)
-        ambientAlpha: 0.15
+        ambientAlpha: 0.15,
+        goldMultiplier: 1.2
     },
     RAID: {
         id: 'raid',
         name: '보스의 요새',
         background: 'bg_raid',
         ambientColor: 0x00103a,  // 차가운 심연의 그림자 (레이드 분위기)
-        ambientAlpha: 0.2
+        ambientAlpha: 0.2,
+        goldMultiplier: 2.0
     },
     UNDEAD_GRAVEYARD: {
         id: 'undead_graveyard',
         name: '언데드 묘지',
         background: 'bg_undead_graveyard',
         ambientColor: 0x0a1a0a,  // 음산한 녹백색 (공동묘지 분위기)
-        ambientAlpha: 0.25
+        ambientAlpha: 0.25,
+        goldMultiplier: 1.5
     }
 };
 
