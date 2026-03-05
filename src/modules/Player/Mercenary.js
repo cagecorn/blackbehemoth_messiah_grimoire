@@ -1455,6 +1455,16 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             });
         }
 
+        // Messiah: Encouragement check
+        if (this.messiahEncouragementAmount > 0) {
+            statuses.push({
+                name: '메시아의 격려 (Boon)',
+                description: `메시아의 가호로 인해 공격력과 마법공격력이 증가했습니다! (+${this.messiahEncouragementAmount.toFixed(1)} ATK/mATK)`,
+                emoji: '✨',
+                category: 'buff'
+            });
+        }
+
         return statuses;
     }
 

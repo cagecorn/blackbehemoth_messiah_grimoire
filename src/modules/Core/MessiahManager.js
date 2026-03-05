@@ -29,6 +29,7 @@ class MessiahManager {
         this.maxStacks = 10;
         this.cooldownTimer = 0;
         this.baseCooldown = 5000; // 5 seconds base
+        this.isAutoMode = false;
 
         this.isInitialized = false;
     }
@@ -42,6 +43,8 @@ class MessiahManager {
             this.powers = { ...this.powers, ...savedState.powers };
             this.activePowerId = savedState.activePowerId || 'JUDGMENT';
             this.stacks = savedState.stacks || 0;
+            this.isAutoMode = !!savedState.isAutoMode;
+            this.updateMaxStacks();
             console.log('[MessiahManager] Loaded saved state:', savedState);
         }
 
@@ -53,8 +56,15 @@ class MessiahManager {
             stats: this.stats,
             powers: this.powers,
             activePowerId: this.activePowerId,
-            stacks: this.stacks
+            stacks: this.stacks,
+            isAutoMode: this.isAutoMode
         });
+    }
+
+    toggleAutoMode() {
+        this.isAutoMode = !this.isAutoMode;
+        this.saveState();
+        return this.isAutoMode;
     }
 
     getActivePower() {
@@ -64,6 +74,7 @@ class MessiahManager {
     setActivePower(powerId) {
         if (this.powers[powerId]) {
             this.activePowerId = powerId;
+            this.updateMaxStacks();
             this.saveState();
             EventBus.emit('MESSIAH_POWER_CHANGED', powerId);
             return true;
@@ -73,6 +84,16 @@ class MessiahManager {
 
     getStats() {
         return this.stats;
+    }
+
+    updateMaxStacks() {
+        const power = this.getActivePower();
+        if (power) {
+            this.maxStacks = 10 + (power.level - 1) * 2;
+            if (this.stacks > this.maxStacks) {
+                this.stacks = this.maxStacks;
+            }
+        }
     }
 
     update(time, delta) {
@@ -108,9 +129,22 @@ class MessiahManager {
         if (!power) return false;
 
         // Upgrade logic (requires ✨ Divine Essence)
-        // For now, just increment level
+        // Check if we have enough essence (cost scales with level)
+        const cost = power.level * 10;
+        const essenceItem = await DBManager.getInventoryItem('emoji_essence');
+        const currentEssence = essenceItem ? essenceItem.amount : 0;
+
+        if (currentEssence < cost) {
+            EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, `[시스템] 전능의 정수(✨)가 부족합니다. (필요: ${cost})`);
+            return false;
+        }
+
+        // Deduct essence
+        await DBManager.saveInventoryItem('emoji_essence', currentEssence - cost);
+        EventBus.emit(EventBus.EVENTS.INVENTORY_UPDATED);
+
         power.level++;
-        this.maxStacks = 10 + (power.level - 1) * 2; // Increase max stacks with level
+        this.updateMaxStacks();
 
         await this.saveState();
         EventBus.emit('MESSIAH_POWER_UPGRADED', powerId);

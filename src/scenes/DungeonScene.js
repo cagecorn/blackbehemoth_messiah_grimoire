@@ -583,6 +583,14 @@ export default class DungeonScene extends Phaser.Scene {
         // --- 1.5 Global Systems Update ---
         if (this.game.messiahManager) {
             this.game.messiahManager.update(time, delta);
+
+            // Auto-Mode execution
+            if (this.game.messiahManager.isAutoMode && this.game.messiahManager.stacks > 0) {
+                // Ensure combat is active and not resetting
+                if (!this.isResting && !this.isSettingUp && !this.isResetting) {
+                    this.executeAutoMessiahTouch();
+                }
+            }
         }
 
         // --- 2. Gameplay Guard ---
@@ -1230,12 +1238,16 @@ export default class DungeonScene extends Phaser.Scene {
                         console.log(`[Messiah Touch] Healing! Restored ${heal.toFixed(1)} HP to ${target.name}.`);
                     }
                 } else if (power.type === 'SUPPORT') {
-                    // Encouragement: Temporary ATK buff
+                    // Encouragement: Temporary ATK/mATK buff
                     const buffAmount = stats.mAtk * 0.5;
                     target.bonusAtk += buffAmount;
-                    console.log(`[Messiah Touch] Encouragement! ${target.name} ATK +${buffAmount.toFixed(1)} for 3s.`);
+                    target.bonusMAtk += buffAmount;
+                    target.messiahEncouragementAmount = buffAmount; // Track for UI
+                    console.log(`[Messiah Touch] Encouragement! ${target.name} ATK/mATK +${buffAmount.toFixed(1)} for 3s.`);
                     this.time.delayedCall(3000, () => {
                         target.bonusAtk -= buffAmount;
+                        target.bonusMAtk -= buffAmount;
+                        target.messiahEncouragementAmount = 0; // Clear tracking
                     });
                 }
             } else {
@@ -1303,6 +1315,44 @@ export default class DungeonScene extends Phaser.Scene {
                 });
             }
         });
+    }
+
+    executeAutoMessiahTouch() {
+        const mm = this.game.messiahManager;
+        if (!mm || mm.stacks <= 0) return;
+
+        const power = mm.getActivePower();
+        if (!power) return;
+
+        // Prevent firing every single frame; add a small delay between auto casts
+        if (this.time.now - (this.lastAutoMessiahCast || 0) < 1000) return;
+
+        let potentialTargets = [];
+
+        if (power.type === 'OFFENSE') {
+            potentialTargets = this.enemies.getChildren().filter(e => e.active && e.hp > 0);
+        } else {
+            potentialTargets = this.mercenaries.getChildren().filter(m => m.active && m.hp > 0);
+
+            // Anti-overlap logic for Encouragement
+            if (power.id === 'ENCOURAGEMENT') {
+                potentialTargets = potentialTargets.filter(m => !m.messiahEncouragementAmount);
+            }
+        }
+
+        if (potentialTargets.length === 0) return;
+
+        // Pick a random target
+        const target = Phaser.Utils.Array.GetRandom(potentialTargets);
+
+        if (target) {
+            // Fake a pointer event position
+            const pseudoPointer = { worldX: target.x, worldY: target.y };
+
+            // Fire!
+            this.handleMessiahTouch(pseudoPointer);
+            this.lastAutoMessiahCast = this.time.now;
+        }
     }
 
     setupFakeAestheticOverlays() {

@@ -45,6 +45,7 @@ export default class UIManager {
         this.messiahHudIcon = document.getElementById('messiah-hud-icon');
         this.messiahHudStacks = document.getElementById('messiah-hud-stacks');
         this.messiahCooldownFill = document.getElementById('messiah-cooldown-fill');
+        this.messiahAutoBtn = document.getElementById('messiah-auto-btn');
 
         this.portraitBar = document.getElementById('portrait-bar');
 
@@ -283,6 +284,20 @@ export default class UIManager {
                 if (isCombat) this.updateNPCHUD();
             }
         });
+
+        if (this.messiahAutoBtn) {
+            this.messiahAutoBtn.addEventListener('click', () => {
+                const game = this.scene?.game || (this.scene?.scene && this.scene?.scene.game);
+                if (game?.messiahManager) {
+                    const isAuto = game.messiahManager.toggleAutoMode();
+                    if (isAuto) {
+                        this.messiahAutoBtn.classList.add('active');
+                    } else {
+                        this.messiahAutoBtn.classList.remove('active');
+                    }
+                }
+            });
+        }
     }
 
     updateNPCHUD() {
@@ -1608,6 +1623,14 @@ export default class UIManager {
 
         this.messiahHudIcon.innerText = power.emoji;
         this.messiahHudStacks.innerText = `${mm.stacks}/${mm.maxStacks}`;
+
+        if (this.messiahAutoBtn) {
+            if (mm.isAutoMode) {
+                this.messiahAutoBtn.classList.add('active');
+            } else {
+                this.messiahAutoBtn.classList.remove('active');
+            }
+        }
 
         // Calculate Cooldown Fill Percentage
         if (mm.stacks >= mm.maxStacks) {

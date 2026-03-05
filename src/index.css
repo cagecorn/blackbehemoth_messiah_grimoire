@@ -4594,6 +4594,56 @@ input:checked+.slider-toggle:before {
     animation: npc-hud-appear 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
+.messiah-auto-btn {
+    width: 100%;
+    background: linear-gradient(to bottom, #374151, #111827);
+    border: 1px solid #4b5563;
+    border-bottom: 2px solid #1f2937;
+    border-radius: 2px;
+    color: #d1d5db;
+    font-family: var(--font-pixel);
+    font-size: 8px;
+    letter-spacing: 1px;
+    padding: 3px 0;
+    cursor: pointer;
+    transition: all 0.1s steps(2);
+    text-transform: uppercase;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.1) inset;
+    image-rendering: pixelated;
+}
+
+.messiah-auto-btn:hover {
+    background: linear-gradient(to bottom, #4b5563, #1f2937);
+    color: #ffffff;
+    border-color: #6b7280;
+}
+
+.messiah-auto-btn:active {
+    transform: translateY(1px);
+    border-bottom-width: 1px;
+    margin-bottom: 1px;
+}
+
+.messiah-auto-btn.active {
+    background: linear-gradient(to bottom, #b45309, #78350f);
+    border: 1px solid #f59e0b;
+    border-bottom: 2px solid #451a03;
+    color: #fbbf24;
+    text-shadow: 0 0 5px rgba(251, 191, 36, 0.8), 1px 1px 0px #451a03;
+    box-shadow: 0 0 10px rgba(251, 191, 36, 0.4), 0 1px 0 rgba(255, 255, 255, 0.2) inset;
+    animation: messiah-auto-glow 2s infinite alternate ease-in-out;
+}
+
+@keyframes messiah-auto-glow {
+    from {
+        box-shadow: 0 0 5px rgba(251, 191, 36, 0.3), 0 1px 0 rgba(255, 255, 255, 0.2) inset;
+    }
+
+    to {
+        box-shadow: 0 0 15px rgba(251, 191, 36, 0.6), 0 1px 0 rgba(255, 255, 255, 0.3) inset;
+    }
+}
+
 .messiah-hud-card {
     display: flex;
     flex-direction: column;
