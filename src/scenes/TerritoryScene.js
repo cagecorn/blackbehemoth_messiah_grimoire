@@ -293,6 +293,9 @@ export default class TerritoryScene extends Phaser.Scene {
             <div id="territory-patch-body">
                 <div class="patch-entry">
                     <div class="patch-date">▶ 2026-03-05</div>
+                    <div class="patch-item"><span class="patch-item-icon">👆</span>[메시아 권능] 시스템 도입 : 전투에 직접 개입하여 심판(물리), 치료(마법), 격려(공격력/마공 버프)의 권능을 휘두르세요!</div>
+                    <div class="patch-item"><span class="patch-item-icon">🤖</span>[메시아 오토] 기능 추가 : 이제 권능 사용을 자동화할 수 있습니다. (전략적 사용을 위해 아군/적군 중 무작위 대상에게 시전됩니다.)</div>
+                    <div class="patch-item"><span class="patch-item-icon">✨</span>[전능의 정수] & 업그레이드 : 레이드 등에서 정수를 획득하여 권능의 스택 한도를 강화하세요. (레벨당 +2 스택)</div>
                     <div class="patch-item"><span class="patch-item-icon">🤝</span>[고용 NPC] 시스템 도입 : 선교사(부활), 수녀(라운드 재시작)를 고용하여 자동 사냥을 강화하세요!</div>
                     <div class="patch-item"><span class="patch-item-icon">💎</span>[루트 강화] 몬스터 등급 및 스테이지별 보상 스케일링 : 이제 고레벨 던전과 정예 몬스터가 훨씬 많은 골드와 재료를 드랍합니다.</div>
                     <div class="patch-item"><span class="patch-item-icon">🐾</span>펫 전투 시스템 도입 : 이제 자원을 루팅할 뿐만 아니라 함께 전투에 참여합니다.</div>
