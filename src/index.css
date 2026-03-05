@@ -1988,6 +1988,7 @@ body {
     height: 100%;
     pointer-events: none;
     z-index: 20001;
+    /* Navigation Bar Priority */
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -2439,6 +2440,11 @@ body {
         2px 2px 0px rgba(0, 0, 0, 0.7),
         inset 0 2px 4px rgba(255, 220, 150, 0.2);
     transform: translateY(-1px);
+}
+
+#hud-menu-btns button:active {
+    transform: translate(1px, 1px);
+    box-shadow: 1px 1px 0px rgba(0, 0, 0, 0.5);
 }
 
 #hud-bottom {
@@ -3751,8 +3757,9 @@ input:checked+.slider-toggle:before {
     text-shadow: 0 0 8px rgba(255, 176, 0, 0.5), 1px 1px 0 rgba(0, 0, 0, 1);
     box-shadow:
         0 0 8px rgba(180, 40, 50, 0.3),
-        2px 2px 0px rgba(0, 0, 0, 0.5),
-        inset 0 2px 6px rgba(255, 200, 200, 0.1);
+        2px 2px 0px rgba(0, 0, 0, 0.7),
+        inset 0 2px 6px rgba(255, 220, 150, 0.2);
+    transform: translateY(-1px);
 }
 
 .nav-btn:hover::after {
@@ -4669,77 +4676,66 @@ input:checked+.slider-toggle:before {
     }
 }
 
-/* NPC HUD (Left-Top Combat Indicator) */
-#npc-hud {
+/* --- Combat HUD Grid (New Unified Layout) --- */
+#combat-hud-grid {
     position: absolute;
-    top: 130px;
-    /* HUD-TOP(약 50px) + HUD-SCENE-NAV(약 50px) + 여백 30px */
-    left: 10px;
-    padding: 2px 8px;
-    pointer-events: none;
-    z-index: 500;
+    top: 102px;
+    /* Position accurately below the nav bar */
+    left: 0;
+    right: 0;
+    margin-inline: auto;
+    width: fit-content;
     display: flex;
     align-items: center;
-    gap: 8px;
-    background: rgba(0, 0, 0, 0.4);
+    justify-content: center;
+    gap: 4px;
+    z-index: 500;
+    /* Standard combat HUD layer */
+    pointer-events: none;
+    /* Allow interaction with navigation dropdowns behind the grid */
+    background: transparent;
+}
+
+#combat-hud-grid>* {
+    pointer-events: auto;
+    /* Re-enable for HUD elements themselves */
+}
+
+#npc-hud {
+    display: none;
+    align-items: center;
+    background: rgba(15, 15, 10, 0.8);
     border: 1px solid var(--retro-amber);
-    border-radius: 4px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(2px);
-    -webkit-backdrop-filter: blur(2px);
-    /* Added for consistency */
-    animation: npc-hud-appear 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    padding: 2px 6px;
+    border-radius: 2px;
+    height: 28px;
+    /* Matching building slot height */
+    min-width: 44px;
+    box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.5);
+    box-sizing: border-box;
+}
+
+#npc-hud.active {
+    display: flex;
 }
 
 .npc-hud-card {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 4px;
 }
 
 #npc-hud-icon {
-    width: 24px;
-    height: 24px;
+    width: 16px;
+    height: 16px;
     object-fit: contain;
     image-rendering: pixelated;
-    filter: drop-shadow(0 0 2px rgba(251, 191, 36, 0.5));
 }
 
 #npc-hud-stacks {
     font-family: var(--font-pixel);
-    font-size: 11px;
+    font-size: 8px;
     color: var(--retro-amber);
-    text-shadow: 1px 1px 0px #000;
-}
-
-@media screen and (max-width: 768px) {
-    #npc-hud {
-        top: 105px;
-        /* 모바일 내비게이션 바 아래로 충분히 배치 */
-        left: 5px;
-        padding: 1px 6px;
-    }
-
-    #npc-hud-icon {
-        width: 18px;
-        height: 18px;
-    }
-
-    #npc-hud-stacks {
-        font-size: 9px;
-    }
-}
-
-@keyframes npc-hud-appear {
-    from {
-        opacity: 0;
-        transform: translateX(-20px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateX(0);
-    }
 }
 
 .npc-hud-card img {
@@ -4821,235 +4817,131 @@ input:checked+.slider-toggle:before {
    MESSIAH HUD (Dungeon)
    ================================================================ */
 
+/* Messiah HUD (Miniature) */
 #messiah-hud {
-    position: absolute;
-    top: 130px;
-    /* Same as NPC HUD on PC to stay below nav bar */
-    right: 10px;
-    width: 60px;
-    z-index: 500;
-    transition: all 0.3s ease;
-    background: rgba(0, 0, 0, 0.4);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    border-radius: 4px;
+    display: none;
+    align-items: center;
+    background: rgba(15, 15, 10, 0.8);
+    border: 1px solid #fff;
     padding: 2px 6px;
-    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5), 0 0 5px rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(2px);
-    -webkit-backdrop-filter: blur(2px);
-    animation: npc-hud-appear 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-.messiah-auto-btn {
-    width: 100%;
-    background: linear-gradient(to bottom, #374151, #111827);
-    border: 1px solid #4b5563;
-    border-bottom: 2px solid #1f2937;
     border-radius: 2px;
-    color: #d1d5db;
-    font-family: var(--font-pixel);
-    font-size: 8px;
-    letter-spacing: 1px;
-    padding: 3px 0;
-    cursor: pointer;
-    transition: all 0.1s steps(2);
-    text-transform: uppercase;
-    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.1) inset;
-    image-rendering: pixelated;
+    height: 28px;
+    /* Matching building slot height */
+    min-width: 64px;
+    box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.5);
+    box-sizing: border-box;
 }
 
-.messiah-auto-btn:hover {
-    background: linear-gradient(to bottom, #4b5563, #1f2937);
-    color: #ffffff;
-    border-color: #6b7280;
-}
-
-.messiah-auto-btn:active {
-    transform: translateY(1px);
-    border-bottom-width: 1px;
-    margin-bottom: 1px;
-}
-
-.messiah-auto-btn.active {
-    background: linear-gradient(to bottom, #b45309, #78350f);
-    border: 1px solid #f59e0b;
-    border-bottom: 2px solid #451a03;
-    color: #fbbf24;
-    text-shadow: 0 0 5px rgba(251, 191, 36, 0.8), 1px 1px 0px #451a03;
-    box-shadow: 0 0 10px rgba(251, 191, 36, 0.4), 0 1px 0 rgba(255, 255, 255, 0.2) inset;
-    animation: messiah-auto-glow 2s infinite alternate ease-in-out;
-}
-
-@keyframes messiah-auto-glow {
-    from {
-        box-shadow: 0 0 5px rgba(251, 191, 36, 0.3), 0 1px 0 rgba(255, 255, 255, 0.2) inset;
-    }
-
-    to {
-        box-shadow: 0 0 15px rgba(251, 191, 36, 0.6), 0 1px 0 rgba(255, 255, 255, 0.3) inset;
-    }
+#messiah-hud.active {
+    display: flex;
 }
 
 .messiah-hud-card {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
+    /* Horizontal in grid */
     align-items: center;
-    gap: 2px;
+    gap: 4px;
+    width: 100%;
 }
 
 #messiah-hud-icon {
-    filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.5));
+    font-size: 12px !important;
+    line-height: 1;
 }
 
 #messiah-hud-stacks {
     font-family: var(--font-pixel);
-    font-size: 10px;
+    font-size: 8px;
     color: #fbbf24;
-    text-shadow: 0 0 5px rgba(251, 191, 36, 0.8);
 }
 
-@media screen and (max-width: 768px) {
-    #messiah-hud {
-        top: 145px;
-        /* Below NPC HUD */
-        left: 5px;
-        right: auto;
-        padding: 1px 6px;
-    }
+.messiah-cooldown-bar-bg {
+    width: 20px !important;
+    height: 4px !important;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 1px;
+    margin-top: 1px;
+    overflow: hidden;
+}
 
-    #messiah-hud-icon {
-        font-size: 16px !important;
-    }
+.messiah-cooldown-bar-fill {
+    width: 0%;
+    height: 100%;
+    background: #fbbf24;
+    transition: width 0.1s linear;
+}
 
-    #messiah-hud-stacks {
-        font-size: 8px;
-    }
+.messiah-auto-btn {
+    width: auto !important;
+    padding: 1px 4px !important;
+    font-size: 6px !important;
+    height: 16px;
+    background: linear-gradient(to bottom, rgba(65, 15, 20, 0.75), rgba(35, 8, 12, 0.85));
+    border: 1px solid rgba(200, 130, 40, 0.45);
+    color: var(--retro-amber);
+    font-family: var(--font-pixel);
+    cursor: pointer;
+    box-shadow: 1px 1px 0px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 180, 100, 0.12);
+    transition: all 0.1s;
+}
+
+.messiah-auto-btn:active {
+    transform: translate(1px, 1px);
+    box-shadow: inset 0 0 0 rgba(0, 0, 0, 0.7), 0 0 0 rgba(255, 180, 100, 0.12);
+}
+
+.messiah-auto-btn.active {
+    background: linear-gradient(to bottom, #991b1b, #7f1d1d);
+    border-color: #ef4444;
+    color: #fff;
+    box-shadow:
+        0 0 10px rgba(239, 68, 68, 0.5),
+        1px 1px 0px rgba(0, 0, 0, 0.8),
+        inset 0 1px 1px rgba(255, 255, 255, 0.3);
+    text-shadow: 0 0 4px rgba(255, 255, 255, 0.8);
+    transform: translateY(-1px);
+}
+
+.messiah-auto-btn.active:active {
+    transform: translate(1px, 1px);
+    box-shadow:
+        0 0 5px rgba(239, 68, 68, 0.3),
+        inset 0 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 /* ─── Round Display (Combat HUD) ───────────────────────── */
+/* Round Display (Miniature) */
 #hud-round-display {
-    position: absolute;
-    top: 105px;
-    /* Just below navigation */
-    left: 0;
-    right: 0;
-    margin-inline: auto;
-    width: fit-content;
-    /* Centering without transform to avoid transition glitches */
-    z-index: 1000;
-    pointer-events: none;
-    visibility: hidden;
-    /* Use visibility instead of display: none for smooth transitions */
-    opacity: 0;
-    display: flex;
-    /* Stay as flex to avoid layout shifts on state change */
+    display: none;
     align-items: center;
     justify-content: center;
-    padding: 8px 16px;
-    min-width: 140px;
-    max-width: 320px;
+    background: rgba(15, 15, 10, 0.9);
+    border: 1px solid var(--retro-amber);
+    border-radius: 2px;
+    height: 28px;
+    /* Matching building slot height */
+    min-width: 90px;
+    padding: 0 10px;
+    box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    transition: opacity 0.3s;
     box-sizing: border-box;
-    overflow: hidden;
-    transition:
-        opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-        visibility 0.3s,
-        transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    transform: translateY(0) scale(1);
+    z-index: 1000;
+    /* Round display HUD layer */
 }
 
 #hud-round-display.active {
-    visibility: visible;
+    display: flex;
     opacity: 1;
 }
 
-#hud-round-display.hidden {
-    opacity: 0;
-    visibility: hidden;
-    transform: translateY(-20px) scale(0.9);
-}
-
-.round-display-bg {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(to bottom, rgba(20, 20, 20, 0.98), rgba(5, 5, 5, 0.98));
-    border: 2px solid #fbbf24;
-    border-radius: 4px;
-    box-shadow:
-        0 4px 15px rgba(0, 0, 0, 0.8),
-        inset 0 0 12px rgba(251, 191, 36, 0.35);
-    /* Retro Scanline Pattern Overlay */
-    background-image: repeating-linear-gradient(0deg,
-            transparent,
-            transparent 1px,
-            rgba(0, 0, 0, 0.3) 1px,
-            rgba(0, 0, 0, 0.3) 2px);
-    /* Pixelated alignment fix: Ensure no subpixel rendering */
-    transform: translateZ(0);
-}
-
 #hud-round-text {
-    position: relative;
-    font-family: 'Press Start 2P', cursive;
-    font-size: 13px;
-    /* Slightly smaller for better fit */
+    font-family: var(--font-pixel);
+    font-size: 8px;
+    /* Compact */
     color: #fff;
-    text-shadow: 2px 2px 0px #000;
-    letter-spacing: 1px;
-    z-index: 1;
-    white-space: nowrap;
-    text-align: center;
-    /* Center text precisely */
-    line-height: 1;
-    padding: 2px 0;
-}
-
-/* Specific scaling for long RAID titles to prevent horizontal overlap */
-#hud-round-display[data-type="raid"] #hud-round-text {
-    font-size: 11px;
-    letter-spacing: 0.5px;
-}
-
-/* Pop animation for round updates - Refined */
-@keyframes roundRefreshPop {
-    0% {
-        transform: scale(1);
-        filter: brightness(1);
-    }
-
-    40% {
-        transform: scale(1.1);
-        filter: brightness(2);
-    }
-
-    100% {
-        transform: scale(1);
-        filter: brightness(1);
-    }
-}
-
-.round-pop {
-    animation: roundRefreshPop 0.4s cubic-bezier(0.25, 1, 0.5, 1);
-}
-
-/* Mobile Compatibility */
-@media screen and (max-width: 768px) {
-    #hud-round-display {
-        top: 115px;
-        /* Safely between NPC and Messiah HUDs vertically */
-        left: 0;
-        right: 0;
-        margin-inline: auto;
-        min-width: 140px;
-        padding: 4px 10px;
-    }
-
-    #hud-round-display.hidden {
-        transform: translateY(-10px) scale(0.9);
-    }
-
-    #hud-round-text {
-        font-size: 8px;
-        /* Slightly smaller for mobile */
-    }
+    text-shadow: 1px 1px 0px #000;
 }
 
 /* --- Settings Menu Styles --- */

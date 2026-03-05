@@ -479,6 +479,22 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         return this.isFrozen ? base * 2 : base;
     }
 
+    getTotalSpeed() {
+        const base = (this.speed || 0) + (this.bonusSpeed || 0);
+        let multipliers = 0;
+
+        // Transformation Multiplier (if applicable)
+        if (this.grimoire_transmult) {
+            multipliers += (this.grimoire_transmult - 1);
+        }
+
+        // Pet Passive (if applicable)
+        const petBonus = this.scene.game?.partyManager?.getGlobalPetBonus('speedMult') || 0;
+        multipliers += petBonus;
+
+        return base * (1 + multipliers);
+    }
+
     getTotalDR() {
         return (this.dr || 0) + (this.bonusDR || 0);
     }

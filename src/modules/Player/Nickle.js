@@ -117,7 +117,11 @@ export default class Nickle extends Archer {
 
             this.rangeMin = this.originalStats.rangeMin;
             this.rangeMax = this.originalStats.rangeMax;
-            this.sprite.setTexture(this.originalStats.spriteTexture);
+
+            // Check if sprite still exists before setting texture
+            if (this.sprite && this.sprite.active) {
+                this.sprite.setTexture(this.originalStats.spriteTexture);
+            }
         }
 
         this.ultGauge = 0; // Reset gauge

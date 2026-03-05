@@ -101,6 +101,32 @@
         <!-- Dynamic Chat Channels Container (Bottom-Left) -->
         <div id="chat-container"></div>
 
+        <!-- Combat HUD Grid (Moved outside mobile-hud for layering) -->
+        <div id="combat-hud-grid">
+            <div id="npc-hud">
+                <div class="npc-hud-card">
+                    <img id="npc-hud-icon" src="" alt="NPC">
+                    <div class="npc-hud-stacks" id="npc-hud-stacks">0</div>
+                </div>
+            </div>
+
+            <div id="hud-round-display">
+                <div class="round-display-bg"></div>
+                <span id="hud-round-text">ROUND 1</span>
+            </div>
+
+            <div id="messiah-hud">
+                <div class="messiah-hud-card">
+                    <div id="messiah-hud-icon">👆</div>
+                    <div class="messiah-hud-stacks" id="messiah-hud-stacks">0/10</div>
+                    <div class="messiah-cooldown-bar-bg">
+                        <div class="messiah-cooldown-bar-fill" id="messiah-cooldown-fill"></div>
+                    </div>
+                    <button id="messiah-auto-btn" class="messiah-auto-btn">AUTO</button>
+                </div>
+            </div>
+        </div>
+
         <!-- Mobile HUD Layer -->
         <div id="mobile-hud">
             <div id="hud-header">
@@ -145,35 +171,6 @@
                     <!-- Portraits will be injected here -->
                 </div>
             </div>
-        </div>
-
-        <!-- Combat HUDs (Now outside mobile-hud for proper layering) -->
-        <div id="npc-hud" style="display: none;">
-            <div class="npc-hud-card">
-                <img id="npc-hud-icon" src="" alt="NPC">
-                <div class="npc-hud-stacks" id="npc-hud-stacks">0</div>
-            </div>
-        </div>
-
-        <div id="messiah-hud" style="display: none;">
-            <div class="messiah-hud-card">
-                <div id="messiah-hud-icon" style="font-size: 20px; text-shadow: 0 0 10px rgba(255,255,255,0.8);">👆
-                </div>
-                <div class="messiah-hud-stacks" id="messiah-hud-stacks">0/10</div>
-                <div class="messiah-cooldown-bar-bg"
-                    style="width: 100%; height: 3px; background: rgba(0,0,0,0.5); border-radius: 2px; margin-top: 2px; overflow: hidden;">
-                    <div class="messiah-cooldown-bar-fill" id="messiah-cooldown-fill"
-                        style="width: 0%; height: 100%; background: #fbbf24; transition: width 0.1s linear;">
-                    </div>
-                </div>
-                <button id="messiah-auto-btn" class="messiah-auto-btn" style="margin-top: 2px;">AUTO</button>
-            </div>
-        </div>
-
-        <!-- Round Display (Isolated from other HUD elements) -->
-        <div id="hud-round-display" class="hidden">
-            <div class="round-display-bg"></div>
-            <span id="hud-round-text">ROUND 1</span>
         </div>
 
         <!-- Popups (Hidden by default) -->

@@ -1456,6 +1456,8 @@ export default class DungeonScene extends Phaser.Scene {
      * @param {string} iconId Asset key
      */
     spawnResourceParticle(x, y, iconId) {
+        if (!this.active || !this.cameras || !this.add) return;
+
         if (!this.resParticlePool) this.resParticlePool = [];
 
         let p = this.resParticlePool.pop();

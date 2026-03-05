@@ -1844,13 +1844,13 @@ export default class UIManager {
                 this.lastNpcStacks = hiredNPC.currentStacks;
                 this.npcHud.dataset.tooltip = `${hiredNPC.name} (${hiredNPC.currentStacks} 스택)\n${hiredNPC.description}`;
 
-                if (this.npcHud.style.display !== 'block') {
-                    this.npcHud.style.display = 'block';
+                if (!this.npcHud.classList.contains('active')) {
+                    this.npcHud.classList.add('active');
                 }
             }
         } else {
-            if (this.npcHud.style.display !== 'none') {
-                this.npcHud.style.display = 'none';
+            if (this.npcHud.classList.contains('active')) {
+                this.npcHud.classList.remove('active');
                 this.lastNpcId = null;
                 this.lastNpcStacks = -1;
             }
@@ -1865,8 +1865,8 @@ export default class UIManager {
         const isCombat = (sceneKey === 'DungeonScene' || sceneKey === 'RaidScene' || sceneKey === 'ArenaScene');
 
         if (!isCombat) {
-            if (this.messiahHud.style.display !== 'none') {
-                this.messiahHud.style.display = 'none';
+            if (this.messiahHud.classList.contains('active')) {
+                this.messiahHud.classList.remove('active');
                 this.lastMessiahPowerId = null;
                 this.lastMessiahStacks = -1;
             }
@@ -1879,12 +1879,12 @@ export default class UIManager {
 
         const power = mm.getActivePower();
         if (!power) {
-            if (this.messiahHud.style.display !== 'none') this.messiahHud.style.display = 'none';
+            if (this.messiahHud.classList.contains('active')) this.messiahHud.classList.remove('active');
             return;
         }
 
-        if (this.messiahHud.style.display !== 'block') {
-            this.messiahHud.style.display = 'block';
+        if (!this.messiahHud.classList.contains('active')) {
+            this.messiahHud.classList.add('active');
         }
 
         // 1. Power/Emoji/Stacks Dirty Check
@@ -1932,7 +1932,6 @@ export default class UIManager {
         if (!text) {
             if (this.roundDisplay.classList.contains('active')) {
                 this.roundDisplay.classList.remove('active');
-                this.roundDisplay.classList.add('hidden');
                 this.lastRoundText = '';
             }
             return;
@@ -1941,7 +1940,6 @@ export default class UIManager {
         // Show if hidden
         if (!this.roundDisplay.classList.contains('active')) {
             this.roundDisplay.classList.add('active');
-            this.roundDisplay.classList.remove('hidden');
         }
 
         // Dirty Flag Check
