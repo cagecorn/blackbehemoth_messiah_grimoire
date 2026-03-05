@@ -52,6 +52,11 @@ export default class UIManager {
         this.messiahCooldownFill = document.getElementById('messiah-cooldown-fill');
         this.messiahAutoBtn = document.getElementById('messiah-auto-btn');
 
+        // Round Display Elements
+        this.roundDisplay = document.getElementById('hud-round-display');
+        this.roundText = document.getElementById('hud-round-text');
+        this.lastRoundText = '';
+
         this.portraitBar = document.getElementById('portrait-bar');
 
 
@@ -1676,6 +1681,36 @@ export default class UIManager {
                 this.messiahCooldownFill.style.width = `${percentage.toFixed(1)}%`;
                 this.lastMessiahCooldown = percentage;
             }
+        }
+    }
+
+    updateRoundDisplay(text) {
+        if (!this.roundDisplay || !this.roundText) return;
+
+        if (!text) {
+            if (this.roundDisplay.classList.contains('active')) {
+                this.roundDisplay.classList.remove('active');
+                this.roundDisplay.classList.add('hidden');
+                this.lastRoundText = '';
+            }
+            return;
+        }
+
+        // Show if hidden
+        if (!this.roundDisplay.classList.contains('active')) {
+            this.roundDisplay.classList.add('active');
+            this.roundDisplay.classList.remove('hidden');
+        }
+
+        // Dirty Flag Check
+        if (this.lastRoundText !== text) {
+            this.roundText.innerText = text;
+            this.lastRoundText = text;
+
+            // Pop Animation
+            this.roundText.parentElement.classList.remove('round-pop');
+            void this.roundText.parentElement.offsetWidth; // Trigger reflow
+            this.roundText.parentElement.classList.add('round-pop');
         }
     }
 

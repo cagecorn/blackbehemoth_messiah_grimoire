@@ -304,6 +304,7 @@ export default class DungeonScene extends Phaser.Scene {
                 if (this.weatherManager) this.weatherManager.destroy();
                 if (this.ambientMoteManager) this.ambientMoteManager.destroy();
 
+                if (this.game.uiManager) this.game.uiManager.updateRoundDisplay(null);
                 console.log('[DungeonScene] Total Shutdown: Removed EventBus listeners + Cleaned up Managers.');
             });
 
@@ -409,15 +410,10 @@ export default class DungeonScene extends Phaser.Scene {
                 }
             });
 
-            // UI Indicators
-            this.roundText = this.add.text(this.cameras.main.width / 2, 45, `DUNGEON ROUND ${this.currentRound}`, {
-                fontSize: '22px',
-                fill: '#fff',
-                fontStyle: 'bold',
-                stroke: '#000',
-                strokeThickness: 4
-            }).setOrigin(0.5);
-            this.uiLayer.add(this.roundText);
+            // UI Indicators (Now DOM-Based)
+            if (this.game.uiManager) {
+                this.game.uiManager.updateRoundDisplay(`DUNGEON ROUND ${this.currentRound}`);
+            }
 
             // --- Camera Rule: UI Visibility ---
             // 1. Main camera ignores the UI layer completely
@@ -614,7 +610,7 @@ export default class DungeonScene extends Phaser.Scene {
                 });
 
                 this.currentRound++;
-                if (this.roundText) this.roundText.setText(`DUNGEON ROUND ${this.currentRound}`);
+                if (this.game.uiManager) this.game.uiManager.updateRoundDisplay(`DUNGEON ROUND ${this.currentRound}`);
 
                 // Save Best Round
                 DBManager.saveBestRound(this.dungeonType, this.currentRound).then(isNewBest => {

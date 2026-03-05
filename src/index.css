@@ -4575,3 +4575,118 @@ input:checked+.slider-toggle:before {
         font-size: 8px;
     }
 }
+
+/* ─── Round Display (Combat HUD) ───────────────────────── */
+#hud-round-display {
+    position: absolute;
+    top: 105px;
+    /* Just below navigation */
+    left: 50%;
+    transform: translateX(-50%) translateY(0) scale(1);
+    z-index: 9999;
+    pointer-events: none;
+    visibility: hidden;
+    /* Use visibility instead of display: none for smooth transitions */
+    opacity: 0;
+    display: flex;
+    /* Stay as flex to avoid layout shifts on state change */
+    align-items: center;
+    justify-content: center;
+    padding: 8px 20px;
+    min-width: 160px;
+    box-sizing: border-box;
+    transition:
+        opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+        visibility 0.3s,
+        transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+#hud-round-display.active {
+    visibility: visible;
+    opacity: 1;
+}
+
+#hud-round-display.hidden {
+    opacity: 0;
+    visibility: hidden;
+    transform: translateX(-50%) translateY(-20px) scale(0.9);
+}
+
+.round-display-bg {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, rgba(20, 20, 20, 0.98), rgba(5, 5, 5, 0.98));
+    border: 2px solid #fbbf24;
+    border-radius: 4px;
+    box-shadow:
+        0 4px 15px rgba(0, 0, 0, 0.8),
+        inset 0 0 12px rgba(251, 191, 36, 0.35);
+    /* Retro Scanline Pattern Overlay */
+    background-image: repeating-linear-gradient(0deg,
+            transparent,
+            transparent 1px,
+            rgba(0, 0, 0, 0.3) 1px,
+            rgba(0, 0, 0, 0.3) 2px);
+    /* Pixelated alignment fix: Ensure no subpixel rendering */
+    transform: translateZ(0);
+}
+
+#hud-round-text {
+    position: relative;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 13px;
+    /* Slightly smaller for better fit */
+    color: #fff;
+    text-shadow: 2px 2px 0px #000;
+    letter-spacing: 1px;
+    z-index: 1;
+    white-space: nowrap;
+    text-align: center;
+    /* Center text precisely */
+    line-height: 1;
+    margin: 0;
+    padding: 2px 0;
+}
+
+/* Pop animation for round updates - Refined */
+@keyframes roundRefreshPop {
+    0% {
+        transform: scale(1);
+        filter: brightness(1);
+    }
+
+    40% {
+        transform: scale(1.1);
+        filter: brightness(2);
+    }
+
+    100% {
+        transform: scale(1);
+        filter: brightness(1);
+    }
+}
+
+.round-pop {
+    animation: roundRefreshPop 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+/* Mobile Compatibility */
+@media screen and (max-width: 768px) {
+    #hud-round-display {
+        top: 115px;
+        /* Safely between NPC and Messiah HUDs vertically */
+        left: 50%;
+        transform: translateX(-50%);
+        min-width: 140px;
+        padding: 4px 10px;
+    }
+
+    #hud-round-display.hidden {
+        transform: translateX(-50%) translateY(-10px) scale(0.9);
+    }
+
+    #hud-round-text {
+        font-size: 8px;
+        /* Slightly smaller for mobile */
+    }
+}

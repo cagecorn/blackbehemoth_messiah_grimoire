@@ -95,13 +95,9 @@ export default class ArenaScene extends Phaser.Scene {
         }
 
         // UI
-        this.statusText = this.add.text(this.cameras.main.width / 2, 50, '아레나 배틀 준비...', {
-            fontSize: '32px',
-            fill: '#fff',
-            fontStyle: 'bold',
-            stroke: '#000',
-            strokeThickness: 6
-        }).setOrigin(0.5).setScrollFactor(0).setDepth(2000);
+        if (this.game.uiManager) {
+            this.game.uiManager.updateRoundDisplay(`ARENA BATTLE #${this.battleCount}`);
+        }
 
 
         // ESC to return
@@ -130,7 +126,8 @@ export default class ArenaScene extends Phaser.Scene {
         this.events.once('shutdown', () => {
             EventBus.off(EventBus.EVENTS.DEBUG_SWAP_CHARACTER, this.handleDebugSwap, this);
             if (this.ambientMoteManager) this.ambientMoteManager.destroy();
-            console.log('[ArenaScene] Cleaned up AmbientMotes.');
+            if (this.game.uiManager) this.game.uiManager.updateRoundDisplay(null);
+            console.log('[ArenaScene] Cleaned up AmbientMotes and HUD.');
         });
 
         // Start battle immediately with PartyManager data
@@ -193,8 +190,8 @@ export default class ArenaScene extends Phaser.Scene {
             }
         }
 
-        if (this.statusText) {
-            this.statusText.setText(`아레나 배틀 #${this.battleCount}`);
+        if (this.game.uiManager) {
+            this.game.uiManager.updateRoundDisplay(`ARENA BATTLE #${this.battleCount}`);
         }
 
         // Initialize Camera Target (follows centroid of party)

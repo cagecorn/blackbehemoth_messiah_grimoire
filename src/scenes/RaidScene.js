@@ -94,13 +94,9 @@ export default class RaidScene extends Phaser.Scene {
         }
 
         // UI
-        this.statusText = this.add.text(this.cameras.main.width / 2, 50, `레이드 단계 #${this.raidCount}`, {
-            fontSize: '32px',
-            fill: '#fff',
-            fontStyle: 'bold',
-            stroke: '#000',
-            strokeThickness: 6
-        }).setOrigin(0.5).setScrollFactor(0).setDepth(1000);
+        if (this.game.uiManager) {
+            this.game.uiManager.updateRoundDisplay(`RAID: ${MonsterClasses.BOSS_GOBLIN.name.toUpperCase()}`);
+        }
 
 
         // Spawn Players
@@ -131,7 +127,8 @@ export default class RaidScene extends Phaser.Scene {
         // Cleanup on scene shutdown
         this.events.once('shutdown', () => {
             if (this.ambientMoteManager) this.ambientMoteManager.destroy();
-            console.log('[RaidScene] Cleaned up AmbientMotes.');
+            if (this.game.uiManager) this.game.uiManager.updateRoundDisplay(null);
+            console.log('[RaidScene] Cleaned up AmbientMotes and HUD.');
         });
     }
 
