@@ -10,6 +10,7 @@ import ItemManager from '../Core/ItemManager.js';
 import CharmManager from '../Core/CharmManager.js';
 import ShopManager from './ShopManager.js';
 import npcManager from '../Core/NPCManager.js';
+import buildingManager, { BUILDING_TYPES } from '../Core/BuildingManager.js';
 
 export default class UIManager {
     constructor() {
@@ -57,6 +58,7 @@ export default class UIManager {
         this.roundText = document.getElementById('hud-round-text');
         this.lastRoundText = '';
 
+        this.buildingGrid = document.getElementById('building-grid');
         this.portraitBar = document.getElementById('portrait-bar');
 
 
@@ -94,6 +96,8 @@ export default class UIManager {
         this.rafLoop = this.rafLoop.bind(this);
 
         this.initEventListeners();
+        this.particlePool = []; // For resource-pop-anim recycling
+        this.showProductionAnim = true; // Default setting
     }
 
     init() {
@@ -102,9 +106,16 @@ export default class UIManager {
         this.createTooltip();
         this.setupChatChannels();
         this.setupMobileEvents();
-        this.setupSettingsEvents();
         this.setupNavigationEvents();
         this.injectTestItems();
+
+        // Load Settings
+        this.loadSettings();
+
+        if (buildingManager) {
+            buildingManager.init();
+            this.setupBuildingEvents();
+        }
 
         // Listen for combat and loot events
         EventBus.on(EventBus.EVENTS.MONSTER_KILLED, this.handleMonsterKilled, this);
@@ -273,12 +284,222 @@ export default class UIManager {
         this.updateBestRounds();
         EventBus.on('BEST_ROUND_UPDATED', () => this.updateBestRounds());
 
-        // New: Pet Roster Sync
-        EventBus.on('PET_ROSTER_UPDATED', () => {
-            if (this.petStorageOverlay && !this.petStorageOverlay.classList.contains('hidden')) {
-                this.refreshPetStorage();
+        // New: Building System Events
+        EventBus.on('BUILDINGS_UPDATED', () => this.updateBuildingGrid());
+        EventBus.on('BUILDING_PRODUCED_ANIM', (payload) => this.playBuildingAnim(payload));
+    }
+
+    setupBuildingEvents() {
+        this.updateBuildingGrid();
+
+        if (this.buildingGrid) {
+            this.buildingGrid.addEventListener('click', (e) => {
+                const slotEl = e.target.closest('.building-slot');
+                if (!slotEl) return;
+
+                const index = parseInt(slotEl.dataset.index);
+                this.handleBuildingClick(index);
+            });
+        }
+    }
+
+    handleBuildingClick(index) {
+        const slot = buildingManager.slots[index];
+        if (slot) {
+            this.showBuildingInfo(index);
+        } else {
+            this.showBuildingSelection(index);
+        }
+    }
+
+    showBuildingInfo(slotIndex) {
+        const slot = buildingManager.slots[slotIndex];
+        if (!slot) return;
+
+        const config = BUILDING_TYPES[slot.typeId.toUpperCase()];
+        const currentRate = Math.floor(config.rate * Math.pow(1.2, slot.level - 1));
+        const nextRate = Math.floor(config.rate * Math.pow(1.2, slot.level));
+        const upgradeGold = Math.floor(100 * Math.pow(1.5, slot.level - 1));
+        const upgradeBrick = Math.floor(20 * Math.pow(1.5, slot.level - 1));
+
+        const resIcon = ItemManager.getSVGFilename(config.resource);
+        const resName = ItemManager.getItem(config.resource)?.name || config.resource;
+        const bIcon = ItemManager.getSVGFilename(config.iconId);
+
+        const kNames = {
+            'bank': '은행',
+            'factory': '공장',
+            'church': '성당',
+            'camp': '캠프',
+            'tree': '나무',
+            'castle': '성'
+        };
+
+        const imgStyle = `width:16px; height:16px; vertical-align:middle; image-rendering:pixelated; margin-right:4px;`;
+        const largeImgStyle = `width:40px; height:40px; image-rendering:pixelated;`;
+        const coinIcon = ItemManager.getSVGFilename('emoji_coin');
+        const brickIcon = ItemManager.getSVGFilename('emoji_brick');
+
+        const menuHtml = `
+            <div class="building-info-card">
+                <div class="info-header">
+                    <div class="info-emoji-box">
+                        <img src="assets/emojis/${bIcon}" style="${largeImgStyle}">
+                    </div>
+                    <div class="info-title-box">
+                        <div class="info-name">${kNames[slot.typeId] || slot.typeId}</div>
+                        <div class="info-level">Lv.${slot.level}</div>
+                    </div>
+                </div>
+
+                <div class="info-stats-container">
+                    <div class="info-stat-row">
+                        <span>현재 생산량</span>
+                        <span style="color:var(--retro-amber);">
+                            <img src="assets/emojis/${resIcon}" style="${imgStyle}">+${currentRate} / 턴
+                        </span>
+                    </div>
+                    <div class="info-upgrade-preview" style="margin-top:10px; font-size:14px; color:var(--retro-dim);">
+                        다음 레벨: <img src="assets/emojis/${resIcon}" style="${imgStyle.replace('16px', '12px')}">+${nextRate} / 턴
+                    </div>
+                </div>
+
+                <div class="info-actions">
+                    <button class="retro-btn-premium upgrade" id="btn-upgrade">
+                        강화 (<img src="assets/emojis/${coinIcon}" style="${imgStyle}"> ${upgradeGold}, <img src="assets/emojis/${brickIcon}" style="${imgStyle}"> ${upgradeBrick})
+                    </button>
+                    <button class="retro-btn-premium demolish" id="btn-demolish">
+                        철거
+                    </button>
+                </div>
+                <div class="info-upgrade-section" style="margin-top:15px; font-size:12px;">
+                    * 콤팩트 그리드 최적화 (슬롯 12칸)
+                </div>
+            </div>
+        `;
+
+        this.showPopup(menuHtml);
+
+        const popup = this.popupInner;
+        popup.querySelector('#btn-upgrade').onclick = async () => {
+            const res = await buildingManager.upgradeBuilding(slotIndex);
+            if (res.success) {
+                this.showToast('건물을 강화했습니다! ✨');
+                this.showBuildingInfo(slotIndex); // Refresh
+            } else {
+                this.showToast(res.reason || '강화 실패');
             }
+        };
+
+        popup.querySelector('#btn-demolish').onclick = () => {
+            this.showConfirm(`${config.emoji} 건물을 철거하시겠습니까? 🔨`, async () => {
+                await buildingManager.removeBuilding(slotIndex);
+                this.showToast('건물을 철거했습니다. 💨');
+                this.hidePopup();
+            });
+        };
+    }
+
+    showBuildingSelection(slotIndex) {
+        const kData = {
+            'bank': { name: '은행', desc: '매 턴 골드를 생성합니다. 💰' },
+            'factory': { name: '공장', desc: '건설에 필요한 벽돌을 생산합니다. 🧱' },
+            'church': { name: '성당', desc: '권능 강화용 전능의 정수를 생산합니다. ✨' },
+            'camp': { name: '캠프', desc: '펫 성장을 위한 고기를 생산합니다. 🍖' },
+            'tree': { name: '나무', desc: '기초 건설 재료인 나무를 생산합니다. 🪵' },
+            'castle': { name: '성', desc: '매우 드물게 다이아몬드를 생산합니다. 💎' }
+        };
+
+        const options = Object.values(BUILDING_TYPES).map(type => {
+            const data = kData[type.id] || { name: type.id, desc: '' };
+            const bIcon = ItemManager.getSVGFilename(type.iconId);
+            const resIcon = ItemManager.getSVGFilename(type.resource);
+
+            // Inject Twitter Emoji into description
+            const descWithIcon = data.desc.replace(/[💰🧱✨🍖🪵💎]/g,
+                `<img src="assets/emojis/${resIcon}" style="width:14px; height:14px; vertical-align:middle; margin-left:4px;">`
+            );
+
+            return `
+                <div class="build-premium-card" data-type="${type.id}">
+                    <div class="build-card-top">
+                        <img src="assets/emojis/${bIcon}" style="width:24px; height:24px; image-rendering:pixelated; margin-right:8px;">
+                        <span class="build-card-name">${data.name}</span>
+                    </div>
+                    <div class="build-card-desc">${descWithIcon}</div>
+                </div>
+            `;
+        }).join('');
+
+        const menuHtml = `
+            <div class="building-selection-menu">
+                <h3 style="margin-top:0; color:var(--retro-amber); text-align:center; font-family:var(--font-pixel); font-size:14px; margin-bottom:15px;">
+                    신규 건축 (슬롯 #${slotIndex + 1})
+                </h3>
+                <div class="build-grid-container">
+                    ${options}
+                </div>
+            </div>
+        `;
+
+        this.showPopup(menuHtml);
+
+        // Bind buttons
+        const popup = this.popupInner;
+        const cards = popup.querySelectorAll('.build-premium-card');
+        cards.forEach(card => {
+            card.onclick = async () => {
+                const typeId = card.dataset.type;
+                await buildingManager.addBuilding(typeId, slotIndex);
+                this.showToast(`${BUILDING_TYPES[typeId.toUpperCase()].emoji} 건물을 건설했습니다! ✨`);
+                this.hidePopup();
+            };
         });
+    }
+
+    updateBuildingGrid() {
+        if (!this.buildingGrid || !buildingManager.slots) return;
+
+        this.buildingGrid.innerHTML = buildingManager.slots.map((slot, i) => {
+            if (slot) {
+                const config = BUILDING_TYPES[slot.typeId.toUpperCase()];
+                const svgName = ItemManager.getSVGFilename(config.iconId);
+                return `<div class="building-slot" data-index="${i}" title="Lv.${slot.level}">
+                    <img src="assets/emojis/${svgName}" draggable="false">
+                </div>`;
+            } else {
+                return `<div class="building-slot empty" data-index="${i}">+</div>`;
+            }
+        }).join('');
+    }
+
+    playBuildingAnim({ slotIndex, iconId }) {
+        if (!this.buildingGrid || !this.showProductionAnim) return;
+        const slotEl = this.buildingGrid.children[slotIndex];
+        if (!slotEl) return;
+
+        // Find current Phaser scene
+        const game = this.scene?.game || (this.scene?.scene && this.scene?.scene.game);
+        if (!game) return;
+        const activeScene = game.scene.getScenes(true)[0];
+        if (!activeScene || !activeScene.spawnResourceParticle) return;
+
+        // Calculate screen position relative to the canvas element
+        const rect = slotEl.getBoundingClientRect();
+        const canvas = game.canvas;
+        if (!canvas) return;
+        const canvasRect = canvas.getBoundingClientRect();
+
+        // CSS pixel coordinates within the canvas
+        const cssX = rect.left + rect.width / 2 - canvasRect.left;
+        const cssY = rect.top - canvasRect.top;
+
+        // Convert CSS pixels to Phaser internal coordinates (600x1067)
+        // Phaser's displayScale tells us the ratio of internal units per CSS pixel
+        const phaserX = cssX * activeScene.scale.displayScale.x;
+        const phaserY = cssY * activeScene.scale.displayScale.y;
+
+        activeScene.spawnResourceParticle(phaserX, phaserY, iconId);
     }
 
     initEventListeners() {
@@ -422,6 +643,9 @@ export default class UIManager {
             this.popupOverlay.onclick = (e) => {
                 if (e.target === this.popupOverlay) this.hidePopup();
             };
+        }
+        if (this.btnSettings) {
+            this.btnSettings.onclick = () => this.showSettings();
         }
         if (this.btnFullscreen) {
             this.btnFullscreen.onclick = () => this.toggleFullscreen();
@@ -599,6 +823,14 @@ export default class UIManager {
                     btn.classList.remove('active');
                 }
             });
+
+            // Toggle Building Grid based on scene
+            if (this.buildingGrid) {
+                const combatScenes = ['DungeonScene', 'ArenaScene', 'RaidScene'];
+                const isCombat = combatScenes.includes(currentSceneKey);
+                console.log(`[UIManager] updateActiveNav toggle visibility. Current: ${currentSceneKey}, isCombat: ${isCombat}`);
+                this.buildingGrid.style.display = isCombat ? 'flex' : 'none';
+            }
         };
     }
 
@@ -658,11 +890,11 @@ export default class UIManager {
         }
     }
 
-    showPopup(type) {
+    showPopup(typeOrHtml) {
         if (!this.popupOverlay || !this.popupInner) return;
         this.clearPopupSafe();
 
-        if (type === 'inventory') {
+        if (typeOrHtml === 'inventory') {
             const invContent = document.getElementById('sidebar-right');
             if (invContent) {
                 this.popupInner.appendChild(invContent);
@@ -672,11 +904,12 @@ export default class UIManager {
                 invContent.style.border = 'none';
                 invContent.style.boxShadow = 'none';
             }
-            this.popupOverlay.style.display = 'flex';
-        } else if (type === 'party') {
-            // "Party" now triggers the Mercenary Formation UI (previously in TerritoryScene)
+        } else if (typeOrHtml === 'party') {
             this.showPartyFormation();
-            return; // showPartyFormation handles its own overlay or reuse popup-overlay
+            return;
+        } else if (typeof typeOrHtml === 'string' && typeOrHtml.includes('<')) {
+            // Literal HTML string
+            this.popupInner.innerHTML = typeOrHtml;
         }
 
         this.popupOverlay.style.display = 'flex';
@@ -1155,6 +1388,15 @@ export default class UIManager {
                 game.scene.stop(key);
             }
         });
+
+        // Scene-aware Building Grid visibility
+        if (this.buildingGrid) {
+            const combatScenes = ['DungeonScene', 'ArenaScene', 'RaidScene'];
+            const isCombat = combatScenes.includes(sceneKey);
+            console.log(`[UIManager] safeSceneStart toggle visibility for ${sceneKey}: ${isCombat}`);
+            this.buildingGrid.style.display = isCombat ? 'flex' : 'none';
+            if (isCombat) this.updateBuildingGrid(); // Force refresh on entry
+        }
 
         // Start the target scene with data
         game.scene.start(sceneKey, data);
@@ -2727,11 +2969,11 @@ export default class UIManager {
 
     setupSettingsEvents() {
         if (this.btnSettings) {
-            this.btnSettings.onclick = () => this.showSettingsPopup();
+            this.btnSettings.onclick = () => this.showSettings();
         }
     }
 
-    showSettingsPopup() {
+    showSettings() {
         if (!this.popupOverlay) return;
 
         import('../Core/SoundEffects.js').then(module => {
@@ -2741,7 +2983,7 @@ export default class UIManager {
             const currentBgmVol = (this.scene && this.scene.sound.volume) || 0.5;
             const currentSfxVol = sfx.sfxVolume;
 
-            this.popupInner.innerHTML = `
+            const modalHtml = `
                 <div class="settings-menu">
                     <div class="settings-header">
                         <span>⚙️</span> SETTINGS
@@ -2777,86 +3019,146 @@ export default class UIManager {
                             <span class="settings-label">진동 (Vibration)</span>
                             <label class="switch">
                                 <input type="checkbox" id="check-vibration" ${sfx.vibrationEnabled ? 'checked' : ''}>
-                                <span class="slider-toggle"></span>
+                                <span class="slider round"></span>
                             </label>
                         </div>
                     </div>
 
-                    <!-- Battery Saver (NEW) -->
+                    <!-- Battery Saver -->
                     <div class="settings-row">
                         <div class="settings-label-row">
                             <span class="settings-label">방치 모드 (Battery Saver)</span>
                             <label class="switch">
                                 <input type="checkbox" id="check-battery-saver" ${localStorage.getItem('batterySaver') === 'true' ? 'checked' : ''}>
-                                <span class="slider-toggle"></span>
+                                <span class="slider round"></span>
                             </label>
                         </div>
+                    </div>
+
+                    <!-- Resource Animation Toggle -->
+                    <div class="settings-row">
+                        <div class="settings-label-row">
+                            <span class="settings-label">자원 생산 애니메이션 효과</span>
+                            <label class="switch">
+                                <input type="checkbox" id="toggle-production-anim" ${this.showProductionAnim ? 'checked' : ''}>
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 20px; text-align: center; font-size: 9px; color: #666; font-family: 'Press Start 2P';">
+                        VERSION 5.0.0
                     </div>
                 </div>
             `;
 
-            this.popupOverlay.style.display = 'flex';
+            this.showPopup(modalHtml);
 
             // SFX Listeners
             const sfxSlider = document.getElementById('slider-sfx-vol');
             const sfxMuteBtn = document.getElementById('btn-mute-sfx');
             const sfxValText = document.getElementById('sfx-vol-val');
 
-            sfxSlider.oninput = (e) => {
-                const vol = parseFloat(e.target.value);
-                sfx.setSFXVolume(vol);
-                sfxValText.innerText = `${Math.round(vol * 100)}%`;
-            };
+            if (sfxSlider) {
+                sfxSlider.oninput = (e) => {
+                    const vol = parseFloat(e.target.value);
+                    sfx.setSFXVolume(vol);
+                    sfxValText.innerText = `${Math.round(vol * 100)}%`;
+                };
+            }
 
-            sfxMuteBtn.onclick = () => {
-                const isMuted = !sfx.sfxMuted;
-                sfx.setSFXMuted(isMuted);
-                sfxMuteBtn.classList.toggle('active', isMuted);
-            };
+            if (sfxMuteBtn) {
+                sfxMuteBtn.onclick = () => {
+                    const isMuted = !sfx.sfxMuted;
+                    sfx.setSFXMuted(isMuted);
+                    sfxMuteBtn.classList.toggle('active', isMuted);
+                };
+            }
 
             // BGM Listeners
             const bgmSlider = document.getElementById('slider-bgm-vol');
             const bgmMuteBtn = document.getElementById('btn-mute-bgm');
             const bgmValText = document.getElementById('bgm-vol-val');
 
-            bgmSlider.oninput = (e) => {
-                const vol = parseFloat(e.target.value);
-                if (this.scene) {
-                    this.scene.sound.setVolume(vol);
-                    localStorage.setItem('bgmVolume', vol);
-                }
-                bgmValText.innerText = `${Math.round(vol * 100)}%`;
-            };
+            if (bgmSlider) {
+                bgmSlider.oninput = (e) => {
+                    const vol = parseFloat(e.target.value);
+                    if (this.scene) {
+                        this.scene.sound.setVolume(vol);
+                        localStorage.setItem('bgmVolume', vol);
+                    }
+                    bgmValText.innerText = `${Math.round(vol * 100)}%`;
+                };
+            }
 
-            bgmMuteBtn.onclick = () => {
-                const isMuted = this.scene ? !this.scene.sound.mute : false;
-                if (this.scene) {
-                    this.scene.sound.setMute(isMuted);
-                    localStorage.setItem('bgmMuted', isMuted);
-                }
-                bgmMuteBtn.classList.toggle('active', isMuted);
-            };
+            if (bgmMuteBtn) {
+                bgmMuteBtn.onclick = () => {
+                    const isMuted = this.scene ? !this.scene.sound.mute : false;
+                    if (this.scene) {
+                        this.scene.sound.setMute(isMuted);
+                        localStorage.setItem('bgmMuted', isMuted);
+                    }
+                    bgmMuteBtn.classList.toggle('active', isMuted);
+                };
+            }
 
             // Vibration Listener
             const vibCheck = document.getElementById('check-vibration');
-            vibCheck.onchange = (e) => {
-                sfx.setVibrationEnabled(e.target.checked);
-            };
+            if (vibCheck) {
+                vibCheck.onchange = (e) => {
+                    sfx.setVibrationEnabled(e.target.checked);
+                };
+            }
 
             // Battery Saver Listener
             const batteryCheck = document.getElementById('check-battery-saver');
-            batteryCheck.onchange = (e) => {
-                const enabled = e.target.checked;
-                localStorage.setItem('batterySaver', enabled);
-                EventBus.emit(EventBus.EVENTS.BATTERY_SAVER_TOGGLED, enabled);
-                if (this.showToast) {
-                    this.showToast(enabled ? '방치 모드 활성화 (성능 우선) 🔋' : '방치 모드 비활성화 (품질 우선) ✨');
-                }
-            };
+            if (batteryCheck) {
+                batteryCheck.onchange = (e) => {
+                    const enabled = e.target.checked;
+                    localStorage.setItem('batterySaver', enabled);
+                    EventBus.emit(EventBus.EVENTS.BATTERY_SAVER_TOGGLED, enabled);
+                    if (this.showToast) {
+                        this.showToast(enabled ? '방치 모드 활성화 (성능 우선) 🔋' : '방치 모드 비활성화 (품질 우선) ✨');
+                    }
+                };
+            }
+
+            // Animation Toggle Listener
+            const animCheck = document.getElementById('toggle-production-anim');
+            if (animCheck) {
+                animCheck.onchange = (e) => {
+                    this.showProductionAnim = e.target.checked;
+                    this.saveSettings();
+                    this.showToast(this.showProductionAnim ? '애니메이션 효과 활성화 ✨' : '애니메이션 효과 비활성화 💨');
+                };
+            }
         });
     }
 
     destroy() {
         this.destroyed = true;
+    }
+
+    async loadSettings() {
+        try {
+            const settings = await DBManager.get('settings', 'game_preferences');
+            if (settings) {
+                this.showProductionAnim = settings.showProductionAnim !== undefined ? settings.showProductionAnim : true;
+                console.log('[UIManager] Settings loaded:', settings);
+            }
+        } catch (err) {
+            console.error('[UIManager] Error loading settings:', err);
+        }
+    }
+
+    async saveSettings() {
+        try {
+            await DBManager.save('settings', 'game_preferences', {
+                showProductionAnim: this.showProductionAnim
+            });
+            console.log('[UIManager] Settings saved');
+        } catch (err) {
+            console.error('[UIManager] Error saving settings:', err);
+        }
     }
 }

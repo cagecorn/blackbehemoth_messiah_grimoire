@@ -78,8 +78,11 @@ export default class BootScene extends Phaser.Scene {
         // Load common emoji assets (Twemoji SVGs)
         this.load.svg('emoji_coin', 'assets/emojis/1fa99.svg', { width: 64, height: 64 });
         this.load.svg('emoji_gem', 'assets/emojis/1f48e.svg', { width: 64, height: 64 });
+        this.load.svg('emoji_diamond', 'assets/emojis/1f48e.svg', { width: 64, height: 64 });
         this.load.svg('emoji_meat', 'assets/emojis/1f356.svg', { width: 64, height: 64 });
         this.load.svg('emoji_wood', 'assets/emojis/1fab5.svg', { width: 64, height: 64 });
+        this.load.svg('emoji_brick', 'assets/emojis/1f9f1.svg', { width: 64, height: 64 });
+        this.load.svg('emoji_divine_essence', 'assets/emojis/2728.svg', { width: 64, height: 64 });
         this.load.svg('emoji_sparkle', 'assets/emojis/2728.svg', { width: 64, height: 64 });
         this.load.svg('emoji_herb', 'assets/emojis/1f33f.svg', { width: 64, height: 64 });
         this.load.svg('emoji_note', 'assets/emojis/1f3b5.svg', { width: 64, height: 64 });
@@ -108,7 +111,6 @@ export default class BootScene extends Phaser.Scene {
         this.load.svg('emoji_koinobori', 'assets/emojis/1f38f.svg', { width: 64, height: 64 });
         this.load.svg('emoji_bone', 'assets/emojis/1f9b4.svg', { width: 64, height: 64 });
         this.load.svg('emoji_ticket', 'assets/emojis/1f3ab.svg', { width: 64, height: 64 }); // 🎫
-        this.load.svg('emoji_essence', 'assets/emojis/2728.svg', { width: 64, height: 64 }); // ✨ Divine Essence
 
         // Tactical Node Charms Emojis
         this.load.svg('emoji_smiling_face_with_sunglasses', 'assets/emojis/1f60e.svg', { width: 64, height: 64 }); // 😎
@@ -261,10 +263,10 @@ export default class BootScene extends Phaser.Scene {
                 await DBManager.saveInventoryItem('emoji_sparkler', 10);
             }
 
-            const existingIceNova = await DBManager.getInventoryItem('emoji_koinobori');
-            if (!existingIceNova) {
-                console.log('[BootScene] Initializing starter 🎏 x10');
-                await DBManager.saveInventoryItem('emoji_koinobori', 10);
+            const existingDivinaEssence = await DBManager.getInventoryItem('emoji_divine_essence');
+            if (!existingDivinaEssence) {
+                console.log('[BootScene] Initializing starter ✨ x50');
+                await DBManager.saveInventoryItem('emoji_divine_essence', 50);
             }
 
             // --- Tactical Node Charms ---

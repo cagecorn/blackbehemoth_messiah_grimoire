@@ -32,12 +32,9 @@ export default class HealthBar {
     }
 
     setPos(x, y) {
-        // Only necessary if not attached to a container
-        if (!this.parentContainer) {
-            this.x = x;
-            this.y = y;
-            this.draw();
-        }
+        this.x = x;
+        this.y = y;
+        this.draw();
     }
 
     setValue(amount, shieldAmount = 0) {
@@ -51,6 +48,12 @@ export default class HealthBar {
             this.lastValue = validatedValue;
             this.lastShieldValue = validatedShield;
             this.draw();
+        }
+    }
+
+    setVisible(visible) {
+        if (this.bar) {
+            this.bar.setVisible(visible);
         }
     }
 

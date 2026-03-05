@@ -131,7 +131,7 @@ class MessiahManager {
         // Upgrade logic (requires ✨ Divine Essence)
         // Check if we have enough essence (cost scales with level)
         const cost = power.level * 10;
-        const essenceItem = await DBManager.getInventoryItem('emoji_essence');
+        const essenceItem = await DBManager.getInventoryItem('emoji_divine_essence');
         const currentEssence = essenceItem ? essenceItem.amount : 0;
 
         if (currentEssence < cost) {
@@ -140,7 +140,7 @@ class MessiahManager {
         }
 
         // Deduct essence
-        await DBManager.saveInventoryItem('emoji_essence', currentEssence - cost);
+        await DBManager.saveInventoryItem('emoji_divine_essence', currentEssence - cost);
         EventBus.emit(EventBus.EVENTS.INVENTORY_UPDATED);
 
         power.level++;

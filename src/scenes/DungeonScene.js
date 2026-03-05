@@ -80,6 +80,17 @@ export default class DungeonScene extends Phaser.Scene {
         this.mercenaries = this.physics.add.group();
         this.enemies = this.physics.add.group();
 
+        // --- Messiah Effect Pooling ---
+        this.messiahTextPool = [];
+        this.messiahParticlePool = this.physics.add.group({
+            classType: Phaser.GameObjects.Arc,
+            maxSize: 100,
+            runChildUpdate: false
+        });
+
+        // --- Monster Pooling ---
+        this.monsterPool = {}; // Map of class names to arrays of pooled instances
+
         this.initDungeon();
     }
 
@@ -1000,9 +1011,8 @@ export default class DungeonScene extends Phaser.Scene {
             for (let i = 0; i < skeletonCount; i++) {
                 const offsetX = (i % 4) * 60;
                 const offsetY = Math.floor(i / 4) * 60;
-                const skeleton = new SkeletonWarrior(this, startPos.x + 150 + offsetX, startPos.y + offsetY - 80, this.player, monsterLevel);
+                const skeleton = this.spawnMonster(SkeletonWarrior, startPos.x + 150 + offsetX, startPos.y + offsetY - 80, this.player, monsterLevel);
                 applyEliteLogic(skeleton);
-                this.enemies.add(skeleton);
             }
 
             // Spawn Skeleton Wizards (Base 4 + 1 every round)
@@ -1010,9 +1020,8 @@ export default class DungeonScene extends Phaser.Scene {
             for (let i = 0; i < wizardCount; i++) {
                 const offsetX = (i % 2) * 80;
                 const offsetY = Math.floor(i / 2) * 80;
-                const wiz = new SkeletonWizard(this, startPos.x + 400 + offsetX, startPos.y + offsetY - 40, this.player, monsterLevel);
+                const wiz = this.spawnMonster(SkeletonWizard, startPos.x + 400 + offsetX, startPos.y + offsetY - 40, this.player, monsterLevel);
                 applyEliteLogic(wiz);
-                this.enemies.add(wiz);
             }
         } else {
             // --- Cursed Forest Spawning (Original Logic) ---
@@ -1021,18 +1030,16 @@ export default class DungeonScene extends Phaser.Scene {
             for (let i = 0; i < goblinCount; i++) {
                 const offsetX = (i % 4) * 60;
                 const offsetY = Math.floor(i / 4) * 60;
-                const goblin = new Goblin(this, startPos.x + 150 + offsetX, startPos.y + offsetY - 80, this.player, monsterLevel);
+                const goblin = this.spawnMonster(Goblin, startPos.x + 150 + offsetX, startPos.y + offsetY - 80, this.player, monsterLevel);
                 applyEliteLogic(goblin);
-                this.enemies.add(goblin);
             }
 
             // Spawn Shamans (Base 2 + 1 every 2 rounds)
             const shamanConfig = MonsterClasses.SHAMAN;
             const shamanCount = 2 + Math.floor((this.currentRound - 1) / 2);
             for (let i = 0; i < shamanCount; i++) {
-                const shaman = new MonsterHealer(this, startPos.x + 200 + (i * 80), startPos.y + 120, shamanConfig, this.player, monsterLevel);
+                const shaman = this.spawnMonster(MonsterHealer, startPos.x + 200 + (i * 80), startPos.y + 120, this.player, monsterLevel, shamanConfig);
                 applyEliteLogic(shaman);
-                this.enemies.add(shaman);
             }
 
             // Spawn Orcs (Round 1: 2, then +0.5 per round)
@@ -1040,9 +1047,8 @@ export default class DungeonScene extends Phaser.Scene {
             for (let i = 0; i < orcCount; i++) {
                 const offsetX = (i % 2) * 80;
                 const offsetY = Math.floor(i / 2) * 80;
-                const orc = new Orc(this, startPos.x + 400 + offsetX, startPos.y + offsetY - 40, this.player, monsterLevel);
+                const orc = this.spawnMonster(Orc, startPos.x + 400 + offsetX, startPos.y + offsetY - 40, this.player, monsterLevel);
                 applyEliteLogic(orc);
-                this.enemies.add(orc);
             }
         }
 
@@ -1145,37 +1151,49 @@ export default class DungeonScene extends Phaser.Scene {
             unit.mAtk *= 1.8;
             unit.isElite = true;
 
-            const novaCharms = ['emoji_fireworks', 'emoji_sparkler', 'emoji_koinobori'];
-            const charmCount = Phaser.Math.Between(1, 3);
-            const shuffledNova = [...novaCharms].sort(() => 0.5 - Math.random());
-            unit.charms[0] = shuffledNova[0];
-            if (charmCount > 1) unit.charms[1] = shuffledNova[1];
-            if (charmCount > 2) unit.charms[2] = shuffledNova[2];
-
-            // Assign 1 random node charm (Gambit AI)
-            const nodeCharmsList = ['emoji_pouting_face', 'emoji_enraged_face', 'emoji_smiling_face_with_sunglasses'];
-            const randomNodeCharm = nodeCharmsList[Math.floor(Math.random() * nodeCharmsList.length)];
-            unit.nodeCharms[0] = randomNodeCharm;
-
-            // Convert node charm back to readable emoji for Log
-            let nodeEmoji = 'None';
-            if (randomNodeCharm === 'emoji_pouting_face') nodeEmoji = '😠 [Hater]';
-            if (randomNodeCharm === 'emoji_enraged_face') nodeEmoji = '😡 [Blood Scent]';
-            if (randomNodeCharm === 'emoji_smiling_face_with_sunglasses') nodeEmoji = '😎 [Bodyguard]';
+            // Give extra charms for bosses
+            unit.charms[0] = 'emoji_fireworks';
+            unit.charms[1] = 'emoji_sparkler';
+            unit.nodeCharms[0] = 'emoji_pouting_face'; // Aggressive AI
 
             this.enemies.add(unit);
-            console.log(`[Dungeon] Spawned Shadow ${config.name} (ID: ${unit.id}) with HP: ${unit.hp}/${unit.maxHp}, Node Charm: ${nodeEmoji} and novas: ${unit.charms}`);
-
-            if (unit.setElite) unit.setElite(true);
-
-            // Re-initialize AI targets to be sure it targets the player party
-            if (unit.initAI) {
-                unit.initAI();
-            }
-
             return unit;
         }
         return null;
+    }
+
+    /**
+     * Spawns a monster using pooling.
+     * @param {Class} MonsterClass 
+     * @param {number} x 
+     * @param {number} y 
+     * @param {Object} target 
+     * @param {number} level 
+     * @param {Object} classConfig Optional config for specific monsters (like shamans)
+     */
+    spawnMonster(MonsterClass, x, y, target, level, classConfig = null) {
+        const className = MonsterClass.name;
+        if (!this.monsterPool[className]) {
+            this.monsterPool[className] = [];
+        }
+
+        // Find an inactive monster of the same class
+        let monster = this.monsterPool[className].find(m => !m.active);
+
+        // Prepare config
+        const baseConfig = classConfig || MonsterClasses[className.toUpperCase()] || MonsterClasses.GOBLIN;
+        const config = scaleStats(baseConfig, level);
+
+        if (monster) {
+            monster.reset(x, y, config, target);
+            this.enemies.add(monster);
+        } else {
+            monster = new MonsterClass(this, x, y, target, level);
+            this.enemies.add(monster);
+            this.monsterPool[className].push(monster);
+        }
+
+        return monster;
     }
 
     handleMessiahTouch(pointer) {
@@ -1253,16 +1271,25 @@ export default class DungeonScene extends Phaser.Scene {
     }
 
     showMessiahPowerEffect(x, y, power, target) {
-        // Create an ethereal emoji
-        const str = this.add.text(x, y - 60, power.emoji, {
-            fontFamily: 'Twemoji, Arial',
-            fontSize: '64px', // Bigger effect
-            color: '#ffffff',
-            stroke: 'rgba(251, 191, 36, 0.8)', // Retro amber glow
-            strokeThickness: 5
-        }).setOrigin(0.5).setDepth(2000);
+        // --- 1. Finger Emoji (Text Object) ---
+        let str = this.messiahTextPool.pop();
+        if (!str) {
+            str = this.add.text(0, 0, power.emoji, {
+                fontFamily: 'Twemoji, Arial',
+                fontSize: '64px',
+                color: '#ffffff',
+                stroke: 'rgba(251, 191, 36, 0.8)',
+                strokeThickness: 5
+            }).setOrigin(0.5).setDepth(2000);
+            str.setShadow(0, 0, 'rgba(255,255,255,0.8)', 20, false, true);
+        }
 
-        str.setShadow(0, 0, 'rgba(255,255,255,0.8)', 20, false, true);
+        // Reset and Position
+        str.setText(power.emoji);
+        str.setPosition(x, y - 60);
+        str.setAlpha(1);
+        str.setScale(1);
+        str.setVisible(true);
 
         // "Press down" animation
         this.tweens.add({
@@ -1271,7 +1298,7 @@ export default class DungeonScene extends Phaser.Scene {
             scaleX: 0.8,
             scaleY: 0.8,
             duration: 150,
-            yoyo: true, // Spring back up
+            yoyo: true,
             hold: 50,
             ease: 'Power2',
             onComplete: () => {
@@ -1285,29 +1312,46 @@ export default class DungeonScene extends Phaser.Scene {
                     });
                 }
 
-                // Burst particles
+                // --- 2. Burst Particles (Physics Circles) ---
+                const particleColor = power.type === 'OFFENSE' ? 0xff4444 : 0xffff00;
                 for (let i = 0; i < 12; i++) {
                     const angle = Math.random() * Math.PI * 2;
                     const spd = 60 + Math.random() * 80;
-                    const p = this.add.circle(x, y, 4, power.type === 'OFFENSE' ? 0xff4444 : 0xffff00).setDepth(2000);
-                    this.physics.add.existing(p);
-                    p.body.setVelocity(Math.cos(angle) * spd, Math.sin(angle) * spd);
-                    this.tweens.add({
-                        targets: p,
-                        alpha: 0,
-                        duration: 500,
-                        ease: 'Power2',
-                        onComplete: () => p.destroy()
-                    });
+
+                    let p = this.messiahParticlePool.get(x, y);
+                    if (p) {
+                        p.setActive(true);
+                        p.setVisible(true);
+                        p.setAlpha(1);
+                        p.setFillStyle(particleColor);
+                        p.setRadius(4);
+                        if (!p.body) this.physics.add.existing(p);
+                        p.body.setVelocity(Math.cos(angle) * spd, Math.sin(angle) * spd);
+                        p.setDepth(2000);
+
+                        this.tweens.add({
+                            targets: p,
+                            alpha: 0,
+                            duration: 500,
+                            ease: 'Power2',
+                            onComplete: () => {
+                                this.messiahParticlePool.killAndHide(p);
+                                if (p.body) p.body.setVelocity(0, 0);
+                            }
+                        });
+                    }
                 }
 
-                // Fade away emoji
+                // --- 3. Fade away emoji ---
                 this.tweens.add({
                     targets: str,
                     alpha: 0,
                     y: y - 50,
                     duration: 350,
-                    onComplete: () => str.destroy()
+                    onComplete: () => {
+                        str.setVisible(false);
+                        this.messiahTextPool.push(str);
+                    }
                 });
             }
         });
@@ -1315,7 +1359,7 @@ export default class DungeonScene extends Phaser.Scene {
 
     executeAutoMessiahTouch() {
         const mm = this.game.messiahManager;
-        if (!mm || mm.stacks <= 0) return;
+        if (!mm || mm.stacks <= 0 || !mm.isAutoMode) return;
 
         const power = mm.getActivePower();
         if (!power) return;
@@ -1403,5 +1447,42 @@ export default class DungeonScene extends Phaser.Scene {
         } catch (e) {
             console.error('[DungeonScene] Failed to initialize pet:', e);
         }
+    }
+
+    /**
+     * Spawns a production particle on the Phaser canvas.
+     * @param {number} x Screen X
+     * @param {number} y Screen Y
+     * @param {string} iconId Asset key
+     */
+    spawnResourceParticle(x, y, iconId) {
+        if (!this.resParticlePool) this.resParticlePool = [];
+
+        let p = this.resParticlePool.pop();
+        if (!p) {
+            p = this.add.image(0, 0, iconId);
+            p.setDepth(200000); // Super top depth
+            p.setScrollFactor(0); // Fixed screen position
+        }
+
+        p.setTexture(iconId);
+        p.setPosition(x, y);
+        p.setAlpha(1);
+        p.setScale(0.2); // Miniature feel (was 0.4)
+        p.setVisible(true);
+
+        // Animate: Pop up, float, and fade
+        this.tweens.add({
+            targets: p,
+            y: y - 60,
+            alpha: 0,
+            scale: 0.6,
+            duration: 1500,
+            ease: 'Cubic.out',
+            onComplete: () => {
+                p.setVisible(false);
+                this.resParticlePool.push(p);
+            }
+        });
     }
 }

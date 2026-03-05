@@ -124,6 +124,17 @@ export default class RaidScene extends Phaser.Scene {
         // 🎬 Start Intro Blur Effect
         this.applyIntroBlur();
 
+        // --- Messiah Touch Interaction ---
+        this.input.on('pointerdown', this.handleMessiahTouch, this);
+
+        // Messiah Pools
+        this.messiahTextPool = [];
+        this.messiahParticlePool = this.physics.add.group({
+            classType: Phaser.GameObjects.Arc,
+            maxSize: 50,
+            runChildUpdate: false
+        });
+
         // Cleanup on scene shutdown
         this.events.once('shutdown', () => {
             if (this.ambientMoteManager) this.ambientMoteManager.destroy();
@@ -235,6 +246,12 @@ export default class RaidScene extends Phaser.Scene {
         if (this.ccManager) this.ccManager.update(time, delta);
         if (this.shieldManager) this.shieldManager.update(time, delta);
         if (this.barkManager) this.barkManager.update(time, delta);
+
+        // Update Messiah Manager for stack accumulation
+        if (this.game.messiahManager) this.game.messiahManager.update(time, delta);
+
+        // Auto Messiah Touch
+        this.executeAutoMessiahTouch();
 
         const HUD_MARGIN = 80;
         const SIDE_MARGIN = 40;
@@ -368,5 +385,198 @@ export default class RaidScene extends Phaser.Scene {
                 console.log('[Visuals] Raid Intro Blur Concluded. ⚔️');
             }
         });
+    }
+
+    /**
+     * Spawns a production particle on the Phaser canvas.
+     * @param {number} x Screen X
+     * @param {number} y Screen Y
+     * @param {string} iconId Asset key
+     */
+    spawnResourceParticle(x, y, iconId) {
+        if (!this.resParticlePool) this.resParticlePool = [];
+
+        let p = this.resParticlePool.pop();
+        if (!p) {
+            p = this.add.image(0, 0, iconId);
+            p.setDepth(200000); // Super top depth
+            p.setScrollFactor(0); // Fixed screen position
+        }
+
+        p.setTexture(iconId);
+        p.setPosition(x, y);
+        p.setAlpha(1);
+        p.setScale(0.2); // Miniature feel (was 0.4)
+        p.setVisible(true);
+
+        this.tweens.add({
+            targets: p,
+            y: y - 60,
+            alpha: 0,
+            scale: 0.6,
+            duration: 1500,
+            ease: 'Cubic.out',
+            onComplete: () => {
+                p.setVisible(false);
+                this.resParticlePool.push(p);
+            }
+        });
+    }
+
+    handleMessiahTouch(pointer) {
+        if (!this.game.messiahManager) return;
+        const mm = this.game.messiahManager;
+        const power = mm.getActivePower();
+        if (!power) return;
+
+        let target = null;
+        let searchRadius = 120; // Slightly larger for boss
+
+        if (power.type === 'OFFENSE') {
+            if (this.boss && this.boss.active && this.boss.hp > 0) {
+                const dist = Phaser.Math.Distance.Between(pointer.worldX, pointer.worldY, this.boss.x, this.boss.y);
+                if (dist <= searchRadius + 50) target = this.boss;
+            }
+        } else {
+            let closestDist = Infinity;
+            this.mercenaries.getChildren().forEach(ally => {
+                if (!ally.active || ally.hp <= 0) return;
+                const dist = Phaser.Math.Distance.Between(pointer.worldX, pointer.worldY, ally.x, ally.y);
+                if (dist < closestDist && dist <= searchRadius) {
+                    closestDist = dist;
+                    target = ally;
+                }
+            });
+        }
+
+        if (target) {
+            if (mm.consumeStack()) {
+                this.showMessiahPowerEffect(target.x, target.y - 20, power, target);
+                const stats = mm.getStats();
+                if (power.type === 'OFFENSE') {
+                    const damage = stats.atk * 1.5;
+                    target.takeDamage(damage, null, false);
+                } else if (power.type === 'DEFENSE') {
+                    const heal = stats.mAtk * 1.5;
+                    if (target.heal) target.heal(heal, null);
+                } else if (power.type === 'SUPPORT') {
+                    const buffAmount = stats.mAtk * 0.5;
+                    target.bonusAtk += buffAmount;
+                    target.bonusMAtk += buffAmount;
+                    target.messiahEncouragementAmount = buffAmount;
+                    this.time.delayedCall(3000, () => {
+                        target.bonusAtk -= buffAmount;
+                        target.bonusMAtk -= buffAmount;
+                        target.messiahEncouragementAmount = 0;
+                    });
+                }
+            } else {
+                if (this.game.uiManager) this.game.uiManager.showToast('권능 스택이 부족합니다!');
+            }
+        }
+    }
+
+    showMessiahPowerEffect(x, y, power, target) {
+        let str = this.messiahTextPool.pop();
+        if (!str) {
+            str = this.add.text(0, 0, power.emoji, {
+                fontFamily: 'Twemoji, Arial',
+                fontSize: '64px',
+                color: '#ffffff',
+                stroke: 'rgba(251, 191, 36, 0.8)',
+                strokeThickness: 5
+            }).setOrigin(0.5).setDepth(2000);
+            str.setShadow(0, 0, 'rgba(255,255,255,0.8)', 20, false, true);
+        }
+
+        str.setText(power.emoji);
+        str.setPosition(x, y - 60);
+        str.setAlpha(1);
+        str.setScale(1);
+        str.setVisible(true);
+
+        this.tweens.add({
+            targets: str,
+            y: y - 10,
+            scaleX: 0.8,
+            scaleY: 0.8,
+            duration: 150,
+            yoyo: true,
+            hold: 50,
+            ease: 'Power2',
+            onComplete: () => {
+                if (target && target.sprite) {
+                    target.sprite.setTintFill(power.type === 'OFFENSE' ? 0xff0000 : 0xffffe0);
+                    this.time.delayedCall(150, () => {
+                        if (target && target.sprite && target.sprite.active) target.sprite.clearTint();
+                    });
+                }
+
+                const particleColor = power.type === 'OFFENSE' ? 0xff4444 : 0xffff00;
+                for (let i = 0; i < 12; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const spd = 60 + Math.random() * 80;
+                    let p = this.messiahParticlePool.get(x, y);
+                    if (p) {
+                        p.setActive(true);
+                        p.setVisible(true);
+                        p.setAlpha(1);
+                        p.setFillStyle(particleColor);
+                        p.setRadius(4);
+                        if (!p.body) this.physics.add.existing(p);
+                        p.body.setVelocity(Math.cos(angle) * spd, Math.sin(angle) * spd);
+                        p.setDepth(2000);
+
+                        this.tweens.add({
+                            targets: p,
+                            alpha: 0,
+                            duration: 500,
+                            ease: 'Power2',
+                            onComplete: () => {
+                                this.messiahParticlePool.killAndHide(p);
+                                if (p.body) p.body.setVelocity(0, 0);
+                            }
+                        });
+                    }
+                }
+
+                this.tweens.add({
+                    targets: str,
+                    alpha: 0,
+                    y: y - 50,
+                    duration: 350,
+                    onComplete: () => {
+                        str.setVisible(false);
+                        this.messiahTextPool.push(str);
+                    }
+                });
+            }
+        });
+    }
+
+    executeAutoMessiahTouch() {
+        const mm = this.game.messiahManager;
+        if (!mm || mm.stacks <= 0 || !mm.isAutoMode) return;
+        const power = mm.getActivePower();
+        if (!power) return;
+
+        if (this.time.now - (this.lastAutoMessiahCast || 0) < 1000) return;
+
+        let potentialTargets = [];
+        if (power.type === 'OFFENSE') {
+            if (this.boss && this.boss.active && this.boss.hp > 0) potentialTargets = [this.boss];
+        } else {
+            potentialTargets = this.mercenaries.getChildren().filter(m => m.active && m.hp > 0);
+            if (power.id === 'ENCOURAGEMENT') {
+                potentialTargets = potentialTargets.filter(m => !m.messiahEncouragementAmount);
+            }
+        }
+
+        if (potentialTargets.length === 0) return;
+        const target = Phaser.Utils.Array.GetRandom(potentialTargets);
+        if (target) {
+            this.handleMessiahTouch({ worldX: target.x, worldY: target.y });
+            this.lastAutoMessiahCast = this.time.now;
+        }
     }
 }

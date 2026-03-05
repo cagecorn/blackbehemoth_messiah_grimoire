@@ -25,6 +25,7 @@ const ITEM_DATABASE = {
     // --- Materials ---
     'emoji_coin': { name: 'Gold Coin', type: ITEM_TYPES.MATERIAL, icon: 'emoji_coin' },
     'emoji_gem': { name: 'Gemstone', type: ITEM_TYPES.MATERIAL, icon: 'emoji_gem' },
+    'emoji_brick': { name: 'Brick', type: ITEM_TYPES.MATERIAL, icon: 'emoji_brick' },
     'emoji_meat': { name: 'Monster Meat', type: ITEM_TYPES.MATERIAL, icon: 'emoji_meat' },
     'emoji_wood': { name: 'Wood Log', type: ITEM_TYPES.MATERIAL, icon: 'emoji_wood' },
     'emoji_herb': { name: 'Magic Herb', type: ITEM_TYPES.MATERIAL, icon: 'emoji_herb' },
@@ -33,6 +34,7 @@ const ITEM_DATABASE = {
     'emoji_fireworks': { name: 'Fire Nova (🎆)', type: ITEM_TYPES.MATERIAL, icon: 'emoji_fireworks', chapter: 'ACTIVE' },
     'emoji_sparkler': { name: 'Spark Nova (🎇)', type: ITEM_TYPES.MATERIAL, icon: 'emoji_sparkler', chapter: 'ACTIVE' },
     'emoji_koinobori': { name: 'Ice Nova (🎏)', type: ITEM_TYPES.MATERIAL, icon: 'emoji_koinobori', chapter: 'ACTIVE' },
+    'emoji_divine_essence': { name: '전능의 정수 (✨)', type: ITEM_TYPES.MATERIAL, icon: 'emoji_divine_essence', description: '메시아의 권능을 강화하는 데 필요한 신성한 재료입니다. ✨' },
 
     // --- Tactical Node Charms ---
     'emoji_pouting_face': { name: '분노 (Enraged 😠)', type: 'node_charm', icon: 'emoji_pouting_face', description: '적의 서포터(힐러/바드)를 최우선으로 추적하며, 자신의 잃은 체력에 비례해 공격력이 최대 15%까지 상승합니다.' },
@@ -126,8 +128,11 @@ export default class ItemManager {
         const map = {
             'emoji_coin': '1fa99.svg',
             'emoji_gem': '1f48e.svg',
+            'emoji_brick': '1f9f1.svg',
             'emoji_meat': '1f356.svg',
-            'emoji_bone': '1f9b4.svg', // Added emoji_bone as per the user's implied intent
+            'emoji_wood': '1fab5.svg',
+            'emoji_divine_essence': '2728.svg',
+            'emoji_diamond': '1f48e.svg',
             'emoji_herb': '1f33f.svg',
             'emoji_ticket': '1f3ab.svg',
             'emoji_burger': '1f354.svg',
@@ -154,6 +159,12 @@ export default class ItemManager {
             'emoji_cyclone': '1f300.svg',
             'emoji_musical_note': '1f3b6.svg',
             'emoji_crown': '1f451.svg',
+            'emoji_castle': '1f3f0.svg',
+            'emoji_bank': '1f3e6.svg',
+            'emoji_factory': '1f3ed.svg',
+            'emoji_church': '26ea.svg',
+            'emoji_camp': '1f3d5.svg',
+            'emoji_tree': '1f333.svg',
             'test_sword_fire': '1f5e1.svg',
             'test_sword_ice': '1f5e1.svg',
             'test_sword_lightning': '1f5e1.svg',

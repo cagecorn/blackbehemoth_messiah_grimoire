@@ -124,6 +124,132 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
         }
     }
 
+    /**
+     * Resets the monster state for reuse in a pool.
+     * @param {number} x - New X position
+     * @param {number} y - New Y position
+     * @param {Object} config - New config (level scaling, etc.)
+     * @param {Object} target - New target
+     */
+    reset(x, y, config, target) {
+        this.setPosition(x, y);
+        this.config = config;
+        this.target = target;
+
+        // Reset Identity
+        this.id = config.id + '_' + Phaser.Math.Between(1000, 9999);
+        this.baseId = config.id;
+        this.className = config.id;
+        this.unitName = config.name;
+        this.level = config.level || 1;
+        if (this.level > 1) {
+            this.unitName = `Lv.${this.level} ${config.name}`;
+        }
+
+        // Reset Stats
+        this.maxHp = config.maxHp || 100;
+        this.hp = config.hp !== undefined ? config.hp : this.maxHp;
+        this.atk = config.atk || 0;
+        this.mAtk = config.mAtk || 0;
+        this.def = config.def || 0;
+        this.mDef = config.mDef || 0;
+        this.speed = config.speed || 50;
+        this.atkSpd = config.atkSpd || 1500;
+        this.atkRange = config.atkRange || 40;
+        this.rangeMin = config.rangeMin || 0;
+        this.rangeMax = config.rangeMax || this.atkRange;
+        this.castSpd = config.castSpd || 1000;
+        this.acc = config.acc || 100;
+        this.eva = config.eva || 0;
+        this.crit = config.crit || 0;
+
+        // Reset Status Tracking
+        this.isStunned = false;
+        this.isAirborne = false;
+        this.isKnockedBack = false;
+        this.isShocked = false;
+        this.isBloodRaging = false;
+        this.isTacticalCommandActive = false;
+        this.isAsleep = false;
+        this.isFrozen = false;
+
+        // Reset Grimoire/Charms
+        this.isElite = config.isElite || false;
+        GrimoireManager.initGrimoire(this);
+        this.charms = this.grimoire[GrimoireManager.CHAPTERS.ACTIVE];
+        this.nodeCharms = this.grimoire[GrimoireManager.CHAPTERS.TACTICAL];
+        this.activatedPerks = this.grimoire[GrimoireManager.CHAPTERS.CLASS];
+
+        if (config.charms) {
+            for (let i = 0; i < Math.min(config.charms.length, 9); i++) {
+                this.grimoire[GrimoireManager.CHAPTERS.ACTIVE][i] = config.charms[i];
+            }
+        }
+        if (config.nodeCharms) {
+            for (let i = 0; i < Math.min(config.nodeCharms.length, 3); i++) {
+                this.grimoire[GrimoireManager.CHAPTERS.TACTICAL][i] = config.nodeCharms[i];
+            }
+        }
+        GrimoireManager.applyAll(this);
+        this.charmTimers = Array(9).fill(99999);
+
+        // Reset Combat Timers
+        this.lastAttackTime = 0;
+
+        // Reset Sprite & Shadow
+        if (this.sprite) {
+            this.sprite.setTexture(config.sprite);
+            const spriteSize = config.spriteSize || 64;
+            const scale = config.scale || 1;
+            this.sprite.setDisplaySize(spriteSize * scale, spriteSize * scale);
+            this.sprite.clearTint();
+            this.sprite.setAlpha(1);
+            this.sprite.angle = 0;
+            this.sprite.setScale(this.baseScaleX, this.baseScaleY);
+        }
+
+        if (this.shadow) {
+            const shadowScale = (this.config && this.config.scale) ? this.config.scale : 1;
+            this.shadow.setScale(shadowScale);
+        }
+
+        this.setScale(1);
+        this.setAlpha(1);
+        this.angle = 0;
+
+        // Reset Physics
+        if (this.body) {
+            this.body.reset(x, y);
+            const scale = config.scale || 1;
+            const radius = (config.physicsRadius || 20) * scale;
+            this.body.setCircle(radius);
+            this.body.setOffset(-radius, -radius);
+            this.body.setCollideWorldBounds(true);
+            this.body.enable = true;
+        }
+
+        // Reset UI
+        if (this.healthBar) {
+            this.healthBar.setVisible(true);
+            const spriteSize = config.spriteSize || 64;
+            const scale = config.scale || 1;
+            const displayHeight = spriteSize * scale;
+            this.barYOffset = displayHeight / 2 + 20;
+            this.healthBar.setPos(0, -this.barYOffset);
+            this.updateHealthBar();
+        }
+
+        this.setActive(true);
+        this.setVisible(true);
+
+        if (this.isElite) {
+            this.setElite(true);
+        }
+
+        // Re-init AI (Subclasses should handle this)
+        if (this.initAI) this.initAI();
+    }
+
     setElite(isElite) {
         this.isElite = isElite;
         if (isElite) {
@@ -497,7 +623,7 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
     }
 
     die(attackerId = null) {
-        if (this.healthBar) this.healthBar.destroy();
+        if (this.healthBar) this.healthBar.setVisible(false);
 
         // --- Centralized Kill & Loot Logic ---
         EventBus.emit(EventBus.EVENTS.MONSTER_KILLED, {
@@ -532,11 +658,17 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
                 alpha: 0,
                 duration: 500,
                 onComplete: () => {
-                    this.destroy();
+                    this.setActive(false);
+                    this.setVisible(false);
+                    if (this.body) this.body.enable = false;
+                    if (this.healthBar) this.healthBar.setVisible(false);
                 }
             });
         } else {
-            this.destroy();
+            this.setActive(false);
+            this.setVisible(false);
+            if (this.body) this.body.enable = false;
+            if (this.healthBar) this.healthBar.setVisible(false);
         }
     }
 

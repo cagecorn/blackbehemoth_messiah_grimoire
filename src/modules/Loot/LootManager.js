@@ -57,6 +57,9 @@ export default class LootManager {
                 randomDrop = 'emoji_ticket';
             } else if (Math.random() < gemWeight) {
                 randomDrop = 'emoji_gem';
+            } else if ((isElite || isShadow) && Math.random() < 0.05) {
+                // 5% chance for Divine Essence from Elites/Shadows
+                randomDrop = 'emoji_divine_essence';
             } else {
                 // Pick from remaining (coin, meat, wood, herb)
                 const others = ['emoji_coin', 'emoji_meat', 'emoji_wood', 'emoji_herb'];
@@ -65,7 +68,7 @@ export default class LootManager {
 
             // --- RAID BOSS SPECIAL DROP: Divine Essence ---
             if (monsterId === 'boss_goblin' && i === 0) {
-                randomDrop = 'emoji_essence';
+                randomDrop = 'emoji_divine_essence';
             }
             // ----------------------------------------------
 
@@ -91,10 +94,10 @@ export default class LootManager {
                 const dungeonBonus = 1 + (dungeonMult - 1) * 0.3;
                 item.amount = Math.ceil(1 * levelBonus * rankBonus * dungeonBonus);
                 console.log(`[LootManager] 💎 Gem: ${item.amount} (Lv: ${levelBonus.toFixed(2)}x, Rank: ${rankBonus}x, Dungeon: ${dungeonBonus.toFixed(2)}x)`);
-            } else if (randomDrop === 'emoji_essence') {
+            } else if (randomDrop === 'emoji_divine_essence') {
                 // Divine Essence: Amount scales with level
                 item.amount = Math.floor(level * 1.5) + 10;
-                console.log(`[LootManager] ✨ Essence: ${item.amount} (Level: ${level})`);
+                console.log(`[LootManager] ✨ Divine Essence: ${item.amount} (Level: ${level})`);
             } else {
                 // Standard Items: Base 1, Level +2%, Rank x1.5/x2, Dungeon 50%
                 const levelBonus = 1 + (level - 1) * 0.02;
@@ -152,7 +155,7 @@ export default class LootManager {
             'emoji_herb': '🌿',
             'emoji_bone': '🦴',
             'emoji_ticket': '🎫',
-            'emoji_essence': '✨'
+            'emoji_divine_essence': '✨'
         };
         const unicodeEmoji = emojiMap[emojiId] || '❓';
 
