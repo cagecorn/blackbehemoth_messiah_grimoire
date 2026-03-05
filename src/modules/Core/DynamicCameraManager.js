@@ -17,7 +17,7 @@ export default class DynamicCameraManager {
             jitterSpeed: 0.05,
             shakeDecay: 0.95,
             maxShake: 20,
-            minZoom: 0.5,
+            minZoom: 0.8,
             maxZoom: 2.5,
             zoomLerp: 0.1,
             zoomSensitivity: 0.005

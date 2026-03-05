@@ -99,6 +99,12 @@ export default class ArenaScene extends Phaser.Scene {
             this.game.uiManager.updateRoundDisplay(`ARENA BATTLE #${this.battleCount}`);
         }
 
+        // --- UI Camera Setup (Fixed Overlay) ---
+        // This camera stays at zoom 1 and doesn't scroll, used for fixed HUD/Animations.
+        this.uiCamera = this.cameras.add(0, 0, this.scale.width, this.scale.height).setName('UICamera');
+        this.uiCamera.setScroll(0, 0);
+        this.uiCamera.setZoom(1);
+
 
         // ESC to return
         this.input.keyboard.on('keydown-ESC', () => {
@@ -434,6 +440,11 @@ export default class ArenaScene extends Phaser.Scene {
             p = this.add.image(0, 0, iconId);
             p.setDepth(200000); // Super top depth
             p.setScrollFactor(0); // Fixed screen position
+
+            // Critical Fix: Only render on uiCamera to bypass zoom/scroll misalignment
+            if (this.uiCamera) {
+                this.cameras.main.ignore(p);
+            }
         }
 
         p.setTexture(iconId);

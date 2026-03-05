@@ -1463,6 +1463,12 @@ export default class DungeonScene extends Phaser.Scene {
             p = this.add.image(0, 0, iconId);
             p.setDepth(200000); // Super top depth
             p.setScrollFactor(0); // Fixed screen position
+
+            // Critical Fix: Tell the main camera to ignore this particle 
+            // so it only shows up on the uiCamera (preventing duplication).
+            if (this.uiCamera) {
+                this.cameras.main.ignore(p);
+            }
         }
 
         p.setTexture(iconId);
