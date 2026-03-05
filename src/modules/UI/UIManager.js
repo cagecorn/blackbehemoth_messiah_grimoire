@@ -931,7 +931,13 @@ export default class UIManager {
         const activeNPC = npcManager.getActiveNPC();
         if (activeNPC) {
             const npcData = npcManager.getNPCInfo(activeNPC.id);
-            npcSlotEl.innerHTML = `<img src="assets/npc/${npcData.sprite}.png" style="width: 80%; height: 80%; object-fit: contain;">`;
+            const stacksHtml = `<div style="position:absolute; bottom:2px; right:4px; font-size:10px; font-weight:bold; color:#fff; text-shadow:0 1px 2px #000; z-index:10; background:rgba(0,0,0,0.5); padding:0 2px; border-radius:2px;">${activeNPC.stacks}회</div>`;
+
+            npcSlotEl.style.position = 'relative';
+            npcSlotEl.innerHTML = `
+                ${stacksHtml}
+                <img src="assets/npc/${npcData.sprite}.png" style="width: 80%; height: 80%; object-fit: contain;">
+            `;
             npcSlotEl.classList.add('filled');
         } else {
             npcSlotEl.innerHTML = 'N';
@@ -1070,10 +1076,14 @@ export default class UIManager {
                     if (star === 0) return; // Not owned
                     const isSelected = currentSlots.includes(char.id);
 
-                    const starHtml = `<div style="position:absolute; top:4px; right:4px; font-size:12px; font-weight:bold; color:#fbbf24; text-shadow:0 1px 2px #000;">★${star}</div>`;
+                    const state = partyManager.getState(char.id);
+                    const level = state ? state.level : 1;
+                    const starHtml = `<div style="position:absolute; top:4px; right:4px; font-size:10px; font-weight:bold; color:#fbbf24; text-shadow:0 1px 2px #000;">★${star}</div>`;
+                    const levelHtml = `<div style="position:absolute; top:4px; left:4px; font-size:10px; font-weight:bold; color:#fff; text-shadow:0 1px 2px #000; background:rgba(0,0,0,0.5); padding:0 2px; border-radius:2px;">Lv.${level}</div>`;
                     candidatesHtml += `
                         <div class="mercenary-card ${isSelected ? 'selected' : ''}" draggable="true" data-id="${char.id}" style="position:relative;">
                             ${starHtml}
+                            ${levelHtml}
                             <img src="assets/characters/party/${char.sprite}.png" alt="${char.name}">
                             <div class="merc-name">${char.name.split(' (')[0]}</div>
                         </div>
@@ -1086,11 +1096,15 @@ export default class UIManager {
                     if (star === 0) return; // Not owned, skip rendering
 
                     const isSelected = currentPet === pet.id;
-                    const starHtml = `<div style="position:absolute; top:4px; right:4px; font-size:12px; font-weight:bold; color:#fbbf24; text-shadow:0 1px 2px #000;">★${star}</div>`;
+                    const petState = partyManager.getPetState(pet.id);
+                    const level = petState ? petState.level : 1;
+                    const starHtml = `<div style="position:absolute; top:4px; right:4px; font-size:10px; font-weight:bold; color:#fbbf24; text-shadow:0 1px 2px #000;">★${star}</div>`;
+                    const levelHtml = `<div style="position:absolute; top:4px; left:4px; font-size:10px; font-weight:bold; color:#fff; text-shadow:0 1px 2px #000; background:rgba(0,0,0,0.5); padding:0 2px; border-radius:2px;">Lv.${level}</div>`;
 
                     candidatesHtml += `
                         <div class="mercenary-card ${isSelected ? 'selected' : ''}" draggable="true" data-id="${pet.id}" style="position:relative;">
                             ${starHtml}
+                            ${levelHtml}
                             <img src="assets/pet/${pet.sprite}.png" alt="${pet.name}">
                             <div class="merc-name">${pet.name}</div>
                         </div>
@@ -1184,10 +1198,14 @@ export default class UIManager {
                     return;
                 }
                 const star = partyManager.getHighestStar(charId);
-                const starHtml = star > 0 ? `<div style="position:absolute; bottom:2px; right:4px; font-size:14px; font-weight:bold; color:#fbbf24; text-shadow:0 1px 2px #000; z-index:10;">★${star}</div>` : '';
+                const state = partyManager.getState(charId);
+                const level = state ? state.level : 1;
+                const starHtml = star > 0 ? `<div style="position:absolute; bottom:2px; right:4px; font-size:12px; font-weight:bold; color:#fbbf24; text-shadow:0 1px 2px #000; z-index:10;">★${star}</div>` : '';
+                const levelHtml = `<div style="position:absolute; top:2px; left:4px; font-size:10px; font-weight:bold; color:#fff; text-shadow:0 1px 2px #000; z-index:10; background:rgba(0,0,0,0.5); padding:0 2px; border-radius:2px;">Lv.${level}</div>`;
                 slotEl.style.position = 'relative';
                 slotEl.innerHTML = `
                     ${starHtml}
+                    ${levelHtml}
                     <img src="assets/characters/party/${char.sprite}.png" alt="${char.name}">
                 `;
                 slotEl.classList.add('filled');
@@ -1201,7 +1219,18 @@ export default class UIManager {
             if (currentPet) {
                 const pet = Object.values(PetStats).find(p => p.id === currentPet);
                 if (pet) {
-                    petSlotEl.innerHTML = `<img src="assets/pet/${pet.sprite}.png" alt="${pet.name}" style="width: 80%; height: 80%;">`;
+                    const star = partyManager.getHighestPetStar(currentPet);
+                    const petState = partyManager.getPetState(currentPet);
+                    const level = petState ? petState.level : 1;
+                    const starHtml = star > 0 ? `<div style="position:absolute; bottom:2px; right:4px; font-size:12px; font-weight:bold; color:#fbbf24; text-shadow:0 1px 2px #000; z-index:10;">★${star}</div>` : '';
+                    const levelHtml = `<div style="position:absolute; top:2px; left:4px; font-size:10px; font-weight:bold; color:#fff; text-shadow:0 1px 2px #000; z-index:10; background:rgba(0,0,0,0.5); padding:0 2px; border-radius:2px;">Lv.${level}</div>`;
+
+                    petSlotEl.style.position = 'relative';
+                    petSlotEl.innerHTML = `
+                        ${starHtml}
+                        ${levelHtml}
+                        <img src="assets/pet/${pet.sprite}.png" alt="${pet.name}" style="width: 80%; height: 80%;">
+                    `;
                     petSlotEl.classList.add('filled');
                     return;
                 }

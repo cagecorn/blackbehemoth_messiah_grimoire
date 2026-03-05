@@ -654,6 +654,13 @@ export default class DungeonScene extends Phaser.Scene {
             });
         }
 
+        if (this.petManager && this.petManager.pets) {
+            this.petManager.pets.getChildren().forEach(pet => {
+                pet.update(time, delta);
+                pet.setDepth(pet.y);
+            });
+        }
+
         if (this.enemies) {
             this.enemies.getChildren().forEach(enemy => {
                 enemy.update(time, delta);
