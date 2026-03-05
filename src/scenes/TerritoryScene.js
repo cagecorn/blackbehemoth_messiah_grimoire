@@ -46,6 +46,14 @@ const TERRITORY_BANNERS = [
         action: null,
     },
     {
+        id: 'messiah',
+        label: '메시아 권능 관리',
+        sublabel: 'MESSIAH TOUCH',
+        cutscene: 'assets/characters/party/messiah_cutscene.png', // Premium Messiah cutscene image
+        accentColor: '#ffffff', // Radiant white
+        action: null,
+    },
+    {
         id: 'achievement',
         label: '업적',
         sublabel: 'ACHIEVEMENTS',
@@ -128,6 +136,12 @@ export default class TerritoryScene extends Phaser.Scene {
                 el.addEventListener('click', () => {
                     if (this.game.uiManager) {
                         this.game.uiManager.showPetStorage();
+                    }
+                });
+            } else if (b.id === 'messiah') {
+                el.addEventListener('click', () => {
+                    if (this.game.uiManager) {
+                        this.game.uiManager.showMessiahManagement();
                     }
                 });
             } else {

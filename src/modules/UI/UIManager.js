@@ -39,6 +39,13 @@ export default class UIManager {
         this.npcHud = document.getElementById('npc-hud');
         this.npcHudIcon = document.getElementById('npc-hud-icon');
         this.npcHudStacks = document.getElementById('npc-hud-stacks');
+
+        // Messiah HUD Elements
+        this.messiahHud = document.getElementById('messiah-hud');
+        this.messiahHudIcon = document.getElementById('messiah-hud-icon');
+        this.messiahHudStacks = document.getElementById('messiah-hud-stacks');
+        this.messiahCooldownFill = document.getElementById('messiah-cooldown-fill');
+
         this.portraitBar = document.getElementById('portrait-bar');
 
 
@@ -924,6 +931,147 @@ export default class UIManager {
         }, 300);
     }
 
+    async showMessiahManagement() {
+        if (this.messiahOverlay) return;
+
+        const overlay = document.createElement('div');
+        overlay.id = 'messiah-overlay';
+        overlay.className = 'shop-overlay messiah-overlay retro-scanline-overlay';
+        this.messiahOverlay = overlay;
+
+        overlay.innerHTML = `
+            <div class="shop-container messiah-container" style="max-width: 900px; width: 95vw; border-color: #fff; box-shadow: 0 0 20px rgba(255,255,255,0.2);">
+                <div class="shop-header" style="background: linear-gradient(to right, #334155, #475569, #334155); border-bottom: 2px solid #fff;">
+                    <div class="shop-title" style="color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.8);">✨ MESSIAH POWERS (메시아의 권능)</div>
+                    <button class="shop-close-btn" id="messiah-close">✕</button>
+                </div>
+                
+                <div class="shop-body" style="padding: 20px; display: grid; grid-template-columns: 1fr 1.5fr; gap: 20px;">
+                    <!-- Messiah Stats -->
+                    <div class="messiah-stats-panel" style="background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 15px;">
+                        <div style="font-family: var(--font-pixel); color: #fff; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px;">[ MESSIAH STATUS ]</div>
+                        <div id="messiah-stats-list" style="display: flex; flex-direction: column; gap: 8px; font-size: 13px;">
+                            <!-- Stats injected here -->
+                        </div>
+                    </div>
+
+                    <!-- Powers List -->
+                    <div class="messiah-powers-panel" style="display: flex; flex-direction: column; gap: 15px;">
+                        <div id="messiah-powers-list" style="display: flex; flex-direction: column; gap: 10px;">
+                            <!-- Powers injected here -->
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="shop-footer" style="background: rgba(0,0,0,0.6);">
+                    <div class="shop-currency" id="messiah-essence-display">✨ 0</div>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('app-container').appendChild(overlay);
+
+        document.getElementById('messiah-close').onclick = () => this.hideMessiahManagement();
+        overlay.onclick = (e) => { if (e.target === overlay) this.hideMessiahManagement(); };
+
+        this.refreshMessiahManagement();
+    }
+
+    async refreshMessiahManagement() {
+        if (!this.messiahOverlay) return;
+
+        const game = this.scene.game || (this.scene.scene && this.scene.scene.game);
+        const mm = game?.messiahManager;
+        if (!mm) return;
+
+        // Stats Display
+        const statsList = document.getElementById('messiah-stats-list');
+        const stats = mm.getStats();
+        statsList.innerHTML = `
+            <div style="display:flex; justify-content:space-between; color:#fbbf24;"><span>LEVEL</span><span>${stats.level}</span></div>
+            <div style="display:flex; justify-content:space-between;"><span>ATK</span><span>${stats.atk}</span></div>
+            <div style="display:flex; justify-content:space-between;"><span>M.ATK</span><span>${stats.mAtk}</span></div>
+            <div style="display:flex; justify-content:space-between;"><span>DEF</span><span>${stats.def}</span></div>
+            <div style="display:flex; justify-content:space-between;"><span>CAST SPD</span><span>${stats.castSpd}</span></div>
+            <div style="display:flex; justify-content:space-between;"><span>ACC</span><span>${stats.acc}</span></div>
+            <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:5px;"><span>CRIT</span><span>${stats.crit}%</span></div>
+            <div style="margin-top:10px; font-size:11px; color:#94a3b8; line-height:1.4;">신성한 권능은 메시아의 스탯에 비례하여 위력이 강화됩니다.</div>
+        `;
+
+        // Essence Display (using emoji_essence - Divine Essence)
+        const essence = await DBManager.getInventoryItem('emoji_essence');
+        const essenceDisplay = document.getElementById('messiah-essence-display');
+        if (essenceDisplay) essenceDisplay.innerText = `✨ ${essence ? essence.amount : 0}`;
+
+        // Powers List
+        const powersList = document.getElementById('messiah-powers-list');
+        let powersHtml = '';
+        Object.values(mm.powers).forEach(power => {
+            const isActive = mm.activePowerId === power.id;
+            const upgradeCost = 5 + (power.level - 1) * 3;
+
+            powersHtml += `
+                <div class="messiah-power-card ${isActive ? 'active' : ''}" style="background: ${isActive ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.3)'}; border: 1px solid ${isActive ? '#fff' : 'rgba(255,255,255,0.1)'}; border-radius: 8px; padding: 12px; display: flex; align-items: center; justify-content: space-between; gap: 15px;">
+                    <div style="font-size: 24px;">${power.emoji}</div>
+                    <div style="flex: 1;">
+                        <div style="font-weight: bold; font-size: 13px;">${power.name}</div>
+                        <div style="font-size: 11px; color: #94a3b8;">Lv.${power.level} | Max Stacks: ${10 + (power.level - 1) * 2}</div>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 5px;">
+                        <button class="messiah-select-btn" data-id="${power.id}" style="padding: 4px 8px; font-size: 10px; background: ${isActive ? '#fbbf24' : '#475569'}; border: none; color: #000; border-radius: 4px; cursor: pointer;">
+                            ${isActive ? '사용 중' : '선택'}
+                        </button>
+                        <button class="messiah-upgrade-btn" data-id="${power.id}" style="padding: 4px 8px; font-size: 10px; background: #10b981; border: none; color: #fff; border-radius: 4px; cursor: pointer;">
+                            강화 (✨${upgradeCost})
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+        powersList.innerHTML = powersHtml;
+
+        // Button Events
+        powersList.querySelectorAll('.messiah-select-btn').forEach(btn => {
+            btn.onclick = () => {
+                mm.setActivePower(btn.dataset.id);
+                this.refreshMessiahManagement();
+                this.showToast(`${mm.powers[btn.dataset.id].name} 선택됨!`);
+                this._updateMessiahFormationSlot(); // Update formation slot if open
+            };
+        });
+
+        powersList.querySelectorAll('.messiah-upgrade-btn').forEach(btn => {
+            btn.onclick = async () => {
+                const powerId = btn.dataset.id;
+                const power = mm.powers[powerId];
+                const cost = 5 + (power.level - 1) * 3;
+
+                const essenceItem = await DBManager.getInventoryItem('emoji_essence');
+                if (!essenceItem || essenceItem.amount < cost) {
+                    this.showToast('전능의 정수가 부족합니다! ✨');
+                    return;
+                }
+
+                await DBManager.saveInventoryItem('emoji_essence', essenceItem.amount - cost);
+                await mm.upgradePower(powerId);
+                this.showToast(`${power.name} 강화 완료! ✨`);
+                this.refreshMessiahManagement();
+                this._updateMessiahFormationSlot(); // Update formation slot if open
+            };
+        });
+    }
+
+    hideMessiahManagement() {
+        if (!this.messiahOverlay) return;
+        this.messiahOverlay.classList.add('fade-out');
+        setTimeout(() => {
+            if (this.messiahOverlay) {
+                this.messiahOverlay.remove();
+                this.messiahOverlay = null;
+            }
+        }, 300);
+    }
+
     _updateNPCFormationSlot() {
         const npcSlotEl = document.getElementById('formation-npc-slot');
         if (!npcSlotEl) return;
@@ -1161,15 +1309,19 @@ export default class UIManager {
                 <div class="party-slot" data-slot="5">6</div>
             </div>
 
-            <div class="pet-slots-container" style="display: flex; justify-content: center; gap: 20px; margin-bottom: 30px; border: 1px solid var(--retro-border); padding: 10px; background: rgba(0,0,0,0.3); width: 80%; max-width: 450px; position:relative;">
+            <div class="pet-slots-container" style="display: flex; justify-content: center; gap: 15px; margin-bottom: 30px; border: 1px solid var(--retro-border); padding: 10px; background: rgba(0,0,0,0.3); width: 95%; max-width: 500px; position:relative;">
                 <div style="position:absolute; top:-10px; left:10px; background:var(--retro-bg); padding:0 5px; font-family:var(--font-pixel); font-size:8px; color:var(--retro-amber);">SUPPORT SLOTS</div>
                 <div style="display: flex; flex-direction: column; align-items: center; gap: 5px;">
                     <div style="font-family: var(--font-pixel); font-size: 7px; color: var(--retro-cyan);">PET</div>
-                    <div class="party-slot pet-slot" data-type="pet" style="width: 70px; height: 70px; border-style: solid; border-color: var(--retro-cyan);">P</div>
+                    <div class="party-slot pet-slot" data-type="pet" style="width: 60px; height: 60px; border-style: solid; border-color: var(--retro-cyan);">P</div>
                 </div>
                 <div style="display: flex; flex-direction: column; align-items: center; gap: 5px;">
                     <div style="font-family: var(--font-pixel); font-size: 7px; color: #fbbf24;">NPC</div>
-                    <div class="party-slot npc-slot" id="formation-npc-slot" style="width: 70px; height: 70px; border-style: solid; border-color: #fbbf24;">N</div>
+                    <div class="party-slot npc-slot" id="formation-npc-slot" style="width: 60px; height: 60px; border-style: solid; border-color: #fbbf24;">N</div>
+                </div>
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 5px;">
+                    <div style="font-family: var(--font-pixel); font-size: 7px; color: #fff;">MESSIAH</div>
+                    <div class="party-slot messiah-slot" id="formation-messiah-slot" style="width: 60px; height: 60px; border-style: solid; border-color: #fff;">M</div>
                 </div>
             </div>
 
@@ -1252,6 +1404,7 @@ export default class UIManager {
         currentSlots.forEach((_, i) => updateSlotUI(i));
         updatePetSlotUI();
         this._updateNPCFormationSlot();
+        this._updateMessiahFormationSlot();
         updateUI(); // Bind candidate events
 
         // Drag & Drop for Mercenary Slots
@@ -1324,6 +1477,29 @@ export default class UIManager {
             overlay.remove();
             this.partyFormationOverlay = null;
         };
+    }
+
+    _updateMessiahFormationSlot() {
+        const slotEl = document.getElementById('formation-messiah-slot');
+        const game = this.scene.game || (this.scene.scene && this.scene.scene.game);
+        const mm = game?.messiahManager;
+        if (!slotEl || !mm) return;
+
+        const power = mm.getActivePower();
+        const maxStacks = 10 + (power.level - 1) * 2;
+
+        slotEl.style.position = 'relative';
+        slotEl.style.display = 'flex';
+        slotEl.style.flexDirection = 'column';
+        slotEl.style.alignItems = 'center';
+        slotEl.style.justifyContent = 'center';
+
+        slotEl.innerHTML = `
+            <div style="position:absolute; top:2px; left:4px; font-size:8px; font-weight:bold; color:#fff; text-shadow:0 1px 2px #000; z-index:10; background:rgba(0,0,0,0.5); padding:0 2px; border-radius:2px;">Lv.${power.level}</div>
+            <div style="font-size: 28px;">${power.emoji}</div>
+            <div style="position:absolute; bottom:2px; right:4px; font-size:8px; font-weight:bold; color:#fff; text-shadow:0 1px 2px #000; z-index:10;">${maxStacks}회</div>
+        `;
+        slotEl.classList.add('filled');
     }
 
     hidePopup() {
@@ -1399,6 +1575,40 @@ export default class UIManager {
         } else {
             this.npcHud.style.opacity = '0';
             this.npcHud.style.pointerEvents = 'none';
+        }
+    }
+
+    updateMessiahHUD() {
+        if (!this.messiahHud || !this.messiahHudIcon || !this.messiahHudStacks || !this.messiahCooldownFill) return;
+
+        // Only show in DungeonScene
+        const sceneKey = this.scene?.scene?.key || this.scene?.sys?.settings?.key;
+        if (sceneKey !== 'DungeonScene') {
+            this.messiahHud.style.opacity = '0';
+            this.messiahHud.style.pointerEvents = 'none';
+            return;
+        }
+
+        const game = this.scene.game || (this.scene.scene && this.scene.scene.game);
+        const mm = game?.messiahManager;
+        if (!mm) return;
+
+        const power = mm.getActivePower();
+        if (!power) return;
+
+        this.messiahHud.style.opacity = '1';
+        this.messiahHud.style.pointerEvents = 'auto';
+
+        this.messiahHudIcon.innerText = power.emoji;
+        this.messiahHudStacks.innerText = `${mm.stacks}/${mm.maxStacks}`;
+
+        // Calculate Cooldown Fill Percentage
+        if (mm.stacks >= mm.maxStacks) {
+            this.messiahCooldownFill.style.width = '100%';
+        } else {
+            const actualCooldown = mm.baseCooldown * (1000 / mm.stats.castSpd);
+            const percentage = Math.min(100, Math.max(0, (mm.cooldownTimer / actualCooldown) * 100));
+            this.messiahCooldownFill.style.width = `${percentage}%`;
         }
     }
 
