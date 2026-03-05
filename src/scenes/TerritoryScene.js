@@ -279,6 +279,8 @@ export default class TerritoryScene extends Phaser.Scene {
             <div id="territory-patch-body">
                 <div class="patch-entry">
                     <div class="patch-date">▶ 2026-03-05</div>
+                    <div class="patch-item"><span class="patch-item-icon">🤝</span>[고용 NPC] 시스템 도입 : 선교사(부활), 수녀(라운드 재시작)를 고용하여 자동 사냥을 강화하세요!</div>
+                    <div class="patch-item"><span class="patch-item-icon">💎</span>[루트 강화] 몬스터 등급 및 스테이지별 보상 스케일링 : 이제 고레벨 던전과 정예 몬스터가 훨씬 많은 골드와 재료를 드랍합니다.</div>
                     <div class="patch-item"><span class="patch-item-icon">🐾</span>펫 전투 시스템 도입 : 이제 자원을 루팅할 뿐만 아니라 함께 전투에 참여합니다.</div>
                     <div class="patch-item"><span class="patch-item-icon">🎰</span>펫 뽑기 시스템 도입 : 새로운 펫 영입을 위한 소환 기능이 추가되었습니다.</div>
                     <div class="patch-item"><span class="patch-item-icon">📦</span>펫 보관함 UI 구현 : 영입한 펫을 관리하고 상세 정보를 확인할 수 있는 보관함이 추가되었습니다.</div>
@@ -289,11 +291,8 @@ export default class TerritoryScene extends Phaser.Scene {
                 </div>
                 <div class="patch-entry">
                     <div class="patch-date">▶ 2026-03-04</div>
-                    <div class="patch-item"><span class="patch-item-icon">🤝</span>[고용 NPC] 시스템 도입 : 선교사(부활), 수녀(라운드 재시작)를 고용하여 자동 사냥을 강화하세요!</div>
-                    <div class="patch-item"><span class="patch-item-icon">🐾</span>펫 전투 시스템 도입 : 이제 펫도 전투에 참여하며 고유 패시브를 제공합니다.</div>
-                    <div class="patch-item"><span class="patch-item-icon">🎰</span>펫 뽑기 시스템 도입 : 레드 벨벳 테마의 뽑기에서 강력한 펫을 획득하세요.</div>
-                    <div class="patch-item"><span class="patch-item-icon">📦</span>펫 보관함 UI 구현 : 획득한 펫의 상세 능력 확인 및 레벨업이 가능합니다.</div>
                     <div class="patch-item"><span class="patch-item-icon">🎨</span>레드 벨벳 UI 리뉴얼 : 메인 HUD 및 가챠 씬에 고급스러운 벨벳 테마가 적용되었습니다.</div>
+                    <div class="patch-item"><span class="patch-item-icon">⚙️</span>시스템 안정성 개선 : 메모리 누수 및 비정상 종료 버그들을 수정하였습니다.</div>
                 </div>
             </div>
         `;
