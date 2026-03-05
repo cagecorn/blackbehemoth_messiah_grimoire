@@ -211,6 +211,8 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
         if (this.shadow) {
             const shadowScale = (this.config && this.config.scale) ? this.config.scale : 1;
             this.shadow.setScale(shadowScale);
+            this.shadow.setVisible(true);
+            this.shadow.setAlpha(0.4); // Standard shadow alpha
         }
 
         this.setScale(1);

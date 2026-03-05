@@ -27,6 +27,7 @@ import EventBus from '../modules/Events/EventBus.js';
 import StageManager from '../modules/Environment/StageManager.js';
 import AmbientMoteManager from '../modules/Environment/AmbientMoteManager.js';
 import DynamicCameraManager from '../modules/Core/DynamicCameraManager.js';
+import PetManager from '../modules/Player/PetManager.js';
 
 export default class RaidScene extends Phaser.Scene {
     constructor() {
@@ -41,12 +42,31 @@ export default class RaidScene extends Phaser.Scene {
         // Reset state on every entry
         this.raidCount = 1;
         this.isRespawning = false;
-        this.isStarting = false;
+        this.isStarting = true;
         this.isUltimateActive = false;
 
         // Global Heal on Scene Entry
         const pm = this.game.partyManager;
         if (pm) pm.healAll();
+    }
+
+    initPet() {
+        try {
+            const partyManager = this.game?.partyManager;
+            const activePetId = partyManager ? partyManager.getActivePet() : 'dog_pet';
+
+            // Spawn near the leader (first mercenary)
+            const leader = this.mercenaries.getChildren()[0];
+            const spawnX = leader ? leader.x : 400;
+            const spawnY = leader ? leader.y : 600;
+
+            const pet = this.petManager.spawnPet(activePetId, spawnX, spawnY);
+            if (pet) {
+                pet.leader = leader;
+            }
+        } catch (e) {
+            console.error('[RaidScene] Failed to initialize pet:', e);
+        }
     }
 
     create() {
@@ -83,6 +103,7 @@ export default class RaidScene extends Phaser.Scene {
         this.ccManager = new CCManager(this);
         this.shieldManager = new ShieldManager(this);
         this.barkManager = new BarkManager(this);
+        this.petManager = new PetManager(this);
 
         // ⚔️ Premium Skill FX Layer (with Global Bloom)
         this.skillFxLayer = this.add.container(0, 0);
@@ -100,10 +121,9 @@ export default class RaidScene extends Phaser.Scene {
 
 
         // Spawn Players
-        this.spawnPlayers();
-
-        // Spawn Boss
+        this.spawnPlayers(); // Handles its own camera follow init
         this.spawnBoss();
+        this.initPet();
 
         // ESC to return
         this.input.keyboard.on('keydown-ESC', () => {
@@ -244,6 +264,7 @@ export default class RaidScene extends Phaser.Scene {
 
         if (this.buffManager) this.buffManager.update(time, delta);
         if (this.ccManager) this.ccManager.update(time, delta);
+        if (this.petManager) this.petManager.update(time, delta);
         if (this.shieldManager) this.shieldManager.update(time, delta);
         if (this.barkManager) this.barkManager.update(time, delta);
 

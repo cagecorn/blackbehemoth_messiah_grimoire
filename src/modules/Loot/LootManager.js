@@ -67,7 +67,7 @@ export default class LootManager {
             }
 
             // --- RAID BOSS SPECIAL DROP: Divine Essence ---
-            if (monsterId === 'boss_goblin' && i === 0) {
+            if (monsterId.toLowerCase() === 'boss_goblin' && i === 0) {
                 randomDrop = 'emoji_divine_essence';
             }
             // ----------------------------------------------

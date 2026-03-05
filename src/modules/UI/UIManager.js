@@ -508,11 +508,17 @@ export default class UIManager {
 
         // Listen for scene changes to show/hide NPC HUD
         EventBus.on(EventBus.EVENTS.SCENE_CHANGED, (sceneKey) => {
+            const isCombat = (sceneKey === 'DungeonScene' || sceneKey === 'RaidScene' || sceneKey === 'ArenaScene');
+            const isArena = (sceneKey === 'ArenaScene');
+
             if (this.npcHud) {
-                // Ensure it shows in combat scenes
-                const isCombat = (sceneKey === 'DungeonScene' || sceneKey === 'RaidScene' || sceneKey === 'ArenaScene');
                 this.npcHud.style.display = isCombat ? 'block' : 'none';
                 if (isCombat) this.updateNPCHUD();
+            }
+
+            // Hide Messiah HUD in Arena
+            if (this.messiahHud) {
+                this.messiahHud.style.display = (isCombat && !isArena) ? 'block' : 'none';
             }
         });
 
@@ -533,22 +539,22 @@ export default class UIManager {
 
     updateNPCHUD() {
         if (!this.npcHud || !this.npcHudIcon || !this.npcHudStacks) {
-            console.warn('[UIManager] NPC HUD elements not found in DOM.');
             return;
         }
 
         const hiredNPC = npcManager.getHiredNPC();
-        console.log(`[UIManager] updateNPCHUD attempt. hiredNPC:`, hiredNPC);
-
         if (hiredNPC) {
-            this.npcHud.style.display = 'block';
+            this.npcHudIcon.style.display = 'block';
             this.npcHudIcon.src = hiredNPC.icon;
             this.npcHudStacks.innerText = hiredNPC.currentStacks;
+            this.npcHudStacks.style.fontSize = '12px';
             this.npcHud.dataset.tooltip = `${hiredNPC.name} (${hiredNPC.currentStacks} 스택)\n${hiredNPC.description}`;
-            console.log(`[UIManager] NPC HUD Updated: ${hiredNPC.name}, Stacks: ${hiredNPC.currentStacks}`);
         } else {
-            this.npcHud.style.display = 'none';
-            console.log('[UIManager] NPC HUD Hidden (No hired NPC).');
+            // Show NONE for empty state
+            this.npcHudIcon.style.display = 'none';
+            this.npcHudStacks.innerText = 'NONE';
+            this.npcHudStacks.style.fontSize = '8px'; // Smaller for NONE text
+            this.npcHud.dataset.tooltip = '고용된 NPC가 없습니다.';
         }
     }
 

@@ -1067,6 +1067,9 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         const isMainPartyPlayer = this.team === 'player' && !this.hideInUI && !this.isSummoned;
 
         if (isMainPartyPlayer && npcManager && npcManager.getActiveNPC() && npcManager.getActiveNPC().id === 'MISSIONARY') {
+            // NPC Abilities NOT available in Arena (정정당당 컨셉)
+            if (this.scene?.scene?.key === 'ArenaScene') return;
+
             const missionary = npcManager.getActiveNPC();
             const stacks = missionary.stacks || 0;
 

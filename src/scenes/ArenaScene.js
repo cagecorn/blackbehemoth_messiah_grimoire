@@ -375,33 +375,40 @@ export default class ArenaScene extends Phaser.Scene {
     }
 
     updateCameraFollow() {
-        if (!this.mercenaries || !this.cameraTarget) return;
+        if (!this.mercenaries || !this.enemies || !this.cameraTarget || !this.dynamicCamera) return;
 
-        let totalX = 0;
-        let totalY = 0;
+        let minX = Infinity, maxX = -Infinity;
+        let minY = Infinity, maxY = -Infinity;
         let count = 0;
 
-        this.mercenaries.getChildren().forEach(merc => {
-            if (merc.active && merc.hp > 0) {
-                totalX += merc.x;
-                totalY += merc.y;
-                count++;
-            }
-        });
+        const allUnits = [...this.mercenaries.getChildren(), ...this.enemies.getChildren()];
 
-        // Add enemies to the focus calculation
-        this.enemies.getChildren().forEach(enemy => {
-            if (enemy.active && enemy.hp > 0) {
-                totalX += enemy.x;
-                totalY += enemy.y;
+        allUnits.forEach(u => {
+            if (u.active && u.hp > 0) {
+                minX = Math.min(minX, u.x);
+                maxX = Math.max(maxX, u.x);
+                minY = Math.min(minY, u.y);
+                maxY = Math.max(maxY, u.y);
                 count++;
             }
         });
 
         if (count > 0) {
-            const avgX = totalX / count;
-            const avgY = totalY / count;
-            this.cameraTarget.setPosition(avgX, avgY);
+            const centerX = (minX + maxX) / 2;
+            const centerY = (minY + maxY) / 2;
+            this.cameraTarget.setPosition(centerX, centerY);
+
+            // Dynamic Zoom calculation to fit all 12 units
+            const width = maxX - minX + 200; // Add padding
+            const height = maxY - minY + 200;
+            const zoomX = this.cameras.main.width / width;
+            const zoomY = this.cameras.main.height / height;
+
+            // Aim for a zoom that fits the bounding box, but clamp it between reasonable values
+            let targetZoom = Math.min(zoomX, zoomY);
+            targetZoom = Phaser.Math.Clamp(targetZoom, 0.5, 1.2);
+
+            this.dynamicCamera.targetZoom = targetZoom;
         }
     }
 
@@ -604,28 +611,7 @@ export default class ArenaScene extends Phaser.Scene {
     }
 
     executeAutoMessiahTouch() {
-        const mm = this.game.messiahManager;
-        if (!mm || mm.stacks <= 0 || !mm.isAutoMode) return;
-        const power = mm.getActivePower();
-        if (!power) return;
-
-        if (this.time.now - (this.lastAutoMessiahCast || 0) < 1000) return;
-
-        let potentialTargets = [];
-        if (power.type === 'OFFENSE') {
-            potentialTargets = this.enemies.getChildren().filter(e => e.active && e.hp > 0);
-        } else {
-            potentialTargets = this.mercenaries.getChildren().filter(m => m.active && m.hp > 0);
-            if (power.id === 'ENCOURAGEMENT') {
-                potentialTargets = potentialTargets.filter(m => !m.messiahEncouragementAmount);
-            }
-        }
-
-        if (potentialTargets.length === 0) return;
-        const target = Phaser.Utils.Array.GetRandom(potentialTargets);
-        if (target) {
-            this.handleMessiahTouch({ worldX: target.x, worldY: target.y });
-            this.lastAutoMessiahCast = this.time.now;
-        }
+        // Disabled in Arena for 정정당당한 대결 컨셉
+        return;
     }
 }
