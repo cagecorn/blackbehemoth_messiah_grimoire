@@ -270,7 +270,8 @@ export default class UIManager {
         // Listen for scene changes to show/hide NPC HUD
         EventBus.on(EventBus.EVENTS.SCENE_CHANGED, (sceneKey) => {
             if (this.npcHud) {
-                const isCombat = (sceneKey === 'DungeonScene' || sceneKey === 'RaidScene');
+                // Ensure it shows in combat scenes
+                const isCombat = (sceneKey === 'DungeonScene' || sceneKey === 'RaidScene' || sceneKey === 'ArenaScene');
                 this.npcHud.style.display = isCombat ? 'block' : 'none';
                 if (isCombat) this.updateNPCHUD();
             }
@@ -278,16 +279,23 @@ export default class UIManager {
     }
 
     updateNPCHUD() {
-        if (!this.npcHud || !this.npcHudIcon || !this.npcHudStacks) return;
+        if (!this.npcHud || !this.npcHudIcon || !this.npcHudStacks) {
+            console.warn('[UIManager] NPC HUD elements not found in DOM.');
+            return;
+        }
 
         const hiredNPC = npcManager.getHiredNPC();
+        console.log(`[UIManager] updateNPCHUD attempt. hiredNPC:`, hiredNPC);
+
         if (hiredNPC) {
             this.npcHud.style.display = 'block';
             this.npcHudIcon.src = hiredNPC.icon;
             this.npcHudStacks.innerText = hiredNPC.currentStacks;
             this.npcHud.dataset.tooltip = `${hiredNPC.name} (${hiredNPC.currentStacks} 스택)\n${hiredNPC.description}`;
+            console.log(`[UIManager] NPC HUD Updated: ${hiredNPC.name}, Stacks: ${hiredNPC.currentStacks}`);
         } else {
             this.npcHud.style.display = 'none';
+            console.log('[UIManager] NPC HUD Hidden (No hired NPC).');
         }
     }
 
@@ -948,6 +956,9 @@ export default class UIManager {
 
         // Sync nav bar
         if (this.updateActiveNav) setTimeout(() => this.updateActiveNav(), 100);
+
+        // Emit event for UI systems to react to scene changes
+        EventBus.emit(EventBus.EVENTS.SCENE_CHANGED, sceneKey);
     }
 
     async updateDungeonTickets() {

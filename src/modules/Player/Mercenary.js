@@ -26,6 +26,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         this.characterId = config.id; // e.g., 'aren' or 'silvi'
         this.unitName = config.name;
         this.hideInUI = config.hideInUI || false;
+        this.isSummoned = config.isSummoned || false;
 
         // Team selection ('player' or 'enemy')
         this.team = config.team || 'player';
@@ -516,6 +517,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
      */
     spawnSummon(SummonClass, x, y, options = {}) {
         const summon = new SummonClass(this.scene, x, y, this, options);
+        summon.isSummoned = true;
         const group = this.allyGroup;
         if (group) {
             group.add(summon);
@@ -1045,36 +1047,42 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         if (!this.active) return;
 
         // --- Missionary NPC Ability (Auto-Revive) ---
-        // Access via this.scene.game.npcManager
         const npcManager = this.scene?.game?.npcManager;
-        const activeNPC = npcManager?.getActiveNPC();
-        if (activeNPC && activeNPC.id === 'MISSIONARY' && activeNPC.stacks > 0) {
-            console.log(`%c[NPC] Missionary Intervention for ${this.unitName}! Stacks: ${activeNPC.stacks} -> ${activeNPC.stacks - 1}`, 'color: #ffd700; font-weight: bold;');
+        const isMainPartyPlayer = this.team === 'player' && !this.hideInUI && !this.isSummoned;
 
-            // Healer Full Revive
-            this.hp = this.maxHp;
-            this.active = true;
-            this.updateHealthBar();
+        if (isMainPartyPlayer && npcManager && npcManager.getActiveNPC() && npcManager.getActiveNPC().id === 'MISSIONARY') {
+            const missionary = npcManager.getActiveNPC();
+            const stacks = missionary.stacks || 0;
 
-            // Visual feedback
-            if (this.scene.fxManager) {
-                this.scene.fxManager.spawnHolyAura(this.x, this.y);
-                this.scene.fxManager.showHealText(this, 'REVIVED!', '#ffffff');
+            if (stacks > 0) {
+                console.log(`%c[NPC] Missionary Intervention for ${this.unitName}! Stacks: ${stacks} -> ${stacks - 1}`, "color: #ff9d00; font-weight: bold;");
+
+                // Healer Full Revive
+                this.hp = this.maxHp;
+                this.active = true;
+
+                // Visual feedback
+                if (this.scene.fxManager) {
+                    this.scene.fxManager.spawnHolyAura(this.x, this.y);
+                    this.scene.fxManager.showDamageText(this, 'REVIVED!', '#ffffff');
+                }
+
+                // Shake effect
+                if (this.scene.cameras.main) {
+                    this.scene.cameras.main.flash(500, 255, 215, 0, 0.3);
+                }
+
+                // Consume stack and sync UI
+                npcManager.consumeStack().then(() => {
+                    console.log(`[NPC] Missionary Stack Consumed. Remaining for ${this.unitName}: ${missionary.stacks}`);
+                });
+
+                // Emit sound
+                soundEffects.playUltimateSound();
+
+                this.updateHealthBar();
+                return; // Exit die(), mercenary survives!
             }
-
-            // Shake effect
-            if (this.scene.cameras.main) {
-                this.scene.cameras.main.flash(500, 255, 215, 0, 0.3);
-            }
-
-            npcManager.consumeStack();
-
-            // Emit sound
-            import('../Core/SoundEffects.js').then(module => {
-                module.default.playUltimateSound();
-            });
-
-            return; // Exit die(), mercenary survives!
         }
 
         // Clean up all CC visuals and timers immediately

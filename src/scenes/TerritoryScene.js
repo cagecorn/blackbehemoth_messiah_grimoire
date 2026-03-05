@@ -155,15 +155,99 @@ export default class TerritoryScene extends Phaser.Scene {
 
     _buildBannerHTML(banner, index) {
         const delay = index * 80;
+
+        // Configuration for "Constellation"
+        const mainStarCount = 4 + Math.floor(Math.random() * 2); // 4-5 connected stars
+        const decorStarCount = 10 + Math.floor(Math.random() * 5); // extra floating stars
+
+        let starsHTML = '';
+        let linesHTML = '';
+        const points = [];
+
+        // 1. Generate Main Stars (the ones to be connected)
+        for (let i = 0; i < mainStarCount; i++) {
+            // Keep main points somewhat grouped but spread
+            const x = 10 + Math.random() * 80;
+            const y = 20 + Math.random() * 60;
+            points.push({ x, y });
+
+            const twinkleDelay = Math.random() * 4;
+            const twinkleDuration = 3 + Math.random() * 2;
+
+            starsHTML += `
+                <div class="star size-3" style="
+                    left: ${x}%;
+                    top: ${y}%;
+                    animation-delay: ${twinkleDelay}s;
+                    animation-duration: ${twinkleDuration}s;
+                "></div>
+            `;
+        }
+
+        // 2. Draw lines between points in sequence
+        for (let i = 0; i < points.length - 1; i++) {
+            const p1 = points[i];
+            const p2 = points[i + 1];
+
+            // Calculate distance and angle for CSS transform
+            // Since we are using %, we assume a reference dimension for the math
+            // Banner is ~480px wide (max) and 110px high. 
+            // We'll use these as rough ratios for angle calculation.
+            const dx = (p2.x - p1.x) * 4.8; // Normalized px
+            const dy = (p2.y - p1.y) * 1.1;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+            const lineDelay = Math.random() * 2;
+
+            linesHTML += `
+                <div class="constellation-line" style="
+                    left: ${p1.x}%;
+                    top: ${p1.y}%;
+                    width: ${distance}px;
+                    transform: rotate(${angle}deg);
+                    animation-delay: ${lineDelay}s;
+                "></div>
+            `;
+        }
+
+        // 3. Optional: Add a few decorative floating stars
+        for (let i = 0; i < decorStarCount; i++) {
+            const x = Math.random() * 100;
+            const y = Math.random() * 100;
+            const size = 1 + Math.floor(Math.random() * 2);
+            const twinkleDelay = Math.random() * 5;
+
+            starsHTML += `
+                <div class="star size-${size}" style="
+                    left: ${x}%;
+                    top: ${y}%;
+                    animation-delay: ${twinkleDelay}s;
+                "></div>
+            `;
+        }
+
+        // 4. Nebula Tinting (derive from accent)
+        // Simple hex-to-rgba-like tint (alpha 0.15)
+        const nebulaTint1 = `${banner.accentColor}25`; // ~15% alpha hex
+        const nebulaTint2 = `${banner.accentColor}15`; // ~8% alpha hex
+
         return `
             <div
                 id="banner-${banner.id}"
                 class="territory-banner retro-scanline-overlay"
                 style="
                     --accent: ${banner.accentColor};
+                    --nebula-color-1: ${nebulaTint1};
+                    --nebula-color-2: ${nebulaTint2};
                     animation-delay: ${delay}ms;
                 ">
+                <!-- Cosmic Ocean Background -->
+                <div class="territory-banner-nebula"></div>
                 <div class="territory-banner-img-wrap">
+                    <div class="territory-banner-stars">
+                        ${linesHTML}
+                        ${starsHTML}
+                    </div>
                     <img
                         src="${banner.cutscene}"
                         alt="${banner.label}"

@@ -28,7 +28,8 @@ class EventBus extends Phaser.Events.EventEmitter {
             MERCENARY_RESURRECT: 'MERCENARY_RESURRECT',
             BATTERY_SAVER_TOGGLED: 'BATTERY_SAVER_TOGGLED',
             COMBAT_DATA_RECORD: 'COMBAT_DATA_RECORD', // { type: 'damage'|'received'|'heal', amount, unitId }
-            COMBAT_TRACKER_UPDATE: 'COMBAT_TRACKER_UPDATE' // { unitId: { dps, hps, tps, dpsRank, ... } }
+            COMBAT_TRACKER_UPDATE: 'COMBAT_TRACKER_UPDATE', // { unitId: { dps, hps, tps, dpsRank, ... } }
+            SCENE_CHANGED: 'SCENE_CHANGED'
         };
     }
 }

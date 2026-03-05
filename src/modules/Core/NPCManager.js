@@ -13,6 +13,7 @@ class NPCManager {
                 id: 'MISSIONARY',
                 name: '선교사',
                 sprite: 'missionary_npc',
+                icon: 'assets/characters/npc/missionary_npc.png',
                 cost: 10000,
                 maxStacks: 50,
                 description: '던전/레이드에서 용병 사망 시, 자동으로 풀 체력으로 부활 (50회)'
@@ -21,6 +22,7 @@ class NPCManager {
                 id: 'NUN',
                 name: '수녀',
                 sprite: 'nun_npc',
+                icon: 'assets/characters/npc/nun_npc.png',
                 cost: 50000,
                 maxStacks: 50,
                 description: '던전/레이드에서 패배 시, 1라운드가 아닌 현재 라운드에서 재시작 (50회)'
@@ -68,6 +70,19 @@ class NPCManager {
 
     getActiveNPC() {
         return this.hiredNPC;
+    }
+
+    /**
+     * returns fuller object with icon and name for UI
+     */
+    getHiredNPC() {
+        if (!this.hiredNPC) return null;
+        const data = this.NPC_DATA[this.hiredNPC.id];
+        return {
+            ...this.hiredNPC,
+            ...data,
+            currentStacks: this.hiredNPC.stacks // alias for UI consistency
+        };
     }
 
     async consumeStack() {

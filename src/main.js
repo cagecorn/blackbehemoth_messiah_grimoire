@@ -88,6 +88,17 @@ const logManagerInstance = logManager; // renamed to instance to avoid confusion
         EventBus.emit(EventBus.EVENTS.INVENTORY_UPDATED, { id: 'emoji_gem', amount: newAmount });
         console.log(`%c[Cheat] Added ${amount} diamonds. Total: ${newAmount}`, "color: #00ffcc; font-weight: bold;");
     };
+
+    window.addGold = async (amount = 999999) => {
+        const existing = await DBManager.getInventoryItem('emoji_coin');
+        const currentAmount = existing ? existing.amount : 0;
+        const newAmount = currentAmount + amount;
+        await DBManager.saveInventoryItem('emoji_coin', newAmount);
+
+        // Notify systems to refresh UI
+        EventBus.emit(EventBus.EVENTS.INVENTORY_UPDATED, { id: 'emoji_coin', amount: newAmount });
+        console.log(`%c[Cheat] Added ${amount} gold. Total: ${newAmount}`, "color: #ffd700; font-weight: bold;");
+    };
 })();
 
 
