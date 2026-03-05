@@ -1704,6 +1704,13 @@ export default class UIManager {
 
         // Dirty Flag Check
         if (this.lastRoundText !== text) {
+            // Set type attribute for specific styling (e.g., RAID scaling)
+            if (text.startsWith('RAID:')) {
+                this.roundDisplay.dataset.type = 'raid';
+            } else {
+                this.roundDisplay.dataset.type = '';
+            }
+
             this.roundText.innerText = text;
             this.lastRoundText = text;
 
