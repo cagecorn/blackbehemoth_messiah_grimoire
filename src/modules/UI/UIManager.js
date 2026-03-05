@@ -1584,6 +1584,7 @@ export default class UIManager {
         // Only show in DungeonScene
         const sceneKey = this.scene?.scene?.key || this.scene?.sys?.settings?.key;
         if (sceneKey !== 'DungeonScene') {
+            this.messiahHud.style.display = 'none';
             this.messiahHud.style.opacity = '0';
             this.messiahHud.style.pointerEvents = 'none';
             return;
@@ -1594,8 +1595,14 @@ export default class UIManager {
         if (!mm) return;
 
         const power = mm.getActivePower();
-        if (!power) return;
+        if (!power) {
+            this.messiahHud.style.display = 'none';
+            this.messiahHud.style.opacity = '0';
+            this.messiahHud.style.pointerEvents = 'none';
+            return;
+        }
 
+        this.messiahHud.style.display = 'block';
         this.messiahHud.style.opacity = '1';
         this.messiahHud.style.pointerEvents = 'auto';
 
@@ -1994,6 +2001,9 @@ export default class UIManager {
             this.portraitsDirty = false;
             this.updatePortraitBar();
         }
+
+        // Messiah Cooldown needs continuous update
+        this.updateMessiahHUD();
 
         // Batch update all channels at once per frame
         for (let i = 0; i < this.channels.length; i++) {

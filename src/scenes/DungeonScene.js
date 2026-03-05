@@ -124,6 +124,9 @@ export default class DungeonScene extends Phaser.Scene {
             // Enable multi-touch for pinch zoom
             this.input.addPointer(1);
 
+            // --- Messiah Touch Interaction ---
+            this.input.on('pointerdown', this.handleMessiahTouch, this);
+
             // Play Random BGM
             const bgms = ['main_battle_bgm_1', 'main_battle_bgm_2', 'main_battle_bgm_3'];
             const randomBgm = Phaser.Utils.Array.GetRandom(bgms);
@@ -575,6 +578,11 @@ export default class DungeonScene extends Phaser.Scene {
         }
         if (this.ambientMoteManager) {
             this.ambientMoteManager.update();
+        }
+
+        // --- 1.5 Global Systems Update ---
+        if (this.game.messiahManager) {
+            this.game.messiahManager.update(time, delta);
         }
 
         // --- 2. Gameplay Guard ---
@@ -1164,6 +1172,137 @@ export default class DungeonScene extends Phaser.Scene {
             return unit;
         }
         return null;
+    }
+
+    handleMessiahTouch(pointer) {
+        if (!this.game.messiahManager) return;
+        const mm = this.game.messiahManager;
+
+        // Ensure click is on the battlefield, not on UI
+        // We'll proceed with consuming stacks if finding a valid target
+        const power = mm.getActivePower();
+        if (!power) return;
+
+        let target = null;
+        let searchRadius = 80;
+
+        if (power.type === 'OFFENSE') {
+            // Find nearest enemy
+            let closestDist = Infinity;
+            this.enemies.getChildren().forEach(enemy => {
+                if (!enemy.active || enemy.hp <= 0) return;
+                const dist = Phaser.Math.Distance.Between(pointer.worldX, pointer.worldY, enemy.x, enemy.y);
+                if (dist < closestDist && dist <= searchRadius) {
+                    closestDist = dist;
+                    target = enemy;
+                }
+            });
+        } else {
+            // Find nearest ally
+            let closestDist = Infinity;
+            this.mercenaries.getChildren().forEach(ally => {
+                if (!ally.active || ally.hp <= 0) return;
+                const dist = Phaser.Math.Distance.Between(pointer.worldX, pointer.worldY, ally.x, ally.y);
+                if (dist < closestDist && dist <= searchRadius) {
+                    closestDist = dist;
+                    target = ally;
+                }
+            });
+        }
+
+        if (target) {
+            if (mm.consumeStack()) { // Consume stack ONLY if target is found
+                // Play visual effect
+                this.showMessiahPowerEffect(target.x, target.y - 20, power, target);
+
+                // Apply combat effect
+                const stats = mm.getStats();
+                if (power.type === 'OFFENSE') {
+                    // Judgment: Deal physical damage
+                    const damage = stats.atk * 1.5;
+                    target.takeDamage(damage, null, false);
+                    console.log(`[Messiah Touch] Judgment! Dealt ${damage.toFixed(1)} DMG to ${target.name}.`);
+                } else if (power.type === 'DEFENSE') {
+                    // Healing: Heal ally
+                    const heal = stats.mAtk * 1.5;
+                    if (target.heal) {
+                        target.heal(heal, null);
+                        console.log(`[Messiah Touch] Healing! Restored ${heal.toFixed(1)} HP to ${target.name}.`);
+                    }
+                } else if (power.type === 'SUPPORT') {
+                    // Encouragement: Temporary ATK buff
+                    const buffAmount = stats.mAtk * 0.5;
+                    target.bonusAtk += buffAmount;
+                    console.log(`[Messiah Touch] Encouragement! ${target.name} ATK +${buffAmount.toFixed(1)} for 3s.`);
+                    this.time.delayedCall(3000, () => {
+                        target.bonusAtk -= buffAmount;
+                    });
+                }
+            } else {
+                if (this.game.uiManager) this.game.uiManager.showToast('권능 스택이 부족합니다!');
+            }
+        }
+    }
+
+    showMessiahPowerEffect(x, y, power, target) {
+        // Create an ethereal emoji
+        const str = this.add.text(x, y - 60, power.emoji, {
+            fontFamily: 'Twemoji, Arial',
+            fontSize: '64px', // Bigger effect
+            color: '#ffffff',
+            stroke: 'rgba(251, 191, 36, 0.8)', // Retro amber glow
+            strokeThickness: 5
+        }).setOrigin(0.5).setDepth(2000);
+
+        str.setShadow(0, 0, 'rgba(255,255,255,0.8)', 20, false, true);
+
+        // "Press down" animation
+        this.tweens.add({
+            targets: str,
+            y: y - 10,
+            scaleX: 0.8,
+            scaleY: 0.8,
+            duration: 150,
+            yoyo: true, // Spring back up
+            hold: 50,
+            ease: 'Power2',
+            onComplete: () => {
+                // Flash on target
+                if (target && target.sprite) {
+                    target.sprite.setTintFill(power.type === 'OFFENSE' ? 0xff0000 : 0xffffe0);
+                    this.time.delayedCall(150, () => {
+                        if (target && target.sprite && target.sprite.active) {
+                            target.sprite.clearTint();
+                        }
+                    });
+                }
+
+                // Burst particles
+                for (let i = 0; i < 12; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const spd = 60 + Math.random() * 80;
+                    const p = this.add.circle(x, y, 4, power.type === 'OFFENSE' ? 0xff4444 : 0xffff00).setDepth(2000);
+                    this.physics.add.existing(p);
+                    p.body.setVelocity(Math.cos(angle) * spd, Math.sin(angle) * spd);
+                    this.tweens.add({
+                        targets: p,
+                        alpha: 0,
+                        duration: 500,
+                        ease: 'Power2',
+                        onComplete: () => p.destroy()
+                    });
+                }
+
+                // Fade away emoji
+                this.tweens.add({
+                    targets: str,
+                    alpha: 0,
+                    y: y - 50,
+                    duration: 350,
+                    onComplete: () => str.destroy()
+                });
+            }
+        });
     }
 
     setupFakeAestheticOverlays() {

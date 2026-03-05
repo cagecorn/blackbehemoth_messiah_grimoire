@@ -4578,9 +4578,10 @@ input:checked+.slider-toggle:before {
 
 #messiah-hud {
     position: absolute;
-    top: 50px;
-    /* Below NPC HUD */
-    right: 170px;
+    top: 60px;
+    /* Below top right toggles */
+    right: 10px;
+    width: 60px;
     z-index: 1000;
     transition: all 0.3s ease;
     background: rgba(0, 0, 0, 0.4);
