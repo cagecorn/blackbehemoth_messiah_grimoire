@@ -4427,8 +4427,8 @@ input:checked+.slider-toggle:before {
 /* NPC HUD (Left-Top Combat Indicator) */
 #npc-hud {
     position: absolute;
-    top: 62px;
-    /* Navigation Bar 바로 아래 밀착 */
+    top: 130px;
+    /* HUD-TOP(약 50px) + HUD-SCENE-NAV(약 50px) + 여백 30px */
     left: 10px;
     padding: 2px 8px;
     pointer-events: none;
@@ -4469,8 +4469,8 @@ input:checked+.slider-toggle:before {
 
 @media screen and (max-width: 768px) {
     #npc-hud {
-        top: 52px;
-        /* 모바일 내비게이션 바 높이에 맞춤 */
+        top: 105px;
+        /* 모바일 내비게이션 바 아래로 충분히 배치 */
         left: 5px;
         padding: 1px 6px;
     }

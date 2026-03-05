@@ -92,12 +92,14 @@ export default class Nickle extends Archer {
 
         // 4. Timer to revert
         this.scene.time.delayedCall(20000, () => {
-            this.revertFromPrime();
+            if (this.active) {
+                this.revertFromPrime();
+            }
         });
     }
 
     revertFromPrime() {
-        if (!this.isPrimeMode) return;
+        if (!this.active || !this.isPrimeMode) return;
         this.isPrimeMode = false;
 
         if (this.primeAfterimageTimer) {
