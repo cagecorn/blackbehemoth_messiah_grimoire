@@ -82,9 +82,9 @@ class PartyManager {
 
     getHighestPetStar(petId) {
         const rosterData = this.playerPetRoster[petId];
-        if (!rosterData) return 1; // Default 1 for dog_pet if missing? or 0
+        if (!rosterData) return 0; // Return 0 if not owned
         const stars = Object.keys(rosterData).map(Number);
-        return stars.length > 0 ? Math.max(...stars) : 1;
+        return stars.length > 0 ? Math.max(...stars) : 0;
     }
 
     async setPartySlot(index, characterId) {

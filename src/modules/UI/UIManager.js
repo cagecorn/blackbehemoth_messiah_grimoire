@@ -1042,9 +1042,11 @@ export default class UIManager {
             } else {
                 // PET View
                 Object.values(PetStats).forEach(pet => {
-                    const isSelected = currentPet === pet.id;
                     const star = partyManager.getHighestPetStar(pet.id);
-                    const starHtml = star > 0 ? `<div style="position:absolute; top:4px; right:4px; font-size:12px; font-weight:bold; color:#fbbf24; text-shadow:0 1px 2px #000;">★${star}</div>` : '';
+                    if (star === 0) return; // Not owned, skip rendering
+
+                    const isSelected = currentPet === pet.id;
+                    const starHtml = `<div style="position:absolute; top:4px; right:4px; font-size:12px; font-weight:bold; color:#fbbf24; text-shadow:0 1px 2px #000;">★${star}</div>`;
 
                     candidatesHtml += `
                         <div class="mercenary-card ${isSelected ? 'selected' : ''}" draggable="true" data-id="${pet.id}" style="position:relative;">
