@@ -103,11 +103,12 @@ export default class DungeonScene extends Phaser.Scene {
         console.log(`[Dungeon] Initializing World Bounds: ${worldWidth}x${worldHeight}`);
 
         try {
-            if (this.dungeonType === 'UNDEAD_GRAVEYARD') {
+            // --- Ticket Check (Only on Round 1 Entry/Loop) ---
+            if (this.dungeonType === 'UNDEAD_GRAVEYARD' && this.currentRound === 1) {
                 const ticket = await DBManager.getInventoryItem('emoji_ticket');
                 if (!ticket || ticket.amount <= 0) {
-                    if (this.game.uiManager) this.game.uiManager.showToast('입장권이 필요합니다! 🎫');
-                    this.scene.start('TerritoryScene');
+                    if (this.game.uiManager) this.game.uiManager.showToast('입장권이 소진되어 [저주받은 숲]으로 이동합니다! 🎫');
+                    this.scene.start('DungeonScene', { dungeonType: 'CURSED_FOREST', startRound: 1 });
                     return;
                 }
                 // Deduct Ticket
@@ -782,7 +783,20 @@ export default class DungeonScene extends Phaser.Scene {
 
             // Heal all before restart to ensure they spawn with full HP
             if (this.game.partyManager) this.game.partyManager.healAll();
-            this.scene.restart();
+
+            // Check if we need a ticket to restart this specific dungeon
+            if (this.dungeonType === 'UNDEAD_GRAVEYARD') {
+                DBManager.getInventoryItem('emoji_ticket').then(ticket => {
+                    if (!ticket || ticket.amount <= 0) {
+                        if (this.game.uiManager) this.game.uiManager.showToast('입장권 소진으로 [저주받은 숲]으로 복귀합니다.');
+                        this.scene.start('DungeonScene', { dungeonType: 'CURSED_FOREST', startRound: 1 });
+                    } else {
+                        this.scene.restart({ dungeonType: this.dungeonType, startRound: 1 });
+                    }
+                });
+            } else {
+                this.scene.restart();
+            }
         });
     }
 
