@@ -406,12 +406,12 @@ export default class DungeonScene extends Phaser.Scene {
             });
 
             // UI Indicators
-            this.roundText = this.add.text(this.cameras.main.width / 2, 55, `DUNGEON ROUND ${this.currentRound}`, {
-                fontSize: '24px',
+            this.roundText = this.add.text(this.cameras.main.width / 2, 45, `DUNGEON ROUND ${this.currentRound}`, {
+                fontSize: '22px',
                 fill: '#fff',
                 fontStyle: 'bold',
                 stroke: '#000',
-                strokeThickness: 5
+                strokeThickness: 4
             }).setOrigin(0.5);
             this.uiLayer.add(this.roundText);
 
@@ -712,7 +712,7 @@ export default class DungeonScene extends Phaser.Scene {
         const npcManager = this.game.npcManager;
         const activeNPC = npcManager?.getActiveNPC();
         if (activeNPC && activeNPC.id === 'NUN' && activeNPC.stacks > 0) {
-            console.log(`%c[NPC] Nun Intervention! Retrying Round ${this.currentRound}. Stacks: ${activeNPC.stacks} -> ${activeNPC.currentStacks - 1}`, 'color: #aa77ff; font-weight: bold;');
+            console.log(`%c[NPC] Nun Intervention! Retrying Round ${this.currentRound}. Stacks: ${activeNPC.stacks} -> ${activeNPC.stacks - 1}`, 'color: #aa77ff; font-weight: bold;');
 
             EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, `[NPC] 수녀의 기도로 라운드 ${this.currentRound}(으)로 시간을 되돌립니다! ✨`);
 

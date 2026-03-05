@@ -282,5 +282,9 @@ class PartyManager {
     }
 }
 
-const partyManager = new PartyManager();
+// Singleton Guard: Ensure only one instance exists across modules
+if (!window._partyManagerInstance) {
+    window._partyManagerInstance = new PartyManager();
+}
+const partyManager = window._partyManagerInstance;
 export default partyManager;

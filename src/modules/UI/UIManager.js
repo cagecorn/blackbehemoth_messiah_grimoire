@@ -840,25 +840,44 @@ export default class UIManager {
         const goldItem = await DBManager.getInventoryItem('emoji_coin');
         if (goldDisplay) goldDisplay.innerText = `💰 ${goldItem ? goldItem.amount.toLocaleString() : 0}`;
 
-        const activeNPC = npcManager.getActiveNPC();
+        const roster = npcManager.roster;
+        const activeNPCId = npcManager.activeNPCId;
         let html = '';
 
         Object.values(npcManager.NPC_DATA).forEach(npc => {
-            const isHired = activeNPC && activeNPC.id === npc.id;
-            const statusText = isHired ? `<div style="color: #6ee7b7; font-weight: bold; font-size: 10px;">[현재 고용 중: ${activeNPC.stacks}회 남음]</div>` : '';
+            const ownedNPC = roster[npc.id];
+            const isActive = (npc.id === activeNPCId);
+
+            let statusText = '';
+            if (ownedNPC) {
+                statusText = `<div style="color: #6ee7b7; font-weight: bold; font-size: 11px; margin-top: 4px;">
+                    [보유 중: ${ownedNPC.stacks} 스택] ${isActive ? '✅ 활동 중' : ''}
+                </div>`;
+            }
 
             html += `
-                <div class="npc-hire-card" style="background: rgba(255,255,255,0.05); border: 2px solid ${isHired ? '#6ee7b7' : 'var(--retro-border)'}; border-radius: 15px; padding: 20px; display: flex; gap: 20px; align-items: center; position: relative;">
-                    <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
-                        <img src="assets/npc/${npc.sprite}.png" style="width: 80px; height: 80px; object-fit: contain; image-rendering: pixelated;">
+                <div class="npc-hire-card" style="background: rgba(255,255,255,0.05); border: 2px solid ${isActive ? '#fbbf24' : (ownedNPC ? '#6ee7b7' : 'var(--retro-border)')}; border-radius: 12px; padding: 18px; display: flex; gap: 18px; align-items: center; position: relative; transition: all 0.2s;">
+                    <div style="background: rgba(0,0,0,0.4); padding: 8px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); flex-shrink: 0;">
+                        <img src="assets/npc/${npc.sprite}.png" style="width: 70px; height: 70px; object-fit: contain; image-rendering: pixelated;">
                     </div>
-                    <div style="flex: 1; display: flex; flex-direction: column; gap: 8px;">
-                        <div style="font-size: 16px; font-weight: bold; color: #fbbf24;">${npc.name}</div>
-                        <div style="font-size: 11px; color: #d1d5db; line-height: 1.4;">${npc.description}</div>
+                    <div style="flex: 1; display: flex; flex-direction: column; gap: 6px;">
+                        <div style="font-size: 15px; font-weight: bold; color: #fbbf24; display: flex; align-items: center; gap: 8px;">
+                            ${npc.name}
+                            ${isActive ? '<span style="font-size: 9px; background: #fbbf24; color: #000; padding: 1px 4px; border-radius: 3px;">ACTIVE</span>' : ''}
+                        </div>
+                        <div style="font-size: 10.5px; color: #d1d5db; line-height: 1.4; min-height: 30px;">${npc.description}</div>
                         ${statusText}
-                        <button class="shop-buy-btn npc-hire-btn" data-id="${npc.id}" style="width: 100%; margin-top: 10px; height: 40px; font-size: 12px; ${isHired ? 'opacity: 0.6; cursor: default;' : ''}">
-                            ${isHired ? '이미 고용됨' : `고용하기 (${npc.cost.toLocaleString()}G)`}
-                        </button>
+                        
+                        <div style="display: flex; gap: 8px; margin-top: 8px;">
+                            <button class="shop-buy-btn npc-hire-btn" data-id="${npc.id}" style="flex: 2; height: 36px; font-size: 11px;">
+                                ${ownedNPC ? `스택 추가 (${npc.cost.toLocaleString()}G)` : `고용하기 (${npc.cost.toLocaleString()}G)`}
+                            </button>
+                            ${(ownedNPC && !isActive) ? `
+                                <button class="shop-buy-btn npc-select-btn" data-id="${npc.id}" style="flex: 1; height: 36px; font-size: 11px; background: #3b82f6; border-color: #60a5fa;">
+                                    선택
+                                </button>
+                            ` : ''}
+                        </div>
                     </div>
                 </div>
             `;
@@ -866,19 +885,29 @@ export default class UIManager {
 
         listContainer.innerHTML = html;
 
+        // Hire/Stack Events
         listContainer.querySelectorAll('.npc-hire-btn').forEach(btn => {
             btn.onclick = async () => {
                 const npcId = btn.dataset.id;
-                if (activeNPC && activeNPC.id === npcId) return;
-
                 const result = await npcManager.hireNPC(npcId);
                 this.showToast(result.message);
                 if (result.success) {
+                    this.refreshNPCHire(); // Refresh UI to show accumulated stacks
+                    this.updateNPCHUD();
+                    if (this.partyFormationOverlay) this._updateNPCFormationSlot();
+                }
+            };
+        });
+
+        // Select Events
+        listContainer.querySelectorAll('.npc-select-btn').forEach(btn => {
+            btn.onclick = () => {
+                const npcId = btn.dataset.id;
+                if (npcManager.selectNPC(npcId)) {
                     this.refreshNPCHire();
-                    // Update Formation if open
-                    if (this.partyFormationOverlay) {
-                        this._updateNPCFormationSlot();
-                    }
+                    this.updateNPCHUD();
+                    if (this.partyFormationOverlay) this._updateNPCFormationSlot();
+                    this.showToast(`${npcManager.NPC_DATA[npcId].name}(을)를 활성화했습니다.`);
                 }
             };
         });
@@ -1335,7 +1364,7 @@ export default class UIManager {
         if (activeNPC && activeNPC.stacks > 0) {
             const npcData = npcManager.getNPCInfo(activeNPC.id);
             this.npcHudIcon.src = `assets/npc/${npcData.sprite}.png`;
-            this.npcHudStacks.innerText = `${activeNPC.stacks} / ${activeNPC.totalStacks}`;
+            this.npcHudStacks.innerText = `${activeNPC.stacks}회`;
             this.npcHud.style.opacity = '1';
             this.npcHud.style.pointerEvents = 'auto';
         } else {

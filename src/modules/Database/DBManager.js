@@ -166,12 +166,13 @@ export default class DBManager {
     static async saveNPCState(state) {
         if (!this.db) await this.initDB();
         await this.db.put('settings', { id: 'hired_npc', state });
-        console.log('[DBManager] Saved NPC state:', state);
+        console.log('[DBManager] saveNPCState - Data stored for "hired_npc":', JSON.stringify(state));
     }
 
     static async getNPCState() {
         if (!this.db) await this.initDB();
         const data = await this.db.get('settings', 'hired_npc');
+        console.log('[DBManager] getNPCState - Raw record from "settings":', data);
         return data ? data.state : null;
     }
 }

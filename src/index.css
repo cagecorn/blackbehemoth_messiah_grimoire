@@ -4427,25 +4427,62 @@ input:checked+.slider-toggle:before {
 /* NPC HUD (Left-Top Combat Indicator) */
 #npc-hud {
     position: absolute;
-    top: 90px;
+    top: 62px;
+    /* Navigation Bar 바로 아래 밀착 */
     left: 10px;
-    padding: 0;
+    padding: 2px 8px;
     pointer-events: none;
     z-index: 20000;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--retro-amber);
+    border-radius: 4px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    /* Added for consistency */
+    animation: npc-hud-appear 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .npc-hud-card {
-    display: inline-flex;
+    display: flex;
     align-items: center;
-    gap: 10px;
-    background: linear-gradient(135deg, rgba(30, 10, 10, 0.8), rgba(10, 5, 5, 0.9));
-    border: 1px solid var(--retro-amber);
-    padding: 5px 12px;
-    border-radius: 2px;
-    box-shadow: 3px 3px 0px rgba(0, 0, 0, 0.5), inset 0 0 10px rgba(255, 176, 0, 0.1);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-    animation: npc-hud-appear 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    gap: 6px;
+}
+
+#npc-hud-icon {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+    image-rendering: pixelated;
+    filter: drop-shadow(0 0 2px rgba(251, 191, 36, 0.5));
+}
+
+#npc-hud-stacks {
+    font-family: var(--font-pixel);
+    font-size: 11px;
+    color: var(--retro-amber);
+    text-shadow: 1px 1px 0px #000;
+}
+
+@media screen and (max-width: 768px) {
+    #npc-hud {
+        top: 52px;
+        /* 모바일 내비게이션 바 높이에 맞춤 */
+        left: 5px;
+        padding: 1px 6px;
+    }
+
+    #npc-hud-icon {
+        width: 18px;
+        height: 18px;
+    }
+
+    #npc-hud-stacks {
+        font-size: 9px;
+    }
 }
 
 @keyframes npc-hud-appear {
