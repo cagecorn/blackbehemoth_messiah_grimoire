@@ -528,32 +528,15 @@ body {
 
 
 
-.chat-name-select {
-    background: transparent;
+.chat-nameplate {
     color: var(--retro-amber);
-    border: none;
-    font-family: var(--font-pixel);
-    font-size: 8px;
-    cursor: pointer;
-    outline: none;
-    appearance: none;
-    padding: 0 20px 0 0;
-    margin: 0;
-    background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23ffb000%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
-    background-repeat: no-repeat;
-    background-position: right 2px center;
-    background-size: 10px auto;
-    height: 40px;
-    line-height: 40px;
-    display: inline-block;
-    vertical-align: middle;
-    text-shadow: 0 0 6px var(--retro-amber);
-}
-
-.chat-name-select option {
-    background: var(--retro-panel);
-    color: var(--retro-white);
-    font-family: var(--font-vt);
+    font-size: 14px;
+    letter-spacing: 1px;
+    text-shadow: 0 0 8px rgba(255, 176, 0, 0.6);
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .lv-exp-line {
@@ -649,26 +632,28 @@ body {
     left: 12px;
     right: 12px;
     bottom: 12px;
-    background: var(--retro-panel);
-    border: 2px solid var(--retro-border2);
-    border-radius: 0px;
+    background: rgba(15, 15, 25, 0.7);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
     z-index: 1400;
     display: none;
     flex-direction: column;
     padding: 16px;
     overflow-y: auto;
-    box-shadow: 3px 3px 0px var(--retro-border), inset 0 0 30px rgba(0, 0, 0, 0.7);
-    animation: popupScale 0.15s ease-out;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+    animation: premiumPopupScale 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-@keyframes popupScale {
+@keyframes premiumPopupScale {
     from {
-        transform: scale(0.9);
+        transform: translateY(10px) scale(0.98);
         opacity: 0;
     }
 
     to {
-        transform: scale(1);
+        transform: translateY(0) scale(1);
         opacity: 1;
     }
 }
@@ -684,21 +669,44 @@ body {
     margin-bottom: 20px;
 }
 
+.combat-stat-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(0, 0, 0, 0.4);
+    padding: 8px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    margin-bottom: 8px;
+    position: relative;
+    overflow: hidden;
+}
+
+.combat-stat-row::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+    background-size: 100% 2px, 3px 100%;
+    pointer-events: none;
+}
+
 .dash-item {
-    background: var(--retro-panel2);
-    border: 2px solid var(--retro-border);
-    border-radius: 0px;
-    padding: 20px 10px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    padding: 16px 10px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 12px;
+    gap: 10px;
     cursor: pointer;
-    transition: border-color 0.1s, background 0.1s;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
     overflow: hidden;
-    box-shadow: 2px 2px 0px var(--retro-border);
 }
 
 .dash-item::after {
@@ -2831,15 +2839,18 @@ body {
 }
 
 .combat-bar.damage {
-    background: linear-gradient(90deg, #ff4444, #ff8844);
+    background: linear-gradient(90deg, #ff4d4d, #ffb000);
+    box-shadow: 0 0 10px rgba(255, 77, 77, 0.4);
 }
 
 .combat-bar.received {
-    background: linear-gradient(90deg, #4488ff, #44ccff);
+    background: linear-gradient(90deg, #4da6ff, #00ffff);
+    box-shadow: 0 0 10px rgba(77, 166, 255, 0.4);
 }
 
 .combat-bar.heal {
-    background: linear-gradient(90deg, #44ff88, #88ff44);
+    background: linear-gradient(90deg, #4dff88, #00ffcc);
+    box-shadow: 0 0 10px rgba(77, 255, 136, 0.4);
 }
 
 .combat-label {

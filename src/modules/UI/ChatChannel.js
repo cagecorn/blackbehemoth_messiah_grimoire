@@ -57,24 +57,14 @@ export default class ChatChannel {
             ultProgress: null
         };
 
-        // Generate character options for the dropdown
-        let optionsHtml = '';
-        if (characters && characters.length > 0) {
-            characters.forEach(char => {
-                const selected = char.name.includes(name) || char.id === name ? 'selected' : '';
-                optionsHtml += `<option value="${char.id}" ${selected}>${char.name}</option>`;
-            });
-        } else {
-            optionsHtml = `<option value="default">${name}</option>`;
-        }
+        // Initial nameplate HTML
+        const nameplateHtml = `<div class="chat-nameplate" id="nameplate-${id}">${name}</div>`;
 
         this.element.innerHTML = `
             <div class="ult-gauge-overlay" id="ult-gauge-${id}"></div>
             <img class="chat-bg-sprite" src="${spritePath}" alt="bg" draggable="false">
             <div class="chat-header">
-                <select class="chat-name-select" id="select-${id}">
-                    ${optionsHtml}
-                </select>
+                ${nameplateHtml}
                 <span class="nameplate-buff-icon" id="nameplate-buff-${id}" style="display:none; font-size: 16px; margin-left: 4px;" title="나나의 음악 버프 활성화!">🎵</span>
                 <button class="ult-toggle-btn auto" id="ult-toggle-${id}" title="궁극기 사용 모드">AUTO</button>
             </div>
@@ -271,7 +261,7 @@ export default class ChatChannel {
         this.statusContainer = this.element.querySelector('.status-container.status-effects');
         this.buffContainer = this.element.querySelector('.status-container.buffs');
         this.statusRow = this.element.querySelector('.status-row-second');
-        this.characterSelect = this.element.querySelector('.chat-name-select');
+        this.nameplate = this.element.querySelector('.chat-nameplate');
         this.dashboardView = this.element.querySelector('.chat-dashboard-view');
         this.perkView = this.element.querySelector('.chat-perk-view');
         this.gearView = this.element.querySelector('.chat-gear-view');
@@ -309,13 +299,7 @@ export default class ChatChannel {
             });
         });
 
-        if (this.characterSelect) {
-            this.characterSelect.addEventListener('change', (e) => {
-                if (this.onSwap) {
-                    this.onSwap(this.classId, e.target.value);
-                }
-            });
-        }
+        // View background click handlers
 
         // Manual Ultimate Trigger (Clicking the channel itself)
         this.element.addEventListener('click', (e) => {
@@ -390,12 +374,9 @@ export default class ChatChannel {
         this.characterId = characterId;
 
         // Update name dropdown or text
-        if (this.characterSelect) {
-            // Find option and select it
-            const option = Array.from(this.characterSelect.options).find(opt => opt.value === characterId);
-            if (option) {
-                option.selected = true;
-            }
+        // Update nameplate
+        if (this.nameplate) {
+            this.nameplate.textContent = name;
         }
 
         // Update background sprite (the faint mercenary image)
@@ -718,34 +699,9 @@ export default class ChatChannel {
         this.linkedUnitId = unitId;
         this.characterId = characterId || this.characterId;
 
-        // Re-populate dropdown based on this class
-        this.populateDropdown();
-
         this.updateVisuals(unitName, spritePath, this.characterId);
         if (skillData) this.updateSkill(skillData);
         if (narrativeUnlocks) this.updateNarrative(narrativeUnlocks, 1);
-    }
-
-    populateDropdown() {
-        if (!this.characterSelect) return;
-
-        // Dynamic import or global access to Characters
-        import('../Core/EntityStats.js').then(module => {
-            const Characters = module.Characters;
-            const classChars = Object.values(Characters).filter(c => c.classId === this.classId);
-
-            let optionsHtml = '';
-            classChars.forEach(char => {
-                const selected = char.id === this.characterId ? 'selected' : '';
-                optionsHtml += `<option value="${char.id}" ${selected}>${char.name}</option>`;
-            });
-            this.characterSelect.innerHTML = optionsHtml;
-
-            // Re-verify selection after innerHTML change
-            if (this.characterId) {
-                this.characterSelect.value = this.characterId;
-            }
-        });
     }
 
     setupDragDrop() {
