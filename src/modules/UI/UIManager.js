@@ -317,8 +317,6 @@ export default class UIManager {
         if (!slot) return;
 
         const config = BUILDING_TYPES[slot.typeId.toUpperCase()];
-        const currentRate = Math.floor(config.rate * Math.pow(1.2, slot.level - 1));
-        const nextRate = Math.floor(config.rate * Math.pow(1.2, slot.level));
         const upgradeGold = Math.floor(100 * Math.pow(1.5, slot.level - 1));
         const upgradeBrick = Math.floor(20 * Math.pow(1.5, slot.level - 1));
 
@@ -354,13 +352,24 @@ export default class UIManager {
 
                 <div class="info-stats-container">
                     <div class="info-stat-row">
-                        <span>현재 생산량</span>
-                        <span style="color:var(--retro-amber);">
-                            <img src="assets/emojis/${resIcon}" style="${imgStyle}">+${currentRate} / 턴
-                        </span>
+                        <span style="color:var(--retro-amber); font-size: 11px;">[ 지원 주기: ${config.cooldown}초 ]</span>
                     </div>
-                    <div class="info-upgrade-preview" style="margin-top:10px; font-size:14px; color:var(--retro-dim);">
-                        다음 레벨: <img src="assets/emojis/${resIcon}" style="${imgStyle.replace('16px', '12px')}">+${nextRate} / 턴
+                    <div class="info-stat-row" style="margin-top:4px; line-height: 1.4;">
+                        <span style="color:var(--retro-green); font-size: 10px;">
+                            ${slot.typeId === 'tree'
+                ? `하늘에서 치유의 과일을 떨어뜨려 무작위 아군 1명의 체력을 ${15 + (slot.level - 1) * 5} 회복시킵니다.`
+                : slot.typeId === 'factory'
+                    ? `하늘에서 로켓 🚀을 발사하여 무작위 적 1명에게 ${10 + (slot.level - 1) * 4}의 물리 피해를 입힙니다.`
+                    : slot.typeId === 'bank'
+                        ? `하늘에서 골드 🪙를 떨어뜨려 전장에 ${50 + (slot.level - 1) * 25} 골드를 드랍합니다. (직접 획득 가능)`
+                        : slot.typeId === 'church'
+                            ? `하늘에서 신성한 빛이 내리쬐어 아군 1명의 모든 상태이상을 정화합니다.`
+                            : slot.typeId === 'camp'
+                                ? `하늘에서 바위 🪨를 던져 적에게 ${10 + (slot.level - 1) * 3}의 피해를 입히고 기절시킵니다. (레이드 제외)`
+                                : slot.typeId === 'castle'
+                                    ? `매우 긴 주기마다 하늘에서 다이아몬드 💎를 ${1 + Math.floor((slot.level - 1) / 5)}개 떨어뜨립니다.`
+                                    : '[ 전투 지원 기능 준비 중 ]'}
+                        </span>
                     </div>
                 </div>
 
@@ -402,12 +411,12 @@ export default class UIManager {
 
     showBuildingSelection(slotIndex) {
         const kData = {
-            'bank': { name: '은행', desc: '매 턴 골드를 생성합니다. 💰' },
-            'factory': { name: '공장', desc: '건설에 필요한 벽돌을 생산합니다. 🧱' },
-            'church': { name: '성당', desc: '권능 강화용 전능의 정수를 생산합니다. ✨' },
-            'camp': { name: '캠프', desc: '펫 성장을 위한 고기를 생산합니다. 🍖' },
-            'tree': { name: '나무', desc: '기초 건설 재료인 나무를 생산합니다. 🪵' },
-            'castle': { name: '성', desc: '매우 드물게 다이아몬드를 생산합니다. 💎' }
+            'bank': { name: '은행', desc: '[ 지원 주기: 10초 ] 하늘에서 골드 🪙를 떨어뜨려 전장에 드랍합니다.' },
+            'factory': { name: '공장', desc: '[ 지원 주기: 20초 ] 하늘에서 로켓 🚀을 발사하여 무작위 적 1명을 물리 공격합니다.' },
+            'church': { name: '성당', desc: '[ 지원 주기: 60초 ] 하늘에서 신성한 빛이 내리쬐어 아군 1명의 상태이상을 정화합니다.' },
+            'camp': { name: '캠프', desc: '[ 지원 주기: 30초 ] 하늘에서 바위 🪨를 던져 적을 공격하고 기절시킵니다.' },
+            'tree': { name: '나무', desc: '[ 지원 주기: 15초 ] 하늘에서 치유의 과일을 떨어뜨려 아군을 치료합니다 🍎' },
+            'castle': { name: '성', desc: '[ 지원 주기: 300초 ] 하늘에서 희귀한 다이아몬드 💎를 떨어뜨려 드랍합니다.' }
         };
 
         const options = Object.values(BUILDING_TYPES).map(type => {
@@ -465,6 +474,7 @@ export default class UIManager {
                 const config = BUILDING_TYPES[slot.typeId.toUpperCase()];
                 const svgName = ItemManager.getSVGFilename(config.iconId);
                 return `<div class="building-slot" data-index="${i}" title="Lv.${slot.level}">
+                    <div class="building-cooldown-overlay" id="b-cd-${i}"></div>
                     <img src="assets/emojis/${svgName}" draggable="false">
                 </div>`;
             } else {
@@ -473,10 +483,38 @@ export default class UIManager {
         }).join('');
     }
 
+    updateBuildingCooldowns(progresses) {
+        if (!this.buildingGrid) return;
+
+        progresses.forEach((p, i) => {
+            const overlay = document.getElementById(`b-cd-${i}`);
+            if (overlay) {
+                // Use height for bottom-to-top filling effect
+                const heightVal = Math.floor(p * 100);
+                overlay.style.height = `${heightVal}%`;
+
+                // Optionally add a 'ready' state to the parent slot
+                if (p >= 0.98) {
+                    overlay.parentElement.classList.add('ready');
+                } else {
+                    overlay.parentElement.classList.remove('ready');
+                }
+            }
+        });
+    }
 
     initEventListeners() {
         EventBus.on('NPC_STACK_UPDATED', () => this.updateNPCHUD());
         EventBus.on('NPC_HIRED', () => this.updateNPCHUD());
+        EventBus.on('BUILDING_COOLDOWN_UPDATE', (data) => this.updateBuildingCooldowns(data.progresses));
+
+        EventBus.on('BUILDING_ACTION_TRIGGERED', (data) => {
+            const slot = this.buildingGrid?.querySelector(`.building-slot[data-index="${data.slotIndex}"]`);
+            if (slot) {
+                slot.classList.add('activated');
+                setTimeout(() => slot.classList.remove('activated'), 600);
+            }
+        });
 
         // Listen for scene changes to show/hide NPC HUD
         EventBus.on(EventBus.EVENTS.SCENE_CHANGED, (sceneKey) => {

@@ -23,6 +23,8 @@ import SeparationManager from '../modules/Core/SeparationManager.js';
 import BarkManager from '../modules/AI/BarkManager.js';
 import { Characters, StageConfigs, MonsterClasses, scaleStats } from '../modules/Core/EntityStats.js';
 import EventBus from '../modules/Events/EventBus.js';
+import buildingManager from '../modules/Core/BuildingManager.js';
+import SupportActionManager from '../modules/Combat/SupportActionManager.js';
 // partyManager will be accessed via this.game.partyManager
 import StageManager from '../modules/Environment/StageManager.js';
 import AmbientMoteManager from '../modules/Environment/AmbientMoteManager.js';
@@ -36,6 +38,7 @@ export default class RaidScene extends Phaser.Scene {
         this.boss = null;
         this.isRespawning = false;
         this.raidCount = 1;
+        this.supportActionManager = null;
     }
 
     init() {
@@ -143,6 +146,12 @@ export default class RaidScene extends Phaser.Scene {
 
         // 🎬 Start Intro Blur Effect
         this.applyIntroBlur();
+
+        // --- Support Action Manager Initialization ---
+        this.supportActionManager = new SupportActionManager(this);
+        this.events.once('shutdown', () => {
+            if (this.supportActionManager) this.supportActionManager.destroy();
+        });
 
         // --- Messiah Touch Interaction ---
         this.input.on('pointerdown', this.handleMessiahTouch, this);
@@ -266,6 +275,11 @@ export default class RaidScene extends Phaser.Scene {
         if (this.ccManager) this.ccManager.update(time, delta);
         if (this.petManager) this.petManager.update(time, delta);
         if (this.shieldManager) this.shieldManager.update(time, delta);
+
+        // --- Building Support System Update ---
+        if (buildingManager) {
+            buildingManager.update(delta);
+        }
         if (this.barkManager) this.barkManager.update(time, delta);
 
         // Update Messiah Manager for stack accumulation

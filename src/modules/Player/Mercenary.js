@@ -784,6 +784,31 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         }
     }
 
+    /**
+     * Cleanses harmful status effects (Stun, Shock, Sleep, Burn, Freeze).
+     */
+    cleanse() {
+        if (!this.active || this.hp <= 0) return;
+
+        let cleansedAny = false;
+
+        // Reset status flags
+        if (this.isStunned) { this.isStunned = false; cleansedAny = true; }
+        if (this.isShocked) { this.isShocked = false; cleansedAny = true; }
+        if (this.isAsleep) { this.isAsleep = false; cleansedAny = true; }
+        if (this.isBurning) { this.isBurning = false; cleansedAny = true; }
+        if (this.isFrozen) { this.isFrozen = false; cleansedAny = true; }
+
+        if (cleansedAny) {
+            console.log(`[Status] ${this.unitName} was cleansed! ✨`);
+            if (this.scene && this.scene.fxManager) {
+                this.scene.fxManager.showDamageText(this, 'CLEANSED! ✨', '#ffffff');
+            }
+            this.restoreSpriteTint();
+            this.syncStatusUI();
+        }
+    }
+
     takeMagicDamage(amount, attacker = null, isUltimate = false, element = null, isCritical = false, delay = 0) {
         if (!this.active || !this.scene) return;
 

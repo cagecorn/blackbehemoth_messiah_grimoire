@@ -2072,6 +2072,9 @@ body {
     height: 14px;
     image-rendering: pixelated;
     opacity: 0.9;
+    position: relative;
+    z-index: 6;
+    /* Visible above overlay */
 }
 
 .building-slot:hover {
@@ -2079,6 +2082,44 @@ body {
     border-color: var(--retro-amber);
     box-shadow: 0 0 10px rgba(255, 176, 0, 0.3);
     z-index: 10;
+}
+
+.building-cooldown-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 0%;
+    /* Start empty */
+    background: rgba(0, 0, 0, 0.65);
+    pointer-events: none;
+    z-index: 5;
+    transition: height 0.1s linear;
+}
+
+.building-slot.ready {
+    border-color: #4ade80;
+    background: rgba(74, 222, 128, 0.15);
+}
+
+.building-slot.activated {
+    animation: slotActivateFlash 0.6s ease-out;
+}
+
+@keyframes slotActivateFlash {
+    0% {
+        background: rgba(74, 222, 128, 0.8);
+        box-shadow: inset 0 0 15px rgba(74, 222, 128, 0.9);
+        transform: scale(1.1);
+        z-index: 100;
+    }
+
+    100% {
+        background: transparent;
+        box-shadow: none;
+        transform: scale(1);
+        z-index: 1;
+    }
 }
 
 .building-slot.empty {

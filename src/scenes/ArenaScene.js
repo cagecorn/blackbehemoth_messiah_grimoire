@@ -23,6 +23,8 @@ import BarkManager from '../modules/AI/BarkManager.js';
 import { Characters } from '../modules/Core/EntityStats.js';
 // partyManager will be accessed via this.game.partyManager
 import EventBus from '../modules/Events/EventBus.js';
+import buildingManager from '../modules/Core/BuildingManager.js';
+import SupportActionManager from '../modules/Combat/SupportActionManager.js';
 import StageManager from '../modules/Environment/StageManager.js';
 import { StageConfigs } from '../modules/Core/EntityStats.js';
 import AmbientMoteManager from '../modules/Environment/AmbientMoteManager.js';
@@ -35,6 +37,7 @@ export default class ArenaScene extends Phaser.Scene {
         this.enemies = null;
         this.isResetting = false;
         this.battleCount = 1;
+        this.supportActionManager = null;
 
         // Selection State
         this.gameState = 'SELECTING'; // 'SELECTING' or 'BATTLE'
@@ -212,6 +215,13 @@ export default class ArenaScene extends Phaser.Scene {
         // Initialize Dynamic Camera Manager
         this.dynamicCamera = new DynamicCameraManager(this, this.cameras.main);
         this.dynamicCamera.setTarget(this.cameraTarget);
+
+        // --- Support Action Manager Initialization ---
+        this.supportActionManager = new SupportActionManager(this);
+        this.events.once('shutdown', () => {
+            if (this.supportActionManager) this.supportActionManager.destroy();
+        });
+
         console.log('[Arena] Dynamic Shake Camera (DynamicCameraManager) initialized.');
 
         // Trigger UI binding for the deployed mercenaries
@@ -296,6 +306,11 @@ export default class ArenaScene extends Phaser.Scene {
         if (this.ccManager) this.ccManager.update(time, delta);
         if (this.shieldManager) this.shieldManager.update(time, delta);
         if (this.barkManager) this.barkManager.update(time, delta);
+
+        // --- Building Support System Update ---
+        if (buildingManager) {
+            buildingManager.update(delta);
+        }
 
         // Auto Messiah Touch (Disabled in Arena)
         // this.executeAutoMessiahTouch();

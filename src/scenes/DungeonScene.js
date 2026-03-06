@@ -37,6 +37,8 @@ import EventBus from '../modules/Events/EventBus.js';
 import BarkManager from '../modules/AI/BarkManager.js';
 import PetManager from '../modules/Player/PetManager.js';
 import DBManager from '../modules/Database/DBManager.js';
+import buildingManager from '../modules/Core/BuildingManager.js';
+import SupportActionManager from '../modules/Combat/SupportActionManager.js';
 // partyManager will be accessed via this.game.partyManager
 
 
@@ -52,6 +54,7 @@ export default class DungeonScene extends Phaser.Scene {
         this.isResting = false;
         this.weatherManager = null;
         this.ambientMoteManager = null;
+        this.supportActionManager = null;
 
         // Reward values
         this.killExp = 25;
@@ -138,6 +141,12 @@ export default class DungeonScene extends Phaser.Scene {
 
             // Enable multi-touch for pinch zoom
             this.input.addPointer(1);
+
+            // --- Support Action Manager Initialization ---
+            this.supportActionManager = new SupportActionManager(this);
+            this.events.once('shutdown', () => {
+                if (this.supportActionManager) this.supportActionManager.destroy();
+            });
 
             // --- Messiah Touch Interaction ---
             this.input.on('pointerdown', this.handleMessiahTouch, this);
@@ -570,6 +579,11 @@ export default class DungeonScene extends Phaser.Scene {
         }
         if (this.ambientMoteManager) {
             this.ambientMoteManager.update();
+        }
+
+        // --- 1.2 Building Support System Update ---
+        if (buildingManager) {
+            buildingManager.update(delta);
         }
 
         // --- 1.5 Global Systems Update ---
