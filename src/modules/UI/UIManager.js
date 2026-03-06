@@ -534,10 +534,18 @@ export default class UIManager {
                 this.messiahHud.style.display = (isCombat && !isArena) ? 'block' : 'none';
             }
 
-            // Hide Building HUD in Arena, show in others (Territory, Dungeon, Raid)
+            // Show Building HUD in Territory, Dungeon, and Raid
             if (this.buildingGrid) {
                 const showGrid = (sceneKey === 'TerritoryScene' || sceneKey === 'DungeonScene' || sceneKey === 'RaidScene');
                 this.buildingGrid.style.display = showGrid ? 'flex' : 'none';
+            }
+
+            // Hide Portrait Bar in Non-Combat scenes (like TerritoryScene)
+            if (this.portraitBar) {
+                if (sceneKey === 'TerritoryScene' || sceneKey === 'GachaScene') {
+                    this.portraitBar.classList.add('hidden');
+                    this.portraitBar.classList.remove('active');
+                }
             }
         });
 
