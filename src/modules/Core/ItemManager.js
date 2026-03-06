@@ -62,60 +62,6 @@ const ITEM_DATABASE = {
     'emoji_crown': { name: 'Messiah Crown (👑)', type: 'trans_charm', icon: 'emoji_crown', description: '장착 시 금서의 힘을 빌어 특별한 형태로 변신합니다. 모든 능력치가 대폭 상승합니다.' },
 
     // --- Equipment ---
-    'test_sword_fire': {
-        name: '화염의 테스트 소드',
-        type: ITEM_TYPES.EQUIPMENT,
-        slot: EQUIP_SLOTS.WEAPON,
-        icon: 'emoji_sword',
-        stats: { atk: 50 },
-        description: '강력한 화염의 테스트용 검입니다.',
-        prefix: WEAPON_PREFIXES.FIRE
-    },
-    'test_sword_ice': {
-        name: '냉기의 테스트 소드',
-        type: ITEM_TYPES.EQUIPMENT,
-        slot: EQUIP_SLOTS.WEAPON,
-        icon: 'emoji_sword',
-        stats: { atk: 50 },
-        description: '강력한 냉기의 테스트용 검입니다.',
-        prefix: WEAPON_PREFIXES.ICE
-    },
-    'test_sword_lightning': {
-        name: '전격의 테스트 소드',
-        type: ITEM_TYPES.EQUIPMENT,
-        slot: EQUIP_SLOTS.WEAPON,
-        icon: 'emoji_sword',
-        stats: { atk: 50 },
-        description: '강력한 전격의 테스트용 검입니다.',
-        prefix: WEAPON_PREFIXES.LIGHTNING
-    },
-    'test_staff_fire': {
-        name: '화염의 테스트 지팡이',
-        type: ITEM_TYPES.EQUIPMENT,
-        slot: EQUIP_SLOTS.WEAPON,
-        icon: 'emoji_staff',
-        stats: { mAtk: 50 },
-        description: '강력한 화염의 테스트용 지팡이입니다.',
-        prefix: WEAPON_PREFIXES.FIRE
-    },
-    'test_staff_ice': {
-        name: '냉기의 테스트 지팡이',
-        type: ITEM_TYPES.EQUIPMENT,
-        slot: EQUIP_SLOTS.WEAPON,
-        icon: 'emoji_staff',
-        stats: { mAtk: 50 },
-        description: '강력한 냉기의 테스트용 지팡이입니다.',
-        prefix: WEAPON_PREFIXES.ICE
-    },
-    'test_staff_lightning': {
-        name: '전격의 테스트 지팡이',
-        type: ITEM_TYPES.EQUIPMENT,
-        slot: EQUIP_SLOTS.WEAPON,
-        icon: 'emoji_staff',
-        stats: { mAtk: 50 },
-        description: '강력한 전격의 테스트용 지팡이입니다.',
-        prefix: WEAPON_PREFIXES.LIGHTNING
-    },
     'wood_sword': {
         name: '우드 소드',
         type: ITEM_TYPES.EQUIPMENT,
@@ -123,7 +69,8 @@ const ITEM_DATABASE = {
         icon: 'wood_sword',
         stats: { atk: 5 },
         description: '평범한 나무로 깎아 만든 검입니다. 하지만 당신의 노력에 따라 전설적인 무기가 될지도 모릅니다.',
-        customAsset: 'assets/item/wood_sword.png'
+        customAsset: 'assets/item/wood_sword.png',
+        id: 'wood_sword'
     }
 };
 
@@ -173,13 +120,7 @@ export default class ItemManager {
             'emoji_factory': '1f3ed.svg',
             'emoji_church': '26ea.svg',
             'emoji_camp': '1f3d5.svg',
-            'emoji_tree': '1f333.svg',
-            'test_sword_fire': '1f5e1.svg',
-            'test_sword_ice': '1f5e1.svg',
-            'test_sword_lightning': '1f5e1.svg',
-            'test_staff_fire': '1fa84.svg',
-            'test_staff_ice': '1fa84.svg',
-            'test_staff_lightning': '1fa84.svg'
+            'emoji_tree': '1f333.svg'
         };
         return map[id] || '2753.svg'; // Default question mark
     }

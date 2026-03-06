@@ -341,8 +341,8 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
                 // --- Growth Gear Weapon EXP ---
                 if (attacker.equipment && attacker.equipment.weapon) {
                     const weapon = attacker.equipment.weapon;
-                    if (weapon.instanceId || (weapon.id && weapon.id.startsWith('eq_'))) {
-                        const weaponId = weapon.instanceId || weapon.id;
+                    const weaponId = (typeof weapon === 'string') ? weapon : (weapon.instanceId || weapon.id);
+                    if (weaponId && typeof weaponId === 'string' && weaponId.startsWith('eq_')) {
                         equipmentManager.addExp(weaponId, finalDamage);
                     }
                 }

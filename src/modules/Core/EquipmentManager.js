@@ -105,6 +105,14 @@ class EquipmentManager {
 
         await DBManager.saveEquipmentInstance(instance);
 
+        // Emit general update for real-time UI (EXP bar)
+        EventBus.emit('EQUIPMENT_EXP_UPDATED', {
+            instanceId,
+            level: instance.level,
+            exp: instance.exp,
+            status: status
+        });
+
         if (instance.level > oldLevel) {
             console.log(`[EquipmentManager] Equipment ${instanceId} leveled up: ${oldLevel} -> ${instance.level}`);
             EventBus.emit('EQUIPMENT_LEVEL_UP', { instanceId, level: instance.level });

@@ -1417,6 +1417,43 @@ body {
     box-shadow: 1px 1px 0px rgba(0, 0, 0, 0.6);
 }
 
+/* Growth EXP Bar */
+.exp-section {
+    margin-top: 10px;
+}
+
+.exp-bar-container {
+    width: 100%;
+    height: 12px;
+    background: #1a1a1a;
+    border: 1px solid var(--retro-border2);
+    position: relative;
+    overflow: hidden;
+    margin-top: 4px;
+}
+
+.exp-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #c026d3, #7c3aed);
+    /* Purple to Violet for growth */
+    width: 0%;
+    transition: width 0.3s ease-out;
+    box-shadow: 0 0 8px rgba(124, 58, 237, 0.6);
+}
+
+.exp-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: var(--font-pixel);
+    font-size: 8px;
+    color: #fff;
+    text-shadow: 1px 1px 2px #000;
+    pointer-events: none;
+    white-space: nowrap;
+}
+
 /* Custom CSS Tooltips for Status Icons */
 .tooltip {
     position: relative;

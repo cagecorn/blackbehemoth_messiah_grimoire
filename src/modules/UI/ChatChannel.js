@@ -353,6 +353,7 @@ export default class ChatChannel {
                     if (detail) detail.style.display = 'none';
                 }
                 this._lastDetailSlot = null;
+                this.viewingInstanceId = null; // Clear real-time tracking
 
                 this.toggleView('dashboard');
             });
@@ -404,6 +405,9 @@ export default class ChatChannel {
                 });
             });
         });
+
+        this.viewingInstanceId = null;
+        EventBus.on('EQUIPMENT_EXP_UPDATED', (payload) => this.handleEquipmentExpUpdated(payload));
     }
 
     updateUltToggleUI() {
@@ -431,10 +435,27 @@ export default class ChatChannel {
         this.narrativeView.style.display = (this.currentView === 'narrative') ? 'block' : 'none';
         this.perkView.style.display = (this.currentView === 'perk') ? 'flex' : 'none';
 
+        if (this.currentView !== 'gear') {
+            this.viewingInstanceId = null; // Stop tracking if leaving gear view
+        }
+
         if (this.currentView !== 'dashboard') {
             this.element.classList.add('view-overlay');
         } else {
             this.element.classList.remove('view-overlay');
+        }
+    }
+
+    handleEquipmentExpUpdated(payload) {
+        if (!this.viewingInstanceId || this.viewingInstanceId !== payload.instanceId) return;
+
+        // Re-render the detail panel
+        const slot = this._lastDetailSlot;
+        if (!slot || !this.equipment) return;
+
+        const currentItem = this.equipment[slot];
+        if (currentItem && currentItem !== 'Empty') {
+            this._showGearDetail(slot, currentItem, true); // Pass true to skip toggle-close
         }
     }
 
@@ -622,7 +643,7 @@ export default class ChatChannel {
                             if (this.uiManager.switchInventoryTab) this.uiManager.switchInventoryTab('gear');
                         }
                     } else {
-                        this._showGearDetail(key, currentItem);
+                        this._showGearDetail(key, currentItem); // Fire and forget or handle error
                     }
                 };
             }
@@ -633,15 +654,17 @@ export default class ChatChannel {
         }
     }
 
-    async _showGearDetail(slot, item) {
+    async _showGearDetail(slot, item, isUpdate = false) {
         if (!this.gearView) return;
         const detailPanel = this.gearView.querySelector('.gear-detail-panel');
         if (!detailPanel) return;
 
         // Toggle logic: if clicking same slot twice, hide it
-        if (this._lastDetailSlot === slot && detailPanel.style.display === 'block') {
+        // Bypassed if this is a real-time update refresh
+        if (!isUpdate && this._lastDetailSlot === slot && detailPanel.style.display === 'block') {
             detailPanel.style.display = 'none';
             this._lastDetailSlot = null;
+            this.viewingInstanceId = null;
             return;
         }
 
@@ -655,17 +678,44 @@ export default class ChatChannel {
         let instance = null;
         let baseItem = null;
 
-        if (typeof item === 'object' && item.itemId && item.level) {
-            instance = item;
-            baseItem = ItemManager.getItem(item.itemId);
-        } else {
-            const itemId = typeof item === 'string' ? item : (item.id || item.itemId);
+        // Robust extraction for test items / objects without explicit id property
+        let itemId = null;
+        if (typeof item === 'string') {
+            itemId = item;
+        } else if (item) {
+            itemId = item.id || item.itemId;
+        }
+
+        if (itemId) {
             baseItem = ItemManager.getItem(itemId);
         }
 
+        // --- IMPORTANT: Always fetch latest instance data from DB for growth items ---
+        if (itemId && typeof itemId === 'string' && itemId.startsWith('eq_')) {
+            const latestInstance = await DBManager.getEquipmentInstance(itemId);
+            if (latestInstance) {
+                instance = latestInstance;
+                const latestBase = ItemManager.getItem(instance.itemId);
+                if (latestBase) baseItem = latestBase;
+            }
+        }
+
         if (!baseItem) {
-            detailPanel.style.display = 'none';
-            return;
+            // Emergency fallback for deleted/test items
+            baseItem = {
+                name: (typeof item === 'string' ? item : (item.name || '알 수 없는 아이템')),
+                description: '이 아이템은 현재 게임 데이터에서 제거되었습니다. 해제 후 폐기됩니다.',
+                stats: {}
+            };
+        }
+
+        // Set viewingInstanceId for real-time updates
+        if (instance && instance.id) {
+            this.viewingInstanceId = instance.id;
+        } else if (typeof item === 'string' && item.startsWith('eq_')) {
+            this.viewingInstanceId = item;
+        } else {
+            this.viewingInstanceId = null;
         }
 
         const titleContainer = detailPanel.querySelector('.detail-title-line');
@@ -684,9 +734,26 @@ export default class ChatChannel {
         nameSpan.style.cssText = 'font-family: \'Press Start 2P\', cursive; font-size: 11px; color: #ffd700; text-shadow: 1px 1px #000;';
         titleContainer.appendChild(nameSpan);
 
+        const unequipBtn = document.createElement('button');
+        unequipBtn.textContent = '해제';
+        unequipBtn.style.cssText = 'font-size: 9px; padding: 2px 6px; background: #822; color: #fff; border: 1px solid #a44; cursor: pointer; border-radius: 3px; margin-left: 5px;';
+        unequipBtn.onclick = (e) => {
+            e.stopPropagation();
+            import('../Events/EventBus.js').then(module => {
+                const EventBus = module.default;
+                EventBus.emit(EventBus.EVENTS.EQUIP_REQUEST, {
+                    unitId: this.linkedUnitId,
+                    itemId: null,
+                    slot: slot
+                });
+                detailPanel.style.display = 'none';
+            });
+        };
+        titleContainer.appendChild(unequipBtn);
+
         const changeBtn = document.createElement('button');
         changeBtn.textContent = '교체';
-        changeBtn.style.cssText = 'font-size: 9px; padding: 2px 6px; background: #444; color: #fff; border: 1px solid #666; cursor: pointer; border-radius: 3px;';
+        changeBtn.style.cssText = 'font-size: 9px; padding: 2px 6px; background: #444; color: #fff; border: 1px solid #666; cursor: pointer; border-radius: 3px; margin-left: 5px;';
         changeBtn.onclick = (e) => {
             e.stopPropagation();
             if (this.uiManager) {

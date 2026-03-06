@@ -90,6 +90,7 @@ export default class UIManager {
         this.pendingGrimoireSlot = null;
         this.pendingGearSlot = null; // Track gear slot clicked in ChatChannel
         this.emojiFilter = 'ALL'; // Filter for Emoji Inventory
+        this.viewingInstanceId = null; // Track which unique item is being viewed for real-time updates
 
         this.shopManager = new ShopManager(this);
 
@@ -287,6 +288,9 @@ export default class UIManager {
 
         // New: Building System Events
         EventBus.on('BUILDINGS_UPDATED', () => this.updateBuildingGrid());
+
+        // Real-time Equipment EXP
+        EventBus.on('EQUIPMENT_EXP_UPDATED', (payload) => this.handleEquipmentExpUpdated(payload));
 
     }
 
@@ -659,12 +663,14 @@ export default class UIManager {
 
         if (this.btnInventory) {
             this.btnInventory.onclick = () => {
+                this.resetPendingState(); // Start fresh for manual inventory click
                 this.showPopup('inventory');
                 this.switchInventoryTab('materials');
             };
         }
         if (this.btnParty) {
             this.btnParty.onclick = () => {
+                this.resetPendingState(); // Start fresh for manual party click
                 const currentKey = getActiveKey();
                 if (combatScenes.includes(currentKey)) {
                     this.showConfirm("전투가 진행 중입니다. 정말로 나가시겠습니까?", () => {
@@ -801,6 +807,7 @@ export default class UIManager {
                     this.safeSceneStart(sceneKey);
                 } else if (popupKey) {
                     console.log(`[UIManager] Opening Nav Popup: ${popupKey}`);
+                    this.resetPendingState(); // Start fresh for nav-bar popup clicks
                     // IF we are leaving combat for a popup (like Party), stop the combat first
                     if (combatScenes.includes(currentKey)) {
                         this.safeSceneStart('TerritoryScene');
@@ -1221,11 +1228,18 @@ export default class UIManager {
             for (const inst of instances) {
                 const base = ItemManager.getItem(inst.itemId);
                 const iconUrl = base.customAsset || 'assets/emojis/' + ItemManager.getSVGFilename(inst.itemId);
+
+                // Show ownership label
+                const ownerLabel = inst.ownerId ?
+                    `<div style="font-size: 8px; color: #fbbf24; margin-top: 2px; font-weight: bold; border: 1px solid rgba(251, 191, 36, 0.5); padding: 1px 3px; border-radius: 3px; background: rgba(0,0,0,0.3); display: inline-block;">장착 중: ${inst.ownerId}</div>` :
+                    `<div style="font-size: 8px; color: #10b981; margin-top: 2px; font-weight: bold;">[보유 중]</div>`;
+
                 ownedHtml += `
-                    <div class="owned-equip-card" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(167, 139, 250, 0.3); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: help; position: relative;" title="${base.name} LV.${inst.level}">
+                    <div class="owned-equip-card" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(167, 139, 250, 0.3); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: help; position: relative;" title="${base.name} LV.${inst.level}">
                         <div style="position: absolute; top: -5px; right: -5px; background: #7c3aed; color: #fff; font-size: 8px; font-weight: bold; padding: 2px 5px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.3);">LV.${inst.level}</div>
-                        <img src="${iconUrl}" style="width: 40px; height: 40px; object-fit: contain; image-rendering: pixelated; filter: drop-shadow(0 0 5px rgba(124, 58, 237, 0.5));">
+                        <img src="${iconUrl}" style="width: 32px; height: 32px; object-fit: contain; image-rendering: pixelated; filter: drop-shadow(0 0 5px rgba(124, 58, 237, 0.5));">
                         <div style="font-size: 9px; color: #fff; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; font-weight: bold;">${base.name}</div>
+                        ${ownerLabel}
                     </div>
                 `;
             }
@@ -1949,9 +1963,37 @@ export default class UIManager {
         if (this.popupOverlay) {
             this.detailChannel = null;
             if (this.detailPanel) this.detailPanel.style.display = 'none';
+
+            this.resetPendingState();
+            this.viewingInstanceId = null; // Stop tracking real-time updates when closed
             this.clearPopupSafe();
             this.hideTooltip(); // Hide any floating item tooltips
             this.popupOverlay.style.display = 'none';
+        }
+    }
+
+    handleEquipmentExpUpdated(payload) {
+        if (!this.viewingInstanceId || this.viewingInstanceId !== payload.instanceId) return;
+
+        // If we are viewing this item, we should refresh the description area
+        // We re-run showItemDetail logic for this item to update the EXP bar and text.
+        // Important: Preserve the "isAlreadyEquipped" state so buttons don't flicker.
+        const isEquipped = this.isItemEquippedByAny(this.viewingInstanceId);
+        this.showItemDetail(this.viewingInstanceId, isEquipped);
+    }
+
+    resetPendingState() {
+        if (this.pendingGearSlot) {
+            if (this.pendingGearSlot.element) {
+                this.pendingGearSlot.element.classList.remove('gear-slot-pending');
+            }
+            this.pendingGearSlot = null;
+        }
+        if (this.pendingGrimoireSlot) {
+            if (this.pendingGrimoireSlot.element) {
+                this.pendingGrimoireSlot.element.classList.remove('grim-slot-pending');
+            }
+            this.pendingGrimoireSlot = null;
         }
     }
 
@@ -2728,8 +2770,6 @@ export default class UIManager {
     async injectTestItems() {
         try {
             const testItems = [
-                'test_sword_fire', 'test_sword_ice', 'test_sword_lightning',
-                'test_staff_fire', 'test_staff_ice', 'test_staff_lightning',
                 'emoji_burger' // Ensure burger is always there
             ];
 
@@ -2834,7 +2874,9 @@ export default class UIManager {
             });
 
             // --- 2. Growth Equipment Instances ---
-            equipmentInstances.forEach(inst => {
+            const unequippedInstances = equipmentInstances.filter(inst => !inst.ownerId);
+
+            unequippedInstances.forEach(inst => {
                 const itemData = ItemManager.getItem(inst.itemId);
                 if (!itemData) return;
 
@@ -2917,9 +2959,9 @@ export default class UIManager {
         // Reset Equip Button State
         if (this.btnEquipItem) {
             if (isAlreadyEquipped) {
-                this.btnEquipItem.innerText = '장착됨';
-                this.btnEquipItem.style.opacity = '0.5';
-                this.btnEquipItem.style.pointerEvents = 'none'; // Disable click
+                this.btnEquipItem.innerText = '장착 해제';
+                this.btnEquipItem.style.opacity = '1';
+                this.btnEquipItem.style.pointerEvents = 'auto'; // Enable click for toggle unequip
             } else {
                 this.btnEquipItem.innerText = '장착';
                 this.btnEquipItem.style.opacity = '1';
@@ -2981,22 +3023,59 @@ export default class UIManager {
         if (this.detailDesc) {
             let descContent = targetItem.description || (item ? '재료 아이템입니다.' : '');
             if (instance) {
+                this.viewingInstanceId = instance.id;
                 const info = equipmentManager.getDisplayInfo(instance);
-                descContent = info.description;
+
+                // Add Visual EXP Bar
+                const progress = (info.expInLevel / info.requiredExp) * 100;
+                const expBarHtml = `
+                    <div class="exp-section">
+                        <div class="exp-bar-container">
+                            <div class="exp-bar-fill" style="width: ${progress}%"></div>
+                            <div class="exp-text">${info.expInLevel.toLocaleString()} / ${info.requiredExp.toLocaleString()}</div>
+                        </div>
+                    </div>
+                `;
+
+                descContent = info.description + expBarHtml;
+            } else {
+                this.viewingInstanceId = null;
+                if (targetItem.type === 'equipment' && targetItem.stats) {
+                    // For non-growth equipment (test weapons), show dummy stats
+                    let dummyStats = '\n\n[장착 효과]';
+                    Object.keys(targetItem.stats).forEach(k => {
+                        dummyStats += `\n- ${k.toUpperCase()}: +${targetItem.stats[k]}`;
+                    });
+                    descContent += dummyStats;
+                }
             }
             this.detailDesc.innerHTML = descContent + classReqText;
         }
 
-        // Disable equip button if class mismatch
-        if (this.btnEquipItem && !isAlreadyEquipped) {
-            if (!canEquip) {
-                this.btnEquipItem.innerText = '장착 불가';
-                this.btnEquipItem.style.opacity = '0.3';
-                this.btnEquipItem.style.pointerEvents = 'none';
+        // Disable equip button if class mismatch OR if viewing from general inventory (no pending slot)
+        const isBrowsingGeneral = !this.pendingGearSlot && !this.pendingGrimoireSlot;
+
+        if (this.btnEquipItem) {
+            if (isAlreadyEquipped) {
+                // If already equipped, we allow "Unequip" only if we came from a slot click or if we want to allow unequip from anywhere
+                // User asked to disable [장착] button in general inventory. Usually unequip is also part of that action button.
+                if (isBrowsingGeneral) {
+                    this.btnEquipItem.style.opacity = '0.3';
+                    this.btnEquipItem.style.pointerEvents = 'none';
+                } else {
+                    this.btnEquipItem.style.opacity = '1';
+                    this.btnEquipItem.style.pointerEvents = 'auto';
+                }
             } else {
-                this.btnEquipItem.innerText = '장착';
-                this.btnEquipItem.style.opacity = '1';
-                this.btnEquipItem.style.pointerEvents = 'auto';
+                if (!canEquip || isBrowsingGeneral) {
+                    this.btnEquipItem.innerText = isBrowsingGeneral ? '장착 (슬롯 선택 필요)' : '장착 불가';
+                    this.btnEquipItem.style.opacity = '0.3';
+                    this.btnEquipItem.style.pointerEvents = 'none';
+                } else {
+                    this.btnEquipItem.innerText = '장착';
+                    this.btnEquipItem.style.opacity = '1';
+                    this.btnEquipItem.style.pointerEvents = 'auto';
+                }
             }
         }
 

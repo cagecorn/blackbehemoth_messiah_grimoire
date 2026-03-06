@@ -298,6 +298,12 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         this.handleEquipRequest = async (payload) => {
             if (payload.unitId === this.id) {
                 let item;
+                if (!payload.itemId && payload.slot) {
+                    await this.unequipItem(payload.slot);
+                    console.log(`[Mercenary] Unequipped slot ${payload.slot} via request`);
+                    return;
+                }
+
                 if (payload.itemId && payload.itemId.startsWith('eq_')) {
                     const inst = await DBManager.getEquipmentInstance(payload.itemId);
                     if (inst) {
@@ -309,7 +315,6 @@ export default class Mercenary extends Phaser.GameObjects.Container {
 
                 if (item && item.type === 'equipment') {
                     // --- Toggle Unequip Logic ---
-                    // If clicking the same item that's already equipped, unequip it.
                     const currentEquipped = this.equipment[item.slot];
                     const isSameItem = currentEquipped && (
                         (item.instanceId && currentEquipped.instanceId === item.instanceId) ||
@@ -317,10 +322,10 @@ export default class Mercenary extends Phaser.GameObjects.Container {
                     );
 
                     if (isSameItem) {
-                        this.unequipItem(item.slot);
-                        console.log(`[Mercenary] Unequipped ${item.id} from ${item.slot}`);
+                        await this.unequipItem(item.slot);
+                        console.log(`[Mercenary] Unequipped ${item.id || item.instanceId} from ${item.slot}`);
                     } else {
-                        this.equipItem(item.slot, item);
+                        await this.equipItem(item.slot, item);
                     }
                 }
             }
@@ -583,19 +588,56 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         return summon;
     }
 
-    equipItem(slot, itemData) {
+    async equipItem(slot, itemData) {
         if (this.equipment.hasOwnProperty(slot)) {
+            const oldItem = this.equipment[slot];
+
+            // 1. If there was an old growth instance, clear its owner
+            if (oldItem && oldItem.instanceId) {
+                const oldInst = await DBManager.getEquipmentInstance(oldItem.instanceId);
+                if (oldInst) {
+                    oldInst.ownerId = null;
+                    await DBManager.saveEquipmentInstance(oldInst);
+                }
+            }
+
+            // 2. Set new equipment
             this.equipment[slot] = itemData;
+
+            // 3. If new item is a growth instance, set its owner
+            const newId = (typeof itemData === 'string') ? itemData : (itemData.instanceId || itemData.id);
+            if (newId && typeof newId === 'string' && newId.startsWith('eq_')) {
+                const newInst = await DBManager.getEquipmentInstance(newId);
+                if (newInst) {
+                    newInst.ownerId = this.id;
+                    await DBManager.saveEquipmentInstance(newInst);
+                }
+            }
+
             this.syncStatusUI();
+            EventBus.emit(EventBus.EVENTS.INVENTORY_UPDATED); // Refresh UI to hide equipped item
             return true;
         }
         return false;
     }
 
-    unequipItem(slot) {
+    async unequipItem(slot) {
         if (this.equipment.hasOwnProperty(slot)) {
+            const oldItem = this.equipment[slot];
+
+            // If it was a growth instance, clear its owner in DB
+            const oldId = (typeof oldItem === 'string') ? oldItem : (oldItem.instanceId || oldItem.id);
+            if (oldId && typeof oldId === 'string' && oldId.startsWith('eq_')) {
+                const inst = await DBManager.getEquipmentInstance(oldId);
+                if (inst) {
+                    inst.ownerId = null;
+                    await DBManager.saveEquipmentInstance(inst);
+                }
+            }
+
             this.equipment[slot] = null;
             this.syncStatusUI();
+            EventBus.emit(EventBus.EVENTS.INVENTORY_UPDATED); // Refresh UI to show unequipped item
             return true;
         }
         return false;
@@ -774,9 +816,11 @@ export default class Mercenary extends Phaser.GameObjects.Container {
 
         // --- Growth Gear EXP ---
         const armor = this.equipment ? this.equipment.armor : null;
-        if (armor && (armor.instanceId || (armor.id && armor.id.startsWith('eq_')))) {
-            const armorId = armor.instanceId || armor.id;
-            equipmentManager.addExp(armorId, amount);
+        if (armor) {
+            const armorId = (typeof armor === 'string') ? armor : (armor.instanceId || armor.id);
+            if (armorId && typeof armorId === 'string' && armorId.startsWith('eq_')) {
+                equipmentManager.addExp(armorId, amount);
+            }
         }
 
         // Record damage received for combat tracker (including what was absorbed by shield)
@@ -791,8 +835,8 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             // --- Growth Gear Weapon EXP (for Attacker) ---
             if (attacker && typeof attacker === 'object' && attacker.team === 'player' && attacker.equipment && attacker.equipment.weapon) {
                 const weapon = attacker.equipment.weapon;
-                if (weapon.instanceId || (weapon.id && weapon.id.startsWith('eq_'))) {
-                    const weaponId = weapon.instanceId || weapon.id;
+                const weaponId = (typeof weapon === 'string') ? weapon : (weapon.instanceId || weapon.id);
+                if (weaponId && typeof weaponId === 'string' && weaponId.startsWith('eq_')) {
                     equipmentManager.addExp(weaponId, finalDamage);
                 }
             }
@@ -1605,6 +1649,21 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             characterId: this.characterId,
             activatedPerks: this.activatedPerks
         };
+
+        // Proactive Sanity Check: Remove any equipment that no longer exists in the database (e.g., deleted test items)
+        if (this.equipment) {
+            Object.keys(this.equipment).forEach(slot => {
+                const item = this.equipment[slot];
+                if (item && item !== 'Empty') {
+                    // Fix: Use item.itemId for growth instances to check against ItemManager
+                    const baseId = (typeof item === 'string' ? item : (item.itemId || item.id));
+                    if (!ItemManager.getItem(baseId)) {
+                        console.warn(`[Mercenary] Auto-unequipping obsolete item from ${slot}: ${baseId}`);
+                        this.equipment[slot] = null;
+                    }
+                }
+            });
+        }
 
         EventBus.emit(EventBus.EVENTS.STATUS_UPDATED, {
             agentId: this.id,
