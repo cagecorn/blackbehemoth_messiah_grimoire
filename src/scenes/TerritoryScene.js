@@ -74,6 +74,10 @@ export default class TerritoryScene extends Phaser.Scene {
         if (this.game.uiManager) {
             this.game.uiManager.scene = this;
         }
+
+        // Ensure UI is synced for initial boot (BootScene -> TerritoryScene direct transition)
+        EventBus.emit(EventBus.EVENTS.SCENE_CHANGED, 'TerritoryScene');
+
         const { width, height } = this.scale;
 
         // Play Territory BGM
