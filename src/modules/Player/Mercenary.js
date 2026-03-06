@@ -939,6 +939,15 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             absorbedByShield = damageBeforeShield - finalDamage;
         }
 
+        // --- Growth Gear EXP ---
+        const armor = this.equipment ? this.equipment.armor : null;
+        if (armor) {
+            const armorId = (typeof armor === 'string') ? armor : (armor.instanceId || armor.id);
+            if (armorId && typeof armorId === 'string' && armorId.startsWith('eq_')) {
+                equipmentManager.addExp(armorId, amount);
+            }
+        }
+
         // Record damage received for combat tracker (including what was absorbed by shield)
         if (damageBeforeShield > 0) {
             EventBus.emit(EventBus.EVENTS.COMBAT_DATA_RECORD, { type: 'received', amount: damageBeforeShield, unitId: this.id });
@@ -947,6 +956,15 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         if (finalDamage > 0) {
             this.hp -= finalDamage;
             if (this.hp < 0) this.hp = 0;
+
+            // --- Growth Gear Weapon EXP (for Attacker) ---
+            if (attacker && typeof attacker === 'object' && attacker.team === 'player' && attacker.equipment && attacker.equipment.weapon) {
+                const weapon = attacker.equipment.weapon;
+                const weaponId = (typeof weapon === 'string') ? weapon : (weapon.instanceId || weapon.id);
+                if (weaponId && typeof weaponId === 'string' && weaponId.startsWith('eq_')) {
+                    equipmentManager.addExp(weaponId, finalDamage);
+                }
+            }
 
             // Lifesteal for Blood Rage
             if (attacker && typeof attacker === 'object' && attacker.isBloodRaging && attacker.heal) {

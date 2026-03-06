@@ -71,6 +71,16 @@ const ITEM_DATABASE = {
         description: '평범한 나무로 깎아 만든 검입니다. 하지만 당신의 노력에 따라 전설적인 무기가 될지도 모릅니다.',
         customAsset: 'assets/item/wood_sword.png',
         id: 'wood_sword'
+    },
+    'wood_armor': {
+        name: '우드 아머',
+        type: ITEM_TYPES.EQUIPMENT,
+        slot: EQUIP_SLOTS.ARMOR,
+        icon: 'wood_armor',
+        stats: { def: 5, mDef: 2 },
+        description: '나무 껍질을 엮어 만든 갑옷입니다. 투박하지만 입는 사람과 함께 성장하는 신비한 힘이 깃들어 있습니다.',
+        customAsset: 'assets/item/wood_armor.png',
+        id: 'wood_armor'
     }
 };
 

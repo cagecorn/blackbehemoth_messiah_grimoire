@@ -458,6 +458,15 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
             const attackerId = (attacker && typeof attacker === 'object') ? (attacker.id || attacker.className) : (attacker);
             if (attackerId && attacker && typeof attacker === 'object' && attacker.team === 'player') {
                 EventBus.emit(EventBus.EVENTS.COMBAT_DATA_RECORD, { type: 'damage', amount: finalDamage, unitId: attackerId });
+
+                // --- Growth Gear Weapon EXP ---
+                if (attacker.equipment && attacker.equipment.weapon) {
+                    const weapon = attacker.equipment.weapon;
+                    const weaponId = (typeof weapon === 'string') ? weapon : (weapon.instanceId || weapon.id);
+                    if (weaponId && typeof weaponId === 'string' && weaponId.startsWith('eq_')) {
+                        equipmentManager.addExp(weaponId, finalDamage);
+                    }
+                }
             }
 
             // Lifesteal for Blood Rage
