@@ -90,105 +90,18 @@ export default class UltimateManager {
     /**
      * Internal animation logic
      */
+    /**
+     * Internal animation logic - NOW USING DOM via UIManager
+     */
     async _executeCutscene(unit, skillName) {
-        const width = this.scene.cameras.main.width;
-        const height = this.scene.cameras.main.height;
-
-        // Darken Overlay
-        const overlay = this.scene.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.7)
-            .setScrollFactor(0)
-            .setDepth(30000)
-            .setAlpha(0);
-
-        if (this.scene.uiLayer) this.scene.uiLayer.add(overlay);
-
-        this.scene.tweens.add({
-            targets: overlay,
-            alpha: 1,
-            duration: 300
-        });
-
-        // Mercenary Sprite Close-up
-        let spriteKey = unit.config.sprite;
-        let scale = 4;
-        let yOffset = height - 300; // Raised from 150 to avoid HUD
-
-        // Special case: high-res cutscene characters
-        const cutsceneChars = ['merlin', 'aren', 'sera', 'lute', 'nickle', 'bao', 'king', 'leona', 'silvi', 'ella', 'boon', 'nana', 'noah', 'noel', 'aina', 'wrinkle', 'veve'];
-        if (cutsceneChars.includes(unit.characterId)) {
-            spriteKey = unit.characterId + '_cutscene';
-            scale = 1.0;
-            yOffset = height - 350; // Raised further for high-res images to stay clear of portraits
+        if (!this.scene.game.uiManager) {
+            console.warn("[UltimateManager] UIManager not found, skipping cutscene.");
+            return;
         }
 
-        const closeUp = this.scene.add.image(-200, yOffset, spriteKey)
-            .setScrollFactor(0)
-            .setDepth(30001)
-            .setScale(scale)
-            .setTint(0xffffff);
-
-        if (this.scene.uiLayer) this.scene.uiLayer.add(closeUp);
-
-        // Skill Name Text - positioned over the sprite on the left side
-        const text = this.scene.add.text(30, height - 450, `[ ${skillName} ]`, {
-            fontSize: '52px',
-            fontStyle: 'bold italic',
-            fill: '#ffcc00',
-            stroke: '#000',
-            strokeThickness: 8,
-            fontFamily: 'Arial Black',
-            wordWrap: { width: width - 60, useAdvancedWrap: true }
-        }).setScrollFactor(0).setDepth(30002).setAlpha(0);
-
-        if (this.scene.uiLayer) this.scene.uiLayer.add(text);
-
-        return new Promise(res => {
-            // Slide in unit
-            this.scene.tweens.add({
-                targets: closeUp,
-                x: 150,
-                duration: 400,
-                ease: 'Back.easeOut'
-            });
-
-            // Fade in text (no slide - it's already positioned on the left)
-            this.scene.tweens.add({
-                targets: text,
-                alpha: 1,
-                duration: 300,
-                ease: 'Power2',
-                delay: 200
-            });
-
-            // Flash effect
-            const flash = this.scene.add.rectangle(width / 2, height / 2, width, height, 0xffffff, 1)
-                .setScrollFactor(0).setDepth(30005).setAlpha(0);
-
-            if (this.scene.uiLayer) this.scene.uiLayer.add(flash);
-
-            this.scene.tweens.add({
-                targets: flash,
-                alpha: 1,
-                duration: 100,
-                yoyo: true,
-                delay: 1000
-            });
-
-            // Fade out everyone
-            this.scene.tweens.add({
-                targets: [closeUp, text, overlay],
-                alpha: 0,
-                duration: 500,
-                ease: 'Power2',
-                delay: 1500,
-                onComplete: () => {
-                    closeUp.destroy();
-                    text.destroy();
-                    overlay.destroy();
-                    flash.destroy();
-                    res();
-                }
-            });
-        });
+        // Just delegate to the UIManager and wait for completion
+        // The UIManager handles the DOM overlay, animations, and high-res sprites
+        // which prevents the camera zoom bugs.
+        await this.scene.game.uiManager.showUltimateCutscene(unit.characterId, skillName, 3000);
     }
 }

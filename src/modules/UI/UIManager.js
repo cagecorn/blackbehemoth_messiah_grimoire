@@ -3193,4 +3193,101 @@ export default class UIManager {
         }, duration - 500);
     }
 
+    /**
+     * Shows a dramatic ultimate cutscene using the DOM to avoid Phaser camera issues.
+     */
+    showUltimateCutscene(unitId, skillName, duration = 3000) {
+        return new Promise((resolve) => {
+            const container = document.createElement('div');
+            container.id = 'ultimate-cutscene-overlay';
+            container.style.cssText = `
+                position: absolute;
+                top: 0; left: 0; width: 100%; height: 100%;
+                background: rgba(0,0,0,0.7);
+                z-index: 10000;
+                pointer-events: none;
+                overflow: hidden;
+                opacity: 0;
+                transition: opacity 0.3s ease-out;
+            `;
+
+            // High-res Sprite in the cutscene
+            const spriteKey = unitId + '_cutscene';
+            const sprite = document.createElement('div');
+            sprite.style.cssText = `
+                position: absolute;
+                bottom: 120px;
+                left: -300px;
+                width: 500px;
+                height: 500px;
+                background: url('assets/characters/party/${spriteKey}.png');
+                background-size: contain;
+                background-repeat: no-repeat;
+                background-position: bottom;
+                transition: left 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                filter: drop-shadow(0 0 10px rgba(255, 204, 0, 0.5));
+            `;
+
+            // Skill Text
+            const text = document.createElement('div');
+            text.innerText = `[ ${skillName} ]`;
+            text.style.cssText = `
+                position: absolute;
+                bottom: 450px;
+                left: 30px;
+                font-family: 'Arial Black', sans-serif;
+                font-size: 48px;
+                font-weight: 900;
+                font-style: italic;
+                color: #ffcc00;
+                -webkit-text-stroke: 2px #000;
+                text-shadow: 4px 4px 0px #000;
+                opacity: 0;
+                transition: opacity 0.3s ease-out 0.2s;
+            `;
+
+            // White Flash Overlay
+            const flash = document.createElement('div');
+            flash.style.cssText = `
+                position: absolute;
+                top: 0; left: 0; width: 100%; height: 100%;
+                background: white;
+                opacity: 0;
+                z-index: 10001;
+                pointer-events: none;
+            `;
+
+            container.appendChild(sprite);
+            container.appendChild(text);
+            container.appendChild(flash);
+            document.body.appendChild(container);
+
+            // Phase 1: Fade In & Slide In
+            requestAnimationFrame(() => {
+                container.style.opacity = '1';
+                sprite.style.left = '50px';
+                text.style.opacity = '1';
+            });
+
+            // Phase 2: Flash effect
+            setTimeout(() => {
+                flash.style.transition = 'opacity 0.1s';
+                flash.style.opacity = '1';
+                setTimeout(() => {
+                    flash.style.transition = 'opacity 0.2s';
+                    flash.style.opacity = '0';
+                }, 100);
+            }, 1000);
+
+            // Phase 3: Cleanup
+            setTimeout(() => {
+                container.style.transition = 'opacity 0.5s ease-in';
+                container.style.opacity = '0';
+                setTimeout(() => {
+                    container.remove();
+                    resolve();
+                }, 500);
+            }, duration - 500);
+        });
+    }
 }
