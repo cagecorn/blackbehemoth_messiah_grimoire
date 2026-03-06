@@ -231,7 +231,7 @@ export default class TerritoryScene extends Phaser.Scene {
                 <div class="patch-entry">
                     <div class="patch-date">▶ 2026-03-06 (Latest)</div>
                     <div class="patch-item"><span class="patch-item-icon">🏗️</span>[영지] 생산 시설 전투 지원 시스템 개편 : 기존의 단순 자원 생산 건물들이 전장에 직접 개입하여 지원하는 시스템으로 전면 개편되었습니다.</div>
-                    <div class="patch-item"><span class="patch-item-icon">🪙</span>[영지] 은행 골드 생산량 밸런싱 : 은행의 골드 생산 수치를 기존 대비 50% 하향 조정하고, 드랍되는 코인의 크기를 적정 수준으로 최적화했습니다.</div>
+                    <div class="patch-item"><span class="patch-item-icon">🪙</span>[영지] 은행 골드 생산량 밸런싱 : 은행의 골드 생산 수치를 기존 대비 50% 하향 조정하고, 드랍되는 코인의 시각적 크기 및 애니메이션을 최적으로 최적화했습니다.</div>
                     <div class="patch-item"><span class="patch-item-icon">🚀</span>[전투] 건물별 고유 액션 추가 : 로켓 폭격(공장), 상태이상 정화(성당), 바위 투척/기절(캠프), 다이아 드랍(성) 기능이 활성화되었습니다.</div>
                 </div>
                 <div class="patch-entry">

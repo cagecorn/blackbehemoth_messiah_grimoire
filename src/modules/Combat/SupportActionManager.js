@@ -292,7 +292,7 @@ export default class SupportActionManager {
         // Start from sky
         const startY = scene.cameras.main.worldView.y - 50;
         const item = scene.add.image(x, startY, emojiKey)
-            .setDisplaySize(24, 24)
+            .setDisplaySize(32, 32)
             .setOrigin(0.5)
             .setDepth(2001);
 
@@ -316,7 +316,7 @@ export default class SupportActionManager {
                             // Manual spawn injection since spawnLoot usually takes monster
                             const lootGroup = scene.lootManager.lootGroup;
                             const drop = lootGroup.create(x, y, emojiKey);
-                            drop.setDisplaySize(24, 24);
+                            drop.setDisplaySize(32, 32);
                             drop.emojiId = emojiKey;
                             drop.amount = amount;
                             drop.isCollected = false;
@@ -330,10 +330,13 @@ export default class SupportActionManager {
                             drop.setInteractive({ useHandCursor: true });
 
                             // Visual settling
+                            const targetScale = drop.scaleX;
+                            drop.setScale(targetScale * 1.5);
                             scene.tweens.add({
                                 targets: drop,
-                                scale: { from: 1.5, to: 1 },
-                                duration: 200
+                                scale: targetScale,
+                                duration: 200,
+                                ease: 'Back.easeOut'
                             });
                         }
                         item.destroy();
