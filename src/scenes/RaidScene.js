@@ -30,6 +30,7 @@ import StageManager from '../modules/Environment/StageManager.js';
 import AmbientMoteManager from '../modules/Environment/AmbientMoteManager.js';
 import DynamicCameraManager from '../modules/Core/DynamicCameraManager.js';
 import PetManager from '../modules/Player/PetManager.js';
+import LootManager from '../modules/Loot/LootManager.js';
 
 export default class RaidScene extends Phaser.Scene {
     constructor() {
@@ -107,6 +108,7 @@ export default class RaidScene extends Phaser.Scene {
         this.shieldManager = new ShieldManager(this);
         this.barkManager = new BarkManager(this);
         this.petManager = new PetManager(this);
+        this.lootManager = new LootManager(this);
 
         // ⚔️ Premium Skill FX Layer (with Global Bloom)
         this.skillFxLayer = this.add.container(0, 0);
@@ -127,6 +129,14 @@ export default class RaidScene extends Phaser.Scene {
         this.spawnPlayers(); // Handles its own camera follow init
         this.spawnBoss();
         this.initPet();
+
+        // 💰 Loot Collection (Mercenaries & Pets)
+        this.physics.add.overlap(this.mercenaries, this.lootManager.lootGroup, (mercenary, item) => {
+            this.lootManager.collectLoot(mercenary, item);
+        });
+        this.physics.add.overlap(this.petManager.pets, this.lootManager.lootGroup, (pet, item) => {
+            this.lootManager.collectLoot(pet, item);
+        });
 
         // ESC to return
         this.input.keyboard.on('keydown-ESC', () => {

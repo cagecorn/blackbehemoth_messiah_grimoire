@@ -307,10 +307,10 @@ export default class ArenaScene extends Phaser.Scene {
         if (this.shieldManager) this.shieldManager.update(time, delta);
         if (this.barkManager) this.barkManager.update(time, delta);
 
-        // --- Building Support System Update ---
-        if (buildingManager) {
-            buildingManager.update(delta);
-        }
+        // --- Building Support System Update (Disabled in Arena) ---
+        // if (buildingManager) {
+        //     buildingManager.update(delta);
+        // }
 
         // Auto Messiah Touch (Disabled in Arena)
         // this.executeAutoMessiahTouch();

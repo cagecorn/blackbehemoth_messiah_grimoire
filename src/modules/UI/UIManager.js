@@ -533,6 +533,11 @@ export default class UIManager {
             if (this.messiahHud) {
                 this.messiahHud.style.display = (isCombat && !isArena) ? 'block' : 'none';
             }
+
+            // Hide Building HUD in Arena
+            if (this.buildingGrid) {
+                this.buildingGrid.style.display = (isCombat && !isArena) ? 'flex' : 'none';
+            }
         });
 
         if (this.messiahAutoBtn) {
