@@ -99,25 +99,19 @@
 - **GOOD**: `this.bonusAtk += amount;` / `this.bonusSpeed += 50;`
 - **표준 보너스 속성**: `bonusAtk`, `bonusMAtk`, `bonusCrit`, `bonusEva`, `bonusSpeed`, `bonusDef`, `bonusMDef`, `bonusAtkSpd`, `bonusAcc`, `bonusDR`, `bonusCastSpd`
 
-### 🖥️ HUD 관리 규정 (UI Consistency Policy)
 
-허드(HUD) 요소들은 각 씬의 성격에 따라 노출 여부가 결정됩니다. 관리 복잡도를 줄이기 위해 모든 허드는 **인라인 스타일(`display`)이 아닌 CSS 클래스(`.active`)로만 제어**합니다.
+### 🖥️ UI 레이어 아키텍처 (UI Layer Architecture)
 
-1.  **Portrait HUD (하단 초상화)**
-    *   **노출**: `DungeonScene`, `RaidScene`, `ArenaScene` (전투 시)
-    *   **비노출**: `TerritoryScene` (영지 내에서는 숨김)
-2.  **Building HUD (하단 건물 슬롯)**
-    *   **노출**: `TerritoryScene` (항상), 전투 씬 (지원 행동용)
-    *   **비노출**: 없음 (현재 모든 씬에서 공유)
-3.  **Messiah HUD (터치 개입/손가락)**
-    *   **노출**: `DungeonScene`, `RaidScene`
-    *   **비노출**: `TerritoryScene`, `ArenaScene` (아레나는 공정성을 위해 개입 금지)
-4.  **NPC HUD (좌측 하단 NPC 스택)**
-    *   **노출**: 고용한 NPC가 있고 스택이 1 이상일 때 모든 씬에서 노출
-    *   **비노출**: NPC 미고용 또는 스택 0일 때
+여러 레이어가 겹치는 모바일 UI의 특성상, 아래의 `z-index` 표준을 반드시 준수하여 요소 간 가림 현상을 방지합니다.
 
-> [!IMPORTANT]
-> 자바스크립트 내에서 `element.style.display`를 직접 건드리는 것은 CSS 클래스 제어와 충돌을 일으키므로 절대 금지합니다.
+*   **[구조적 제약]**: `#npc-hud` 및 `#messiah-hud`는 반드시 `#mobile-hud` **외부**(`app-container`의 직계 자식)에 위치해야 독립적인 레이어 순서가 보장됩니다.
+*   **표준 z-index 계층:**
+    *   `20001`: **내비게이션 바 (`#mobile-hud`)** - 최상위 메뉴.
+    *   `18000`: **상세 툴팁 (`.status-popup-tab`)** - 버프/디버프 상세 정보.
+    *   `15000`: **팝업 레이어 (`#popup-overlay`)** - 용병 상세창, 설정 등.
+    *   `1000`: **라운드 표시 (`#hud-round-display`)**, **하단 허드 (`#hud-bottom`)**
+    *   `500`: **전투 HUD (`#npc-hud`, `#messiah-hud`)** - 월드 내 유닛 정보 표시.
+
 ### 3. 데미지 및 힐 공식 (Stacking Logic)
 - **물리 데미지**: `attacker.getTotalAtk() * Multiplier`
 - **마법 데미지/힐**: `attacker.getTotalMAtk() * Multiplier`
