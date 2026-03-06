@@ -2011,40 +2011,26 @@ body {
 
 /* --- Building Grid (Retro Miniature) --- */
 #building-grid {
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    gap: 4px;
-    padding: 2px 10px;
-    height: 24px;
-    background: rgba(10, 10, 15, 0.6);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
-    border-bottom: 1px solid rgba(0, 0, 0, 0.4);
     position: relative;
-    z-index: 20002;
-    pointer-events: auto;
-    overflow: visible;
-    /* Prevent clipping of floating particles */
-    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
-    display: none;
-    /* Hidden by default, shown only in combat by UIManager */
-}
-
-#building-grid {
-    display: flex;
-    flex-wrap: nowrap;
-    gap: 1px;
-    padding: 0 4px;
-    overflow-x: hidden;
-    scrollbar-width: none;
-    background: rgba(0, 0, 0, 0.4);
-    border-top: 1px solid var(--retro-border);
+    width: 100%;
     height: 28px;
-    /* Compact height */
+    display: none;
+    /* Hidden by default, managed by UIManager */
+    flex-wrap: nowrap;
     align-items: center;
     justify-content: center;
+    gap: 1px;
+    padding: 0 4px;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-top: 1px solid var(--retro-border);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.4);
+    z-index: 20002;
+    pointer-events: auto;
+    overflow-x: hidden;
+    scrollbar-width: none;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
 }
 
 #building-grid::-webkit-scrollbar {
@@ -4717,32 +4703,15 @@ input:checked+.slider-toggle:before {
     }
 }
 
-/* --- Combat HUD Grid (New Unified Layout) --- */
-#combat-hud-grid {
+/* --- Combat HUD Elements (Layered independently on app-container) --- */
+#npc-hud {
     position: absolute;
     top: 102px;
-    /* Position accurately below the nav bar */
-    left: 0;
-    right: 0;
-    margin-inline: auto;
-    width: fit-content;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
+    left: 50%;
+    transform: translateX(-160px);
+    /* Positioned to the left of the round display */
     z-index: 500;
-    /* Standard combat HUD layer */
-    pointer-events: none;
-    /* Allow interaction with navigation dropdowns behind the grid */
-    background: transparent;
-}
-
-#combat-hud-grid>* {
     pointer-events: auto;
-    /* Re-enable for HUD elements themselves */
-}
-
-#npc-hud {
     display: none;
     align-items: center;
     background: rgba(15, 15, 10, 0.8);
@@ -4860,6 +4829,13 @@ input:checked+.slider-toggle:before {
 
 /* Messiah HUD (Miniature) */
 #messiah-hud {
+    position: absolute;
+    top: 102px;
+    left: 50%;
+    transform: translateX(96px);
+    /* Positioned to the right of the round display */
+    z-index: 500;
+    pointer-events: auto;
     display: none;
     align-items: center;
     background: rgba(15, 15, 10, 0.8);
@@ -4954,6 +4930,10 @@ input:checked+.slider-toggle:before {
 /* ─── Round Display (Combat HUD) ───────────────────────── */
 /* Round Display (Miniature) */
 #hud-round-display {
+    position: absolute;
+    top: 102px;
+    left: 50%;
+    transform: translateX(-50%);
     display: none;
     align-items: center;
     justify-content: center;

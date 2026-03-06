@@ -534,9 +534,10 @@ export default class UIManager {
                 this.messiahHud.style.display = (isCombat && !isArena) ? 'block' : 'none';
             }
 
-            // Hide Building HUD in Arena
+            // Hide Building HUD in Arena, show in others (Territory, Dungeon, Raid)
             if (this.buildingGrid) {
-                this.buildingGrid.style.display = (isCombat && !isArena) ? 'flex' : 'none';
+                const showGrid = (sceneKey === 'TerritoryScene' || sceneKey === 'DungeonScene' || sceneKey === 'RaidScene');
+                this.buildingGrid.style.display = showGrid ? 'flex' : 'none';
             }
         });
 
@@ -859,10 +860,10 @@ export default class UIManager {
 
             // Toggle Building Grid based on scene
             if (this.buildingGrid) {
-                const combatScenes = ['DungeonScene', 'ArenaScene', 'RaidScene'];
-                const isCombat = combatScenes.includes(currentSceneKey);
-                console.log(`[UIManager] updateActiveNav toggle visibility. Current: ${currentSceneKey}, isCombat: ${isCombat}`);
-                this.buildingGrid.style.display = isCombat ? 'flex' : 'none';
+                const showScenes = ['TerritoryScene', 'DungeonScene', 'RaidScene'];
+                const showGrid = showScenes.includes(currentSceneKey);
+                console.log(`[UIManager] updateActiveNav toggle visibility. Current: ${currentSceneKey}, showGrid: ${showGrid}`);
+                this.buildingGrid.style.display = showGrid ? 'flex' : 'none';
             }
         };
     }
@@ -1424,11 +1425,11 @@ export default class UIManager {
 
         // Scene-aware Building Grid visibility
         if (this.buildingGrid) {
-            const combatScenes = ['DungeonScene', 'ArenaScene', 'RaidScene'];
-            const isCombat = combatScenes.includes(sceneKey);
-            console.log(`[UIManager] safeSceneStart toggle visibility for ${sceneKey}: ${isCombat}`);
-            this.buildingGrid.style.display = isCombat ? 'flex' : 'none';
-            if (isCombat) this.updateBuildingGrid(); // Force refresh on entry
+            const showScenes = ['TerritoryScene', 'DungeonScene', 'RaidScene'];
+            const showGrid = showScenes.includes(sceneKey);
+            console.log(`[UIManager] navigateToScene toggle visibility for ${sceneKey}: ${showGrid}`);
+            this.buildingGrid.style.display = showGrid ? 'flex' : 'none';
+            if (showGrid) this.updateBuildingGrid(); // Force refresh on entry
         }
 
         // Start the target scene with data

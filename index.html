@@ -101,29 +101,27 @@
         <!-- Dynamic Chat Channels Container (Bottom-Left) -->
         <div id="chat-container"></div>
 
-        <!-- Combat HUD Grid (Moved outside mobile-hud for layering) -->
-        <div id="combat-hud-grid">
-            <div id="npc-hud">
-                <div class="npc-hud-card">
-                    <img id="npc-hud-icon" src="" alt="NPC">
-                    <div class="npc-hud-stacks" id="npc-hud-stacks">0</div>
-                </div>
+        <!-- Combat HUD Elements (Moved outside containers for layering control) -->
+        <div id="npc-hud">
+            <div class="npc-hud-card">
+                <img id="npc-hud-icon" src="" alt="NPC">
+                <div class="npc-hud-stacks" id="npc-hud-stacks">0</div>
             </div>
+        </div>
 
-            <div id="hud-round-display">
-                <div class="round-display-bg"></div>
-                <span id="hud-round-text">ROUND 1</span>
-            </div>
+        <div id="hud-round-display">
+            <div class="round-display-bg"></div>
+            <span id="hud-round-text">ROUND 1</span>
+        </div>
 
-            <div id="messiah-hud">
-                <div class="messiah-hud-card">
-                    <div id="messiah-hud-icon">👆</div>
-                    <div class="messiah-hud-stacks" id="messiah-hud-stacks">0/10</div>
-                    <div class="messiah-cooldown-bar-bg">
-                        <div class="messiah-cooldown-bar-fill" id="messiah-cooldown-fill"></div>
-                    </div>
-                    <button id="messiah-auto-btn" class="messiah-auto-btn">AUTO</button>
+        <div id="messiah-hud">
+            <div class="messiah-hud-card">
+                <div id="messiah-hud-icon">👆</div>
+                <div class="messiah-hud-stacks" id="messiah-hud-stacks">0/10</div>
+                <div class="messiah-cooldown-bar-bg">
+                    <div class="messiah-cooldown-bar-fill" id="messiah-cooldown-fill"></div>
                 </div>
+                <button id="messiah-auto-btn" class="messiah-auto-btn">AUTO</button>
             </div>
         </div>
 

@@ -89,10 +89,13 @@ export default class TerritoryScene extends Phaser.Scene {
         this.createBannerList();
         this.createPatchNotes();
 
-        // Suppress portrait bar
-        this.events.once('update', () => {
-            EventBus.emit('PARTY_DEPLOYED', { scene: this, mercenaries: [] });
-        });
+        // Clean up on scene shutdown/sleep: ONLY HIDE, DON'T REMOVE (for faster re-entry)
+        const cleanup = () => {
+            if (this.navContainer) this.navContainer.style.display = 'none';
+            if (this.patchNotesContainer) this.patchNotesContainer.style.display = 'none';
+        };
+        this.events.on('shutdown', cleanup);
+        this.events.on('sleep', cleanup);
 
         console.log('[TerritoryScene] 영지 씬 생성 완료 — 키치 배너 레이아웃');
     }
@@ -162,15 +165,6 @@ export default class TerritoryScene extends Phaser.Scene {
             }
         });
 
-        // Clean up on scene shutdown: ONLY HIDE, DON'T REMOVE (for faster re-entry)
-        this.events.on('shutdown', () => {
-            if (this.navContainer) {
-                this.navContainer.style.display = 'none';
-            }
-            if (this.patchNotesContainer) {
-                this.patchNotesContainer.style.display = 'none';
-            }
-        });
     }
 
     _buildBannerHTML(banner, index) {
