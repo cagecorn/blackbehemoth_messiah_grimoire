@@ -409,7 +409,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         }
 
         // Pet Passive
-        const petBonus = this.scene.game.partyManager?.getGlobalPetBonus('atkMult') || 0;
+        const petBonus = this.scene?.game?.partyManager?.getGlobalPetBonus('atkMult') || 0;
         multipliers += petBonus;
 
         return (base + additions) * (1 + multipliers);
@@ -427,7 +427,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         }
 
         // Pet Passive
-        const petBonus = this.scene.game.partyManager?.getGlobalPetBonus('mAtkMult') || 0;
+        const petBonus = this.scene?.game?.partyManager?.getGlobalPetBonus('mAtkMult') || 0;
         multipliers += petBonus;
 
         return (base + additions) * (1 + multipliers);
@@ -489,7 +489,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         }
 
         // Pet Passive (if applicable)
-        const petBonus = this.scene.game?.partyManager?.getGlobalPetBonus('speedMult') || 0;
+        const petBonus = this.scene?.game?.partyManager?.getGlobalPetBonus('speedMult') || 0;
         multipliers += petBonus;
 
         return base * (1 + multipliers);
@@ -1558,7 +1558,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
 
         // Save to PartyManager for persistent state linking (Only for player team)
         if (this.team === 'player') {
-            this.scene.game.partyManager.saveState(this.id, {
+            this.scene?.game?.partyManager?.saveState(this.id, {
                 ...this.getState(),
                 ...stats
             });

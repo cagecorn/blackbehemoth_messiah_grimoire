@@ -98,6 +98,9 @@ export default class DungeonScene extends Phaser.Scene {
         // --- Monster Pooling ---
         this.monsterPool = {}; // Map of class names to arrays of pooled instances
 
+        // --- UI Layer for Overlays ---
+        this.uiLayer = this.add.container(0, 0).setScrollFactor(0).setDepth(40000);
+
         this.initDungeon();
     }
 
