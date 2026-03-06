@@ -263,9 +263,21 @@ export default class SupportActionManager {
                     const stunDuration = 1000 + (level - 1) * 200;
                     if (target.isStunned !== undefined) {
                         target.isStunned = true;
-                        scene.time.delayedCall(stunDuration, () => {
-                            if (target.active) target.isStunned = false;
-                        });
+
+                        // Interrupt current movement so they don't slide while stunned
+                        if (target.body) {
+                            target.body.setVelocity(0, 0);
+                        }
+
+                        // Trigger visual FX (this also handles clearing target.isStunned on expiration)
+                        if (scene.fxManager && scene.fxManager.createStunEffect) {
+                            scene.fxManager.createStunEffect(target, stunDuration);
+                        } else {
+                            scene.time.delayedCall(stunDuration, () => {
+                                if (target.active) target.isStunned = false;
+                            });
+                        }
+
                         console.log(`[SupportAction] Camp stunned ${target.unitName || 'Enemy'} for ${stunDuration}ms`);
                     }
                 }

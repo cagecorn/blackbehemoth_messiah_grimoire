@@ -989,7 +989,7 @@ export default class UIManager {
                 </div>
                 
                 <div class="shop-footer">
-                   <div class="shop-currency" id="pet-meat-display">🥩 0</div>
+                   <div class="shop-currency" id="pet-meat-display" style="display:flex; align-items:center; gap:6px;"><img src="assets/emojis/1f356.svg" style="width:20px; height:20px;"> 0</div>
                 </div>
             </div>
         `;
@@ -1012,7 +1012,7 @@ export default class UIManager {
 
         const meat = await DBManager.getInventoryItem('emoji_meat');
         const meatDisplay = document.getElementById('pet-meat-display');
-        if (meatDisplay) meatDisplay.innerText = `🥩 ${meat ? meat.amount : 0}`;
+        if (meatDisplay) meatDisplay.innerHTML = `<img src="assets/emojis/1f356.svg" style="width:20px; height:20px;"> ${meat ? meat.amount : 0}`;
 
         let html = '';
         Object.keys(PetStats).forEach(key => {
@@ -1075,7 +1075,7 @@ export default class UIManager {
             </div>
             
             <button id="btn-feed-pet" class="shop-buy-btn" style="width: 100%; margin-top: auto; padding: 12px; height: auto; flex-direction: column; gap: 4px; border-radius: 8px;">
-                <div style="font-size: 15px; font-weight: bold;">🥩 고기 먹이기</div>
+                <div style="font-size: 15px; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 6px;"><img src="assets/emojis/1f356.svg" style="width:18px; height:18px;"> 고기 먹이기</div>
                 <div style="font-size: 10px; opacity: 0.9;">(소모: ${cost}개)</div>
             </button>
         `;
@@ -1084,7 +1084,7 @@ export default class UIManager {
         feedBtn.onclick = async () => {
             const meatItem = await DBManager.getInventoryItem('emoji_meat');
             if (!meatItem || meatItem.amount < cost) {
-                this.showToast('몬스터 고기가 부족합니다! 🥩');
+                this.showToast('몬스터 고기가 부족합니다! 🍖');
                 return;
             }
 
@@ -1123,7 +1123,7 @@ export default class UIManager {
                 </div>
                 
                 <div class="shop-footer">
-                    <div class="shop-currency" id="npc-hire-gold-display">💰 0</div>
+                    <div class="shop-currency" id="npc-hire-gold-display" style="display:flex; align-items:center; gap:6px;"><img src="assets/emojis/1fa99.svg" style="width:20px; height:20px;"> 0</div>
                 </div>
             </div>
         `;
@@ -1142,7 +1142,7 @@ export default class UIManager {
         if (!listContainer) return;
 
         const goldItem = await DBManager.getInventoryItem('emoji_coin');
-        if (goldDisplay) goldDisplay.innerText = `💰 ${goldItem ? goldItem.amount.toLocaleString() : 0}`;
+        if (goldDisplay) goldDisplay.innerHTML = `<img src="assets/emojis/1fa99.svg" style="width:20px; height:20px;"> ${goldItem ? goldItem.amount.toLocaleString() : 0}`;
 
         const roster = npcManager.roster;
         const activeNPCId = npcManager.activeNPCId;
@@ -1295,8 +1295,8 @@ export default class UIManager {
             <div style="margin-top:10px; font-size:11px; color:#94a3b8; line-height:1.4;">신성한 권능은 메시아의 스탯에 비례하여 위력이 강화됩니다.</div>
         `;
 
-        // Essence Display (using emoji_essence - Divine Essence)
-        const essence = await DBManager.getInventoryItem('emoji_essence');
+        // Essence Display (using emoji_divine_essence - Divine Essence)
+        const essence = await DBManager.getInventoryItem('emoji_divine_essence');
         const essenceDisplay = document.getElementById('messiah-essence-display');
         if (essenceDisplay) essenceDisplay.innerText = `✨ ${essence ? essence.amount : 0}`;
 
@@ -1343,13 +1343,13 @@ export default class UIManager {
                 const power = mm.powers[powerId];
                 const cost = 5 + (power.level - 1) * 3;
 
-                const essenceItem = await DBManager.getInventoryItem('emoji_essence');
+                const essenceItem = await DBManager.getInventoryItem('emoji_divine_essence');
                 if (!essenceItem || essenceItem.amount < cost) {
                     this.showToast('전능의 정수가 부족합니다! ✨');
                     return;
                 }
 
-                await DBManager.saveInventoryItem('emoji_essence', essenceItem.amount - cost);
+                await DBManager.saveInventoryItem('emoji_divine_essence', essenceItem.amount - cost);
                 await mm.upgradePower(powerId);
                 this.showToast(`${power.name} 강화 완료! ✨`);
                 this.refreshMessiahManagement();
@@ -1907,7 +1907,6 @@ export default class UIManager {
         if (!isCombat || isArena) {
             if (this.messiahHud) {
                 if (this.messiahHud.classList.contains('active')) this.messiahHud.classList.remove('active');
-                this.messiahHud.style.display = 'none';
             }
             this.lastMessiahPowerId = null;
             this.lastMessiahStacks = -1;

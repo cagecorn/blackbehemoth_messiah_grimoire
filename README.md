@@ -99,6 +99,25 @@
 - **GOOD**: `this.bonusAtk += amount;` / `this.bonusSpeed += 50;`
 - **표준 보너스 속성**: `bonusAtk`, `bonusMAtk`, `bonusCrit`, `bonusEva`, `bonusSpeed`, `bonusDef`, `bonusMDef`, `bonusAtkSpd`, `bonusAcc`, `bonusDR`, `bonusCastSpd`
 
+### 🖥️ HUD 관리 규정 (UI Consistency Policy)
+
+허드(HUD) 요소들은 각 씬의 성격에 따라 노출 여부가 결정됩니다. 관리 복잡도를 줄이기 위해 모든 허드는 **인라인 스타일(`display`)이 아닌 CSS 클래스(`.active`)로만 제어**합니다.
+
+1.  **Portrait HUD (하단 초상화)**
+    *   **노출**: `DungeonScene`, `RaidScene`, `ArenaScene` (전투 시)
+    *   **비노출**: `TerritoryScene` (영지 내에서는 숨김)
+2.  **Building HUD (하단 건물 슬롯)**
+    *   **노출**: `TerritoryScene` (항상), 전투 씬 (지원 행동용)
+    *   **비노출**: 없음 (현재 모든 씬에서 공유)
+3.  **Messiah HUD (터치 개입/손가락)**
+    *   **노출**: `DungeonScene`, `RaidScene`
+    *   **비노출**: `TerritoryScene`, `ArenaScene` (아레나는 공정성을 위해 개입 금지)
+4.  **NPC HUD (좌측 하단 NPC 스택)**
+    *   **노출**: 고용한 NPC가 있고 스택이 1 이상일 때 모든 씬에서 노출
+    *   **비노출**: NPC 미고용 또는 스택 0일 때
+
+> [!IMPORTANT]
+> 자바스크립트 내에서 `element.style.display`를 직접 건드리는 것은 CSS 클래스 제어와 충돌을 일으키므로 절대 금지합니다.
 ### 3. 데미지 및 힐 공식 (Stacking Logic)
 - **물리 데미지**: `attacker.getTotalAtk() * Multiplier`
 - **마법 데미지/힐**: `attacker.getTotalMAtk() * Multiplier`
