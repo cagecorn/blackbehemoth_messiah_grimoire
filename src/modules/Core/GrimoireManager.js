@@ -98,7 +98,11 @@ export default class GrimoireManager {
             unit.sprite.setScale(unit._originalConfig.scale * 1.5);
             if (unit.scene.fxManager) {
                 unit.scene.fxManager.showEmojiPopup(unit, '👑');
-                unit.sprite.postFX.addGlow(0xffd700, 2, 0, false, 0.1, 10);
+                // Remove previous transformation glow if it exists
+                if (unit.grimoireGlow) {
+                    unit.sprite.postFX.remove(unit.grimoireGlow);
+                }
+                unit.grimoireGlow = unit.sprite.postFX.addGlow(0xffd700, 2, 0, false, 0.1, 10);
             }
         }
 

@@ -74,12 +74,15 @@ export default class TacticalCommand {
     applyBuffToTarget(target) {
         // Prevent overlapping internal timers if already buffed
         if (target.isTacticalCommandActive) {
-            // If we want to refresh duration, we would need to track the timer reference.
-            // For simplicity, we just ignore if already active, or we override.
-            console.log(`[Skill] 📢 ${target.unitName} is already under Tactical Command.`);
-            // Let's reset the timer if it exists.
+            console.log(`[Skill] 📢 ${target.unitName} is already under Tactical Command. Refreshing...`);
+            // Let's reset the timer and clear previous glow if it exists.
             if (target.tacticalCommandTimer) {
                 target.tacticalCommandTimer.remove();
+                target.tacticalCommandTimer = null;
+            }
+            if (target.tacticalCommandGlow) {
+                target.sprite.postFX.remove(target.tacticalCommandGlow);
+                target.tacticalCommandGlow = null;
             }
         }
 
@@ -91,13 +94,16 @@ export default class TacticalCommand {
             this.scene.fxManager.showDamageText(target, '전술 지휘!', '#ffff00');
         }
 
-        const glowFx = target.sprite.postFX.addGlow(0xffff00, 2, 0, false, 0.1, 10);
+        target.tacticalCommandGlow = target.sprite.postFX.addGlow(0xffff00, 2, 0, false, 0.1, 10);
 
         // Set expiration timer
         target.tacticalCommandTimer = this.scene.time.delayedCall(this.duration, () => {
             if (target && target.active) {
                 target.isTacticalCommandActive = false;
-                target.sprite.postFX.remove(glowFx);
+                if (target.tacticalCommandGlow) {
+                    target.sprite.postFX.remove(target.tacticalCommandGlow);
+                    target.tacticalCommandGlow = null;
+                }
                 if (target.syncStatusUI) target.syncStatusUI();
                 console.log(`[Skill] 📢 Tactical Command expired for ${target.unitName}.`);
             }
