@@ -119,9 +119,9 @@ export default class RaidScene extends Phaser.Scene {
             console.log('[Raid] Skill FX Bloom Pipeline Active! ✨');
         }
 
-        // UI
+        // UI (Use simpler 'RAID ROUND N' format to prevent UI overlap)
         if (this.game.uiManager) {
-            this.game.uiManager.updateRoundDisplay(`RAID: ${MonsterClasses.BOSS_GOBLIN.name.toUpperCase()}`);
+            this.game.uiManager.updateRoundDisplay(`RAID ROUND ${this.raidCount}`);
         }
 
 
