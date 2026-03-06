@@ -411,23 +411,20 @@ export default class UIManager {
 
     showBuildingSelection(slotIndex) {
         const kData = {
-            'bank': { name: '은행', desc: '[ 지원 주기: 10초 ] 하늘에서 골드 🪙를 떨어뜨려 전장에 드랍합니다.' },
-            'factory': { name: '공장', desc: '[ 지원 주기: 20초 ] 하늘에서 로켓 🚀을 발사하여 무작위 적 1명을 물리 공격합니다.' },
-            'church': { name: '성당', desc: '[ 지원 주기: 60초 ] 하늘에서 신성한 빛이 내리쬐어 아군 1명의 상태이상을 정화합니다.' },
-            'camp': { name: '캠프', desc: '[ 지원 주기: 30초 ] 하늘에서 바위 🪨를 던져 적을 공격하고 기절시킵니다.' },
-            'tree': { name: '나무', desc: '[ 지원 주기: 15초 ] 하늘에서 치유의 과일을 떨어뜨려 아군을 치료합니다 🍎' },
-            'castle': { name: '성', desc: '[ 지원 주기: 300초 ] 하늘에서 희귀한 다이아몬드 💎를 떨어뜨려 드랍합니다.' }
+            'bank': { name: '은행', desc: '[ 지원 주기: 10초 ] 하늘에서 <strong style="color:var(--retro-amber);">골드(Gold) 🪙</strong>를 떨어뜨려 전장에 드랍합니다.' },
+            'factory': { name: '공장', desc: '[ 지원 주기: 20초 ] 하늘에서 <strong style="color:var(--retro-red);">로켓 🚀</strong>을 발사하여 무작위 적 1명을 물리 공격합니다.' },
+            'church': { name: '성당', desc: '[ 지원 주기: 60초 ] 아군 1명에게 성스러운 빛을 내려 모든 <strong style="color:var(--retro-amber);">상태이상 및 디버프를 정화</strong>합니다.' },
+            'camp': { name: '캠프', desc: '[ 지원 주기: 30초 ] 하늘에서 <strong style="color:white;">바위 🪨</strong>를 떨어뜨려 적에게 피해를 입히고 <strong style="color:var(--retro-red);">기절(Stun)</strong>시킵니다.' },
+            'tree': { name: '나무', desc: '[ 지원 주기: 15초 ] 하늘에서 <strong style="color:var(--retro-green);">치유의 과일 🍎</strong>을 떨어뜨려 무작위 아군 1명을 회복시킵니다.' },
+            'castle': { name: '성', desc: '[ 지원 주기: 300초 ] 매우 긴 주기마다 하늘에서 희귀한 <strong style="color:var(--retro-blue);">다이아(Diamond) 💎</strong>를 떨어뜨려 드랍합니다.' }
         };
 
         const options = Object.values(BUILDING_TYPES).map(type => {
             const data = kData[type.id] || { name: type.id, desc: '' };
             const bIcon = ItemManager.getSVGFilename(type.iconId);
-            const resIcon = ItemManager.getSVGFilename(type.resource);
 
-            // Inject Twitter Emoji into description
-            const descWithIcon = data.desc.replace(/[💰🧱✨🍖🪵💎]/g,
-                `<img src="assets/emojis/${resIcon}" style="width:14px; height:14px; vertical-align:middle; margin-left:4px;">`
-            );
+            // Just use the raw description string, avoiding the broken unicode regex replacement
+            const descWithIcon = data.desc;
 
             return `
                 <div class="build-premium-card" data-type="${type.id}">
