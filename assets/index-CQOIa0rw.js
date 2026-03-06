@@ -6758,8 +6758,8 @@ ${v.ultimateDescription}`))}updateNarrative(v,S){this.pendingData.narrative={unl
                         <span style="color:var(--retro-amber); font-size: 11px;">[ 지원 주기: ${M.cooldown}초 ]</span>
                     </div>
                     <div class="info-stat-row" style="margin-top:4px; line-height: 1.4;">
-                        <span style="color:var(--retro-green); font-size: 10px;">
-                            ${S.typeId==="tree"?`하늘에서 치유의 과일을 떨어뜨려 무작위 아군 1명의 체력을 ${15+(S.level-1)*5} 회복시킵니다.`:S.typeId==="factory"?`하늘에서 로켓 🚀을 발사하여 무작위 적 1명에게 ${10+(S.level-1)*4}의 물리 피해를 입힙니다.`:S.typeId==="bank"?`하늘에서 골드 🪙를 떨어뜨려 전장에 ${50+(S.level-1)*25} 골드를 드랍합니다. (직접 획득 가능)`:S.typeId==="church"?"하늘에서 신성한 빛이 내리쬐어 아군 1명의 모든 상태이상을 정화합니다.":S.typeId==="camp"?`하늘에서 바위 🪨를 던져 적에게 ${10+(S.level-1)*3}의 피해를 입히고 기절시킵니다. (레이드 제외)`:S.typeId==="castle"?`매우 긴 주기마다 하늘에서 다이아몬드 💎를 ${1+Math.floor((S.level-1)/5)}개 떨어뜨립니다.`:"[ 전투 지원 기능 준비 중 ]"}
+                        <span style="color:#e2e8f0; font-size: 10px;">
+                            ${S.typeId==="tree"?`하늘에서 <strong style="color:var(--retro-green);">치유의 과일 🍎</strong>을 떨어뜨려 무작위 아군 1명의 체력을 ${15+(S.level-1)*5} 회복시킵니다.`:S.typeId==="factory"?`하늘에서 <strong style="color:var(--retro-red);">로켓 🚀</strong>을 발사하여 무작위 적 1명에게 ${10+(S.level-1)*4}의 물리 피해를 입힙니다.`:S.typeId==="bank"?`하늘에서 <strong style="color:var(--retro-amber);">골드(Gold) 🪙</strong>를 떨어뜨려 전장에 ${50+(S.level-1)*25} 골드를 드랍합니다. (직접 획득 가능)`:S.typeId==="church"?'아군 1명에게 성스러운 빛을 내려 모든 <strong style="color:var(--retro-amber);">상태이상 및 디버프를 정화</strong>합니다.':S.typeId==="camp"?`하늘에서 <strong style="color:white;">바위 🪨</strong>를 떨어뜨려 적에게 ${10+(S.level-1)*3}의 피해를 입히고 <strong style="color:var(--retro-red);">기절(Stun)</strong>시킵니다. (레이드 제외)`:S.typeId==="castle"?`매우 긴 주기마다 하늘에서 희귀한 <strong style="color:var(--retro-blue);">다이아(Diamond) 💎</strong>를 ${1+Math.floor((S.level-1)/5)}개 떨어뜨려 드랍합니다.`:"[ 전투 지원 기능 준비 중 ]"}
                         </span>
                     </div>
                 </div>
