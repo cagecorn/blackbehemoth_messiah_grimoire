@@ -338,6 +338,21 @@ export default class SupportActionManager {
                                 duration: 200,
                                 ease: 'Back.easeOut'
                             });
+
+                            // ADD CLICK TO COLLECT
+                            const collectHandler = () => {
+                                if (drop.canBeCollected && !drop.isCollected) {
+                                    scene.tweens.add({
+                                        targets: drop,
+                                        scale: targetScale * 1.5,
+                                        duration: 80,
+                                        yoyo: true,
+                                        onComplete: () => scene.lootManager.collectLoot(null, drop)
+                                    });
+                                }
+                            };
+                            drop.on('pointerdown', collectHandler);
+                            drop.on('pointerover', (pointer) => { if (pointer.isDown) collectHandler(); });
                         }
                         item.destroy();
                     }

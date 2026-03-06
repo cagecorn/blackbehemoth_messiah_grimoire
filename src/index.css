@@ -4707,9 +4707,9 @@ input:checked+.slider-toggle:before {
 #npc-hud {
     position: absolute;
     top: 102px;
-    left: 50%;
-    transform: translateX(-160px);
-    /* Positioned to the left of the round display */
+    right: 50%;
+    margin-right: 70px;
+    /* Positioned flexibly to the left of the round display */
     z-index: 500;
     pointer-events: auto;
     display: none;
@@ -4832,8 +4832,8 @@ input:checked+.slider-toggle:before {
     position: absolute;
     top: 102px;
     left: 50%;
-    transform: translateX(96px);
-    /* Positioned to the right of the round display */
+    margin-left: 70px;
+    /* Positioned flexibly to the right of the round display */
     z-index: 500;
     pointer-events: auto;
     display: none;

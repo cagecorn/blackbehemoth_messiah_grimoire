@@ -252,9 +252,12 @@ export default class FXManager {
         shadow.setDepth(-10);
 
         const updateListener = () => {
-            if (!target.active || !shadow.active) {
+            if (!target.scene) {
                 this.scene.events.off('postupdate', updateListener);
-                if (shadow.active) shadow.destroy();
+                if (shadow && shadow.active) shadow.destroy();
+                return;
+            }
+            if (!target.active || !shadow.active) {
                 return;
             }
             if (target.isAirborne && target.sprite) {
