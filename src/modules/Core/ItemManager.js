@@ -115,6 +115,15 @@ const ITEM_DATABASE = {
         stats: { mAtk: 50 },
         description: '강력한 전격의 테스트용 지팡이입니다.',
         prefix: WEAPON_PREFIXES.LIGHTNING
+    },
+    'wood_sword': {
+        name: '우드 소드',
+        type: ITEM_TYPES.EQUIPMENT,
+        slot: EQUIP_SLOTS.WEAPON,
+        icon: 'wood_sword',
+        stats: { atk: 5 },
+        description: '평범한 나무로 깎아 만든 검입니다. 하지만 당신의 노력에 따라 전설적인 무기가 될지도 모릅니다.',
+        customAsset: 'assets/item/wood_sword.png'
     }
 };
 

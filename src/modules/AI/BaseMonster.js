@@ -3,6 +3,7 @@ import HealthBar from '../UI/HealthBar.js';
 import EventBus from '../Events/EventBus.js';
 import CharmManager from '../Core/CharmManager.js';
 import GrimoireManager from '../Core/GrimoireManager.js';
+import equipmentManager from '../Core/EquipmentManager.js';
 
 /**
  * BaseMonster.js
@@ -336,6 +337,15 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
             const attackerId = (attacker && typeof attacker === 'object') ? (attacker.id || attacker.className) : (attacker);
             if (attackerId && attacker && typeof attacker === 'object' && attacker.team === 'player') {
                 EventBus.emit(EventBus.EVENTS.COMBAT_DATA_RECORD, { type: 'damage', amount: finalDamage, unitId: attackerId });
+
+                // --- Growth Gear Weapon EXP ---
+                if (attacker.equipment && attacker.equipment.weapon) {
+                    const weapon = attacker.equipment.weapon;
+                    if (weapon.instanceId || (weapon.id && weapon.id.startsWith('eq_'))) {
+                        const weaponId = weapon.instanceId || weapon.id;
+                        equipmentManager.addExp(weaponId, finalDamage);
+                    }
+                }
             }
 
             // Lifesteal for Blood Rage

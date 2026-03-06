@@ -4,6 +4,8 @@
  */
 import ItemManager from '../Core/ItemManager.js';
 import EventBus from '../Events/EventBus.js';
+import DBManager from '../Database/DBManager.js';
+import equipmentManager from '../Core/EquipmentManager.js';
 
 export default class ChatChannel {
     constructor(id, classId, characters, name, spritePath, parentElement, onCommand, onSwap, uiManager) {
@@ -56,6 +58,7 @@ export default class ChatChannel {
             narrative: { unlocks: null, level: null },
             ultProgress: null
         };
+        this._lastDetailSlot = null; // Track selected gear slot
 
         // Initial nameplate HTML
         const nameplateHtml = `<div class="chat-nameplate" id="nameplate-${id}">${name}</div>`;
@@ -184,11 +187,69 @@ export default class ChatChannel {
                 <button class="dash-back-btn">돌아가기</button>
             </div>
             <div class="chat-gear-view" id="gear-${id}" style="display: none;">
-                <div class="gear-slot" data-slot="weapon"><span class="slot-label">[무기]</span> <span class="slot-value">Empty</span></div>
-                <div class="gear-slot" data-slot="armor"><span class="slot-label">[방어구]</span> <span class="slot-value">Empty</span></div>
-                <div class="gear-slot" data-slot="necklace"><span class="slot-label">[목걸이]</span> <span class="slot-value">Empty</span></div>
-                <div class="gear-slot" data-slot="ring"><span class="slot-label">[반지]</span> <span class="slot-value">Empty</span></div>
+                <div class="gear-slot-list" style="display: flex; flex-direction: column; gap: 8px;">
+                    <div class="gear-slot" data-slot="weapon" style="display: flex; align-items: center; gap: 10px; background: rgba(0,0,0,0.3); border: 1px solid #444; border-radius: 4px; padding: 6px 10px; cursor: pointer;">
+                        <div class="gear-icon-frame" style="width: 32px; height: 32px; background: #222; border: 1px solid #555; display: flex; align-items: center; justify-content: center; border-radius: 4px;">
+                            <img class="gear-icon" src="" style="display:none; width: 24px; height: 24px; image-rendering: pixelated;">
+                        </div>
+                        <div class="gear-info" style="flex: 1;">
+                            <div class="slot-label" style="font-size: 10px; color: #aaa; margin-bottom: 2px;">[무기]</div>
+                            <div class="slot-value" style="font-size: 13px; color: #fff;">Empty</div>
+                        </div>
+                    </div>
+                    <div class="gear-slot" data-slot="armor" style="display: flex; align-items: center; gap: 10px; background: rgba(0,0,0,0.3); border: 1px solid #444; border-radius: 4px; padding: 6px 10px; cursor: pointer;">
+                        <div class="gear-icon-frame" style="width: 32px; height: 32px; background: #222; border: 1px solid #555; display: flex; align-items: center; justify-content: center; border-radius: 4px;">
+                            <img class="gear-icon" src="" style="display:none; width: 24px; height: 24px; image-rendering: pixelated;">
+                        </div>
+                        <div class="gear-info" style="flex: 1;">
+                            <div class="slot-label" style="font-size: 10px; color: #aaa; margin-bottom: 2px;">[방어구]</div>
+                            <div class="slot-value" style="font-size: 13px; color: #fff;">Empty</div>
+                        </div>
+                    </div>
+                    <div class="gear-slot" data-slot="necklace" style="display: flex; align-items: center; gap: 10px; background: rgba(0,0,0,0.3); border: 1px solid #444; border-radius: 4px; padding: 6px 10px; cursor: pointer;">
+                        <div class="gear-icon-frame" style="width: 32px; height: 32px; background: #222; border: 1px solid #555; display: flex; align-items: center; justify-content: center; border-radius: 4px;">
+                            <img class="gear-icon" src="" style="display:none; width: 24px; height: 24px; image-rendering: pixelated;">
+                        </div>
+                        <div class="gear-info" style="flex: 1;">
+                            <div class="slot-label" style="font-size: 10px; color: #aaa; margin-bottom: 2px;">[목걸이]</div>
+                            <div class="slot-value" style="font-size: 13px; color: #fff;">Empty</div>
+                        </div>
+                    </div>
+                    <div class="gear-slot" data-slot="ring" style="display: flex; align-items: center; gap: 10px; background: rgba(0,0,0,0.3); border: 1px solid #444; border-radius: 4px; padding: 6px 10px; cursor: pointer;">
+                        <div class="gear-icon-frame" style="width: 32px; height: 32px; background: #222; border: 1px solid #555; display: flex; align-items: center; justify-content: center; border-radius: 4px;">
+                            <img class="gear-icon" src="" style="display:none; width: 24px; height: 24px; image-rendering: pixelated;">
+                        </div>
+                        <div class="gear-info" style="flex: 1;">
+                            <div class="slot-label" style="font-size: 10px; color: #aaa; margin-bottom: 2px;">[반지]</div>
+                            <div class="slot-value" style="font-size: 13px; color: #fff;">Empty</div>
+                        </div>
+                    </div>
+                </div>
                 
+                <!-- Detailed Gear Panel (New) -->
+                <div class="gear-detail-panel" id="gear-detail-${id}" style="display: none; margin-top: 15px; padding: 12px; background: #1a1a1a; border: 2px solid #555; border-radius: 6px; box-shadow: inset 0 0 10px rgba(0,0,0,0.8);">
+                    <div class="detail-retro-header" style="margin-bottom: 8px;">
+                        <div class="detail-title-line" style="display: flex; justify-content: space-between; align-items: center;">
+                            <span class="detail-name-val" style="font-family: 'Press Start 2P', cursive; font-size: 12px; color: #ffd700; text-shadow: 1px 1px #000;">Item Name</span>
+                        </div>
+                        <div class="detail-type-val" style="font-size: 9px; color: #888; margin-top: 4px; letter-spacing: 1px;">WEAPON</div>
+                    </div>
+                    <div class="detail-divider" style="height: 1px; background: linear-gradient(to right, transparent, #555, transparent); margin-bottom: 10px;"></div>
+                    <div class="detail-body">
+                        <div class="detail-desc-text" style="font-size: 11px; color: #ccc; line-height: 1.5; margin-bottom: 12px;">Description...</div>
+                        <div class="detail-growth-info" style="background: rgba(0,0,0,0.4); padding: 8px; border-radius: 4px; margin-bottom: 10px;">
+                            <div class="detail-exp-label" style="font-size: 9px; color: #7c3aed; margin-bottom: 6px; font-weight: bold;">GROWTH PROGRESS</div>
+                            <div class="detail-exp-bar-bg" style="height: 6px; background: #333; border-radius: 3px; overflow: hidden; margin-bottom: 4px;">
+                                <div class="detail-exp-bar-fill" style="height: 100%; background: linear-gradient(to right, #7c3aed, #a78bfa); width: 0%; transition: width 0.3s;"></div>
+                            </div>
+                            <div class="detail-exp-val" style="font-size: 10px; color: #aaa; text-align: right;">0 / 0</div>
+                        </div>
+                        <div class="detail-stats-list" style="display: flex; flex-direction: column; gap: 4px;">
+                            <!-- Stats go here -->
+                        </div>
+                    </div>
+                </div>
+
                 <div class="gear-hint-msg" style="color: #888; font-size: 11px; margin-top: 15px; text-align: center;">참(Charm)은 '그리모어' 탭에서 관리할 수 있습니다.</div>
                 <button class="dash-back-btn">돌아가기</button>
             </div>
@@ -285,6 +346,14 @@ export default class ChatChannel {
         this.element.querySelectorAll('.dash-back-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
+
+                // --- Growth UI: Reset detail views ---
+                if (this.gearView) {
+                    const detail = this.gearView.querySelector('.gear-detail-panel');
+                    if (detail) detail.style.display = 'none';
+                }
+                this._lastDetailSlot = null;
+
                 this.toggleView('dashboard');
             });
         });
@@ -454,6 +523,7 @@ export default class ChatChannel {
 
     _applyEquipment(equipment, grimoire) {
         if (!equipment || !this.gearView) return;
+        this.equipment = equipment; // Store for detail view access
         this.grimoire = grimoire;
 
         const slots = {
@@ -465,7 +535,40 @@ export default class ChatChannel {
 
         Object.keys(slots).forEach(key => {
             const item = slots[key];
-            const displayName = (item && item.name) ? item.name : (typeof item === 'string' ? item : 'Empty');
+            let displayName = 'Empty';
+            let iconPath = '';
+
+            if (item && item.itemId && item.level) {
+                // Instance object
+                const base = ItemManager.getItem(item.itemId);
+                displayName = `${base ? base.name : item.itemId} LV.${item.level}`;
+
+                if (base) {
+                    if (base.customAsset) {
+                        iconPath = base.customAsset;
+                    } else {
+                        const filename = ItemManager.getSVGFilename(item.itemId);
+                        iconPath = 'assets/emojis/' + filename;
+                    }
+                }
+            } else if (item && item.name) {
+                // Legacy object or simple item
+                displayName = item.name;
+                // Try to find icon
+                const base = ItemManager.getItem(item.id || item.itemId);
+                if (base) {
+                    const filename = ItemManager.getSVGFilename(base.id);
+                    iconPath = base.customAsset || 'assets/emojis/' + filename;
+                }
+            } else if (typeof item === 'string' && item !== 'Empty') {
+                // String ID
+                const base = ItemManager.getItem(item);
+                displayName = base ? base.name : item;
+                if (base) {
+                    const filename = ItemManager.getSVGFilename(item);
+                    iconPath = base.customAsset || 'assets/emojis/' + filename;
+                }
+            }
 
             // Dirty flag check
             if (this.lastState.equipment[key] === displayName) return;
@@ -473,19 +576,198 @@ export default class ChatChannel {
 
             // Cache-aware selector
             if (!this.domCache.gear[key]) {
-                this.domCache.gear[key] = this.gearView.querySelector(`.gear-slot[data-slot="${key}"] .slot-value`);
+                const slotRoot = this.gearView.querySelector(`.gear-slot[data-slot="${key}"]`);
+                if (slotRoot) {
+                    this.domCache.gear[key] = {
+                        root: slotRoot,
+                        value: slotRoot.querySelector('.slot-value'),
+                        icon: slotRoot.querySelector('.gear-icon')
+                    };
+                }
             }
 
-            const slotEl = this.domCache.gear[key];
-            if (slotEl) {
-                slotEl.textContent = displayName;
-                slotEl.style.color = displayName === 'Empty' ? '#666' : '#fff';
+            const cache = this.domCache.gear[key];
+            if (cache) {
+                if (cache.value) {
+                    cache.value.textContent = displayName;
+                    cache.value.style.color = displayName === 'Empty' ? '#666' : '#fff';
+                }
+
+                if (cache.icon) {
+                    if (iconPath) {
+                        cache.icon.src = iconPath;
+                        cache.icon.style.display = 'block';
+                    } else {
+                        cache.icon.style.display = 'none';
+                    }
+                }
+
+                // Always ensure click listener uses latest data or method
+                cache.root.onclick = (e) => {
+                    e.stopPropagation();
+                    const currentItem = (this.equipment && this.equipment[key]) || 'Empty';
+
+                    if (currentItem === 'Empty') {
+                        if (this.uiManager) {
+                            document.querySelectorAll('.gear-slot, .grim-slot').forEach(s => {
+                                s.classList.remove('gear-slot-pending', 'grim-slot-pending');
+                            });
+                            this.uiManager.pendingGearSlot = {
+                                unitId: this.linkedUnitId,
+                                slot: key,
+                                element: cache.root
+                            };
+                            cache.root.classList.add('gear-slot-pending');
+                            this.uiManager.showPopup('inventory');
+                            if (this.uiManager.switchInventoryTab) this.uiManager.switchInventoryTab('gear');
+                        }
+                    } else {
+                        this._showGearDetail(key, currentItem);
+                    }
+                };
             }
         });
 
         if (grimoire && this.grimoireView) {
             this.updateGrimoireGrid(grimoire);
         }
+    }
+
+    async _showGearDetail(slot, item) {
+        if (!this.gearView) return;
+        const detailPanel = this.gearView.querySelector('.gear-detail-panel');
+        if (!detailPanel) return;
+
+        // Toggle logic: if clicking same slot twice, hide it
+        if (this._lastDetailSlot === slot && detailPanel.style.display === 'block') {
+            detailPanel.style.display = 'none';
+            this._lastDetailSlot = null;
+            return;
+        }
+
+        if (!item || item === 'Empty') {
+            detailPanel.style.display = 'none';
+            return;
+        }
+
+        this._lastDetailSlot = slot;
+
+        let instance = null;
+        let baseItem = null;
+
+        if (typeof item === 'object' && item.itemId && item.level) {
+            instance = item;
+            baseItem = ItemManager.getItem(item.itemId);
+        } else {
+            const itemId = typeof item === 'string' ? item : (item.id || item.itemId);
+            baseItem = ItemManager.getItem(itemId);
+        }
+
+        if (!baseItem) {
+            detailPanel.style.display = 'none';
+            return;
+        }
+
+        const titleContainer = detailPanel.querySelector('.detail-title-line');
+        const nameEl = detailPanel.querySelector('.detail-name-val');
+        const typeEl = detailPanel.querySelector('.detail-type-val');
+        const descEl = detailPanel.querySelector('.detail-desc-text');
+        const growthInfo = detailPanel.querySelector('.detail-growth-info');
+        const barFill = detailPanel.querySelector('.detail-exp-bar-fill');
+        const expVal = detailPanel.querySelector('.detail-exp-val');
+        const statsList = detailPanel.querySelector('.detail-stats-list');
+
+        // Reset title container (remove old buttons if any)
+        titleContainer.innerHTML = '';
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'detail-name-val';
+        nameSpan.style.cssText = 'font-family: \'Press Start 2P\', cursive; font-size: 11px; color: #ffd700; text-shadow: 1px 1px #000;';
+        titleContainer.appendChild(nameSpan);
+
+        const changeBtn = document.createElement('button');
+        changeBtn.textContent = '교체';
+        changeBtn.style.cssText = 'font-size: 9px; padding: 2px 6px; background: #444; color: #fff; border: 1px solid #666; cursor: pointer; border-radius: 3px;';
+        changeBtn.onclick = (e) => {
+            e.stopPropagation();
+            if (this.uiManager) {
+                document.querySelectorAll('.gear-slot, .grim-slot').forEach(s => {
+                    s.classList.remove('gear-slot-pending', 'grim-slot-pending');
+                });
+                this.uiManager.pendingGearSlot = {
+                    unitId: this.linkedUnitId,
+                    slot: slot,
+                    element: this.domCache.gear[slot].root
+                };
+                this.domCache.gear[slot].root.classList.add('gear-slot-pending');
+                this.uiManager.showPopup('inventory');
+                if (this.uiManager.switchInventoryTab) this.uiManager.switchInventoryTab('gear');
+            }
+        };
+        titleContainer.appendChild(changeBtn);
+
+        nameSpan.textContent = baseItem.name;
+        typeEl.textContent = slot.toUpperCase();
+        descEl.textContent = baseItem.description || '특별한 정보가 없습니다.';
+
+        if (instance) {
+            const info = equipmentManager.getDisplayInfo(instance);
+            nameEl.textContent = `${baseItem.name} LV.${instance.level}`;
+
+            growthInfo.style.display = 'block';
+            const progress = (info.expInLevel / info.requiredExp) * 100;
+            barFill.style.width = `${progress}%`;
+            expVal.textContent = `${Math.floor(info.expInLevel).toLocaleString()} / ${Math.floor(info.requiredExp).toLocaleString()}`;
+
+            // Stats
+            statsList.innerHTML = '';
+            Object.keys(info.stats).forEach(k => {
+                const val = info.stats[k];
+                const statDiv = document.createElement('div');
+                statDiv.style.cssText = 'display: flex; justify-content: space-between; font-size: 11px; color: #fff; margin-bottom: 2px;';
+                statDiv.innerHTML = `<span>${k.toUpperCase()}</span><span style="color: #4ade80; font-weight: bold; border-bottom: 1px dotted #4ade80;">+${val}</span>`;
+                statsList.appendChild(statDiv);
+            });
+
+            // Random Options Info
+            const optHeader = document.createElement('div');
+            optHeader.style.cssText = 'font-size: 9px; color: #fbbf24; margin-top: 10px; margin-bottom: 4px; font-weight: bold; border-top: 1px solid #333; padding-top: 6px;';
+            optHeader.textContent = '랜덤 옵션 (RANDOM OPTIONS)';
+            statsList.appendChild(optHeader);
+
+            const optionsConfig = [
+                { lv: 10, idx: 1 },
+                { lv: 20, idx: 2 },
+                { lv: 30, idx: 3 },
+                { lv: 40, idx: 4 },
+                { lv: 50, idx: 5 }
+            ];
+
+            optionsConfig.forEach(cfg => {
+                const optDiv = document.createElement('div');
+                optDiv.style.cssText = 'display: flex; justify-content: space-between; font-size: 10px; color: #888; margin-bottom: 2px;';
+
+                const isUnlocked = instance.level >= cfg.lv;
+                const optValue = isUnlocked ? '개방됨 (설정 대기 중)' : `LV.${cfg.lv}에 개방`;
+                const optColor = isUnlocked ? '#aaa' : '#555';
+
+                optDiv.innerHTML = `<span style="color: ${optColor};">옵션 ${cfg.idx}</span><span style="color: ${optColor};">${optValue}</span>`;
+                statsList.appendChild(optDiv);
+            });
+        } else {
+            growthInfo.style.display = 'none';
+            statsList.innerHTML = '';
+            // Basic stats from baseItem
+            if (baseItem.stats) {
+                Object.keys(baseItem.stats).forEach(k => {
+                    const statDiv = document.createElement('div');
+                    statDiv.style.cssText = 'display: flex; justify-content: space-between; font-size: 11px; color: #fff; margin-bottom: 2px;';
+                    statDiv.innerHTML = `<span>${k.toUpperCase()}</span><span style="color: #4ade80; font-weight: bold;">+${baseItem.stats[k]}</span>`;
+                    statsList.appendChild(statDiv);
+                });
+            }
+        }
+
+        detailPanel.style.display = 'block';
     }
 
     updateGrimoireGrid(grimoire) {
@@ -762,32 +1044,7 @@ export default class ChatChannel {
                 }
             });
 
-            // Click to open inventory and mark as pending gear slot
-            slot.addEventListener('click', () => {
-                if (this.uiManager) {
-                    const slotType = slot.dataset.slot;
-
-                    // Clear any previous pending highlights (both gear and grimoire)
-                    document.querySelectorAll('.gear-slot, .grim-slot').forEach(s => {
-                        s.classList.remove('gear-slot-pending', 'grim-slot-pending');
-                    });
-
-                    // Mark this slot as pending for equip
-                    this.uiManager.pendingGearSlot = {
-                        unitId: this.linkedUnitId,
-                        slot: slotType,
-                        element: slot
-                    };
-                    slot.classList.add('gear-slot-pending');
-
-                    console.log(`[Gear] Slot pending: ${slotType} for ${this.name}`);
-
-                    this.uiManager.showPopup('inventory');
-                    if (this.uiManager.switchInventoryTab) {
-                        this.uiManager.switchInventoryTab('gear');
-                    }
-                }
-            });
+            // Click handling moved to _applyEquipment to avoid interception issues
         });
     }
 

@@ -11,6 +11,7 @@ import CharmManager from '../Core/CharmManager.js';
 import ShopManager from './ShopManager.js';
 import npcManager from '../Core/NPCManager.js';
 import buildingManager, { BUILDING_TYPES } from '../Core/BuildingManager.js';
+import equipmentManager from '../Core/EquipmentManager.js';
 
 export default class UIManager {
     constructor() {
@@ -1099,6 +1100,137 @@ export default class UIManager {
             this.refreshPetStorage();
             this._renderPetDetail(petId);
         };
+    }
+
+    async showEquipmentCrafting() {
+        if (this.equipmentCraftingOverlay) return;
+
+        const overlay = document.createElement('div');
+        overlay.id = 'equipment-crafting-overlay';
+        overlay.className = 'shop-overlay retro-scanline-overlay equipment-crafting-overlay';
+        this.equipmentCraftingOverlay = overlay;
+
+        overlay.innerHTML = `
+            <div class="shop-container equipment-crafting-container" style="max-width: 900px; width: 95vw;">
+                <div class="shop-header" style="background: linear-gradient(to right, #7c3aed, #a855f7);">
+                    <div class="shop-title">⚔️ EQUIPMENT CRAFTING (장비 제작)</div>
+                    <button class="shop-close-btn" id="equip-craft-close">✕</button>
+                </div>
+                
+                <div class="shop-body equipment-crafting-body" id="equip-craft-body" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 20px;">
+                    <div class="craft-recipe-area" style="border-right: 1px solid rgba(255,255,255,0.1); padding-right: 15px;">
+                        <div style="font-size: 14px; font-weight: bold; margin-bottom: 12px; color: #a78bfa;">[제작 가능 목록]</div>
+                        <div id="craft-recipe-list" style="display: flex; flex-direction: column; gap: 10px;">
+                            <!-- Recipes go here -->
+                        </div>
+                    </div>
+                    
+                    <div class="owned-equipment-area">
+                        <div style="font-size: 14px; font-weight: bold; margin-bottom: 12px; color: #a78bfa;">[보유 중인 성장 장비]</div>
+                        <div id="owned-equip-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px; max-height: 400px; overflow-y: auto; padding: 5px;">
+                            <!-- Owned instances go here -->
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="shop-footer" style="display: flex; justify-content: space-between; align-items: center; padding: 15px;">
+                    <div class="shop-currency" id="craft-material-display" style="display:flex; align-items:center; gap:10px;">
+                        <!-- Materials like wood will be shown here -->
+                    </div>
+                    <div style="font-size: 11px; opacity: 0.7; color: #d1d5db;">* 무기는 데미지를 입힐 때, 방어구는 데미지를 받을 때 성장합니다.</div>
+                </div>
+            </div>
+        `;
+
+        const appContainer = document.getElementById('app-container') || document.body;
+        appContainer.appendChild(overlay);
+
+        // Close events
+        const closeBtn = document.getElementById('equip-craft-close');
+        if (closeBtn) closeBtn.onclick = () => this.hideEquipmentCrafting();
+        overlay.onclick = (e) => { if (e.target === overlay) this.hideEquipmentCrafting(); };
+
+        await this.refreshEquipmentCrafting();
+    }
+
+    hideEquipmentCrafting() {
+        if (this.equipmentCraftingOverlay) {
+            this.equipmentCraftingOverlay.remove();
+            this.equipmentCraftingOverlay = null;
+        }
+    }
+
+    async refreshEquipmentCrafting() {
+        if (!this.equipmentCraftingOverlay) return;
+
+        const recipeList = document.getElementById('craft-recipe-list');
+        const ownedList = document.getElementById('owned-equip-list');
+        const materialDisplay = document.getElementById('craft-material-display');
+
+        if (!recipeList || !ownedList || !materialDisplay) return;
+
+        // 1. Materials
+        const wood = await DBManager.getInventoryItem('emoji_wood');
+        materialDisplay.innerHTML = `<div style="display:flex; align-items:center; gap:5px; color: #fff; font-weight: bold;"><img src="assets/emojis/1fab5.svg" style="width:20px; height:20px;"> ${wood ? wood.amount : 0}</div>`;
+
+        // 2. Recipes (Wood Sword only for now)
+        const recipes = [
+            { id: 'wood_sword', req: { emoji_wood: 500 } }
+        ];
+
+        let recipeHtml = '';
+        for (const r of recipes) {
+            const item = ItemManager.getItem(r.id);
+            const canCraft = wood && wood.amount >= r.req.emoji_wood;
+            const iconUrl = item.customAsset || 'assets/emojis/' + ItemManager.getSVGFilename(r.id);
+
+            recipeHtml += `
+                <div class="craft-card" style="background: rgba(0,0,0,0.3); border: 2px solid #5b21b6; border-radius: 12px; padding: 12px; display: flex; align-items: center; gap: 15px; position: relative; overflow: hidden;">
+                    <div class="retro-scanline-overlay" style="pointer-events: none;"></div>
+                    <img src="${iconUrl}" style="width: 48px; height: 48px; object-fit: contain; image-rendering: pixelated; background: rgba(255,255,255,0.05); border-radius: 8px; padding: 4px; border: 1px solid rgba(255,255,255,0.1);">
+                    <div style="flex: 1;">
+                        <div style="font-weight: bold; font-size: 14px; color: #fff;">${item.name}</div>
+                        <div style="font-size: 11px; color: #a78bfa; display: flex; align-items: center; gap: 4px;">재료: <img src="assets/emojis/1fab5.svg" style="width:14px; height:14px;"> 500</div>
+                    </div>
+                    <button class="shop-buy-btn craft-btn" data-id="${r.id}" ${canCraft ? '' : 'disabled'} style="padding: 8px 15px; font-size: 12px; height: auto; background: ${canCraft ? 'linear-gradient(to bottom, #7c3aed, #5b21b6)' : '#333'}; opacity: ${canCraft ? 1 : 0.5}; cursor: ${canCraft ? 'pointer' : 'not-allowed'}; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); color: #fff; font-weight: bold;">제작</button>
+                </div>
+            `;
+        }
+        recipeList.innerHTML = recipeHtml;
+
+        // Bind craft buttons
+        recipeList.querySelectorAll('.craft-btn').forEach(btn => {
+            btn.onclick = async () => {
+                const itemId = btn.dataset.id;
+                const result = await equipmentManager.craftItem(itemId);
+                if (result.success) {
+                    this.showToast(`${ItemManager.getItem(itemId).name} 제작 성공! ✨`);
+                    this.refreshEquipmentCrafting();
+                } else {
+                    this.showToast(result.reason);
+                }
+            };
+        });
+
+        // 3. Owned Instances
+        const instances = await DBManager.getAllEquipmentInstances();
+        let ownedHtml = '';
+        if (instances.length === 0) {
+            ownedHtml = `<div style="grid-column: 1/-1; text-align: center; opacity: 0.4; padding: 40px; font-size: 12px; color: #fff;">제작된 성장 장비가 없습니다.</div>`;
+        } else {
+            for (const inst of instances) {
+                const base = ItemManager.getItem(inst.itemId);
+                const iconUrl = base.customAsset || 'assets/emojis/' + ItemManager.getSVGFilename(inst.itemId);
+                ownedHtml += `
+                    <div class="owned-equip-card" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(167, 139, 250, 0.3); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: help; position: relative;" title="${base.name} LV.${inst.level}">
+                        <div style="position: absolute; top: -5px; right: -5px; background: #7c3aed; color: #fff; font-size: 8px; font-weight: bold; padding: 2px 5px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.3);">LV.${inst.level}</div>
+                        <img src="${iconUrl}" style="width: 40px; height: 40px; object-fit: contain; image-rendering: pixelated; filter: drop-shadow(0 0 5px rgba(124, 58, 237, 0.5));">
+                        <div style="font-size: 9px; color: #fff; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; font-weight: bold;">${base.name}</div>
+                    </div>
+                `;
+            }
+        }
+        ownedList.innerHTML = ownedHtml;
     }
 
     async showNPCHire() {
@@ -2619,6 +2751,7 @@ export default class UIManager {
         this.isRefreshing = true;
         try {
             const items = await DBManager.getAllInventory();
+            const equipmentInstances = await DBManager.getAllEquipmentInstances();
 
             // Find the appropriate target channel for the "Equipped" check
             let targetChannel = this.detailChannel;
@@ -2699,6 +2832,37 @@ export default class UIManager {
                     this.materialList.appendChild(div);
                 }
             });
+
+            // --- 2. Growth Equipment Instances ---
+            equipmentInstances.forEach(inst => {
+                const itemData = ItemManager.getItem(inst.itemId);
+                if (!itemData) return;
+
+                const filename = ItemManager.getSVGFilename(inst.itemId);
+                const div = document.createElement('div');
+                div.className = 'inv-item is-gear growth-item';
+                div.draggable = true;
+
+                const isEquipped = (targetChannel && targetChannel.equipment && Object.values(targetChannel.equipment).some(e => e && e.instanceId === inst.id));
+                if (isEquipped) div.classList.add('equipped');
+
+                div.innerHTML = `
+                    <img class="inv-icon" src="${itemData.customAsset || 'assets/emojis/' + filename}" alt="${inst.id}" draggable="false">
+                    <div class="item-lv-tag" style="position:absolute; bottom:0; right:0; background:#7c3aed; color:#fff; font-size:8px; padding:1px 3px; border-radius:3px; z-index:1;">LV.${inst.level}</div>
+                `;
+
+                div.ondragstart = (e) => {
+                    e.dataTransfer.setData('itemId', inst.id);
+                    e.dataTransfer.effectAllowed = 'copyMove';
+                };
+
+                div.onclick = (e) => {
+                    e.stopPropagation();
+                    this.handleItemClick(inst.id, isEquipped);
+                };
+
+                this.gearList.appendChild(div);
+            });
         } catch (e) {
             console.error('[UIManager] Error refreshing inventory UI:', e);
         } finally {
@@ -2724,8 +2888,18 @@ export default class UIManager {
         this.showItemDetail(itemId, isAlreadyEquipped || autoEquipped);
     }
 
-    showItemDetail(itemId, isAlreadyEquipped = false) {
-        const item = ItemManager.getItem(itemId);
+    async showItemDetail(itemId, isAlreadyEquipped = false) {
+        let item = ItemManager.getItem(itemId);
+        let instance = null;
+
+        // If it's a unique instance
+        if (itemId.startsWith('eq_')) {
+            instance = await DBManager.getEquipmentInstance(itemId);
+            if (instance) {
+                item = ItemManager.getItem(instance.itemId);
+            }
+        }
+
         const charm = CharmManager.getCharm(itemId);
 
         // Prioritize charm data because it's richer for charms (it has description)
@@ -2736,7 +2910,9 @@ export default class UIManager {
         if (!targetItem || !this.detailPanel) return;
 
         this.selectedItemId = itemId;
-        if (this.detailName) this.detailName.textContent = targetItem.name;
+
+        const title = instance ? `${targetItem.name} LV.${instance.level}` : targetItem.name;
+        if (this.detailName) this.detailName.textContent = title;
 
         // Reset Equip Button State
         if (this.btnEquipItem) {
@@ -2803,7 +2979,12 @@ export default class UIManager {
         }
 
         if (this.detailDesc) {
-            this.detailDesc.innerHTML = (targetItem.description || (item ? '재료 아이템입니다.' : '')) + classReqText;
+            let descContent = targetItem.description || (item ? '재료 아이템입니다.' : '');
+            if (instance) {
+                const info = equipmentManager.getDisplayInfo(instance);
+                descContent = info.description;
+            }
+            this.detailDesc.innerHTML = descContent + classReqText;
         }
 
         // Disable equip button if class mismatch
@@ -2843,7 +3024,9 @@ export default class UIManager {
             return false;
         }
 
-        if (item && item.type === 'equipment') {
+        const isGrowthGear = itemId && itemId.startsWith('eq_');
+
+        if ((item && item.type === 'equipment') || isGrowthGear) {
             let unitId = targetChannel ? targetChannel.linkedUnitId : null;
 
             // If we have a pending gear slot, override target

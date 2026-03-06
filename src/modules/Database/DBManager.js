@@ -1,7 +1,7 @@
 import { openDB } from 'idb';
 
 const DB_NAME = 'IsacRPG_DB';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 export default class DBManager {
     static async initDB() {
@@ -30,6 +30,10 @@ export default class DBManager {
                 // Mercenary roster for Gacha System
                 if (!db.objectStoreNames.contains('mercenary_roster')) {
                     db.createObjectStore('mercenary_roster', { keyPath: 'charId' });
+                }
+                // Unique Equipment Instances (LV, EXP tracking)
+                if (!db.objectStoreNames.contains('equipment_instances')) {
+                    db.createObjectStore('equipment_instances', { keyPath: 'id' });
                 }
             },
         });
@@ -136,6 +140,27 @@ export default class DBManager {
             }
         });
         return states;
+    }
+
+    // --- Equipment Instance Operations ---
+    static async saveEquipmentInstance(instance) {
+        if (!this.db) await this.initDB();
+        await this.db.put('equipment_instances', instance);
+    }
+
+    static async getEquipmentInstance(id) {
+        if (!this.db) await this.initDB();
+        return await this.db.get('equipment_instances', id);
+    }
+
+    static async getAllEquipmentInstances() {
+        if (!this.db) await this.initDB();
+        return await this.db.getAll('equipment_instances');
+    }
+
+    static async deleteEquipmentInstance(id) {
+        if (!this.db) await this.initDB();
+        await this.db.delete('equipment_instances', id);
     }
 
     // --- Mercenary Roster Operations ---

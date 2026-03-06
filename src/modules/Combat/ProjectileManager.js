@@ -1,4 +1,6 @@
 import Phaser from 'phaser';
+import ItemManager from '../Core/ItemManager.js';
+import equipmentManager from '../Core/EquipmentManager.js';
 
 /**
  * ProjectileManager

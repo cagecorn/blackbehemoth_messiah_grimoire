@@ -9,7 +9,7 @@ export default class LootManager {
         this.lootGroup = this.scene.physics.add.group();
 
         // Specific Emoji keys we preloaded in BootScene
-        this.drops = ['emoji_coin', 'emoji_gem', 'emoji_meat', 'emoji_wood', 'emoji_herb'];
+        this.drops = ['emoji_coin', 'emoji_gem', 'emoji_meat', 'emoji_wood', 'emoji_herb', 'emoji_brick'];
     }
 
     // Called when an enemy dies
@@ -60,6 +60,9 @@ export default class LootManager {
             } else if ((isElite || isShadow) && Math.random() < 0.05) {
                 // 5% chance for Divine Essence from Elites/Shadows
                 randomDrop = 'emoji_divine_essence';
+            } else if (Math.random() < 0.05) {
+                // 5% common drop for construction bricks
+                randomDrop = 'emoji_brick';
             } else {
                 // Pick from remaining (coin, meat, wood, herb)
                 const others = ['emoji_coin', 'emoji_meat', 'emoji_wood', 'emoji_herb'];
@@ -155,7 +158,8 @@ export default class LootManager {
             'emoji_herb': '🌿',
             'emoji_bone': '🦴',
             'emoji_ticket': '🎫',
-            'emoji_divine_essence': '✨'
+            'emoji_divine_essence': '✨',
+            'emoji_brick': '🧱'
         };
         const unicodeEmoji = emojiMap[emojiId] || '❓';
 

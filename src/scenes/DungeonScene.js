@@ -78,7 +78,7 @@ export default class DungeonScene extends Phaser.Scene {
         if (this.game.partyManager) this.game.partyManager.healAll();
     }
 
-    create() {
+    async create() {
         console.log('DungeonScene started');
         this.cameras.main.setBackgroundColor('#000000');
         this.isInitializing = true;
@@ -101,7 +101,7 @@ export default class DungeonScene extends Phaser.Scene {
         // --- UI Layer for Overlays ---
         this.uiLayer = this.add.container(0, 0).setScrollFactor(0).setDepth(40000);
 
-        this.initDungeon();
+        await this.initDungeon();
     }
 
     async initDungeon() {
@@ -974,6 +974,13 @@ export default class DungeonScene extends Phaser.Scene {
     }
 
     spawnWave() {
+        if (this.isResetting) return;
+
+        const stageConfig = StageConfigs[this.dungeonType] || StageConfigs.CURSED_FOREST;
+        const pool = stageConfig.monsterPool || ['goblin', 'orc'];
+
+        console.log(`[Dungeon] Spawning Wave for ${this.dungeonType}. Round ${this.currentRound}, Pool:`, pool);
+
         const startPos = this.dungeonManager.getPlayerStartPosition();
         // Monster scaling: Increases every 5 rounds
         const monsterLevel = Math.floor((this.currentRound - 1) / 5) + 1;
@@ -984,6 +991,7 @@ export default class DungeonScene extends Phaser.Scene {
         const nodeCharmsList = ['emoji_pouting_face', 'emoji_enraged_face', 'emoji_smiling_face_with_sunglasses'];
 
         const applyEliteLogic = (monster) => {
+            if (!monster) return;
             if (Math.random() < eliteChance) {
                 monster.maxHp *= 2.5;
                 monster.hp = monster.maxHp;
@@ -1006,51 +1014,35 @@ export default class DungeonScene extends Phaser.Scene {
             }
         };
 
-        if (this.dungeonType === 'UNDEAD_GRAVEYARD') {
-            // --- Undead Graveyard Spawning ---
-            // Spawn Skeleton Warriors (Base 12 + 1 per round)
-            const skeletonCount = 12 + (this.currentRound - 1) * 1;
-            for (let i = 0; i < skeletonCount; i++) {
-                const offsetX = (i % 4) * 60;
-                const offsetY = Math.floor(i / 4) * 60;
-                const skeleton = this.spawnMonster(SkeletonWarrior, startPos.x + 150 + offsetX, startPos.y + offsetY - 80, this.player, monsterLevel);
-                applyEliteLogic(skeleton);
-            }
+        // Class Mapping for IDs
+        const monsterClassMap = {
+            'goblin': Goblin,
+            'orc': Orc,
+            'skeleton_warrior': SkeletonWarrior,
+            'skeleton_wizard': SkeletonWizard
+        };
 
-            // Spawn Skeleton Wizards (Base 4 + 1 every round)
-            const wizardCount = 4 + (this.currentRound - 1);
-            for (let i = 0; i < wizardCount; i++) {
-                const offsetX = (i % 2) * 80;
-                const offsetY = Math.floor(i / 2) * 80;
-                const wiz = this.spawnMonster(SkeletonWizard, startPos.x + 400 + offsetX, startPos.y + offsetY - 40, this.player, monsterLevel);
-                applyEliteLogic(wiz);
-            }
-        } else {
-            // --- Cursed Forest Spawning (Original Logic) ---
-            // Spawn Goblins (Base 12 + 1 per round)
-            const goblinCount = 12 + (this.currentRound - 1) * 1;
-            for (let i = 0; i < goblinCount; i++) {
-                const offsetX = (i % 4) * 60;
-                const offsetY = Math.floor(i / 4) * 60;
-                const goblin = this.spawnMonster(Goblin, startPos.x + 150 + offsetX, startPos.y + offsetY - 80, this.player, monsterLevel);
-                applyEliteLogic(goblin);
-            }
+        // Total spawn count increases with rounds
+        const spawnCount = 18 + (this.currentRound - 1) * 2;
 
-            // Spawn Shamans (Base 2 + 1 every 2 rounds)
-            const shamanConfig = MonsterClasses.SHAMAN;
+        for (let i = 0; i < spawnCount; i++) {
+            const monsterId = Phaser.Utils.Array.GetRandom(pool);
+            const MonsterClass = monsterClassMap[monsterId] || Goblin;
+
+            // Random offset spread
+            const offsetX = Phaser.Math.Between(100, 500);
+            const offsetY = Phaser.Math.Between(-150, 150);
+
+            const monster = this.spawnMonster(MonsterClass, startPos.x + offsetX, startPos.y + offsetY, this.player, monsterLevel);
+            applyEliteLogic(monster);
+        }
+
+        // Special handling for Shamans (Healers) in Cursed Forest if not in pool but needed
+        if (this.dungeonType === 'CURSED_FOREST') {
             const shamanCount = 2 + Math.floor((this.currentRound - 1) / 2);
             for (let i = 0; i < shamanCount; i++) {
-                const shaman = this.spawnMonster(MonsterHealer, startPos.x + 200 + (i * 80), startPos.y + 120, this.player, monsterLevel, shamanConfig);
+                const shaman = this.spawnMonster(MonsterHealer, startPos.x + 200 + (i * 80), startPos.y + 120, this.player, monsterLevel, MonsterClasses.SHAMAN);
                 applyEliteLogic(shaman);
-            }
-
-            // Spawn Orcs (Round 1: 2, then +0.5 per round)
-            const orcCount = 2 + Math.floor((this.currentRound - 1) / 2);
-            for (let i = 0; i < orcCount; i++) {
-                const offsetX = (i % 2) * 80;
-                const offsetY = Math.floor(i / 2) * 80;
-                const orc = this.spawnMonster(Orc, startPos.x + 400 + offsetX, startPos.y + offsetY - 40, this.player, monsterLevel);
-                applyEliteLogic(orc);
             }
         }
 

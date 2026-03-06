@@ -1152,7 +1152,8 @@ export const StageConfigs = {
         background: 'bg_undead_graveyard',
         ambientColor: 0x0a1a0a,  // 음산한 녹백색 (공동묘지 분위기)
         ambientAlpha: 0.25,
-        goldMultiplier: 1.5
+        goldMultiplier: 1.5,
+        monsterPool: ['skeleton_warrior', 'skeleton_wizard']
     }
 };
 

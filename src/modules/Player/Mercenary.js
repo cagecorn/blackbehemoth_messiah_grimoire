@@ -9,6 +9,7 @@ import CharmManager from '../Core/CharmManager.js';
 import GrimoireManager from '../Core/GrimoireManager.js';
 import DBManager from '../Database/DBManager.js';
 import soundEffects from '../Core/SoundEffects.js';
+import equipmentManager from '../Core/EquipmentManager.js';
 
 /**
  * Mercenary.js
@@ -48,6 +49,9 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         this.fireRes = config.fireRes || 0;
         this.iceRes = config.iceRes || 0;
         this.lightningRes = config.lightningRes || 0;
+        this.acc = config.acc || 100;
+        this.eva = config.eva || 0;
+        this.crit = config.crit || 0;
 
         // Dynamic Buffs
         this.bonusAtk = 0;
@@ -291,11 +295,33 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         };
         EventBus.on('PERK_LEARN', this.handlePerkLearn);
 
-        this.handleEquipRequest = (payload) => {
+        this.handleEquipRequest = async (payload) => {
             if (payload.unitId === this.id) {
-                const item = ItemManager.getItem(payload.itemId);
+                let item;
+                if (payload.itemId && payload.itemId.startsWith('eq_')) {
+                    const inst = await DBManager.getEquipmentInstance(payload.itemId);
+                    if (inst) {
+                        item = { ...ItemManager.getItem(inst.itemId), ...inst, instanceId: inst.id };
+                    }
+                } else {
+                    item = ItemManager.getItem(payload.itemId);
+                }
+
                 if (item && item.type === 'equipment') {
-                    this.equipItem(item.slot, item);
+                    // --- Toggle Unequip Logic ---
+                    // If clicking the same item that's already equipped, unequip it.
+                    const currentEquipped = this.equipment[item.slot];
+                    const isSameItem = currentEquipped && (
+                        (item.instanceId && currentEquipped.instanceId === item.instanceId) ||
+                        (!item.instanceId && currentEquipped.id === item.id)
+                    );
+
+                    if (isSameItem) {
+                        this.unequipItem(item.slot);
+                        console.log(`[Mercenary] Unequipped ${item.id} from ${item.slot}`);
+                    } else {
+                        this.equipItem(item.slot, item);
+                    }
                 }
             }
         };
@@ -468,6 +494,22 @@ export default class Mercenary extends Phaser.GameObjects.Container {
 
     getTotalRangeMin() {
         return Math.max(0, this.rangeMin + (this.bonusRangeMin || 0));
+    }
+
+    getTotalEva() {
+        return (this.eva || 0) + (this.bonusEva || 0);
+    }
+
+    getTotalAcc() {
+        return (this.acc || 100) + (this.bonusAcc || 0);
+    }
+
+    getTotalSpeed() {
+        return (this.speed || 100) + (this.bonusSpeed || 0);
+    }
+
+    getTotalDR() {
+        return (this.dr || 0) + (this.bonusDR || 0);
     }
 
     getTotalRangeMax() {
@@ -730,6 +772,13 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             absorbedByShield = damageBeforeShield - finalDamage;
         }
 
+        // --- Growth Gear EXP ---
+        const armor = this.equipment ? this.equipment.armor : null;
+        if (armor && (armor.instanceId || (armor.id && armor.id.startsWith('eq_')))) {
+            const armorId = armor.instanceId || armor.id;
+            equipmentManager.addExp(armorId, amount);
+        }
+
         // Record damage received for combat tracker (including what was absorbed by shield)
         if (damageBeforeShield > 0) {
             EventBus.emit(EventBus.EVENTS.COMBAT_DATA_RECORD, { type: 'received', amount: damageBeforeShield, unitId: this.id });
@@ -738,6 +787,15 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         if (finalDamage > 0) {
             this.hp -= finalDamage;
             if (this.hp < 0) this.hp = 0;
+
+            // --- Growth Gear Weapon EXP (for Attacker) ---
+            if (attacker && typeof attacker === 'object' && attacker.team === 'player' && attacker.equipment && attacker.equipment.weapon) {
+                const weapon = attacker.equipment.weapon;
+                if (weapon.instanceId || (weapon.id && weapon.id.startsWith('eq_'))) {
+                    const weaponId = weapon.instanceId || weapon.id;
+                    equipmentManager.addExp(weaponId, finalDamage);
+                }
+            }
 
             // Lifesteal for Blood Rage
             if (attacker && typeof attacker === 'object' && attacker.isBloodRaging && attacker.heal) {

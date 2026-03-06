@@ -43,13 +43,12 @@ export default class Noel extends Bard {
             }
 
             // Periodic Heal (Based on Noel's MAtk)
+            const healPerTick = noelMAtk * 0.1; // 10% of Noel's MAtk per second
             for (let i = 1; i <= 10; i++) {
                 scene.time.delayedCall(i * 1000, () => {
                     if (ally.active && ally.hp > 0) {
-                        // Heal for 10% of Noel's MAtk per second
-                        // Heal ally
-                        ally.receiveHeal(heal, this.id);
-                        if (scene.fxManager) scene.fxManager.showHealText(ally, `+${Math.round(heal)}`, '#55ff55');
+                        ally.receiveHeal(healPerTick, this.id);
+                        if (scene.fxManager) scene.fxManager.showHealText(ally, `+${Math.round(healPerTick)}`, '#55ff55');
                     }
                 });
             }
