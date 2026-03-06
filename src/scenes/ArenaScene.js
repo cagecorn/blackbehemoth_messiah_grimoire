@@ -16,6 +16,7 @@ import FXManager from '../modules/Combat/FXManager.js';
 import AoeManager from '../modules/Combat/AoeManager.js';
 import CCManager from '../modules/Combat/CCManager.js';
 import ShieldManager from '../modules/Combat/ShieldManager.js';
+import UltimateManager from '../modules/Combat/UltimateManager.js';
 import BuffManager from '../modules/Core/BuffManager.js';
 import SeparationManager from '../modules/Core/SeparationManager.js';
 import BarkManager from '../modules/AI/BarkManager.js';
@@ -80,6 +81,7 @@ export default class ArenaScene extends Phaser.Scene {
 
         // Initialize Managers
         this.fxManager = new FXManager(this);
+        this.ultimateManager = new UltimateManager(this);
         this.aoeManager = new AoeManager(this);
         this.projectileManager = new ProjectileManager(this);
         this.particleManager = new ParticleManager(this);
