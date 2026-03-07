@@ -1094,7 +1094,8 @@ export default class DungeonScene extends Phaser.Scene {
             const offsetY = Phaser.Math.Between(-150, 150);
 
             const isEliteRequested = Math.random() < eliteChance;
-            const monster = this.spawnMonster(MonsterClass, startPos.x + offsetX, startPos.y + offsetY, this.player, monsterLevel, null, isEliteRequested ? 'ELITE' : 'NORMAL');
+            const baseConfig = MonsterClasses[monsterId.toUpperCase()] || MonsterClasses.GOBLIN;
+            const monster = this.spawnMonster(MonsterClass, startPos.x + offsetX, startPos.y + offsetY, this.player, monsterLevel, baseConfig, isEliteRequested ? 'ELITE' : 'NORMAL');
             applyEliteLogic(monster);
         }
 
@@ -1234,9 +1235,11 @@ export default class DungeonScene extends Phaser.Scene {
         // Find an inactive monster of the same class
         let monster = this.monsterPool[className].find(m => !m.active);
 
-        // Prepare config - Map CamelCase ClassName (e.g. CrocodileWarrior) to SCREAMING_SNAKE_CASE (e.g. CROCODILE_WARRIOR)
-        const screamingKey = className.replace(/([a-z])([A-Z])/g, '$1_$2').toUpperCase();
-        const baseConfig = classConfig || MonsterClasses[screamingKey] || MonsterClasses[className.toUpperCase()] || MonsterClasses.GOBLIN;
+        // Prepare config
+        // BUG FIX: In production (Vite), MonsterClass.name is minified (e.g. 'a'), breaking stat lookup.
+        // We now prefer the passed classConfig, then fallback to screamingKey if not minified, or GOBLIN.
+        const screamingKey = className.length > 3 ? className.replace(/([a-z])([A-Z])/g, '$1_$2').toUpperCase() : null;
+        const baseConfig = classConfig || (screamingKey ? MonsterClasses[screamingKey] : null) || MonsterClasses.GOBLIN;
         const config = scaleStats(baseConfig, level, type);
 
         if (monster) {
