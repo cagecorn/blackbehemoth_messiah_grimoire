@@ -59,17 +59,24 @@ export default class ShopManager {
 
     _renderCategory(categoryId) {
         const items = this.inventory[categoryId] || [];
-        return items.map(item => `
-            <div class="shop-item-card" data-id="${item.id}" data-price="${item.price}" data-currency="${item.currency}">
-                <div class="shop-item-icon">${item.icon}</div>
-                <div class="shop-item-label">${item.label}</div>
-                <div class="shop-item-price">
-                    <span class="price-val">${item.price}</span>
-                    <span class="price-icon">${item.currency === 'emoji_coin' ? '💰' : '💎'}</span>
+        return items.map(item => {
+            const iconSvg = ItemManager.getSVGFilename(item.id);
+            const currencySvg = ItemManager.getSVGFilename(item.currency);
+
+            return `
+                <div class="shop-item-card" data-id="${item.id}" data-price="${item.price}" data-currency="${item.currency}">
+                    <div class="shop-item-icon">
+                        <img src="assets/emojis/${iconSvg}" alt="${item.label}" style="width: 32px; height: 32px; image-rendering: pixelated;">
+                    </div>
+                    <div class="shop-item-label">${item.label}</div>
+                    <div class="shop-item-price">
+                        <span class="price-val">${item.price}</span>
+                        <img src="assets/emojis/${currencySvg}" alt="currency" style="width: 14px; height: 14px; margin-left: 2px;">
+                    </div>
+                    <button class="shop-buy-btn">구매</button>
                 </div>
-                <button class="shop-buy-btn">구매</button>
-            </div>
-        `).join('');
+            `;
+        }).join('');
     }
 
     _attachEvents() {
@@ -158,8 +165,15 @@ export default class ShopManager {
         const goldDisplay = document.getElementById('shop-gold-display');
         const gemDisplay = document.getElementById('shop-gem-display');
 
-        if (goldDisplay) goldDisplay.innerText = `💰 ${gold ? gold.amount : 0}`;
-        if (gemDisplay) gemDisplay.innerText = `💎 ${gem ? gem.amount : 0}`;
+        const coinSvg = ItemManager.getSVGFilename('emoji_coin');
+        const gemSvg = ItemManager.getSVGFilename('emoji_gem');
+
+        if (goldDisplay) {
+            goldDisplay.innerHTML = `<img src="assets/emojis/${coinSvg}" style="width: 18px; vertical-align: middle; margin-right: 4px;"> ${gold ? gold.amount : 0}`;
+        }
+        if (gemDisplay) {
+            gemDisplay.innerHTML = `<img src="assets/emojis/${gemSvg}" style="width: 18px; vertical-align: middle; margin-right: 4px;"> ${gem ? gem.amount : 0}`;
+        }
     }
 
     hide() {
