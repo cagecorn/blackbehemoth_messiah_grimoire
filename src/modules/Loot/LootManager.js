@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import DBManager from '../Database/DBManager.js';
+import CharmManager from '../Core/CharmManager.js';
 import globalEventBus from '../Events/EventBus.js';
 import { GameConfig, PetStats, StageConfigs } from '../Core/EntityStats.js';
 
@@ -220,16 +221,43 @@ export default class LootManager {
             duration: 300,
             onComplete: () => item.destroy()
         });
-
         // Backend Save
-        try {
-            const existing = await DBManager.getInventoryItem(emojiId);
-            const newTotal = (existing ? existing.amount : 0) + amount;
-            await DBManager.saveInventoryItem(emojiId, newTotal);
-            console.log(`[DB] Saved ${emojiId}: ${newTotal} (+${amount})`);
-            globalEventBus.emit(globalEventBus.EVENTS.INVENTORY_UPDATED);
-        } catch (e) {
-            console.error('[DB] Failed to save loot:', e);
+        if (emojiId.startsWith('emoji_') && CharmManager.getCharm(emojiId)) {
+            // Chapter A Charm Collection (Unique Instance)
+            try {
+                const charmBase = CharmManager.getCharm(emojiId);
+                const instanceId = `charm_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+
+                // Random Value: 4% to 15%
+                const rolledValue = 4 + Math.floor(Math.random() * 12);
+
+                const charmInstance = {
+                    instanceId: instanceId,
+                    id: emojiId,
+                    stat: charmBase.stat,
+                    value: rolledValue,
+                    collectedAt: Date.now()
+                };
+
+                await DBManager.saveCharmInstance(charmInstance);
+                console.log(`[Loot] Created unique charm instance: ${emojiId} (${rolledValue}%)`);
+
+                // Also notify user/UI
+                globalEventBus.emit(globalEventBus.EVENTS.INVENTORY_UPDATED);
+            } catch (e) {
+                console.error('[Loot] Failed to save charm instance:', e);
+            }
+        } else {
+            // Backend Save (Standard stackable item)
+            try {
+                const existing = await DBManager.getInventoryItem(emojiId);
+                const newTotal = (existing ? existing.amount : 0) + amount;
+                await DBManager.saveInventoryItem(emojiId, newTotal);
+                console.log(`[DB] Saved ${emojiId}: ${newTotal} (+${amount})`);
+                globalEventBus.emit(globalEventBus.EVENTS.INVENTORY_UPDATED);
+            } catch (e) {
+                console.error('[DB] Failed to save loot:', e);
+            }
         }
     }
 }

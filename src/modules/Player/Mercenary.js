@@ -142,7 +142,38 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             }
         }
 
-        this.charmTimers = Array(9).fill(99999); // Initialized to high value to trigger immediately on spawn
+        this.charmTimers = Array(9).fill(99999);
+        this.grimoireBonuses = {
+            maxHpMult: 0,
+            atkMult: 0,
+            mAtkMult: 0,
+            defMult: 0,
+            mDefMult: 0,
+            fireResAdd: 0,
+            iceResAdd: 0,
+            lightningResAdd: 0,
+            speedAdd: 0,
+            critAdd: 0
+        };
+
+        // Standard Bonus Properties
+        this.bonusAtk = 0;
+        this.bonusMAtk = 0;
+        this.bonusCrit = 0;
+        this.bonusEva = 0;
+        this.bonusSpeed = 0;
+        this.bonusDef = 0;
+        this.bonusMDef = 0;
+        this.bonusAtkSpd = 0;
+        this.bonusAcc = 0;
+        this.bonusDR = 0;
+        this.bonusCastSpd = 0;
+        this.bonusRangeMin = 0;
+        this.bonusRangeMax = 0;
+        this.bonusAtkRange = 0;
+        this.bonusUltChargeSpeed = 0;
+        this.bonusMaxHpMult = 0;
+        this.bonusMaxHp = 0;
 
         this.acc = config.acc || 100;
         this.eva = config.eva || 0;
@@ -471,121 +502,74 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         return (weapon && weapon.prefix) ? weapon.prefix : null;
     }
 
+    // --- Standardized 16 Stats Getters ---
     getTotalMaxHp() {
-        let base = this.maxHp || 0;
-        let multipliers = (this.maxHpMult - 1) + (this.bonusMaxHpMult || 0);
-
-        // Pet Passive
+        const base = (this.maxHp || 100) + this.bonusMaxHp;
+        const multipliers = (this.maxHpMult - 1) + (this.bonusMaxHpMult || 0) + (this.grimoireBonuses?.maxHpMult || 0);
         const petBonus = this.scene?.game?.partyManager?.getGlobalPetBonus('maxHpMult') || 0;
-        multipliers += petBonus;
+        const transMult = this.grimoire_transmult || 1.0;
+        return Math.floor(base * (1 + multipliers + petBonus) * transMult);
+    }
+
+    getTotalAtk() {
+        const base = (this.atk || 0) + this.getEquipmentBonus('atk') + (this.bonusAtk || 0);
+        let multipliers = (this.getEquipmentBonus('atkMult') || 0) + (this.grimoireBonuses?.atkMult || 0);
+
+        if (this.blackboard && this.blackboard.get('enraged_active')) {
+            const missingHpRatio = 1 - (this.hp / this.getTotalMaxHp());
+            multipliers += missingHpRatio * 0.15;
+        }
+
+        const transMult = this.grimoire_transmult || 1.0;
+        const petBonus = this.scene?.game?.partyManager?.getGlobalPetBonus('atkMult') || 0;
+        return Math.floor(base * (1 + multipliers + petBonus) * transMult);
+    }
+
+    getTotalMAtk() {
+        const base = (this.mAtk || 0) + this.getEquipmentBonus('mAtk') + (this.bonusMAtk || 0);
+        let multipliers = (this.getEquipmentBonus('mAtkMult') || 0) + (this.grimoireBonuses?.mAtkMult || 0);
+
+        if (this.isTacticalCommandActive) multipliers += 0.5;
+
+        const transMult = this.grimoire_transmult || 1.0;
+        const petBonus = this.scene?.game?.partyManager?.getGlobalPetBonus('mAtkMult') || 0;
+        return Math.floor(base * (1 + multipliers + petBonus) * transMult);
+    }
+
+    getTotalDef() {
+        const base = (this.def || 0) + this.getEquipmentBonus('def') + (this.bonusDef || 0);
+        let multipliers = (this.getEquipmentBonus('defMult') || 0) + (this.grimoireBonuses?.defMult || 0);
+
+        if (this.blackboard && this.blackboard.get('guard_active')) multipliers += 0.1;
 
         return Math.floor(base * (1 + multipliers));
     }
 
-    getTotalAtk() {
-        const base = (this.atk || 0) + this.getEquipmentBonus('atk');
-        const additions = (this.bonusAtk || 0);
-
-        // Multipliers (Additive stacking: 1 + m1 + m2 + ...)
-        let multipliers = this.getEquipmentBonus('atkMult') || 0;
-
-        // [NodeCharm] Enraged (😠) bonus: UP TO +15% based on missing HP
-        if (this.blackboard && this.blackboard.get('enraged_active')) {
-            const missingHpRatio = 1 - (this.hp / this.maxHp);
-            multipliers += missingHpRatio * 0.15;
-        }
-
-        // Grimoire / Transformation Mult
-        if (this.grimoire_transmult) {
-            multipliers += (this.grimoire_transmult - 1);
-        }
-
-        // Pet Passive
-        const petBonus = this.scene?.game?.partyManager?.getGlobalPetBonus('atkMult') || 0;
-        multipliers += petBonus;
-
-        return (base + additions) * (1 + multipliers);
-    }
-
-    getTotalMAtk() {
-        const base = (this.mAtk || 0) + this.getEquipmentBonus('mAtk');
-        const additions = (this.bonusMAtk || 0);
-
-        let multipliers = this.getEquipmentBonus('mAtkMult') || 0;
-
-        // Tactical Command: +50%
-        if (this.isTacticalCommandActive) {
-            multipliers += 0.5;
-        }
-
-        if (this.grimoire_transmult) {
-            multipliers += (this.grimoire_transmult - 1);
-        }
-
-        // Pet Passive
-        const petBonus = this.scene?.game?.partyManager?.getGlobalPetBonus('mAtkMult') || 0;
-        multipliers += petBonus;
-
-        return (base + additions) * (1 + multipliers);
-    }
-
-    getTotalCrit() {
-        const base = this.crit + this.getEquipmentBonus('crit') + (this.bonusCrit || 0);
-        const multipliers = this.getEquipmentBonus('critMult') || 0;
-        return base * (1 + multipliers);
-    }
-
-    getTotalCastSpd() {
-        let base = this.castSpd || 1000;
-        let multipliers = (this.castSpdMult - 1) + (this.bonusCastSpdMult || 0);
-
-        // Lower is better/faster? In many systems CastSpd is a reduction.
-        // But usually "Speed" means "Rate". If it's a "Delay", mult reduces it.
-        // readme says: "시전 속도 5~30% 증가" -> 1000ms delay goes to 800ms.
-        // So we divide by (1 + multipliers)
-        return Math.floor(base / (1 + multipliers));
-    }
-
-    getTotalDef() {
-        const base = (this.def || 0) + this.getEquipmentBonus('def');
-        const additions = (this.bonusDef || 0);
-
-        let multipliers = this.getEquipmentBonus('defMult') || 0;
-        // [NodeCharm] Bodyguard (😎) bonus: +10% Defense
-        if (this.blackboard && this.blackboard.get('guard_active')) {
-            multipliers += 0.1;
-        }
-
-        return (base + additions) * (1 + multipliers);
-    }
-
     getTotalMDef() {
-        const base = (this.mDef || 0) + this.getEquipmentBonus('mDef');
-        const additions = (this.bonusMDef || 0);
-        let multipliers = this.getEquipmentBonus('mDefMult') || 0;
-        return (base + additions) * (1 + multipliers);
+        const base = (this.mDef || 0) + this.getEquipmentBonus('mDef') + (this.bonusMDef || 0);
+        let multipliers = (this.getEquipmentBonus('mDefMult') || 0) + (this.grimoireBonuses?.mDefMult || 0);
+        return Math.floor(base * (1 + multipliers));
+    }
+
+    getTotalSpeed() {
+        const base = (this.speed || 100) + (this.bonusSpeed || 0) + (this.grimoireBonuses?.speedAdd || 0);
+        let multipliers = 0;
+        if (this.grimoire_transmult) multipliers += (this.grimoire_transmult - 1);
+        const petBonus = this.scene?.game?.partyManager?.getGlobalPetBonus('speedMult') || 0;
+        return Math.floor(base * (1 + multipliers + petBonus));
     }
 
     getTotalAtkSpd() {
-        // Lower is faster
         const base = Math.max(100, (this.atkSpd || 1000) + this.getEquipmentBonus('atkSpd') - (this.bonusAtkSpd || 0));
         const multipliers = this.getEquipmentBonus('atkSpdMult') || 0;
-        const result = base * (1 - multipliers); // Reducing delay
+        const result = base * (1 - multipliers);
         return this.isFrozen ? result * 2 : result;
     }
 
-    getTotalAtkRange() {
-        return this.atkRange + (this.bonusAtkRange || 0);
-    }
-
-    getTotalRangeMin() {
-        return Math.max(0, this.rangeMin + (this.bonusRangeMin || 0));
-    }
-
-    getTotalEva() {
-        const base = (this.eva || 0) + this.getEquipmentBonus('eva') + (this.bonusEva || 0);
-        const multipliers = this.getEquipmentBonus('evaMult') || 0;
-        return base * (1 + multipliers);
+    getTotalCrit() {
+        const base = (this.crit || 0) + this.getEquipmentBonus('crit') + (this.bonusCrit || 0) + (this.grimoireBonuses?.critAdd || 0);
+        const multipliers = this.getEquipmentBonus('critMult') || 0;
+        return Math.min(100, base * (1 + multipliers));
     }
 
     getTotalAcc() {
@@ -594,23 +578,41 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         return base * (1 + multipliers);
     }
 
-    getTotalSpeed() {
-        return (this.speed || 100) + (this.bonusSpeed || 0);
+    getTotalEva() {
+        const base = (this.eva || 0) + this.getEquipmentBonus('eva') + (this.bonusEva || 0);
+        const multipliers = this.getEquipmentBonus('evaMult') || 0;
+        return base * (1 + multipliers);
     }
 
-    getTotalDR() {
-        return (this.dr || 0) + (this.bonusDR || 0);
+    getTotalAtkRange() {
+        return (this.atkRange || 100) + (this.bonusAtkRange || 0);
+    }
+
+    getTotalRangeMin() {
+        return Math.max(0, (this.rangeMin || 0) + (this.bonusRangeMin || 0));
     }
 
     getTotalRangeMax() {
-        return Math.max(0, this.rangeMax + (this.bonusRangeMax || 0));
+        return Math.max(0, (this.rangeMax || 100) + (this.bonusRangeMax || 0));
     }
 
     getTotalCastSpd() {
-        const base = (this.castSpd || 1000) + this.getEquipmentBonus('castSpd') + (this.bonusCastSpd || 0);
-        const multipliers = this.getEquipmentBonus('castSpdMult') || 0;
-        const result = base * (1 - multipliers); // Reducing delay
+        const base = Math.max(100, (this.castSpd || 1000) + this.getEquipmentBonus('castSpd') - (this.bonusCastSpd || 0));
+        const multipliers = (this.castSpdMult - 1) + (this.bonusCastSpdMult || 0) + (this.getEquipmentBonus('castSpdMult') || 0);
+        const result = base / (1 + multipliers);
         return this.isFrozen ? result * 2 : result;
+    }
+
+    getTotalFireRes() {
+        return Math.min(90, (this.fireRes || 0) + (this.grimoireBonuses?.fireResAdd || 0));
+    }
+
+    getTotalIceRes() {
+        return Math.min(90, (this.iceRes || 0) + (this.grimoireBonuses?.iceResAdd || 0));
+    }
+
+    getTotalLightningRes() {
+        return Math.min(90, (this.lightningRes || 0) + (this.grimoireBonuses?.lightningResAdd || 0));
     }
 
     getTotalUltChargeSpeed() {
@@ -619,28 +621,8 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         return base * (1 + multipliers);
     }
 
-    getTotalSpeed() {
-        const base = (this.speed || 0) + (this.bonusSpeed || 0);
-        let multipliers = 0;
-
-        // Transformation Multiplier (if applicable)
-        if (this.grimoire_transmult) {
-            multipliers += (this.grimoire_transmult - 1);
-        }
-
-        // Pet Passive (if applicable)
-        const petBonus = this.scene?.game?.partyManager?.getGlobalPetBonus('speedMult') || 0;
-        multipliers += petBonus;
-
-        return base * (1 + multipliers);
-    }
-
     getTotalDR() {
         return (this.dr || 0) + (this.bonusDR || 0);
-    }
-
-    getTotalAcc() {
-        return this.acc + (this.bonusAcc || 0);
     }
 
     /**
@@ -1223,12 +1205,13 @@ export default class Mercenary extends Phaser.GameObjects.Container {
 
     updateHealthBar() {
         if (this.healthBar) {
-            const hpPercent = (this.hp / this.maxHp) * 100;
+            const maxHp = this.getTotalMaxHp();
+            const hpPercent = (this.hp / maxHp) * 100;
             let shieldPercent = 0;
 
             if (this.scene && this.scene.shieldManager) {
                 const shieldAmount = this.scene.shieldManager.getShield(this);
-                shieldPercent = (shieldAmount / this.maxHp) * 100;
+                shieldPercent = (shieldAmount / maxHp) * 100;
             }
 
             this.healthBar.setValue(hpPercent, shieldPercent);
@@ -1245,14 +1228,15 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             EventBus.emit(EventBus.EVENTS.COMBAT_DATA_RECORD, { type: 'heal', amount: amount, unitId: healerId });
         }
 
+        const maxHp = this.getTotalMaxHp();
         this.hp += amount;
-        if (this.hp > this.maxHp) this.hp = this.maxHp;
+        if (this.hp > maxHp) this.hp = maxHp;
 
         this.updateHealthBar();
 
         if (this.scene.fxManager) {
             if (!isSilent) {
-                this.scene.fxManager.showDamageText(this, '+' + amount.toFixed(0), '#00ff00');
+                this.scene.fxManager.showHealText(this, amount);
             }
             this.scene.fxManager.showHealEffect(this);
         }
@@ -1513,29 +1497,9 @@ export default class Mercenary extends Phaser.GameObjects.Container {
     }
 
     updateCharmEffects(delta) {
-        if (!this.active || this.hp <= 0) return;
-
-        this.charms.forEach((itemId, index) => {
-            if (!itemId) return;
-
-            const charm = CharmManager.getCharm(itemId);
-            if (!charm || charm.type !== 'periodic') return;
-
-            this.charmTimers[index] += delta;
-            if (this.charmTimers[index] >= charm.interval) {
-                this.charmTimers[index] = 0;
-
-                if (this.scene.fxManager) {
-                    this.scene.fxManager.showEmojiPopup(this, charm.emoji || '✨');
-                }
-
-                try {
-                    charm.effect(this);
-                } catch (e) {
-                    console.error(`[Charm Error] Failed to execute ${itemId} for ${this.unitName}:`, e);
-                }
-            }
-        });
+        // [Passive Refactor] Chapter A charms are now passive and don't require periodic execution.
+        // Keeping this method as a stub for future periodic effects (Chapter B/C if needed).
+        return;
     }
 
     updateVisualOrientation() {
@@ -1893,26 +1857,26 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             x: this.x,
             y: this.y,
             hp: this.hp,
-            maxHp: this.maxHp,
+            maxHp: this.getTotalMaxHp(),
             level: this.level,
             exp: this.exp,
-            atk: this.atk,
-            mAtk: this.mAtk,
-            def: this.def,
-            mDef: this.mDef,
-            speed: this.speed,
-            atkSpd: this.atkSpd,
-            castSpd: this.castSpd,
-            atkRange: this.atkRange,
+            atk: this.getTotalAtk(),
+            mAtk: this.getTotalMAtk(),
+            def: this.getTotalDef(),
+            mDef: this.getTotalMDef(),
+            speed: this.getTotalSpeed(),
+            atkSpd: this.getTotalAtkSpd(),
+            castSpd: this.getTotalCastSpd(),
+            atkRange: this.getTotalAtkRange(),
             rangeMin: this.rangeMin,
             rangeMax: this.rangeMax,
-            acc: this.acc,
-            eva: this.eva,
-            crit: this.crit,
-            ultChargeSpeed: this.ultChargeSpeed,
-            fireRes: this.fireRes,
-            iceRes: this.iceRes,
-            lightningRes: this.lightningRes,
+            acc: this.getTotalAcc(),
+            eva: this.getTotalEva(),
+            crit: this.getTotalCrit(),
+            ultChargeSpeed: this.getTotalUltChargeSpeed(),
+            fireRes: this.getTotalFireRes(),
+            iceRes: this.getTotalIceRes(),
+            lightningRes: this.getTotalLightningRes(),
             activatedPerks: this.activatedPerks,
             equipment: this.equipment,
             grimoire: this.grimoire,

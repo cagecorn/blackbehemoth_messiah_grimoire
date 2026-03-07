@@ -1,4 +1,5 @@
 import CharmManager from './CharmManager.js';
+import DBManager from '../Database/DBManager.js';
 import NodeCharmManager from '../AI/NodeCharmManager.js';
 
 /**
@@ -33,22 +34,92 @@ export default class GrimoireManager {
     /**
      * Applies all active effects in the Grimoire to the unit.
      */
-    static applyAll(unit) {
+    static async applyAll(unit) {
         if (!unit.grimoire) this.initGrimoire(unit);
 
-        this.applyChapterA(unit); // Active / Periodic
-        this.applyChapterB(unit); // Tactical AI (Handled via BT transition usually)
+        await this.applyChapterA(unit); // Passive Stat Bonuses
+        this.applyChapterB(unit); // Tactical AI
         this.applyChapterC(unit); // Class Stats
         this.applyChapterD(unit); // Transformation
     }
 
     /**
-     * Chapter A: Active Periodic Effects
+     * Chapter A: Passive Stat Bonuses (formerly Active Periodic)
      */
-    static applyChapterA(unit) {
-        // Active charms are usually handled in unit.update -> updateCharmEffects
-        // We ensure the unit's legacy 'charms' array points to Grimoire Chapter A.
-        unit.charms = unit.grimoire[this.CHAPTERS.ACTIVE];
+    static async applyChapterA(unit) {
+        if (!unit.grimoireBonuses) {
+            unit.grimoireBonuses = {
+                maxHpMult: 0,
+                atkMult: 0,
+                mAtkMult: 0,
+                defMult: 0,
+                mDefMult: 0,
+                fireResAdd: 0,
+                iceResAdd: 0,
+                lightningResAdd: 0,
+                speedAdd: 0,
+                critAdd: 0
+            };
+        }
+
+        // Reset Bonuses
+        Object.keys(unit.grimoireBonuses).forEach(key => unit.grimoireBonuses[key] = 0);
+
+        const charms = unit.grimoire[this.CHAPTERS.ACTIVE];
+        if (!charms) return;
+
+        for (const charmEntry of charms) {
+            if (!charmEntry) continue;
+
+            // charmEntry can be a string (id) for simple monsters, 
+            // or an object/instanceId for mercenaries.
+            let charmData = null;
+            let value = 0;
+
+            if (typeof charmEntry === 'object' && charmEntry.stat && charmEntry.value) {
+                // Direct object (already loaded)
+                charmData = CharmManager.getCharm(charmEntry.id);
+                value = charmEntry.value;
+            } else if (typeof charmEntry === 'string') {
+                if (charmEntry.startsWith('charm_')) {
+                    // It's an instanceId, fetch from DB
+                    try {
+                        const instance = await DBManager.getCharmInstance(charmEntry);
+                        if (instance) {
+                            charmData = CharmManager.getCharm(instance.id);
+                            value = instance.value;
+                        }
+                    } catch (e) {
+                        console.error(`[Grimoire] Failed to fetch charm instance ${charmEntry}:`, e);
+                    }
+                } else {
+                    // It's a base ID (used for monsters/elites)
+                    charmData = CharmManager.getCharm(charmEntry);
+                    // Randomize between 4 and 15 (consistent with player loot generation)
+                    value = Math.floor(Math.random() * 12) + 4;
+                }
+            }
+
+            if (charmData && charmData.stat) {
+                const stat = charmData.stat;
+                const bonusValue = value / 100; // Convert 10% to 0.1
+
+                if (!unit.id.startsWith('merc_')) {
+                    console.log(`[Grimoire] Applying Random Charm to ${unit.unitName}: ${charmData.id} (${value}%)`);
+                }
+
+                if (stat === 'maxHp') unit.grimoireBonuses.maxHpMult += bonusValue;
+                else if (stat === 'atk') unit.grimoireBonuses.atkMult += bonusValue;
+                else if (stat === 'mAtk') unit.grimoireBonuses.mAtkMult += bonusValue;
+                else if (stat === 'fireRes') unit.grimoireBonuses.fireResAdd += value; // Resists are additive 
+                else if (stat === 'iceRes') unit.grimoireBonuses.iceResAdd += value;
+                else if (stat === 'lightningRes') unit.grimoireBonuses.lightningResAdd += value;
+                else if (stat === 'speed') unit.grimoireBonuses.speedAdd += value;
+                else if (stat === 'crit') unit.grimoireBonuses.critAdd += value;
+            }
+        }
+
+        unit.charms = charms;
     }
 
     /**

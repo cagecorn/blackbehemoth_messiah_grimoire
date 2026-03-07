@@ -96,6 +96,7 @@ export default class UIManager {
         this.detailType = document.getElementById('detail-type');
         this.detailDesc = document.getElementById('detail-description');
         this.btnEquipItem = document.getElementById('btn-equip-item');
+        this.btnDiscardItem = document.getElementById('btn-discard-item');
         this.selectedItemId = null;
         this.pendingGrimoireSlot = null;
         this.pendingGearSlot = null; // Track gear slot clicked in ChatChannel
@@ -582,6 +583,14 @@ export default class UIManager {
                     }
                 }
             });
+        }
+
+        if (this.btnDiscardItem) {
+            this.btnDiscardItem.onclick = () => {
+                if (this.selectedItemId) {
+                    this.handleDiscardItem(this.selectedItemId);
+                }
+            };
         }
     }
 
@@ -3684,6 +3693,37 @@ export default class UIManager {
                 return false;
             }
         }
+    }
+
+    async handleDiscardItem(itemId) {
+        if (!itemId) return;
+
+        const item = ItemManager.getItem(itemId);
+        const name = item ? item.name : itemId;
+
+        this.showConfirm(`정말로 [${name}] 아이템을 버리시겠습니까?`, async () => {
+            try {
+                if (itemId.startsWith('eq_')) {
+                    await DBManager.deleteEquipmentInstance(itemId);
+                    console.log(`[UIManager] Discarded gear instance: ${itemId}`);
+                } else if (itemId.startsWith('charm_')) {
+                    await DBManager.deleteCharmInstance(itemId);
+                    console.log(`[UIManager] Discarded charm instance: ${itemId}`);
+                } else {
+                    // Stackable item from inventory
+                    await DBManager.deleteInventoryItem(itemId);
+                    console.log(`[UIManager] Discarded stackable item: ${itemId}`);
+                }
+
+                this.showToast(`[${name}] 아이템을 버렸습니다.`);
+                this.selectedItemId = null;
+                if (this.detailPanel) this.detailPanel.style.display = 'none';
+                this.inventoryDirty = true;
+            } catch (err) {
+                console.error('[UIManager] Error discarding item:', err);
+                this.showToast('아이템 버리기 실패');
+            }
+        });
     }
 
     getSVGFilename(key) {

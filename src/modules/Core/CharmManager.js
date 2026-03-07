@@ -14,101 +14,36 @@ export const CHARM_EFFECT_TYPES = {
 export const CHARM_DATABASE = {
     'emoji_burger': {
         id: 'emoji_burger',
-        name: 'Hamburger (햄버거)',
+        name: 'Hamburger (🍔)',
         emoji: '🍔',
-        type: CHARM_EFFECT_TYPES.PERIODIC,
-        interval: 10000, // 10 seconds
-        effect: (unit) => {
-            const healAmount = Math.floor(unit.maxHp * 0.05) + 10;
-            if (healAmount > 0) {
-                unit.heal(healAmount);
-                SoundEffects.playBbyorongSound();
-                console.log(`[Charm] ${unit.unitName} healed ${healAmount} by 🍔`);
-            }
-        },
-        description: '10초마다 최대 체력의 5% + 10을 회복합니다.'
+        type: CHARM_EFFECT_TYPES.PASSIVE,
+        stat: 'maxHp',
+        description: '최대 체력을 % 증가시킵니다.'
     },
     'emoji_fireworks': {
         id: 'emoji_fireworks',
-        name: 'Fire Nova (🎆)',
+        name: 'Fire Resist (🎆)',
         emoji: '🎆',
-        type: CHARM_EFFECT_TYPES.PERIODIC,
-        interval: 12000,
-        effect: (unit) => {
-            if (!unit.scene || !unit.scene.aoeManager) return;
-
-            const baseAtk = unit.getTotalAtk ? unit.getTotalAtk() : (unit.atk || 0);
-            const baseMAtk = unit.getTotalMAtk ? unit.getTotalMAtk() : (unit.mAtk || 0);
-            const power = Math.max(baseAtk, baseMAtk);
-            const damage = power * 1.2; // REVERTED 2.5 -> 1.2
-
-            if (unit.scene.fxManager && unit.scene.fxManager.showElementalNovaEffect) {
-                unit.scene.fxManager.showElementalNovaEffect(unit, 'fire');
-                SoundEffects.playPapatSound();
-            }
-
-            unit.scene.aoeManager.triggerAoe(
-                unit.x, unit.y,
-                150, // REVERTED 250 -> 150
-                damage,
-                unit,
-                unit.targetGroup,
-                baseMAtk >= baseAtk,
-                false,
-                'fire'
-            );
-
-            console.log(`[Charm] ${unit.unitName} triggered Fire Nova 🎆 (Dmg: ${Math.round(damage)})`);
-        },
-        description: '12초마다 주변에 불꽃 노바(공격력 120%)를 발산합니다.'
+        type: CHARM_EFFECT_TYPES.PASSIVE,
+        stat: 'fireRes',
+        description: '불 저항력을 % 증가시킵니다.'
     },
     'emoji_sparkler': {
         id: 'emoji_sparkler',
-        name: 'Spark Nova (🎇)',
+        name: 'Spark Resist (🎇)',
         emoji: '🎇',
-        type: CHARM_EFFECT_TYPES.PERIODIC,
-        interval: 12000,
-        effect: (unit) => {
-            if (!unit.scene || !unit.scene.aoeManager) return;
-            const baseAtk = unit.getTotalAtk ? unit.getTotalAtk() : (unit.atk || 0);
-            const baseMAtk = unit.getTotalMAtk ? unit.getTotalMAtk() : (unit.mAtk || 0);
-            const power = Math.max(baseAtk, baseMAtk);
-            const damage = power * 1.2;
-
-            if (unit.scene.fxManager && unit.scene.fxManager.showElementalNovaEffect) {
-                unit.scene.fxManager.showElementalNovaEffect(unit, 'lightning');
-                SoundEffects.playPapatSound();
-            }
-
-            unit.scene.aoeManager.triggerAoe(unit.x, unit.y, 150, damage, unit, unit.targetGroup, baseMAtk >= baseAtk, false, 'lightning');
-            console.log(`[Charm] ${unit.unitName} triggered Spark Nova 🎇 (Dmg: ${Math.round(damage)})`);
-        },
-        description: '12초마다 주변에 전격 노바(공격력 120%)를 발산합니다.'
+        type: CHARM_EFFECT_TYPES.PASSIVE,
+        stat: 'lightningRes',
+        description: '번개 저항력을 % 증가시킵니다.'
     },
     'emoji_koinobori': {
         id: 'emoji_koinobori',
-        name: 'Ice Nova (🎏)',
+        name: 'Ice Resist (🎏)',
         emoji: '🎏',
-        type: CHARM_EFFECT_TYPES.PERIODIC,
-        interval: 12000,
-        effect: (unit) => {
-            if (!unit.scene || !unit.scene.aoeManager) return;
-            const baseAtk = unit.getTotalAtk ? unit.getTotalAtk() : (unit.atk || 0);
-            const baseMAtk = unit.getTotalMAtk ? unit.getTotalMAtk() : (unit.mAtk || 0);
-            const power = Math.max(baseAtk, baseMAtk);
-            const damage = power * 1.2;
-
-            if (unit.scene.fxManager && unit.scene.fxManager.showElementalNovaEffect) {
-                unit.scene.fxManager.showElementalNovaEffect(unit, 'ice');
-                SoundEffects.playPapatSound();
-            }
-
-            unit.scene.aoeManager.triggerAoe(unit.x, unit.y, 150, damage, unit, unit.targetGroup, baseMAtk >= baseAtk, false, 'ice');
-            console.log(`[Charm] ${unit.unitName} triggered Ice Nova 🎏 (Dmg: ${Math.round(damage)})`);
-        },
-        description: '12초마다 주변에 냉기 노바(공격력 120%)를 발산합니다.'
+        type: CHARM_EFFECT_TYPES.PASSIVE,
+        stat: 'iceRes',
+        description: '얼음 저항력을 % 증가시킵니다.'
     }
-    // Add more charms here
 };
 
 export default class CharmManager {

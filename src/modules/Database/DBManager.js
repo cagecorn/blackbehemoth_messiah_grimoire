@@ -1,7 +1,7 @@
 import { openDB } from 'idb';
 
 const DB_NAME = 'IsacRPG_DB';
-const DB_VERSION = 4;
+const DB_VERSION = 5;
 
 export default class DBManager {
     static async initDB() {
@@ -39,6 +39,10 @@ export default class DBManager {
                 if (!db.objectStoreNames.contains('structure_instances')) {
                     db.createObjectStore('structure_instances', { keyPath: 'id' });
                 }
+                // Unique Charm Instances (Randomized values)
+                if (!db.objectStoreNames.contains('charm_instances')) {
+                    db.createObjectStore('charm_instances', { keyPath: 'id' });
+                }
             },
         });
         console.log(`IndexedDB '${DB_NAME}' Initialized`);
@@ -63,6 +67,11 @@ export default class DBManager {
             await this.initDB();
             await this.db.put('inventory', { id: emojiId, amount });
         }
+    }
+
+    static async deleteInventoryItem(emojiId) {
+        if (!this.db) await this.initDB();
+        await this.db.delete('inventory', emojiId);
     }
 
     static async getAllInventory() {
@@ -186,6 +195,27 @@ export default class DBManager {
     static async deleteStructureInstance(id) {
         if (!this.db) await this.initDB();
         await this.db.delete('structure_instances', id);
+    }
+
+    // --- Charm Instance Operations ---
+    static async saveCharmInstance(instance) {
+        if (!this.db) await this.initDB();
+        await this.db.put('charm_instances', instance);
+    }
+
+    static async getCharmInstance(id) {
+        if (!this.db) await this.initDB();
+        return await this.db.get('charm_instances', id);
+    }
+
+    static async getAllCharmInstances() {
+        if (!this.db) await this.initDB();
+        return await this.db.getAll('charm_instances');
+    }
+
+    static async deleteCharmInstance(id) {
+        if (!this.db) await this.initDB();
+        await this.db.delete('charm_instances', id);
     }
 
     static async getStructuresByDungeon(dungeonId) {

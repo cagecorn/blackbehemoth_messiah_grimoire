@@ -299,8 +299,9 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
         if (amount <= 0 && !element) return;
 
         // --- 0. Accuracy vs Evasion Check ---
-        if (attacker && typeof attacker === 'object' && attacker.acc !== undefined && this.eva !== undefined) {
-            const hitChance = Math.max(0.05, Math.min(1.0, (attacker.acc - this.eva) / 100.0));
+        const myEva = this.getTotalEva();
+        if (attacker && typeof attacker === 'object' && attacker.acc !== undefined) {
+            const hitChance = Math.max(0.05, Math.min(1.0, (attacker.acc - myEva) / 100.0));
             if (Math.random() > hitChance) {
                 // MISS!
                 if (this.scene.fxManager) {
@@ -417,16 +418,65 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
         }
     }
 
+    // --- Standardized 16 Stats Getters ---
+    getTotalMaxHp() {
+        return Math.floor((this.maxHp + (this.bonusMaxHp || 0)) * (1 + (this.grimoireBonuses?.maxHpMult || 0)));
+    }
+
+    getTotalAtk() {
+        return Math.floor(((this.atk || 0) + (this.bonusAtk || 0)) * (1 + (this.grimoireBonuses?.atkMult || 0)));
+    }
+
+    getTotalMAtk() {
+        return Math.floor(((this.mAtk || 0) + (this.bonusMAtk || 0)) * (1 + (this.grimoireBonuses?.mAtkMult || 0)));
+    }
+
+    getTotalDef() {
+        const base = (this.def || 0) + (this.bonusDef || 0);
+        return Math.floor(base * (1 + (this.grimoireBonuses?.defMult || 0)));
+    }
+
+    getTotalMDef() {
+        const base = (this.mDef || 0) + (this.bonusMDef || 0);
+        return Math.floor(base * (1 + (this.grimoireBonuses?.mDefMult || 0)));
+    }
+
+    getTotalSpeed() {
+        const base = (this.speed || 50) + (this.bonusSpeed || 0) + (this.grimoireBonuses?.speedAdd || 0);
+        return base;
+    }
+
+    getTotalAtkSpd() {
+        const base = (this.atkSpd || 1500);
+        return Math.max(200, base - (this.bonusAtkSpd || 0));
+    }
+
+    getTotalCrit() {
+        return Math.min(100, (this.crit || 0) + (this.bonusCrit || 0) + (this.grimoireBonuses?.critAdd || 0));
+    }
+
+    getTotalAcc() {
+        return (this.acc || 100) + (this.bonusAcc || 0);
+    }
+
+    getTotalEva() {
+        return (this.eva || 0) + (this.bonusEva || 0);
+    }
+
     getTotalFireRes() {
-        return Math.min(75, (this.fireRes || 0) + (this.bonusFireRes || 0));
+        return Math.min(90, (this.fireRes || 0) + (this.bonusFireRes || 0) + (this.grimoireBonuses?.fireResAdd || 0));
     }
 
     getTotalIceRes() {
-        return Math.min(75, (this.iceRes || 0) + (this.bonusIceRes || 0));
+        return Math.min(90, (this.iceRes || 0) + (this.bonusIceRes || 0) + (this.grimoireBonuses?.iceResAdd || 0));
     }
 
     getTotalLightningRes() {
-        return Math.min(75, (this.lightningRes || 0) + (this.bonusLightningRes || 0));
+        return Math.min(90, (this.lightningRes || 0) + (this.bonusLightningRes || 0) + (this.grimoireBonuses?.lightningResAdd || 0));
+    }
+
+    getTotalDR() {
+        return (this.dr || 0) + (this.bonusDR || 0);
     }
 
     takeMagicDamage(amount, attacker = null, isUltimate = false, element = null, isCritical = false, delay = 0) {
@@ -558,8 +608,9 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
     }
 
     receiveHeal(amount) {
+        const maxHp = this.getTotalMaxHp();
         this.hp += amount;
-        if (this.hp > this.maxHp) this.hp = this.maxHp;
+        if (this.hp > maxHp) this.hp = maxHp;
         this.updateHealthBar();
     }
 
@@ -569,14 +620,15 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
     heal(amount, isSilent = false) {
         if (!this.active || this.hp <= 0 || amount <= 0) return;
 
+        const maxHp = this.getTotalMaxHp();
         this.hp += amount;
-        if (this.hp > this.maxHp) this.hp = this.maxHp;
+        if (this.hp > maxHp) this.hp = maxHp;
 
         this.updateHealthBar();
 
         if (this.scene.fxManager) {
             if (!isSilent) {
-                this.scene.fxManager.showDamageText(this, '+' + Math.round(amount), '#00ff00');
+                this.scene.fxManager.showHealText(this, amount);
             }
             this.scene.fxManager.showHealEffect(this);
         }
@@ -721,26 +773,8 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
     }
 
     updateCharmEffects(delta) {
-        if (!this.charms || this.charms.length === 0) return;
-
-        this.charms.forEach((charmId, index) => {
-            if (!charmId) return;
-
-            const charm = CharmManager.getCharm(charmId);
-            if (!charm) return;
-
-            if (charm.type === 'periodic' && charm.effect) {
-                this.charmTimers[index] += delta;
-                if (this.charmTimers[index] >= charm.interval) {
-                    this.charmTimers[index] = 0;
-                    try {
-                        charm.effect(this);
-                    } catch (e) {
-                        console.error(`[Charm Error] Failed to execute ${charmId} for ${this.unitName}:`, e);
-                    }
-                }
-            }
-        });
+        // [Passive Refactor] Chapter A charms are now passive.
+        return;
     }
 
     updateVisualOrientation() {

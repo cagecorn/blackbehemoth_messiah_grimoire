@@ -1208,6 +1208,7 @@ body {
     gap: 12px;
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
     animation: slideUp 0.3s ease-out;
+    border-bottom: 4px solid var(--retro-amber);
 }
 
 @keyframes slideUp {
@@ -1283,6 +1284,40 @@ body {
 
 .equip-btn:active {
     transform: translate(2px, 2px);
+    box-shadow: 1px 1px 0px rgba(0, 0, 0, 0.6);
+}
+
+.detail-btns {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.detail-btns button {
+    flex: 1;
+}
+
+.discard-btn {
+    background: rgba(255, 50, 50, 0.2);
+    color: #ff5555;
+    border: 1px solid rgba(255, 50, 50, 0.4);
+    padding: 10px;
+    font-family: var(--font-pixel);
+    font-size: 10px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: all 0.2s;
+    box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.6);
+}
+
+.discard-btn:hover {
+    background: rgba(255, 50, 50, 0.4);
+    border-color: #ff5555;
+    box-shadow: 3px 3px 0px rgba(0, 0, 0, 0.6);
+}
+
+.discard-btn:active {
+    transform: translate(1px, 1px);
     box-shadow: 1px 1px 0px rgba(0, 0, 0, 0.6);
 }
 
@@ -3755,7 +3790,7 @@ input:checked+.slider-toggle:before {
     height: 100vh;
     background: rgba(0, 0, 0, 0.7);
     backdrop-filter: blur(4px);
-    z-index: 10000;
+    z-index: 30000;
     display: flex;
     align-items: center;
     justify-content: center;
