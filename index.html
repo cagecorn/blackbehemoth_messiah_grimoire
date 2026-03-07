@@ -108,19 +108,39 @@
         <!-- Dynamic Chat Channels Container (Bottom-Left) -->
         <div id="chat-container"></div>
 
-        <!-- Combat HUD Elements (Moved outside containers for layering control) -->
-        <div id="npc-hud">
-            <div class="npc-hud-card">
-                <img id="npc-hud-icon" src="" alt="NPC">
-                <div class="npc-hud-stacks" id="npc-hud-stacks">0</div>
+        <!-- Combat HUD Container (Top-Left horizontal stack) -->
+        <div id="combat-hud-container">
+            <!-- #defense-hud -->
+            <div id="defense-hud" style="display: none;">
+                <div class="defense-hud-card" title="방어 시설 배치">
+                    <div class="defense-hud-icon">🛡️</div>
+                    <div class="defense-hud-label">DEFENSE</div>
+                </div>
             </div>
-        </div>
 
-        <!-- Defense Deployment HUD -->
-        <div id="defense-hud" style="display: none;">
-            <div class="defense-hud-card" title="방어 시설 배치">
-                <div class="defense-hud-icon">🛡️</div>
-                <div class="defense-hud-label">DEFENSE</div>
+            <!-- #npc-hud -->
+            <div id="npc-hud">
+                <div class="npc-hud-card">
+                    <img id="npc-hud-icon" src="" alt="NPC">
+                    <div class="npc-hud-stacks" id="npc-hud-stacks">0</div>
+                </div>
+            </div>
+
+            <!-- #hud-round-display -->
+            <div id="hud-round-display">
+                <div class="round-display-bg"></div>
+                <span id="hud-round-text">ROUND 1</span>
+            </div>
+
+            <!-- #messiah-hud -->
+            <div id="messiah-hud">
+                <div class="messiah-hud-card">
+                    <div id="messiah-hud-icon">👆</div>
+                    <div class="messiah-hud-stacks" id="messiah-hud-stacks">0/10</div>
+                    <div class="messiah-cooldown-bar-bg">
+                        <div class="messiah-cooldown-bar-fill" id="messiah-cooldown-fill"></div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -144,21 +164,7 @@
             <button id="btn-exit-construction" class="retro-btn-premium">건축 종료 (ESC)</button>
         </div>
 
-        <div id="hud-round-display">
-            <div class="round-display-bg"></div>
-            <span id="hud-round-text">ROUND 1</span>
-        </div>
 
-        <div id="messiah-hud">
-            <div class="messiah-hud-card">
-                <div id="messiah-hud-icon">👆</div>
-                <div class="messiah-hud-stacks" id="messiah-hud-stacks">0/10</div>
-                <div class="messiah-cooldown-bar-bg">
-                    <div class="messiah-cooldown-bar-fill" id="messiah-cooldown-fill"></div>
-                </div>
-                <button id="messiah-auto-btn" class="messiah-auto-btn">AUTO</button>
-            </div>
-        </div>
 
         <!-- Mobile HUD Layer (Top Nav) -->
         <div id="mobile-hud">

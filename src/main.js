@@ -49,6 +49,11 @@ const config = {
             gravity: { y: 0 },
             debug: false
         }
+    },
+    callbacks: {
+        postBoot: function (game) {
+            game.canvas.oncontextmenu = (e) => e.preventDefault();
+        }
     }
 };
 

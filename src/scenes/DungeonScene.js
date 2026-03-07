@@ -174,7 +174,7 @@ export default class DungeonScene extends Phaser.Scene {
             // --- Construction / Deployment Input ---
             this.input.on('pointerdown', this.handleConstructionPointer, this);
             this.input.on('pointermove', this.handleConstructionDrag, this);
-            this.input.on('pointerup', () => { this.isDraggingCamera = false; });
+            this.input.on('pointerup', this.handleConstructionUp, this);
 
             // --- Messiah Touch Interaction ---
             this.input.on('pointerdown', this.handleMessiahTouch, this);
@@ -1518,16 +1518,37 @@ export default class DungeonScene extends Phaser.Scene {
     handleConstructionPointer(pointer) {
         if (!this.isConstructionMode || !this.selectedStructureId) return;
 
-        // Long Press (Mobile) or Right Click (PC)
-        // Note: pointer.rightButtonDown() might require 'disableContextMenu' in config
-        if (pointer.rightButtonDown() || pointer.msSinceDown > 500) {
+        // 1. Right Click (PC) - Instant Placement
+        if (pointer.rightButtonDown()) {
             const worldPoint = pointer.positionToCamera(this.cameras.main);
             this.placeStructureAt(worldPoint.x, worldPoint.y);
-        } else {
-            // Start dragging for panning
-            this.isDraggingCamera = true;
-            this.lastPointerX = pointer.x;
-            this.lastPointerY = pointer.y;
+            return;
+        }
+
+        // 2. Left Click / Touch - Start Long Press Timer & Panning
+        this.isDraggingCamera = true;
+        this.lastPointerX = pointer.x;
+        this.lastPointerY = pointer.y;
+
+        // Cleanup existing timer if any
+        if (this.constructionTimer) this.constructionTimer.remove();
+
+        // Start 600ms timer for "Long Press" placement
+        this.constructionTimer = this.time.delayedCall(600, () => {
+            if (this.isConstructionMode && !this.isDraggingSignificantly) {
+                const worldPoint = pointer.positionToCamera(this.cameras.main);
+                this.placeStructureAt(worldPoint.x, worldPoint.y);
+            }
+        });
+
+        this.isDraggingSignificantly = false;
+    }
+
+    handleConstructionUp(pointer) {
+        this.isDraggingCamera = false;
+        if (this.constructionTimer) {
+            this.constructionTimer.remove();
+            this.constructionTimer = null;
         }
     }
 
@@ -1536,6 +1557,10 @@ export default class DungeonScene extends Phaser.Scene {
 
         const dx = (this.lastPointerX - pointer.x) / this.cameras.main.zoom;
         const dy = (this.lastPointerY - pointer.y) / this.cameras.main.zoom;
+
+        if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+            this.isDraggingSignificantly = true;
+        }
 
         this.cameraTarget.x += dx;
         this.cameraTarget.y += dy;

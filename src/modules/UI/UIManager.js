@@ -538,7 +538,7 @@ export default class UIManager {
             const isArena = (sceneKey === 'ArenaScene');
 
             if (this.npcHud) {
-                const npcDisplay = (isCombat && !isArena) ? 'block' : 'none';
+                const npcDisplay = (isCombat && !isArena) ? 'flex' : 'none';
                 console.log(`[UIManager] Setting NPC HUD display to: ${npcDisplay}`);
                 this.npcHud.style.display = npcDisplay;
                 if (isCombat && !isArena) this.updateNPCHUD();
@@ -546,7 +546,7 @@ export default class UIManager {
 
             // Hide Messiah HUD in Arena
             if (this.messiahHud) {
-                this.messiahHud.style.display = (isCombat && !isArena) ? 'block' : 'none';
+                this.messiahHud.style.display = (isCombat && !isArena) ? 'flex' : 'none';
             }
 
             // Show Building HUD in Territory, Dungeon, and Raid
@@ -558,7 +558,7 @@ export default class UIManager {
             // Show/Hide Defense HUD in Dungeon (and others if needed)
             if (this.defenseHud) {
                 const showDefense = (sceneKey === 'DungeonScene' || sceneKey === 'RaidScene');
-                this.defenseHud.style.display = showDefense ? 'block' : 'none';
+                this.defenseHud.style.display = showDefense ? 'flex' : 'none';
             }
 
             // Hide Portrait Bar in Non-Combat scenes (like TerritoryScene)
@@ -668,22 +668,35 @@ export default class UIManager {
         }
 
         this.defenseDeploymentList.innerHTML = instances.map(inst => {
-            const config = Characters[inst.baseId.toUpperCase()] || { name: inst.baseId, sprite: 'bow_turret_sprite' };
+            const config = Characters[inst.baseId.toUpperCase()] || { name: inst.baseId };
             const isPlaced = !!inst.dungeonId;
             const isHere = inst.dungeonId === currentDungeon;
+            const spriteUrl = `assets/structures/${inst.baseId}_sprite.png`;
 
             let statusTag = '';
-            if (isHere) statusTag = '<span style="color:var(--retro-green); font-size:10px;">[배치됨]</span>';
-            else if (isPlaced) statusTag = `<span style="color:var(--retro-red); font-size:10px;">[${inst.dungeonId}]</span>`;
+            let cardStyle = '';
+            if (isHere) {
+                statusTag = '<span class="status-badge here">CURRENT</span>';
+                cardStyle = 'border-color: var(--retro-green); background: rgba(74, 222, 128, 0.1);';
+            } else if (isPlaced) {
+                statusTag = `<span class="status-badge placed">${inst.dungeonId}</span>`;
+                cardStyle = 'opacity: 0.7; grayscale(1); pointer-events: none;';
+            }
 
             return `
-                <div class="deployment-card ${isPlaced ? 'placed' : ''}" data-id="${inst.id}">
-                    <img src="assets/structures/${inst.baseId}_sprite.png" class="deployment-card-icon" onerror="this.src='assets/emojis/1f3f9.svg'">
-                    <div class="deployment-card-info">
-                        <div class="deployment-card-name">${config.name} ${statusTag}</div>
-                        <div class="deployment-card-id">#${inst.id.slice(-4)} (HP: ${inst.currentHp || 1000})</div>
+                <div class="deployment-card ${isPlaced ? 'is-placed' : ''}" data-id="${inst.id}" style="${cardStyle}">
+                    <div class="deployment-card-image-wrap">
+                        <img src="${spriteUrl}" class="deployment-card-icon" onerror="this.src='assets/emojis/1f3f9.svg'">
                     </div>
-                    ${!isPlaced ? '<div class="deploy-arrow">▶</div>' : ''}
+                    <div class="deployment-card-info">
+                        <div class="deployment-card-name-row">
+                            <span class="deployment-card-name">${config.name}</span>
+                            ${statusTag}
+                        </div>
+                        <div class="deployment-card-id">ID: #${inst.id.slice(-6)}</div>
+                        <div class="deployment-card-stats">HP: ${inst.currentHp || 1000} / 1000</div>
+                    </div>
+                    ${!isPlaced ? '<div class="deploy-prompt">BUILD ▶</div>' : ''}
                 </div>
             `;
         }).join('');

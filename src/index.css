@@ -2740,6 +2740,7 @@ body {
     background: rgba(0, 0, 0, 0.75);
     display: none;
     z-index: 15000;
+    /* Popup Layer Standard */
     justify-content: center;
     align-items: center;
     padding: 20px;
@@ -4613,24 +4614,39 @@ input:checked+.slider-toggle:before {
 }
 
 /* --- Combat HUD Elements (Layered independently on app-container) --- */
-#npc-hud {
+/* --- Combat HUD Container & Layering --- */
+#combat-hud-container {
     position: absolute;
-    top: 102px;
-    right: 50%;
-    margin-right: 70px;
-    /* Positioned flexibly to the left of the round display */
+    top: 100px;
+    /* Neatly below nav-bar */
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
     z-index: 500;
+    /* Combat HUD Layer */
+    pointer-events: none;
+    width: auto;
+    white-space: nowrap;
+}
+
+#combat-hud-container>div {
     pointer-events: auto;
+}
+
+#npc-hud {
     display: none;
     align-items: center;
-    background: rgba(15, 15, 10, 0.8);
+    background: rgba(15, 15, 10, 0.9);
     border: 1px solid var(--retro-amber);
-    padding: 2px 6px;
+    padding: 2px 8px;
     border-radius: 2px;
-    height: 28px;
-    /* Matching building slot height */
-    min-width: 44px;
-    box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.5);
+    height: 32px;
+    min-width: 48px;
+    box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
     box-sizing: border-box;
 }
 
@@ -4738,23 +4754,15 @@ input:checked+.slider-toggle:before {
 
 /* Messiah HUD (Miniature) */
 #messiah-hud {
-    position: absolute;
-    top: 102px;
-    left: 50%;
-    margin-left: 70px;
-    /* Positioned flexibly to the right of the round display */
-    z-index: 500;
-    pointer-events: auto;
     display: none;
     align-items: center;
-    background: rgba(15, 15, 10, 0.8);
+    background: rgba(15, 15, 10, 0.9);
     border: 1px solid #fff;
-    padding: 2px 6px;
+    padding: 2px 8px;
     border-radius: 2px;
-    height: 28px;
-    /* Matching building slot height */
+    height: 32px;
     min-width: 64px;
-    box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.5);
+    box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
     box-sizing: border-box;
 }
 
@@ -4839,10 +4847,6 @@ input:checked+.slider-toggle:before {
 /* ─── Round Display (Combat HUD) ───────────────────────── */
 /* Round Display (Miniature) */
 #hud-round-display {
-    position: absolute;
-    top: 102px;
-    left: 50%;
-    transform: translateX(-50%);
     z-index: 1000;
     /* Round Display Layer */
     display: none;
@@ -4851,16 +4855,14 @@ input:checked+.slider-toggle:before {
     background: rgba(15, 15, 10, 0.9);
     border: 1px solid var(--retro-amber);
     border-radius: 2px;
-    height: 28px;
-    /* Matching building slot height */
-    min-width: 90px;
-    padding: 0 10px;
-    box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.5);
+    height: 32px;
+    min-width: 100px;
+    padding: 0 12px;
+    box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
     opacity: 0;
     transition: opacity 0.3s;
     box-sizing: border-box;
-    z-index: 1000;
-    /* Round display HUD layer */
+    margin: 0;
 }
 
 #hud-round-display.active {
@@ -5008,26 +5010,29 @@ input:checked+.slider:before {
 .slider.round:before {
     border-radius: 2px;
 }
+
 /* --- Defense Deployment HUD --- */
 #defense-hud {
-    position: fixed;
-    top: 130px; /* Below NPC HUD */
-    right: 20px;
-    z-index: 1000;
+    display: none;
+    align-items: center;
+    height: 32px;
 }
 
 .defense-hud-card {
-    background: var(--retro-panel);
-    border: 2px solid var(--retro-border);
-    padding: 6px;
+    background: rgba(15, 15, 10, 0.9);
+    border: 1px solid var(--retro-amber);
+    padding: 2px 8px;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    box-shadow: 3px 3px 0px rgba(0,0,0,0.5);
+    box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
     transition: all 0.1s;
     min-width: 60px;
+    height: 32px;
+    box-sizing: border-box;
+    gap: 6px;
 }
 
 .defense-hud-card:hover {
@@ -5036,8 +5041,8 @@ input:checked+.slider:before {
 }
 
 .defense-hud-icon {
-    font-size: 24px;
-    margin-bottom: 2px;
+    font-size: 14px;
+    line-height: 1;
 }
 
 .defense-hud-label {
@@ -5061,51 +5066,139 @@ input:checked+.slider:before {
 }
 
 .deployment-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
     overflow-y: auto;
-    padding-right: 5px;
+    padding: 4px 8px 12px 4px;
     margin-top: 10px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--retro-amber) rgba(0, 0, 0, 0.2);
+}
+
+.deployment-grid::-webkit-scrollbar {
+    width: 4px;
+}
+
+.deployment-grid::-webkit-scrollbar-thumb {
+    background: var(--retro-amber);
+    border-radius: 2px;
 }
 
 .deployment-card {
-    background: var(--retro-panel2);
-    border: 1px solid var(--retro-border);
-    padding: 10px;
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.95));
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-left: 4px solid var(--retro-amber);
+    padding: 12px;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 14px;
     cursor: pointer;
-    transition: border-color 0.1s;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
 }
 
 .deployment-card:hover {
+    transform: translateX(4px);
     border-color: var(--retro-amber);
-    background: rgba(255, 176, 0, 0.05);
+    background: linear-gradient(135deg, rgba(51, 65, 85, 0.95), rgba(30, 41, 59, 1));
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4), 0 0 15px rgba(251, 191, 36, 0.1);
+}
+
+.deployment-card-image-wrap {
+    width: 44px;
+    height: 44px;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
 }
 
 .deployment-card-icon {
-    width: 40px;
-    height: 40px;
+    width: 36px;
+    height: 36px;
     image-rendering: pixelated;
+    filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.2));
 }
 
 .deployment-card-info {
     flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.deployment-card-name-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 2px;
 }
 
 .deployment-card-name {
     font-family: var(--font-pixel);
-    font-size: 10px;
-    color: var(--retro-amber);
-    margin-bottom: 4px;
+    font-size: 11px;
+    color: #fff;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.status-badge {
+    font-family: var(--font-pixel);
+    font-size: 7px;
+    padding: 2px 5px;
+    border-radius: 2px;
+    text-transform: uppercase;
+}
+
+.status-badge.here {
+    background: rgba(74, 222, 128, 0.2);
+    color: #4ade80;
+    border: 1px solid rgba(74, 222, 128, 0.4);
+}
+
+.status-badge.placed {
+    background: rgba(239, 68, 68, 0.2);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.4);
 }
 
 .deployment-card-id {
     font-family: var(--font-vt);
-    font-size: 14px;
+    font-size: 12px;
     color: var(--retro-dim);
+}
+
+.deployment-card-stats {
+    font-family: var(--font-vt);
+    font-size: 11px;
+    color: var(--retro-amber);
+    opacity: 0.8;
+}
+
+.deploy-prompt {
+    font-family: var(--font-pixel);
+    font-size: 8px;
+    color: var(--retro-amber);
+    opacity: 0.6;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        opacity: 0.4;
+    }
+
+    50% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0.4;
+    }
 }
 
 /* --- Construction Mode Overlay --- */
@@ -5115,7 +5208,8 @@ input:checked+.slider:before {
     left: 0;
     width: 100%;
     height: 100%;
-    pointer-events: none; /* Let clicks pass through to Phaser */
+    pointer-events: none;
+    /* Let clicks pass through to Phaser */
     z-index: 2000;
 }
 
@@ -5151,7 +5245,8 @@ input:checked+.slider:before {
     bottom: 120px;
     left: 50%;
     transform: translateX(-50%);
-    pointer-events: auto; /* Enable click */
+    pointer-events: auto;
+    /* Enable click */
     padding: 15px 30px;
     font-size: 14px;
 }
@@ -5159,4 +5254,3 @@ input:checked+.slider:before {
 #construction-overlay {
     background: rgba(255, 176, 0, 0.05);
 }
-
