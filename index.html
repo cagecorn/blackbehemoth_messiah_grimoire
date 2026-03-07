@@ -18,8 +18,8 @@
     <link rel="stylesheet" as="style" crossorigin
         href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
     <!-- Custom CSS for DOM Overlay -->
-  <script type="module" crossorigin src="./assets/index-D2XjM7of.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-DWeIbNjR.css">
+  <script type="module" crossorigin src="./assets/index-DK8zrsZX.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-B2X6yQDK.css">
 </head>
 
 <body>
@@ -117,6 +117,34 @@
             </div>
         </div>
 
+        <!-- Defense Deployment HUD -->
+        <div id="defense-hud" style="display: none;">
+            <div class="defense-hud-card" title="방어 시설 배치">
+                <div class="defense-hud-icon">🛡️</div>
+                <div class="defense-hud-label">DEFENSE</div>
+            </div>
+        </div>
+
+        <!-- Defense Deployment List (Scrollable) -->
+        <div id="defense-deployment-panel" class="retro-panel-premium" style="display: none;">
+            <div class="panel-header">
+                <span>보유 방어 시설</span>
+                <button id="defense-panel-close">✕</button>
+            </div>
+            <div id="defense-deployment-list" class="deployment-grid">
+                <!-- Owned structures will be injected here -->
+            </div>
+        </div>
+
+        <!-- Construction Mode Overlay -->
+        <div id="construction-overlay" style="display: none;">
+            <div class="construction-header">
+                <div class="construction-title">CONSTRUCTION MODE</div>
+                <div class="construction-hint">마우스 우클릭 / 길게 터치: 시설물 배치</div>
+            </div>
+            <button id="btn-exit-construction" class="retro-btn-premium">건축 종료 (ESC)</button>
+        </div>
+
         <div id="hud-round-display">
             <div class="round-display-bg"></div>
             <span id="hud-round-text">ROUND 1</span>
@@ -162,6 +190,8 @@
                                 data-dungeon="CURSED_FOREST">저주받은 숲</button>
                             <button class="nav-dropdown-item" data-scene="DungeonScene"
                                 data-dungeon="UNDEAD_GRAVEYARD">언데드 묘지</button>
+                            <button class="nav-dropdown-item" data-scene="DungeonScene"
+                                data-dungeon="SWAMPLAND">늪지대</button>
                         </div>
                     </div>
                     <button class="nav-btn" data-scene="ArenaScene">아레나</button>
