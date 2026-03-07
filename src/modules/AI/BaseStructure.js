@@ -27,6 +27,7 @@ export default class BaseStructure extends Phaser.GameObjects.Container {
         this.unitName = config.name;
         this.team = 'player'; // Structures are allies
         this.id = instanceId;
+        this.hideInUI = config.hideInUI !== undefined ? config.hideInUI : true;
 
         // Stats
         this.maxHp = config.maxHp || 100;
@@ -310,15 +311,30 @@ export default class BaseStructure extends Phaser.GameObjects.Container {
     }
 
     getTotalRangeMax() {
-        return Math.max(0, (this.rangeMax || this.atkRange || 450) + (this.bonusRangeMax || 0));
+        return (this.rangeMax || this.atkRange || 450) + (this.bonusRangeMax || 0);
+    }
+
+    getState() {
+        return {
+            id: this.id,
+            className: 'BaseStructure',
+            classId: this.baseId,
+            hideInUI: !!this.hideInUI,
+            unitName: this.unitName,
+            x: this.x,
+            y: this.y,
+            hp: this.hp,
+            maxHp: this.maxHp,
+            atk: this.atk,
+            def: this.def
+        };
     }
 
     syncStatusUI() {
-        // Placeholder for skill/buff compatibility
+        // Dummy for interface compatibility
     }
 
     restoreSpriteTint() {
-        if (!this.sprite) return;
         this.sprite.clearTint();
     }
 }
