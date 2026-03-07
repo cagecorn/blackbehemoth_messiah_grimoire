@@ -146,15 +146,6 @@ export default class BaseStructure extends Phaser.GameObjects.Container {
 
         // Combat logic: Find target and attack
         this.handleCombat(time);
-
-        // Periodic Persistence
-        if (time - this.lastSaveTime > this.saveInterval) {
-            if (this.hp !== this.lastHp) {
-                this.saveState();
-                this.lastHp = this.hp;
-            }
-            this.lastSaveTime = time;
-        }
     }
 
     handleCombat(time) {
@@ -195,22 +186,23 @@ export default class BaseStructure extends Phaser.GameObjects.Container {
         if (target.x < this.x) this.sprite.setScale(-Math.abs(this.sprite.scaleX), this.sprite.scaleY);
         else this.sprite.setScale(Math.abs(this.sprite.scaleX), this.sprite.scaleY);
 
-        // Projectile Type
-        const projType = this.config.id === 'bow_turret' ? 'archer' : 'laser';
+        // Projectile Type & Behavior
+        const projType = this.config.projectileType || 'laser';
+        const isParabolic = projType === 'archer';
 
-        this.scene.projectileManager.fire(this.x, this.y, target.x, target.y, damage, projType, false, this.targetGroup, this, null, false, null, isCritical);
-    }
-
-    async saveState() {
-        try {
-            const inst = await DBManager.getStructureInstance(this.instanceId);
-            if (inst) {
-                inst.currentHp = this.hp;
-                await DBManager.saveStructureInstance(inst);
-            }
-        } catch (e) {
-            console.error(`[BaseStructure] Failed to save state for ${this.instanceId}`, e);
-        }
+        this.scene.projectileManager.fire(
+            this.x, this.y,
+            target.x, target.y,
+            damage,
+            projType,
+            false, // isUltimate
+            this.targetGroup,
+            this,
+            null, // element
+            isParabolic, // Enable parabolic arc for arrows
+            null, // onHitCallback
+            isCritical
+        );
     }
 
     die() {
@@ -225,12 +217,11 @@ export default class BaseStructure extends Phaser.GameObjects.Container {
             duration: 500,
             onComplete: () => {
                 this.destroy();
-                // Optional: Notify StructureManager to cleanup?
             }
         });
 
-        // Mark as destroyed in DB? Or just keep 0 HP? 
-        this.saveState();
+        // Permanently delete from DB when destroyed
+        DBManager.deleteStructureInstance(this.instanceId);
     }
 
     heal(amount, isSilent = false, healerId = null) {

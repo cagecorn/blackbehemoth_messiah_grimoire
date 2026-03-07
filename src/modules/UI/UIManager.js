@@ -1506,15 +1506,25 @@ export default class UIManager {
 
                 const iconUrl = base.customAsset || 'assets/emojis/' + ItemManager.getSVGFilename(s.baseId);
                 const shortId = s.id.split('_').pop();
+                const isInstalled = !!s.dungeonId;
+
+                let statusBadge = '';
+                let cardStyle = 'background: rgba(255,255,255,0.05); border: 1px solid rgba(16, 185, 129, 0.3);';
+
+                if (isInstalled) {
+                    statusBadge = `<div style="position: absolute; bottom: 5px; right: 5px; background: #3b82f6; color: #fff; font-size: 6px; font-weight: bold; padding: 1px 3px; border-radius: 2px;">${s.dungeonId.replace('_', ' ')}</div>`;
+                    cardStyle = 'background: rgba(59, 130, 246, 0.1); border: 1px solid #3b82f6; opacity: 0.9;';
+                }
 
                 ownedHtml += `
                     <div class="owned-equip-card structure-instance-card" data-instance-id="${s.id}"
-                         style="background: rgba(255,255,255,0.05); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; align-items: center; gap: 5px; position: relative; cursor: pointer;" 
-                         title="${base.name}\n(ID: ${s.id})">
+                         style="${cardStyle} border-radius: 8px; padding: 10px; display: flex; flex-direction: column; align-items: center; gap: 5px; position: relative; cursor: pointer;" 
+                         title="${base.name}\n${isInstalled ? 'INSTALLED: ' + s.dungeonId : 'IN INVENTORY'}">
                         <div style="position: absolute; top: -5px; right: -5px; background: #10b981; color: #fff; font-size: 7px; font-weight: bold; padding: 1px 4px; border-radius: 3px; border: 1px solid rgba(255,255,255,0.2);">X1</div>
                         <img src="${iconUrl}" style="width: 32px; height: 32px; object-fit: contain; image-rendering: pixelated; filter: drop-shadow(0 0 5px rgba(16, 185, 129, 0.3));">
                         <div style="font-size: 9px; color: #fff; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; font-weight: bold;">${base.name}</div>
                         <div style="font-size: 7px; color: #34d399; opacity: 0.6;">#${shortId}</div>
+                        ${statusBadge}
                     </div>
                 `;
             }

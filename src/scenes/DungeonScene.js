@@ -72,6 +72,7 @@ export default class DungeonScene extends Phaser.Scene {
 
     init(data) {
         this.dungeonType = data?.dungeonType || 'CURSED_FOREST';
+        this.dungeonId = this.dungeonType; // Crucial for Structure Persistence
         this.currentRound = data?.startRound || 1;
         // Reset state on every entry
         this.isResting = false;

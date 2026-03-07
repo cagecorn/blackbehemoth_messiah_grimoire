@@ -1228,6 +1228,7 @@ export const StructureStats = {
         id: 'turret_bowgun',
         name: '보우건 터렛',
         sprite: 'bow_turret_sprite',
+        projectileType: 'archer',
         hp: 1000,
         maxHp: 1000,
         atk: 45,

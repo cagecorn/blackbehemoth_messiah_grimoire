@@ -31,7 +31,8 @@ export default class StructureManager {
 
         for (const s of saved) {
             if (s.x !== undefined && s.y !== undefined) {
-                this.spawnStructure(s.id, s.baseId, s.x, s.y, s.currentHp);
+                // Ignore HP from DB for session entry; always spawn at full strength
+                this.spawnStructure(s.id, s.baseId, s.x, s.y, s.maxHp || 1000);
             }
         }
     }
