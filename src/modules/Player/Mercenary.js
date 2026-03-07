@@ -344,6 +344,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
 
         this.handleEquipRequest = async (payload) => {
             if (payload.unitId === this.id) {
+                console.log(`[Mercenary] handleEquipRequest received for ${this.unitName} (${this.id})`, payload);
                 let item;
                 if (!payload.itemId && payload.slot) {
                     await this.unequipItem(payload.slot);
@@ -535,7 +536,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
     getTotalCastSpd() {
         let base = this.castSpd || 1000;
         let multipliers = (this.castSpdMult - 1) + (this.bonusCastSpdMult || 0);
-        
+
         // Lower is better/faster? In many systems CastSpd is a reduction.
         // But usually "Speed" means "Rate". If it's a "Delay", mult reduces it.
         // readme says: "시전 속도 5~30% 증가" -> 1000ms delay goes to 800ms.
