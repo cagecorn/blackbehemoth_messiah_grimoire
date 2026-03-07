@@ -10,6 +10,8 @@ import GrimoireManager from '../Core/GrimoireManager.js';
 import DBManager from '../Database/DBManager.js';
 import soundEffects from '../Core/SoundEffects.js';
 import equipmentManager from '../Core/EquipmentManager.js';
+import { MercenaryClasses, Characters } from '../Core/EntityStats.js';
+
 
 /**
  * Mercenary.js
@@ -1730,11 +1732,11 @@ export default class Mercenary extends Phaser.GameObjects.Container {
     syncStatusUI() {
         if (!this.active || this.hp <= 0) return;
 
+        // 1. Stat Sanitization - Prevent "Stat Explosion" by ensuring base stats are within theoretical limits
+        // This is a safety measure requested for all classes.
+        this.sanitizeStats();
+
         const statuses = this.getStatuses();
-
-
-        // 3. Check Debuffs (Future-proofing)
-        // ...
 
         const icon_atk_spd = (this.atkSpd / 1000).toFixed(1) + 's';
 
@@ -1792,10 +1794,80 @@ export default class Mercenary extends Phaser.GameObjects.Container {
 
         // Save to PartyManager for persistent state linking (Only for player team)
         if (this.team === 'player') {
-            this.scene?.game?.partyManager?.saveState(this.id, {
-                ...this.getState(),
-                ...stats
-            });
+            // FIX: DO NOT spread 'stats' here. Only save base state to prevent derived stats 
+            // from being saved as base stats (the "Stat Explosion" bug).
+            this.scene?.game?.partyManager?.saveState(this.id, this.getState());
+        }
+    }
+
+    /**
+     * Safety Measure: Validates current base stats against theoretical maximums.
+     * Resets corrupted stats to sane values derived from Level, Class info, and Star Rank.
+     */
+    sanitizeStats() {
+        // Only run for player mercenaries to prevent save corruption
+        if (this.team !== 'player' || !this.active) return;
+
+        // Retrieve theoretical base values from EntityStats for comparison
+        const classConfig = MercenaryClasses[this.className.toUpperCase()];
+        const charConfig = Characters[this.characterId.toUpperCase()];
+
+        if (!classConfig) return;
+
+        // Determine correct base stats (Character override OR Class base)
+        const getBase = (stat) => (charConfig && charConfig[stat] !== undefined) ? charConfig[stat] : classConfig[stat];
+
+        const baseMaxHp = getBase('maxHp') || 100;
+        const baseAtk = getBase('atk') || 10;
+        const baseDef = getBase('def') || 5;
+        const baseMDef = getBase('mDef') || 5;
+        const baseMAtk = getBase('mAtk') || 5;
+        const baseSpeed = getBase('speed') || 100;
+        const baseAcc = getBase('acc') || 90;
+        const baseEva = getBase('eva') || 5;
+        const baseCrit = getBase('crit') || 5;
+
+        const growth = charConfig?.growth || classConfig.growth || { maxHp: 10, atk: 2, def: 1 };
+        const multi = this.starMultiplier || 1.0;
+        const levelFactor = this.level - 1;
+
+        // Theoretical maximums (no bonus multipliers included)
+        const expectedMaxHp = baseMaxHp + (Math.floor((growth.maxHp || 0) * multi) * levelFactor);
+        const expectedDef = baseDef + ((growth.def || 0) * multi * levelFactor);
+        const expectedAtk = baseAtk + ((growth.atk || 0) * multi * levelFactor);
+        const expectedMDef = baseMDef + ((growth.mDef || 0) * multi * levelFactor);
+        const expectedMAtk = baseMAtk + ((growth.mAtk || 0) * multi * levelFactor);
+        const expectedSpeed = baseSpeed + ((growth.speed || 0) * multi * levelFactor);
+        const expectedAcc = baseAcc + ((growth.acc || 0) * multi * levelFactor);
+        const expectedEva = baseEva + ((growth.eva || 0) * multi * levelFactor);
+        const expectedCrit = baseCrit + ((growth.crit || 0) * multi * levelFactor);
+
+        // Allow a small margin (5%) for floating point drift, but anything significantly higher is corruption
+        const margin = 1.05;
+        let corrected = false;
+
+        const checkAndFix = (statName, current, expected) => {
+            if (current > expected * margin) {
+                console.warn(`%c[Stat-Sanitizer] %c${this.unitName}%c의 ${statName.toUpperCase()} 수치 오염 감지(${current.toFixed(1)} > Max ${expected.toFixed(1)}). 정상 수치로 복구합니다.`,
+                    'color: #ff9d00; font-weight: bold;', 'color: #ffffff;', 'color: #ff9d00;');
+                this[statName] = expected;
+                corrected = true;
+            }
+        };
+
+        checkAndFix('maxHp', this.maxHp, expectedMaxHp, true);
+        checkAndFix('def', this.def, expectedDef);
+        checkAndFix('atk', this.atk, expectedAtk);
+        checkAndFix('mDef', this.mDef, expectedMDef);
+        checkAndFix('mAtk', this.mAtk, expectedMAtk);
+        checkAndFix('speed', this.speed, expectedSpeed);
+        checkAndFix('acc', this.acc, expectedAcc);
+        checkAndFix('eva', this.eva, expectedEva);
+        checkAndFix('crit', this.crit, expectedCrit);
+
+        if (corrected) {
+            if (this.hp > this.maxHp) this.hp = this.maxHp;
+            this.scene?.game?.partyManager?.saveState(this.id, this.getState());
         }
     }
 
