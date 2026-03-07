@@ -79,7 +79,7 @@ class EquipmentManager {
         }
 
         // --- Material Check (Hardcoded for Wood items initially) ---
-        if (itemId === 'wood_sword' || itemId === 'wood_armor') {
+        if (itemId === 'wood_sword' || itemId === 'wood_armor' || itemId === 'wood_wand') {
             const wood = await DBManager.getInventoryItem('emoji_wood');
             if (!wood || wood.amount < 500) {
                 return { success: false, reason: '나무 재료가 부족합니다! (500개 필요)' };
@@ -229,6 +229,12 @@ class EquipmentManager {
             stats.atk = Math.round(5 * levelBonus);
         }
 
+        // Custom logic for Wood Wand
+        if (instance.itemId === 'wood_wand') {
+            const levelBonus = 1 + (0.25 * (instance.level - 1));
+            stats.mAtk = Math.round(5 * levelBonus);
+        }
+
         // Custom logic for Wood Armor
         if (instance.itemId === 'wood_armor') {
             const levelBonus = 1 + (0.25 * (instance.level - 1));
@@ -264,6 +270,7 @@ class EquipmentManager {
         desc += `\n- 경험치: ${instance.exp.toLocaleString()} / ${nextLevelExp.toLocaleString()}`;
 
         if (stats.atk) desc += `\n- 공격력: +${stats.atk}`;
+        if (stats.mAtk) desc += `\n- 마법 공격력: +${stats.mAtk}`;
         if (stats.def) desc += `\n- 방어력: +${stats.def}`;
         if (stats.mDef) desc += `\n- 마법 방어력: +${stats.mDef}`;
 

@@ -83,6 +83,16 @@ const ITEM_DATABASE = {
         description: '나무 껍질을 엮어 만든 갑옷입니다. 투박하지만 입는 사람과 함께 성장하는 신비한 힘이 깃들어 있습니다.',
         customAsset: 'assets/item/wood_armor.png',
         id: 'wood_armor'
+    },
+    'wood_wand': {
+        name: '우드 완드',
+        type: ITEM_TYPES.EQUIPMENT,
+        slot: EQUIP_SLOTS.WEAPON,
+        icon: 'wood_wand',
+        stats: { mAtk: 5 },
+        description: '말라비틀어진 나뭇가지로 만든 투박한 지팡이입니다. 하지만 마력을 머금으면 놀라운 힘을 발휘할 것입니다.',
+        customAsset: 'assets/item/wood_wand.png',
+        id: 'wood_wand'
     }
 };
 

@@ -234,7 +234,8 @@ export default class TerritoryScene extends Phaser.Scene {
             <div id="territory-patch-body">
                 <div class="patch-entry">
                     <div class="patch-date">▶ 2026-03-07 (Latest)</div>
-                    <div class="patch-item"><span class="patch-item-icon">⚔️</span>[장비창] 우드소드(무기)와 우드아머(방어구) 제작/장착 기능이 추가되었습니다. 영지 배너를 클릭해 장비를 만들고 성장시키세요!</div>
+                    <div class="patch-item"><span class="patch-item-icon">⚔️</span>[장비창] 우드 시리즈 완결! 우드소드, 우드아머에 이어 **우드완드(무기)** 제작 기능이 추가되었습니다.</div>
+                    <div class="patch-item"><span class="patch-item-icon">🪄</span>[우드완드] 마법 공격력 특화 성장 무기로, 500개의 나무로 제작 가능합니다.</div>
                     <div class="patch-item"><span class="patch-item-icon">🔋</span>설정 탭에서 [배터리 절약 방치 모드] 설정 가능.</div>
                     <div class="patch-item"><span class="patch-item-icon">🧱</span>몬스터들이 낮은 확률로 벽돌 재료 드랍.</div>
                     <div class="patch-item"><span class="patch-item-icon">❄️</span>노엘, 노아 형제 프리징 현상 수정.</div>
