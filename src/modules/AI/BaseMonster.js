@@ -42,6 +42,10 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
         this.acc = config.acc || 100;
         this.eva = config.eva || 0;
         this.crit = config.crit || 0;
+        this.ultChargeSpeed = config.ultChargeSpeed || 1.0;
+        this.fireRes = config.fireRes || 0;
+        this.iceRes = config.iceRes || 0;
+        this.lightningRes = config.lightningRes || 0;
         // ------------------------------------
         // Status Tracking
         this.isStunned = false;
@@ -163,6 +167,10 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
         this.acc = config.acc || 100;
         this.eva = config.eva || 0;
         this.crit = config.crit || 0;
+        this.ultChargeSpeed = config.ultChargeSpeed || 1.0;
+        this.fireRes = config.fireRes || 0;
+        this.iceRes = config.iceRes || 0;
+        this.lightningRes = config.lightningRes || 0;
 
         // Reset Status Tracking
         this.isStunned = false;

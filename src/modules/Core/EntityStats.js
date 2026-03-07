@@ -945,6 +945,11 @@ export const PetStats = {
     }
 };
 
+export const MONSTER_SCALING = {
+    ELITE: { hp: 2.5, power: 1.5, speed: 1.2, acc: 20, eva: 10, crit: 10 },
+    RAID: { hp: 50.0, power: 3.5, speed: 1.1, acc: 50, eva: 0, crit: 25 }
+};
+
 export const MonsterClasses = {
     GOBLIN: {
         id: 'goblin',
@@ -965,14 +970,16 @@ export const MonsterClasses = {
         acc: 85,
         eva: 5,
         crit: 5,
+        ultChargeSpeed: 1.0,
+        fireRes: 0,
+        iceRes: 0,
+        lightningRes: 0,
         physicsRadius: 20,
         spriteSize: 64,
         spawnOffset: { x: 400, y: 400 },
         aiType: 'MELEE',
         scale: 1,
-        fireRes: 0,
-        iceRes: 0,
-        lightningRes: 0
+        growth: { maxHp: 15, atk: 2.5, mAtk: 0.5, def: 0.8, mDef: 0.5, acc: 1.5, eva: 0.5, crit: 0.3 }
     },
     SHAMAN: {
         id: 'shaman',
@@ -993,13 +1000,15 @@ export const MonsterClasses = {
         acc: 80,
         eva: 10,
         crit: 5,
+        ultChargeSpeed: 1.0,
+        fireRes: 10,
+        iceRes: 10,
+        lightningRes: 10,
         physicsRadius: 20,
         spriteSize: 64,
         aiType: 'SUPPORT',
         scale: 1.2,
-        fireRes: 0,
-        iceRes: 0,
-        lightningRes: 0
+        growth: { maxHp: 20, atk: 0.5, mAtk: 4, def: 1.2, mDef: 2.5, acc: 1, eva: 1, crit: 0.2 }
     },
     BOSS_GOBLIN: {
         id: 'boss_goblin',
@@ -1020,13 +1029,15 @@ export const MonsterClasses = {
         acc: 90,
         eva: 0,
         crit: 20,
+        ultChargeSpeed: 1.2,
+        fireRes: 20,
+        iceRes: 20,
+        lightningRes: 20,
         physicsRadius: 30,
         spriteSize: 64,
         aiType: 'MELEE',
         scale: 4.0,
-        fireRes: 0,
-        iceRes: 0,
-        lightningRes: 0
+        growth: { maxHp: 1000, atk: 15, mAtk: 5, def: 8, mDef: 8, acc: 5, eva: 0, crit: 1 }
     },
     ORC: {
         id: 'orc',
@@ -1047,14 +1058,16 @@ export const MonsterClasses = {
         acc: 85,
         eva: 5,
         crit: 10,
+        ultChargeSpeed: 1.0,
+        fireRes: 5,
+        iceRes: 5,
+        lightningRes: 5,
         physicsRadius: 22,
         spriteSize: 64,
         spawnOffset: { x: 450, y: 450 },
         aiType: 'RANGED',
         scale: 1.1,
-        fireRes: 0,
-        iceRes: 0,
-        lightningRes: 0
+        growth: { maxHp: 35, atk: 4.5, mAtk: 1, def: 2, mDef: 1.5, acc: 2.5, eva: 1, crit: 0.5 }
     },
     SKELETON_WARRIOR: {
         id: 'skeleton_warrior',
@@ -1069,15 +1082,20 @@ export const MonsterClasses = {
         speed: 70,
         atkRange: 45,
         atkSpd: 1400,
+        castSpd: 1000,
+        rangeMin: 0,
+        rangeMax: 45,
         acc: 85,
         eva: 5,
         crit: 8,
+        ultChargeSpeed: 1.0,
+        fireRes: -10, // Undead weakness
+        iceRes: 10,
+        lightningRes: 0,
         physicsRadius: 20,
         spriteSize: 64,
         aiType: 'MELEE',
-        fireRes: -10, // Undead weakness
-        iceRes: 10,
-        lightningRes: 0
+        growth: { maxHp: 25, atk: 4, mAtk: 0, def: 2.5, mDef: 1, acc: 2, eva: 1, crit: 0.4 }
     },
     SKELETON_WIZARD: {
         id: 'skeleton_wizard',
@@ -1098,12 +1116,14 @@ export const MonsterClasses = {
         acc: 90,
         eva: 12,
         crit: 12,
+        ultChargeSpeed: 1.1,
+        fireRes: -15,
+        iceRes: 15,
+        lightningRes: 5,
         physicsRadius: 18,
         spriteSize: 64,
         aiType: 'RANGED_MAGIC',
-        fireRes: -15,
-        iceRes: 15,
-        lightningRes: 5
+        growth: { maxHp: 18, atk: 1, mAtk: 5, def: 1, mDef: 3, acc: 1.5, eva: 1.5, crit: 0.6 }
     }
 };
 
@@ -1125,16 +1145,15 @@ export const StageConfigs = {
         id: 'cursed_forest',
         name: '저주받은 숲',
         background: 'bg_cursed_forest',
-        // 옥토패스 스타일 앰비언트 분위기: 보라-청록 그림자 오버레이
-        ambientColor: 0x1a003a,  // 깊은 보라 (저주받은 숲 분위기)
-        ambientAlpha: 0.22,      // 22% 불투명도 (배경을 완전히 가리지 않음)
+        ambientColor: 0x1a003a,
+        ambientAlpha: 0.22,
         goldMultiplier: 1.0
     },
     ARENA: {
         id: 'arena',
         name: '용맹의 결투장',
         background: 'bg_arena',
-        ambientColor: 0x3a1000,  // 따뜻한 노을빛 (결투장 분위기)
+        ambientColor: 0x3a1000,
         ambientAlpha: 0.15,
         goldMultiplier: 1.2
     },
@@ -1142,7 +1161,7 @@ export const StageConfigs = {
         id: 'raid',
         name: '보스의 요새',
         background: 'bg_raid',
-        ambientColor: 0x00103a,  // 차가운 심연의 그림자 (레이드 분위기)
+        ambientColor: 0x00103a,
         ambientAlpha: 0.2,
         goldMultiplier: 2.0
     },
@@ -1150,7 +1169,7 @@ export const StageConfigs = {
         id: 'undead_graveyard',
         name: '언데드 묘지',
         background: 'bg_undead_graveyard',
-        ambientColor: 0x0a1a0a,  // 음산한 녹백색 (공동묘지 분위기)
+        ambientColor: 0x0a1a0a,
         ambientAlpha: 0.25,
         goldMultiplier: 1.5,
         monsterPool: ['skeleton_warrior', 'skeleton_wizard']
@@ -1158,77 +1177,67 @@ export const StageConfigs = {
 };
 
 /**
- * Utility: Scale stats based on level.
+ * Utility: Scale stats based on level and variant type.
  * @param {Object} config The base config.
  * @param {number} level The target level.
+ * @param {string} type 'NORMAL', 'ELITE', 'RAID'
  * @returns {Object} A new config object with scaled stats.
  */
-export function scaleStats(config, level) {
-    if (!config) return { level: level || 1, hp: 100, maxHp: 100, atk: 10, mAtk: 10, def: 5, mDef: 5, speed: 100, atkSpd: 1500, atkRange: 100, rangeMin: 0, rangeMax: 100, castSpd: 1000, acc: 90, eva: 5, crit: 5, id: 'unknown' };
+export function scaleStats(config, level, type = 'NORMAL') {
+    if (!config) return null;
 
-    // Standardized 16 Stats Defaults
-    const base = {
-        id: config.id || 'unknown',
-        hp: config.hp || config.maxHp || 100,
-        maxHp: config.maxHp || 100,
-        atk: config.atk || 10,
-        mAtk: config.mAtk || 10,
-        def: config.def || 5,
-        mDef: config.mDef || 5,
-        speed: config.speed || 100,
-        atkSpd: config.atkSpd || 1500,
-        atkRange: config.atkRange || 100,
-        rangeMin: config.rangeMin || 0,
-        rangeMax: config.rangeMax || config.atkRange || 100,
-        castSpd: config.castSpd || 1000,
-        acc: config.acc || 90,
-        eva: config.eva || 5,
-        crit: config.crit || 5,
-        ...config
-    };
-
-    const newConfig = { ...base };
     const levelFactor = level - 1;
+    const variant = MONSTER_SCALING[type] || { hp: 1, power: 1, speed: 1, acc: 0, eva: 0, crit: 0 };
 
-    // Star scaling: Each star above 1 adds a cumulative 20% multiplier (1.2x) to base stats
+    // Star scaling for mercenaries/pets
     const starLevel = config.star || 1;
-    const bonusStars = starLevel - 1;
-    const starMultiplier = Math.pow(1.2, bonusStars);
+    const starMultiplier = Math.pow(1.2, starLevel - 1);
 
-    // Apply Level Scaling based on growth
     const growth = config.growth || {
-        maxHp: base.maxHp * 0.1,
-        atk: base.atk * 0.1,
-        mAtk: base.mAtk * 0.1,
-        def: base.def * 0.05,
-        mDef: base.mDef * 0.05,
+        maxHp: (config.maxHp || 100) * 0.1,
+        atk: (config.atk || 10) * 0.1,
+        mAtk: (config.mAtk || 10) * 0.1,
+        def: (config.def || 5) * 0.05,
+        mDef: (config.mDef || 5) * 0.05,
         acc: 1,
         eva: 0.5,
         crit: 0.2
     };
 
-    // Calculate Scaled Values
-    newConfig.maxHp = Math.floor((base.maxHp + (levelFactor * (growth.maxHp || 0))) * starMultiplier);
+    const newConfig = { ...config };
+
+    // 1. Core HP/Power/Def Scaling
+    newConfig.maxHp = Math.floor(((config.maxHp || 100) + (levelFactor * (growth.maxHp || 0))) * starMultiplier * variant.hp);
     newConfig.hp = newConfig.maxHp;
-    newConfig.atk = Math.floor((base.atk + (levelFactor * (growth.atk || 0))) * starMultiplier);
-    newConfig.mAtk = Math.floor((base.mAtk + (levelFactor * (growth.mAtk || 0))) * starMultiplier);
-    newConfig.def = Math.floor((base.def + (levelFactor * (growth.def || 0))) * starMultiplier);
-    newConfig.mDef = Math.floor((base.mDef + (levelFactor * (growth.mDef || 0))) * starMultiplier);
+    newConfig.atk = Math.floor(((config.atk || 10) + (levelFactor * (growth.atk || 0))) * starMultiplier * variant.power);
+    newConfig.mAtk = Math.floor(((config.mAtk || 10) + (levelFactor * (growth.mAtk || 0))) * starMultiplier * variant.power);
+    newConfig.def = Math.floor(((config.def || 5) + (levelFactor * (growth.def || 0))) * starMultiplier * variant.power);
+    newConfig.mDef = Math.floor(((config.mDef || 5) + (levelFactor * (growth.mDef || 0))) * starMultiplier * variant.power);
 
-    // Speed & Utility Scaling
-    newConfig.speed = base.speed + (levelFactor * 0.5); // Minor speed increase
-    newConfig.acc = Math.floor((base.acc + (levelFactor * (growth.acc || 0))) + (bonusStars * 5));
-    newConfig.eva = (base.eva + (levelFactor * (growth.eva || 0))) + (bonusStars * 3);
-    newConfig.crit = (base.crit + (levelFactor * (growth.crit || 0))) + (bonusStars * 2);
+    // 2. Speed Scaling
+    newConfig.speed = (config.speed || 100) * variant.speed + (levelFactor * 0.5);
 
-    // attackDelay (atkSpd) reduces as level increases (higher level = faster attacks)
-    // Decreases by 1% per level, max 50% reduction
+    // 3. Accuracy/Evasion/Critical Scaling
+    newConfig.acc = Math.floor(((config.acc || 90) + (levelFactor * (growth.acc || 0))) + variant.acc + (starLevel - 1) * 5);
+    newConfig.eva = (config.eva || 5) + (levelFactor * (growth.eva || 0)) + variant.eva + (starLevel - 1) * 3;
+    newConfig.crit = (config.crit || 5) + (levelFactor * (growth.crit || 0)) + variant.crit + (starLevel - 1) * 2;
+
+    // 4. Attack Speed Reduction (Decreases by 1% per level, max 50%)
     const atkSpdReduction = Math.min(0.5, levelFactor * 0.01);
-    newConfig.atkSpd = Math.floor(base.atkSpd * (1 - atkSpdReduction));
-    newConfig.castSpd = Math.floor(base.castSpd * (1 - atkSpdReduction));
+    newConfig.atkSpd = Math.floor((config.atkSpd || 1500) * (1 - atkSpdReduction));
+    newConfig.castSpd = Math.floor((config.castSpd || 1000) * (1 - atkSpdReduction));
+
+    // 5. Explicitly carry over the new stats (with defaults just in case)
+    newConfig.ultChargeSpeed = config.ultChargeSpeed || 1.0;
+    newConfig.fireRes = config.fireRes || 0;
+    newConfig.iceRes = config.iceRes || 0;
+    newConfig.lightningRes = config.lightningRes || 0;
+    newConfig.rangeMin = config.rangeMin || 0;
+    newConfig.rangeMax = config.rangeMax || config.atkRange || 100;
 
     newConfig.level = level;
-    newConfig.star = starLevel;
+    newConfig.type = type;
 
     return newConfig;
 }
+

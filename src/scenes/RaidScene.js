@@ -259,7 +259,7 @@ export default class RaidScene extends Phaser.Scene {
         const playerLeader = this.mercenaries.getChildren().find(u => u.className === 'warrior');
 
         // --- SCALE BOSS STATS ---
-        const scaledConfig = scaleStats(MonsterClasses.BOSS_GOBLIN, this.raidCount);
+        const scaledConfig = scaleStats(MonsterClasses.BOSS_GOBLIN, this.raidCount, 'RAID');
         // ------------------------
 
         this.boss = new BossGoblin(this, bossX, bossY, scaledConfig, playerLeader);

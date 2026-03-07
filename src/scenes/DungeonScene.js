@@ -992,11 +992,7 @@ export default class DungeonScene extends Phaser.Scene {
 
         const applyEliteLogic = (monster) => {
             if (!monster) return;
-            if (Math.random() < eliteChance) {
-                monster.maxHp *= 2.5;
-                monster.hp = monster.maxHp;
-                monster.atk *= 1.5;
-                monster.mAtk *= 1.5;
+            if (monster.config.type === 'ELITE') {
                 monster.isElite = true;
 
                 // Assign 1-2 random nova charms
@@ -1033,7 +1029,8 @@ export default class DungeonScene extends Phaser.Scene {
             const offsetX = Phaser.Math.Between(100, 500);
             const offsetY = Phaser.Math.Between(-150, 150);
 
-            const monster = this.spawnMonster(MonsterClass, startPos.x + offsetX, startPos.y + offsetY, this.player, monsterLevel);
+            const isEliteRequested = Math.random() < eliteChance;
+            const monster = this.spawnMonster(MonsterClass, startPos.x + offsetX, startPos.y + offsetY, this.player, monsterLevel, null, isEliteRequested ? 'ELITE' : 'NORMAL');
             applyEliteLogic(monster);
         }
 
@@ -1041,7 +1038,8 @@ export default class DungeonScene extends Phaser.Scene {
         if (this.dungeonType === 'CURSED_FOREST') {
             const shamanCount = 2 + Math.floor((this.currentRound - 1) / 2);
             for (let i = 0; i < shamanCount; i++) {
-                const shaman = this.spawnMonster(MonsterHealer, startPos.x + 200 + (i * 80), startPos.y + 120, this.player, monsterLevel, MonsterClasses.SHAMAN);
+                const isEliteRequested = Math.random() < eliteChance;
+                const shaman = this.spawnMonster(MonsterHealer, startPos.x + 200 + (i * 80), startPos.y + 120, this.player, monsterLevel, MonsterClasses.SHAMAN, isEliteRequested ? 'ELITE' : 'NORMAL');
                 applyEliteLogic(shaman);
             }
         }
@@ -1097,8 +1095,8 @@ export default class DungeonScene extends Phaser.Scene {
         // Merge them: Base Class -> Character Specifics
         const mergedBaseConfig = { ...baseClassConfig, ...characterConfig };
 
-        // Apply scaling
-        let config = scaleStats(mergedBaseConfig, level);
+        // Apply scaling (Shadow Mercenaries use ELITE scaling)
+        let config = scaleStats(mergedBaseConfig, level, 'ELITE');
 
         // Create config with enemy team and unique ID
         config = {
@@ -1139,10 +1137,7 @@ export default class DungeonScene extends Phaser.Scene {
 
         if (unit) {
             // Shadow Mercenaries are always Elite with extra charms
-            unit.maxHp *= 3;
-            unit.hp = unit.maxHp;
-            unit.atk *= 1.8;
-            unit.mAtk *= 1.8;
+            // Note: HP/ATK scaling is already applied via scaleStats with 'ELITE'
             unit.isElite = true;
 
             // Give extra charms for bosses
@@ -1164,8 +1159,9 @@ export default class DungeonScene extends Phaser.Scene {
      * @param {Object} target 
      * @param {number} level 
      * @param {Object} classConfig Optional config for specific monsters (like shamans)
+     * @param {string} type 'NORMAL', 'ELITE', 'RAID'
      */
-    spawnMonster(MonsterClass, x, y, target, level, classConfig = null) {
+    spawnMonster(MonsterClass, x, y, target, level, classConfig = null, type = 'NORMAL') {
         const className = MonsterClass.name;
         if (!this.monsterPool[className]) {
             this.monsterPool[className] = [];
@@ -1176,13 +1172,13 @@ export default class DungeonScene extends Phaser.Scene {
 
         // Prepare config
         const baseConfig = classConfig || MonsterClasses[className.toUpperCase()] || MonsterClasses.GOBLIN;
-        const config = scaleStats(baseConfig, level);
+        const config = scaleStats(baseConfig, level, type);
 
         if (monster) {
             monster.reset(x, y, config, target);
             this.enemies.add(monster);
         } else {
-            monster = new MonsterClass(this, x, y, target, level);
+            monster = new MonsterClass(this, x, y, target, level, config);
             this.enemies.add(monster);
             this.monsterPool[className].push(monster);
         }
