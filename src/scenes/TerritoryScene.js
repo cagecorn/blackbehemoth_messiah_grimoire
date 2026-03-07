@@ -247,7 +247,11 @@ export default class TerritoryScene extends Phaser.Scene {
             </div>
             <div id="territory-patch-body">
                 <div class="patch-entry">
-                    <div class="patch-date">▶ 2026-03-07 (Latest)</div>
+                    <div class="patch-date">▶ 2026-03-08 (Latest)</div>
+                    <div class="patch-item"><span class="patch-item-icon">🚀</span>[성장] **용병 레벨 제한 해제!** 하드코딩 되어있던 40레벨 제한이 삭제되어, 이제 무한히 스케일링하며 성장할 수 있습니다.</div>
+                </div>
+                <div class="patch-entry">
+                    <div class="patch-date">▶ 2026-03-07</div>
                     <div class="patch-item"><span class="patch-item-icon">📜</span>[공지] **참(Grimoire) 시스템 개편!** 햄버거 및 노바 3종(🎆,🎏,🎇,🍔) 참이 전면 개편되었습니다. 기존 인벤토리에 10개씩 지급되었던 테스트용 아이템은 '버리기' 기능을 통해 정리해 주시길 권장합니다.</div>
                     <div class="patch-item"><span class="patch-item-icon">🧚</span>[영지] **힐링 터렛** 업데이트! 아군을 치유하는 새로운 방어 시설을 건설해보세요. (✨ 반짝이 투사체 적용)</div>
                     <div class="patch-item"><span class="patch-item-icon">🔥</span>[던전] 네 번째 던전 **[용암 지대]** 업데이트! 뜨거운 전장의 막이 열렸습니다.</div>

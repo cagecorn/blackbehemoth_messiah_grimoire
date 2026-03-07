@@ -1148,7 +1148,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         this.exp += amount;
         console.log(`[Level] ${this.unitName} gained ${amount} EXP. (${this.exp}/${this.expToNextLevel})`);
 
-        while (this.exp >= this.expToNextLevel && this.level < 40) {
+        while (this.exp >= this.expToNextLevel) {
             this.levelUp();
         }
 
