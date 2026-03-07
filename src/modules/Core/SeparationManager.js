@@ -15,8 +15,8 @@ export default class SeparationManager {
     static applyRepulsion(unitA, unitB, strength = 50) {
         if (!unitA.body || !unitB.body || !unitA.active || !unitB.active) return;
 
-        // If either unit is phasing, they can pass through each other
-        if (unitA.isPhasing || unitB.isPhasing) return;
+        // If either unit is phasing or immobile, they skip repulsion
+        if (unitA.isPhasing || unitB.isPhasing || unitA.isImmobile || unitB.isImmobile) return;
 
         // Optimization: Check squared distance first to avoid expensive sqrt
         const radiusA = unitA.body.radius || 20;

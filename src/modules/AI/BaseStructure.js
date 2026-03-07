@@ -16,16 +16,21 @@ export default class BaseStructure extends Phaser.GameObjects.Container {
         this.instanceId = instanceId;
         this.baseId = baseId;
 
-        // Retrieve config from EntityStats
         const config = StructureStats[baseId.toUpperCase()] || {
             name: 'Unknown Structure',
             hp: 100, maxHp: 100, atk: 10, def: 10, sprite: 'bow_turret_sprite'
         };
         this.config = config;
 
+        // Visual Identity & Shadow
+        if (this.scene.fxManager) {
+            this.shadow = this.scene.fxManager.createShadow(this);
+        }
+
         // Identity
         this.unitName = config.name;
         this.team = 'player'; // Structures are allies
+        this.isBuilding = true; // For logic separation
         this.id = instanceId;
         this.hideInUI = config.hideInUI !== undefined ? config.hideInUI : true;
 
@@ -60,8 +65,22 @@ export default class BaseStructure extends Phaser.GameObjects.Container {
         this.bonusFireRes = 0;
         this.bonusIceRes = 0;
         this.bonusLightningRes = 0;
-        this.bonusRangeMin = 0;
         this.bonusRangeMax = 0;
+
+        // --- Crowd Control Status ---
+        this.isShocked = false;
+        this.isStunned = false;
+        this.isAsleep = false;
+        this.isBurning = false;
+        this.isFrozen = false;
+        this.isAirborne = false;
+        this.isKnockedBack = false;
+
+        // --- Identity & Physical Properties ---
+        this.isImmobile = true;           // Prevent SeparationManager from nudging
+        this.isDisplacementImmune = true; // Prevent CCManager from lifting/pushing
+        this.isCCImmune = false;         // Allow status CC (Shock, Burn, etc.)
+        this.messiahEncouragementAmount = 0; // Tracking for Messiah power UI
 
         // Combat Timers
         this.lastAttackTime = 0;
@@ -144,6 +163,9 @@ export default class BaseStructure extends Phaser.GameObjects.Container {
 
     update(time, delta) {
         if (!this.active || this.hp <= 0) return;
+
+        // Check for incapacitating CC (Shock, Sleep, Stun)
+        if (this.isShocked || this.isAsleep || this.isStunned) return;
 
         // Combat logic: Find target and attack
         this.handleCombat(time);
@@ -261,7 +283,10 @@ export default class BaseStructure extends Phaser.GameObjects.Container {
 
     getTotalAtkSpd() {
         const base = (this.atkSpd || 1500) - (this.bonusAtkSpd || 0);
-        return Math.max(200, base);
+        let final = Math.max(200, base);
+        // Apply Freeze penalty (50% speed reduction)
+        if (this.isFrozen) final *= 2;
+        return final;
     }
 
     getTotalAtkRange() {
@@ -278,6 +303,10 @@ export default class BaseStructure extends Phaser.GameObjects.Container {
 
     getTotalAcc() {
         return (this.acc || 100) + (this.bonusAcc || 0);
+    }
+
+    getTotalMaxHp() {
+        return this.maxHp || 1000;
     }
 
     gainUltGauge(amount) {

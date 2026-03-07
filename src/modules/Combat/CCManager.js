@@ -17,7 +17,7 @@ export default class CCManager {
      * @param {number} height - How high the sprite goes
      */
     applyAirborne(target, duration = 1000, height = 60) {
-        if (!target || !target.active || target.hp <= 0 || target.isCCImmune) return;
+        if (!target || !target.active || target.hp <= 0 || target.isCCImmune || target.isDisplacementImmune) return;
 
         // Prevent overriding an existing airborne unless we want to reset it
         if (target.isAirborne) {
@@ -63,7 +63,7 @@ export default class CCManager {
      * @param {number} duration - How fast they are pushed in ms
      */
     applyKnockback(target, angle, distance = 150, duration = 300) {
-        if (!target || !target.active || target.hp <= 0 || target.isCCImmune) return;
+        if (!target || !target.active || target.hp <= 0 || target.isCCImmune || target.isDisplacementImmune) return;
 
         if (target.isKnockedBack) {
             return; // Ignore if already being knocked back

@@ -645,7 +645,9 @@ export default class DungeonScene extends Phaser.Scene {
         if (this.isInitializing || this.isUltimateActive || this.isResetting) return;
 
         // --- CHECK: Party Wipeout (Auto-Restart Loop) ---
-        if (this.mercenaries && this.mercenaries.countActive(true) === 0 && !this.isResetting && !this.isResting) {
+        // Exclude defense structures from living unit count check
+        const livingUnits = this.mercenaries ? this.mercenaries.getChildren().filter(m => m.active && m.hp > 0 && !m.isBuilding) : [];
+        if (livingUnits.length === 0 && !this.isResetting && !this.isResting) {
             this.handlePartyWipeout();
         }
 

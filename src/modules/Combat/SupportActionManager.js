@@ -49,7 +49,7 @@ export default class SupportActionManager {
         const allies = [];
         if (scene.mercenaries) {
             scene.mercenaries.getChildren().forEach(m => {
-                if (m.active && m.hp > 0) allies.push(m);
+                if (m.active && m.hp > 0 && !m.isBuilding) allies.push(m);
             });
         }
         if (scene.player && scene.player.active && scene.player.hp > 0) {
@@ -198,7 +198,7 @@ export default class SupportActionManager {
         const allies = [];
         if (scene.mercenaries) {
             scene.mercenaries.getChildren().forEach(m => {
-                if (m.active && m.hp > 0) allies.push(m);
+                if (m.active && m.hp > 0 && !m.isBuilding) allies.push(m);
             });
         }
         if (scene.player && scene.player.active && scene.player.hp > 0) allies.push(scene.player);
