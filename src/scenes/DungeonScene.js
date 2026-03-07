@@ -1026,7 +1026,12 @@ export default class DungeonScene extends Phaser.Scene {
         const stageConfig = StageConfigs[this.dungeonType] || StageConfigs.CURSED_FOREST;
         const pool = stageConfig.monsterPool || ['goblin', 'orc'];
 
-        console.log(`[Dungeon] Spawning Wave for ${this.dungeonType}. Round ${this.currentRound}, Pool:`, pool);
+        // Debug Log for Monster Pool
+        console.log(`%c[Dungeon Spawn] Type: ${this.dungeonType} | Round: ${this.currentRound} | Pool: ${JSON.stringify(pool)}`, "color: #00ff00; font-weight: bold;");
+
+        if (pool.includes('goblin') && this.dungeonType === 'SWAMPLAND') {
+            console.error("[CRITICAL] SWAMPLAND detected but using Goblin pool! This is likely a CACHE issue with EntityStats.js");
+        }
 
         const startPos = this.dungeonManager.getPlayerStartPosition();
         // Monster scaling: Increases every 5 rounds
