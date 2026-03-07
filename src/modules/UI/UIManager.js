@@ -2002,7 +2002,8 @@ export default class UIManager {
     async updateDungeonTickets() {
         const ticketInfo = [
             { id: 'UNDEAD_GRAVEYARD', ticketId: 'emoji_ticket' },
-            { id: 'SWAMPLAND', ticketId: 'swampland_ticket' }
+            { id: 'SWAMPLAND', ticketId: 'swampland_ticket' },
+            { id: 'LAVA_FIELD', ticketId: 'lava_field_ticket' }
         ];
 
         const dropdownItems = document.querySelectorAll('.nav-dropdown-item');

@@ -9,7 +9,7 @@ export default class LootManager {
         this.lootGroup = this.scene.physics.add.group();
 
         // Specific Emoji keys we preloaded in BootScene
-        this.drops = ['emoji_coin', 'emoji_gem', 'emoji_meat', 'emoji_wood', 'emoji_herb', 'emoji_brick'];
+        this.drops = ['emoji_coin', 'emoji_gem', 'emoji_meat', 'emoji_wood', 'emoji_herb', 'emoji_brick', 'emoji_candle'];
     }
 
     // Called when an enemy dies
@@ -53,12 +53,18 @@ export default class LootManager {
 
             if (isSkeleton && Math.random() < 0.6) {
                 randomDrop = 'emoji_bone';
-            } else if (this.scene.dungeonType === 'UNDEAD_GRAVEYARD' && Math.random() < 0.02) {
-                // 2% chance for Swampland ticket in Undead Graveyard
+            } else if (this.scene.dungeonType === 'UNDEAD_GRAVEYARD' && Math.random() < 0.05) {
+                // 5% chance for Swampland ticket in Undead Graveyard (Increased from 2%)
                 randomDrop = 'swampland_ticket';
+            } else if (this.scene.dungeonType === 'SWAMPLAND' && Math.random() < 0.05) {
+                // 5% chance for Lava Field ticket in Swampland
+                randomDrop = 'lava_field_ticket';
             } else if (this.scene.dungeonType === 'SWAMPLAND' && Math.random() < 0.5) {
                 // 50% chance for Clover in Swampland
                 randomDrop = 'emoji_clover';
+            } else if (this.scene.dungeonType === 'LAVA_FIELD' && Math.random() < 0.3) {
+                // 30% chance for Candle in Lava Field
+                randomDrop = 'emoji_candle';
             } else if (this.scene.dungeonType === 'CURSED_FOREST' && Math.random() < 0.02) {
                 randomDrop = 'emoji_ticket';
             } else if (Math.random() < gemWeight) {
@@ -83,7 +89,7 @@ export default class LootManager {
 
             // --- Texture Key Resolution ---
             let textureKey = randomDrop;
-            if (randomDrop === 'swampland_ticket') textureKey = 'emoji_ticket';
+            if (randomDrop === 'swampland_ticket' || randomDrop === 'lava_field_ticket') textureKey = 'emoji_ticket';
 
             // Spawn the Sprite
             const item = this.lootGroup.create(x, y, textureKey);
@@ -169,7 +175,9 @@ export default class LootManager {
             'emoji_bone': '🦴',
             'emoji_ticket': '🎫',
             'swampland_ticket': '🎫',
+            'lava_field_ticket': '🎫',
             'emoji_clover': '☘️',
+            'emoji_candle': '🕯️',
             'emoji_divine_essence': '✨',
             'emoji_brick': '🧱'
         };

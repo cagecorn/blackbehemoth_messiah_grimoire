@@ -8,6 +8,9 @@ import SkeletonWizard from '../modules/AI/SkeletonWizard.js';
 import CrocodileWarrior from '../modules/AI/CrocodileWarrior.js';
 import CrocodileArcher from '../modules/AI/CrocodileArcher.js';
 import CrocodileHealer from '../modules/AI/CrocodileHealer.js';
+import FireSpiritWarrior from '../modules/AI/FireSpiritWarrior.js';
+import FireSpiritArcher from '../modules/AI/FireSpiritArcher.js';
+import FireSpiritWizard from '../modules/AI/FireSpiritWizard.js';
 import MonsterHealer from '../modules/AI/MonsterHealer.js';
 import Archer from '../modules/Player/Archer.js';
 import Healer from '../modules/Player/Healer.js';
@@ -79,6 +82,7 @@ export default class DungeonScene extends Phaser.Scene {
         const cfg = StageConfigs[this.dungeonType];
         if (cfg) {
             console.log(`%c[Dungeon DEBUG] StageConfigs detected: ${cfg.name} | Pool: ${JSON.stringify(cfg.monsterPool)}`, "background: #222; color: #00ffff;");
+            EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, `[입장] ${cfg.name}에 진입했습니다. (라운드 ${this.currentRound}) 🚩`);
         } else {
             console.error(`%c[Dungeon ERROR] StageConfigs for '${this.dungeonType}' is missing!`, "background: #f00; color: #fff;");
         }
@@ -1089,7 +1093,10 @@ export default class DungeonScene extends Phaser.Scene {
             'skeleton_wizard': SkeletonWizard,
             crocodile_warrior: CrocodileWarrior,
             crocodile_archer: CrocodileArcher,
-            crocodile_healer: CrocodileHealer
+            crocodile_healer: CrocodileHealer,
+            fire_spirit_warrior: FireSpiritWarrior,
+            fire_spirit_archer: FireSpiritArcher,
+            fire_spirit_wizard: FireSpiritWizard
         };
 
         // Total spawn count increases with rounds
@@ -1237,20 +1244,18 @@ export default class DungeonScene extends Phaser.Scene {
      * @param {string} type 'NORMAL', 'ELITE', 'RAID'
      */
     spawnMonster(MonsterClass, x, y, target, level, classConfig = null, type = 'NORMAL') {
-        const className = MonsterClass.name;
-        if (!this.monsterPool[className]) {
-            this.monsterPool[className] = [];
+        // VITE MINIFICATION SAFETY: Do NOT use MonsterClass.name. Use classConfig.id.
+        const monsterId = classConfig ? classConfig.id : 'goblin';
+
+        if (!this.monsterPool[monsterId]) {
+            this.monsterPool[monsterId] = [];
         }
 
-        // Find an inactive monster of the same class
-        let monster = this.monsterPool[className].find(m => !m.active);
+        // Find an inactive monster from the specific ID pool
+        let monster = this.monsterPool[monsterId].find(m => !m.active);
 
-        // Prepare config
-        // BUG FIX: In production (Vite), MonsterClass.name is minified (e.g. 'a'), breaking stat lookup.
-        // We now prefer the passed classConfig, then fallback to screamingKey if not minified, or GOBLIN.
-        const screamingKey = className.length > 3 ? className.replace(/([a-z])([A-Z])/g, '$1_$2').toUpperCase() : null;
-        const baseConfig = classConfig || (screamingKey ? MonsterClasses[screamingKey] : null) || MonsterClasses.GOBLIN;
-        const config = scaleStats(baseConfig, level, type);
+        // Prepare config (explicitly pass classConfig to scaleStats)
+        const config = scaleStats(classConfig || MonsterClasses.GOBLIN, level, type);
 
         if (monster) {
             monster.reset(x, y, config, target);
@@ -1258,7 +1263,7 @@ export default class DungeonScene extends Phaser.Scene {
         } else {
             monster = new MonsterClass(this, x, y, target, level, config);
             this.enemies.add(monster);
-            this.monsterPool[className].push(monster);
+            this.monsterPool[monsterId].push(monster);
         }
 
         return monster;

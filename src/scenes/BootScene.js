@@ -127,6 +127,7 @@ export default class BootScene extends Phaser.Scene {
         this.load.svg('emoji_milky_way', 'assets/emojis/1f30c.svg', { width: 64, height: 64 });   // 🌌
         this.load.svg('emoji_cyclone', 'assets/emojis/1f300.svg', { width: 64, height: 64 });     // 🌀
         this.load.svg('emoji_musical_note', 'assets/emojis/1f3b6.svg', { width: 64, height: 64 }); // 🎶
+        this.load.svg('emoji_candle', 'assets/emojis/1f56f.svg', { width: 64, height: 64 });
 
         this.load.on('loaderror', (file) => {
             console.error(`[BootScene] Error loading asset: ${file.key} from ${file.src}`);
@@ -174,6 +175,11 @@ export default class BootScene extends Phaser.Scene {
         this.load.image('crocodile_warrior_sprite', 'assets/characters/enemies/crocodile_warrior_sprite.png');
         this.load.image('crocodile_archer_sprite', 'assets/characters/enemies/crocodile_archer_sprite.png');
         this.load.image('crocodile_healer_sprite', 'assets/characters/enemies/crocodile_healer_sprite.png');
+
+        // Lava Field: Fire Spirits
+        this.load.image('fire_spirit_warrior_sprite', 'assets/characters/enemies/fire_spirit_warrior_sprite.png');
+        this.load.image('fire_spirit_archer_sprite', 'assets/characters/enemies/fire_spirit_archer_sprite.png');
+        this.load.image('fire_spirit_wizard_sprite', 'assets/characters/enemies/fire_spirit_wizard_sprite.png');
         this.load.image('goblin_sprite', 'assets/characters/enemies/goblin_sprite.png');
         this.load.image('orc_sprite', 'assets/characters/enemies/orc_sprite.png');
         this.load.image('skeleton_warrior_sprite', 'assets/characters/enemies/skeleton_warrior_sprite.png');
@@ -214,6 +220,7 @@ export default class BootScene extends Phaser.Scene {
         this.load.image('bg_gacha', 'assets/background/gacha_background.png');
         this.load.image('bg_cursed_forest', 'assets/background/battle-stage-cursed-forest.png');
         this.load.image('bg_swampland', 'assets/background/battle-stage-swampland.png');
+        this.load.image('bg_lava_field', 'assets/background/battle-stage-lava-field.png');
         this.load.image('bg_raid', 'assets/background/battle_stage_raid.png');
         this.load.image('bg_undead_graveyard', 'assets/background/battle-stage-graveyard.png');
         this.load.image('bg_arena', 'assets/background/battle-stage-arena.png');

@@ -33,6 +33,7 @@ const ITEM_DATABASE = {
     'emoji_herb': { name: 'Magic Herb', type: ITEM_TYPES.MATERIAL, icon: 'emoji_herb' },
     'emoji_ticket': { name: '언데드 묘지 입장권', type: ITEM_TYPES.MATERIAL, icon: 'emoji_ticket', description: '언데드 묘지에 입장하기 위해 필요한 티켓입니다. 🎫', price: 10 },
     'swampland_ticket': { name: '늪지대 입장권', type: ITEM_TYPES.MATERIAL, icon: 'emoji_ticket', description: '늪지대에 입장하기 위해 필요한 티켓입니다. 🎫', price: 100 },
+    'lava_field_ticket': { name: '용암 지대 입장권', type: ITEM_TYPES.MATERIAL, icon: 'emoji_ticket', description: '용암 지대에 입장하기 위해 필요한 티켓입니다. 🎫', price: 500 },
     'emoji_clover': { name: '클로버', type: ITEM_TYPES.MATERIAL, icon: 'emoji_clover', description: '늪지대에서 발견되는 행운의 상징입니다. ☘️', price: 50 },
     'emoji_bone': { name: '뼈', type: ITEM_TYPES.MATERIAL, icon: 'emoji_bone', description: '언데드 몬스터의 잔해입니다.', price: 5 },
     'turret_bowgun': {
@@ -48,6 +49,7 @@ const ITEM_DATABASE = {
     'emoji_sparkler': { name: 'Spark Nova (🎇)', type: ITEM_TYPES.MATERIAL, icon: 'emoji_sparkler', chapter: 'ACTIVE' },
     'emoji_koinobori': { name: 'Ice Nova (🎏)', type: ITEM_TYPES.MATERIAL, icon: 'emoji_koinobori', chapter: 'ACTIVE' },
     'emoji_divine_essence': { name: '전능의 정수 (✨)', type: ITEM_TYPES.MATERIAL, icon: 'emoji_divine_essence', description: '메시아의 권능을 강화하는 데 필요한 신성한 재료입니다. ✨' },
+    'emoji_candle': { name: '양초', type: ITEM_TYPES.MATERIAL, icon: 'emoji_candle', description: '화염 정령들이 떨어뜨린 고급 마법 재료입니다. 🕯️', price: 200 },
 
     // --- Tactical Node Charms ---
     'emoji_pouting_face': { name: '분노 (Enraged 😠)', type: 'node_charm', icon: 'emoji_pouting_face', description: '적의 서포터(힐러/바드)를 최우선으로 추적하며, 자신의 잃은 체력에 비례해 공격력이 최대 15%까지 상승합니다.' },
@@ -129,7 +131,9 @@ export default class ItemManager {
             'emoji_herb': '1f33f.svg',
             'emoji_ticket': '1f3ab.svg',
             'emoji_clover': '1f340.svg',
+            'emoji_candle': '1f56f.svg',
             'swampland_ticket': '1f3ab.svg',
+            'lava_field_ticket': '1f3ab.svg',
             'emoji_bone': '1f9b4.svg',
             'emoji_burger': '1f354.svg',
             'emoji_fireworks': '1f386.svg',

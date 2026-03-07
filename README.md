@@ -12,8 +12,11 @@
 - **Divine Essence (전능의 정수) ✨**: 메시아의 권능을 강화하는 데 필요한 신성한 재료. 정예/보스 몬스터에게서 획득 가능.
 - **Growth Gear (성장 장비)**: 제작을 통해 획득하며, 전투 경험치를 통해 레벨업하고 추가 옵션이 개방되는 특수 장비.
 - `swampland_ticket`: 늪지대 입장권 🎫
+- `lava_field_ticket`: 용암 지대 입장권 🎫 (500골드)
 - `emoji_clover`: 클로버 (☘️) - 늪지대 전용 재료
+- `emoji_candle`: 양초 (🕯️) - 용암 지물 전용 재료
 - `crocodile_warrior_sprite`, `crocodile_archer_sprite`, `crocodile_healer_sprite`: 늪지대 악어 3종 스프라이트
+- `fire_spirit_warrior_sprite`, `fire_spirit_archer_sprite`, `fire_spirit_wizard_sprite`: 용암 지대 화염 정령 3종 스프라이트
 - (Official Project Name)
 
 이 프로젝트는 기존에 진행하던 게임의 아이디어를 일부 계승하여 새롭게 시작하는 2D RPG 게임 프로젝트입니다.

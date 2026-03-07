@@ -621,8 +621,9 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
         // Basic projectile firing via ProjectileManager
         // For monsters, we use 'laser' for magic types, 'archer' for others
         const projectileType = isMagic ? 'laser' : 'archer';
+        const element = this.config.element || null;
 
-        this.scene.projectileManager.fire(this.x, this.y, target.x, target.y, finalDmg, projectileType, isMagic, this.targetGroup, this, null, false, null, isCritical);
+        this.scene.projectileManager.fire(this.x, this.y, target.x, target.y, finalDmg, projectileType, isMagic, this.targetGroup, this, null, false, element, isCritical);
 
         return true;
     }
@@ -797,7 +798,8 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
                 damage *= 1.5;
             }
 
-            this.target.takeDamage(damage, this, false, null, isCritical);
+            const element = this.config.element || null;
+            this.target.takeDamage(damage, this, false, element, isCritical);
 
             // Visual attack nudge
             this.scene.tweens.add({
