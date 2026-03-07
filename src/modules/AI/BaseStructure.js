@@ -22,10 +22,7 @@ export default class BaseStructure extends Phaser.GameObjects.Container {
         };
         this.config = config;
 
-        // Visual Identity & Shadow
-        if (this.scene.fxManager) {
-            this.shadow = this.scene.fxManager.createShadow(this);
-        }
+        this.setDepth(this.y);
 
         // Identity
         this.unitName = config.name;
@@ -93,6 +90,13 @@ export default class BaseStructure extends Phaser.GameObjects.Container {
         const spriteSize = config.spriteSize || 64;
         this.sprite.setDisplaySize(spriteSize, spriteSize);
         this.add(this.sprite);
+
+        // Visual Identity: Shadow (Created after sprite to use proper scaling)
+        if (this.scene.fxManager) {
+            const shadowScale = spriteSize / 64;
+            this.shadow = this.scene.fxManager.createShadow(this, shadowScale);
+            this.sendToBack(this.shadow);
+        }
 
         const radius = config.physicsRadius || 25;
         this.body.setCircle(radius);
@@ -163,6 +167,7 @@ export default class BaseStructure extends Phaser.GameObjects.Container {
 
     update(time, delta) {
         if (!this.active || this.hp <= 0) return;
+        this.setDepth(this.y);
 
         // Check for incapacitating CC (Shock, Sleep, Stun)
         if (this.isShocked || this.isAsleep || this.isStunned) return;
