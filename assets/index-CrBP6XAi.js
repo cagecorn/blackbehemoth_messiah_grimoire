@@ -6428,6 +6428,7 @@ return new `+this.key+`();
             <div id="territory-patch-body">
                 <div class="patch-entry">
                     <div class="patch-date">▶ 2026-03-07 (Latest)</div>
+                    <div class="patch-item"><span class="patch-item-icon">🛡️</span>[영지] **방어 시설 관리** 시스템 도입! 보우건 터렛을 제작하여 전투를 지원하세요.</div>
                     <div class="patch-item"><span class="patch-item-icon">🐊</span>[던전] 세 번째 던전 **[늪지대]** 업데이트! 새로운 중반부 전장이 추가되었습니다.</div>
                     <div class="patch-item"><span class="patch-item-icon">⚔️</span>[몬스터] 악어 전사, 궁수, 힐러 3종 추가. 기존보다 강력한 능력치를 보유합니다.</div>
                     <div class="patch-item"><span class="patch-item-icon">🎫</span>[입장권] 상점 구매 또는 언데드 묘지에서 늪지대 입장권을 획득하세요.</div>
@@ -6437,7 +6438,6 @@ return new `+this.key+`();
                     <div class="patch-item"><span class="patch-item-icon">🧱</span>[던전] 몬스터들이 낮은 확률로 벽돌 재료를 드랍하기 시작했습니다.</div>
                     <div class="patch-item"><span class="patch-item-icon">❄️</span>[버그] 노아, 노엘 형제의 스킬 사용 시 프리징 현상을 해결했습니다.</div>
                     <div class="patch-item"><span class="patch-item-icon">🔋</span>설정 탭에서 [배터리 절약 방치 모드] 설정 가능.</div>
-                    <div class="patch-item"><span class="patch-item-icon">🛡️</span>[영지] **방어 시설 관리** 시스템 도입! 보우건 터렛을 제작하여 전투를 지원하세요.</div>
                 </div>
                 <div class="patch-entry">
                     <div class="patch-date">▶ 2026-03-06</div>
