@@ -53,6 +53,12 @@ export default class LootManager {
 
             if (isSkeleton && Math.random() < 0.6) {
                 randomDrop = 'emoji_bone';
+            } else if (this.scene.dungeonType === 'UNDEAD_GRAVEYARD' && Math.random() < 0.02) {
+                // 2% chance for Swampland ticket in Undead Graveyard
+                randomDrop = 'swampland_ticket';
+            } else if (this.scene.dungeonType === 'SWAMPLAND' && Math.random() < 0.5) {
+                // 50% chance for Clover in Swampland
+                randomDrop = 'emoji_clover';
             } else if (this.scene.dungeonType === 'CURSED_FOREST' && Math.random() < 0.02) {
                 randomDrop = 'emoji_ticket';
             } else if (Math.random() < gemWeight) {
@@ -158,6 +164,8 @@ export default class LootManager {
             'emoji_herb': '🌿',
             'emoji_bone': '🦴',
             'emoji_ticket': '🎫',
+            'swampland_ticket': '🎫',
+            'emoji_clover': '☘️',
             'emoji_divine_essence': '✨',
             'emoji_brick': '🧱'
         };

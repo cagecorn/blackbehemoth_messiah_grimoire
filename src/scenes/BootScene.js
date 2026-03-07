@@ -81,6 +81,8 @@ export default class BootScene extends Phaser.Scene {
         this.load.svg('emoji_diamond', 'assets/emojis/1f48e.svg', { width: 64, height: 64 });
         this.load.svg('emoji_meat', 'assets/emojis/1f356.svg', { width: 64, height: 64 });
         this.load.svg('emoji_wood', 'assets/emojis/1fab5.svg', { width: 64, height: 64 });
+        this.load.svg('emoji_bone', 'assets/emojis/1f9b4.svg');
+        this.load.svg('emoji_clover', 'assets/emojis/2618.svg');
         this.load.svg('emoji_brick', 'assets/emojis/1f9f1.svg', { width: 64, height: 64 });
         this.load.svg('emoji_divine_essence', 'assets/emojis/2728.svg', { width: 64, height: 64 });
         this.load.svg('emoji_sparkle', 'assets/emojis/2728.svg', { width: 64, height: 64 });
@@ -109,7 +111,6 @@ export default class BootScene extends Phaser.Scene {
         this.load.svg('emoji_fireworks', 'assets/emojis/1f386.svg', { width: 64, height: 64 });
         this.load.svg('emoji_sparkler', 'assets/emojis/1f387.svg', { width: 64, height: 64 });
         this.load.svg('emoji_koinobori', 'assets/emojis/1f38f.svg', { width: 64, height: 64 });
-        this.load.svg('emoji_bone', 'assets/emojis/1f9b4.svg', { width: 64, height: 64 });
         this.load.svg('emoji_ticket', 'assets/emojis/1f3ab.svg', { width: 64, height: 64 }); // 🎫
 
         // Tactical Node Charms Emojis
@@ -170,6 +171,9 @@ export default class BootScene extends Phaser.Scene {
         this.load.image('boon_sprite', 'assets/characters/party/boon_sprite.png');
         this.load.image('boon_cutscene', 'assets/characters/party/boon_cutscene.png');
         this.load.image('goblin_boss_sprite', 'assets/characters/enemies/goblin_cutscene.png');
+        this.load.image('crocodile_warrior_sprite', 'assets/characters/enemies/crocodile_warrior_sprite.png');
+        this.load.image('crocodile_archer_sprite', 'assets/characters/enemies/crocodile_archer_sprite.png');
+        this.load.image('crocodile_healer_sprite', 'assets/characters/enemies/crocodile_healer_sprite.png');
         this.load.image('goblin_sprite', 'assets/characters/enemies/goblin_sprite.png');
         this.load.image('orc_sprite', 'assets/characters/enemies/orc_sprite.png');
         this.load.image('skeleton_warrior_sprite', 'assets/characters/enemies/skeleton_warrior_sprite.png');
@@ -208,7 +212,7 @@ export default class BootScene extends Phaser.Scene {
         this.load.image('bg_territory', 'assets/background/terretory_background.png');
         this.load.image('bg_gacha', 'assets/background/gacha_background.png');
         this.load.image('bg_cursed_forest', 'assets/background/battle-stage-cursed-forest.png');
-        this.load.image('bg_arena', 'assets/background/battle-stage-arena.png');
+        this.load.image('bg_swampland', 'assets/background/battle-stage-swampland.png');
         this.load.image('bg_raid', 'assets/background/battle_stage_raid.png');
         this.load.image('bg_undead_graveyard', 'assets/background/battle-stage-graveyard.png');
 

@@ -1124,6 +1124,90 @@ export const MonsterClasses = {
         spriteSize: 64,
         aiType: 'RANGED_MAGIC',
         growth: { maxHp: 18, atk: 1, mAtk: 5, def: 1, mDef: 3, acc: 1.5, eva: 1.5, crit: 0.6 }
+    },
+    CROCODILE_WARRIOR: {
+        id: 'crocodile_warrior',
+        name: 'Crocodile Warrior (악어 전사)',
+        sprite: 'crocodile_warrior_sprite',
+        maxHp: 450,
+        hp: 450,
+        atk: 35,
+        mAtk: 0,
+        def: 22,
+        mDef: 12,
+        speed: 55,
+        atkRange: 55,
+        atkSpd: 1600,
+        castSpd: 1000,
+        rangeMin: 0,
+        rangeMax: 55,
+        acc: 88,
+        eva: 8,
+        crit: 12,
+        ultChargeSpeed: 1.0,
+        fireRes: -5,
+        iceRes: 15,
+        lightningRes: -10,
+        physicsRadius: 25,
+        spriteSize: 64,
+        aiType: 'MELEE',
+        growth: { maxHp: 85, atk: 7.5, mAtk: 0, def: 5, mDef: 2.5, acc: 2.2, eva: 1.2, crit: 0.8 }
+    },
+    CROCODILE_ARCHER: {
+        id: 'crocodile_archer',
+        name: 'Crocodile Archer (악어 궁수)',
+        sprite: 'crocodile_archer_sprite',
+        maxHp: 320,
+        hp: 320,
+        atk: 42,
+        mAtk: 5,
+        def: 12,
+        mDef: 10,
+        speed: 65,
+        atkRange: 380,
+        atkSpd: 1400,
+        castSpd: 1000,
+        rangeMin: 180,
+        rangeMax: 380,
+        acc: 92,
+        eva: 18,
+        crit: 18,
+        ultChargeSpeed: 1.0,
+        fireRes: -5,
+        iceRes: 15,
+        lightningRes: -10,
+        physicsRadius: 22,
+        spriteSize: 64,
+        aiType: 'RANGED',
+        growth: { maxHp: 55, atk: 9, mAtk: 1.5, def: 2.5, mDef: 2, acc: 3, eva: 1.8, crit: 1.2 }
+    },
+    CROCODILE_HEALER: {
+        id: 'crocodile_healer',
+        name: 'Crocodile Healer (악어 힐러)',
+        sprite: 'crocodile_healer_sprite',
+        maxHp: 280,
+        hp: 280,
+        atk: 10,
+        mAtk: 35,
+        def: 10,
+        mDef: 18,
+        speed: 60,
+        atkRange: 200,
+        atkSpd: 2200,
+        castSpd: 1800,
+        rangeMin: 0,
+        rangeMax: 200,
+        acc: 85,
+        eva: 12,
+        crit: 5,
+        ultChargeSpeed: 1.1,
+        fireRes: -5,
+        iceRes: 15,
+        lightningRes: -10,
+        physicsRadius: 20,
+        spriteSize: 64,
+        aiType: 'SUPPORT',
+        growth: { maxHp: 45, atk: 1.5, mAtk: 8, def: 2, mDef: 3.5, acc: 1.8, eva: 1.5, crit: 0.5 }
     }
 };
 
@@ -1137,6 +1221,34 @@ export const GameConfig = {
     COMBAT: {
         TICK_RATE_MS: 1000,
         BATTLE_INIT_DISTANCE: 80
+    }
+};
+export const StructureStats = {
+    BOW_TURRET: {
+        id: 'bow_turret',
+        name: '보우건 터렛',
+        hp: 1000,
+        maxHp: 1000,
+        atk: 45,
+        mAtk: 0,
+        def: 30,
+        mDef: 10,
+        speed: 0,
+        atkSpd: 1200,
+        atkRange: 450,
+        rangeMin: 0,
+        rangeMax: 450,
+        castSpd: 0,
+        acc: 100,
+        eva: 0,
+        crit: 5,
+        ultChargeSpeed: 1.0,
+        fireRes: 0,
+        iceRes: 0,
+        lightningRes: 0,
+        physicsRadius: 25,
+        spriteSize: 80,
+        aiType: 'RANGED'
     }
 };
 
@@ -1173,6 +1285,15 @@ export const StageConfigs = {
         ambientAlpha: 0.25,
         goldMultiplier: 1.5,
         monsterPool: ['skeleton_warrior', 'skeleton_wizard']
+    },
+    SWAMPLAND: {
+        id: 'swampland',
+        name: '늪지대',
+        background: 'bg_swampland',
+        ambientColor: 0x1a2a0a,
+        ambientAlpha: 0.3,
+        goldMultiplier: 2.5,
+        monsterPool: ['crocodile_warrior', 'crocodile_archer', 'crocodile_healer']
     }
 };
 

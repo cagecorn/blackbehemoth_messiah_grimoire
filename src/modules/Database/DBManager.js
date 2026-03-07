@@ -1,7 +1,7 @@
 import { openDB } from 'idb';
 
 const DB_NAME = 'IsacRPG_DB';
-const DB_VERSION = 3;
+const DB_VERSION = 4;
 
 export default class DBManager {
     static async initDB() {
@@ -34,6 +34,10 @@ export default class DBManager {
                 // Unique Equipment Instances (LV, EXP tracking)
                 if (!db.objectStoreNames.contains('equipment_instances')) {
                     db.createObjectStore('equipment_instances', { keyPath: 'id' });
+                }
+                // Unique Defense Structure Instances
+                if (!db.objectStoreNames.contains('structure_instances')) {
+                    db.createObjectStore('structure_instances', { keyPath: 'id' });
                 }
             },
         });
@@ -161,6 +165,33 @@ export default class DBManager {
     static async deleteEquipmentInstance(id) {
         if (!this.db) await this.initDB();
         await this.db.delete('equipment_instances', id);
+    }
+
+    // --- Structure Instance Operations ---
+    static async saveStructureInstance(instance) {
+        if (!this.db) await this.initDB();
+        await this.db.put('structure_instances', instance);
+    }
+
+    static async getStructureInstance(id) {
+        if (!this.db) await this.initDB();
+        return await this.db.get('structure_instances', id);
+    }
+
+    static async getAllStructureInstances() {
+        if (!this.db) await this.initDB();
+        return await this.db.getAll('structure_instances');
+    }
+
+    static async deleteStructureInstance(id) {
+        if (!this.db) await this.initDB();
+        await this.db.delete('structure_instances', id);
+    }
+
+    static async getStructuresByDungeon(dungeonId) {
+        if (!this.db) await this.initDB();
+        const all = await this.getAllStructureInstances();
+        return all.filter(s => s.dungeonId === dungeonId);
     }
 
     // --- Mercenary Roster Operations ---

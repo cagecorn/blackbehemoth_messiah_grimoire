@@ -5008,3 +5008,155 @@ input:checked+.slider:before {
 .slider.round:before {
     border-radius: 2px;
 }
+/* --- Defense Deployment HUD --- */
+#defense-hud {
+    position: fixed;
+    top: 130px; /* Below NPC HUD */
+    right: 20px;
+    z-index: 1000;
+}
+
+.defense-hud-card {
+    background: var(--retro-panel);
+    border: 2px solid var(--retro-border);
+    padding: 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 3px 3px 0px rgba(0,0,0,0.5);
+    transition: all 0.1s;
+    min-width: 60px;
+}
+
+.defense-hud-card:hover {
+    border-color: var(--retro-amber);
+    transform: translateY(-2px);
+}
+
+.defense-hud-icon {
+    font-size: 24px;
+    margin-bottom: 2px;
+}
+
+.defense-hud-label {
+    font-family: var(--font-pixel);
+    font-size: 8px;
+    color: var(--retro-amber);
+}
+
+/* --- Defense Deployment Panel --- */
+#defense-deployment-panel {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 320px;
+    max-height: 400px;
+    z-index: 1001;
+    display: flex;
+    flex-direction: column;
+    padding: 15px;
+}
+
+.deployment-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    overflow-y: auto;
+    padding-right: 5px;
+    margin-top: 10px;
+}
+
+.deployment-card {
+    background: var(--retro-panel2);
+    border: 1px solid var(--retro-border);
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    transition: border-color 0.1s;
+}
+
+.deployment-card:hover {
+    border-color: var(--retro-amber);
+    background: rgba(255, 176, 0, 0.05);
+}
+
+.deployment-card-icon {
+    width: 40px;
+    height: 40px;
+    image-rendering: pixelated;
+}
+
+.deployment-card-info {
+    flex: 1;
+}
+
+.deployment-card-name {
+    font-family: var(--font-pixel);
+    font-size: 10px;
+    color: var(--retro-amber);
+    margin-bottom: 4px;
+}
+
+.deployment-card-id {
+    font-family: var(--font-vt);
+    font-size: 14px;
+    color: var(--retro-dim);
+}
+
+/* --- Construction Mode Overlay --- */
+#construction-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none; /* Let clicks pass through to Phaser */
+    z-index: 2000;
+}
+
+.construction-header {
+    position: absolute;
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 15px 30px;
+    border: 2px solid var(--retro-amber);
+    box-shadow: 0 0 20px rgba(255, 176, 0, 0.3);
+    pointer-events: auto;
+}
+
+.construction-title {
+    font-family: var(--font-pixel);
+    font-size: 18px;
+    color: var(--retro-amber);
+    margin-bottom: 8px;
+    text-shadow: 0 0 10px var(--retro-amber);
+}
+
+.construction-hint {
+    font-family: var(--font-vt);
+    font-size: 18px;
+    color: var(--retro-white);
+}
+
+#btn-exit-construction {
+    position: absolute;
+    bottom: 120px;
+    left: 50%;
+    transform: translateX(-50%);
+    pointer-events: auto; /* Enable click */
+    padding: 15px 30px;
+    font-size: 14px;
+}
+
+#construction-overlay {
+    background: rgba(255, 176, 0, 0.05);
+}
+

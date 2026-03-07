@@ -59,6 +59,16 @@ export default class UIManager {
         this.roundText = document.getElementById('hud-round-text');
         this.lastRoundText = '';
 
+        // Defense HUD Elements
+        this.defenseHud = document.getElementById('defense-hud');
+        this.defenseDeploymentPanel = document.getElementById('defense-deployment-panel');
+        this.defenseDeploymentList = document.getElementById('defense-deployment-list');
+        this.btnDefenseClose = document.getElementById('defense-panel-close');
+
+        // Construction Overlay Elements
+        this.constructionOverlay = document.getElementById('construction-overlay');
+        this.btnExitConstruction = document.getElementById('btn-exit-construction');
+
         this.buildingGrid = document.getElementById('building-grid');
         this.portraitBar = document.getElementById('portrait-bar');
 
@@ -111,6 +121,7 @@ export default class UIManager {
         this.setupChatChannels();
         this.setupMobileEvents();
         this.setupNavigationEvents();
+        this.setupDefenseEvents();
         this.injectTestItems();
 
         // Load Settings
@@ -544,6 +555,12 @@ export default class UIManager {
                 this.buildingGrid.style.display = showGrid ? 'flex' : 'none';
             }
 
+            // Show/Hide Defense HUD in Dungeon (and others if needed)
+            if (this.defenseHud) {
+                const showDefense = (sceneKey === 'DungeonScene' || sceneKey === 'RaidScene');
+                this.defenseHud.style.display = showDefense ? 'block' : 'none';
+            }
+
             // Hide Portrait Bar in Non-Combat scenes (like TerritoryScene)
             if (this.portraitBar) {
                 if (sceneKey === 'TerritoryScene' || sceneKey === 'GachaScene') {
@@ -596,6 +613,121 @@ export default class UIManager {
             this.npcHudStacks.style.fontSize = '8px'; // Smaller for NONE text
             this.npcHud.dataset.tooltip = '고용된 NPC가 없습니다.';
         }
+    }
+
+    setupDefenseEvents() {
+        if (this.defenseHud) {
+            this.defenseHud.onclick = (e) => {
+                e.stopPropagation();
+                this.toggleDefenseDeploymentPanel();
+            };
+        }
+
+        if (this.btnDefenseClose) {
+            this.btnDefenseClose.onclick = () => this.toggleDefenseDeploymentPanel(false);
+        }
+
+        if (this.btnExitConstruction) {
+            this.btnExitConstruction.onclick = () => {
+                const sceneKey = this.scene?.scene?.key || this.scene?.sys?.settings?.key;
+                if (sceneKey === 'DungeonScene' && this.scene.isConstructionMode) {
+                    this.scene.toggleConstructionMode(null);
+                }
+            };
+        }
+    }
+
+    toggleDefenseDeploymentPanel(force = null) {
+        if (!this.defenseDeploymentPanel) return;
+        const show = (force !== null) ? force : (this.defenseDeploymentPanel.style.display === 'none');
+
+        if (show) {
+            this.defenseDeploymentPanel.style.display = 'flex';
+            this.refreshDefenseDeploymentPanel();
+        } else {
+            this.defenseDeploymentPanel.style.display = 'none';
+        }
+    }
+
+    async refreshDefenseDeploymentPanel() {
+        if (!this.defenseDeploymentList) return;
+        this.defenseDeploymentList.innerHTML = '<div class="loading-retro">LOADING...</div>';
+
+        const instances = await DBManager.getAllStructureInstances();
+        // Filter out already placed ones (if desired) or show status
+        // For now, only show those NOT in a dungeon, or allowing re-placement
+        // User said: "Once set, the coordinates are saved. Entering again, it stays there."
+        // So we only show those WITHOUT a dungeonId or at least those in the inventory.
+
+        // Actually, let's show ALL and mark which ones are "Placed"
+        const currentDungeon = this.scene?.dungeonId;
+
+        if (instances.length === 0) {
+            this.defenseDeploymentList.innerHTML = '<div class="empty-retro">보유 중인 시설이 없습니다.</div>';
+            return;
+        }
+
+        this.defenseDeploymentList.innerHTML = instances.map(inst => {
+            const config = Characters[inst.baseId.toUpperCase()] || { name: inst.baseId, sprite: 'bow_turret_sprite' };
+            const isPlaced = !!inst.dungeonId;
+            const isHere = inst.dungeonId === currentDungeon;
+
+            let statusTag = '';
+            if (isHere) statusTag = '<span style="color:var(--retro-green); font-size:10px;">[배치됨]</span>';
+            else if (isPlaced) statusTag = `<span style="color:var(--retro-red); font-size:10px;">[${inst.dungeonId}]</span>`;
+
+            return `
+                <div class="deployment-card ${isPlaced ? 'placed' : ''}" data-id="${inst.id}">
+                    <img src="assets/structures/${inst.baseId}_sprite.png" class="deployment-card-icon" onerror="this.src='assets/emojis/1f3f9.svg'">
+                    <div class="deployment-card-info">
+                        <div class="deployment-card-name">${config.name} ${statusTag}</div>
+                        <div class="deployment-card-id">#${inst.id.slice(-4)} (HP: ${inst.currentHp || 1000})</div>
+                    </div>
+                    ${!isPlaced ? '<div class="deploy-arrow">▶</div>' : ''}
+                </div>
+            `;
+        }).join('');
+
+        // Bind clicks
+        this.defenseDeploymentList.querySelectorAll('.deployment-card').forEach(card => {
+            card.onclick = () => {
+                const id = card.dataset.id;
+                const inst = instances.find(i => i.id === id);
+                if (inst.dungeonId) {
+                    this.showToast('이미 다른 곳에 배치된 시설입니다.');
+                    return;
+                }
+
+                // Select and Enter Construction Mode
+                const sceneKey = this.scene?.scene?.key || this.scene?.sys?.settings?.key;
+                if (sceneKey === 'DungeonScene') {
+                    this.toggleDefenseDeploymentPanel(false);
+                    this.scene.toggleConstructionMode(id);
+                }
+            };
+        });
+    }
+
+    showConstructionUI() {
+        if (this.constructionOverlay) {
+            this.constructionOverlay.style.display = 'block';
+        }
+        // Hide other HUDs to focus
+        if (this.portraitBar) this.portraitBar.style.visibility = 'hidden';
+        if (this.npcHud) this.npcHud.style.visibility = 'hidden';
+        if (this.messiahHud) this.messiahHud.style.visibility = 'hidden';
+        if (this.defenseHud) this.defenseHud.style.visibility = 'hidden';
+    }
+
+    hideConstructionUI() {
+        if (this.constructionOverlay) {
+            this.constructionOverlay.style.display = 'none';
+        }
+        // Restore HUDs
+        if (this.portraitBar) this.portraitBar.style.visibility = 'visible';
+        if (this.npcHud) this.npcHud.style.visibility = 'visible';
+        if (this.messiahHud) this.messiahHud.style.visibility = 'visible';
+        if (this.defenseHud) this.defenseHud.style.visibility = 'visible';
     }
 
     showConfirm(message, onConfirm, onCancel = null) {
@@ -1196,6 +1328,179 @@ export default class UIManager {
         }
     }
 
+    async showDefenseManagement() {
+        if (this.defenseManagementOverlay) return;
+
+        const overlay = document.createElement('div');
+        overlay.id = 'defense-management-overlay';
+        overlay.className = 'shop-overlay retro-scanline-overlay defense-management-overlay';
+        this.defenseManagementOverlay = overlay;
+
+        overlay.innerHTML = `
+            <div class="shop-container defense-management-container" style="max-width: 900px; width: 95vw;">
+                <div class="shop-header" style="background: linear-gradient(to right, #10b981, #059669);">
+                    <div class="shop-title">🛡️ DEFENSE STRUCTURES (방어 시설 관리)</div>
+                    <button class="shop-close-btn" id="defense-manage-close">✕</button>
+                </div>
+                
+                <div class="shop-body defense-management-body" id="defense-manage-body" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 20px;">
+                    <div class="craft-recipe-area" style="border-right: 1px solid rgba(255,255,255,0.1); padding-right: 15px;">
+                        <div style="font-size: 14px; font-weight: bold; margin-bottom: 12px; color: #34d399;">[설치 가능 시설물]</div>
+                        <div id="defense-recipe-list" style="display: flex; flex-direction: column; gap: 10px;">
+                            <!-- Recipes go here -->
+                        </div>
+                    </div>
+                    
+                    <div class="owned-defense-area">
+                        <div style="font-size: 14px; font-weight: bold; margin-bottom: 12px; color: #34d399;">[보유 중인 시설물 인벤토리]</div>
+                        <div id="owned-defense-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px; max-height: 400px; overflow-y: auto; padding: 5px;">
+                            <!-- Owned items go here -->
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="shop-footer" style="display: flex; justify-content: space-between; align-items: center; padding: 15px;">
+                    <div class="shop-currency" id="defense-material-display" style="display:flex; align-items:center; gap:15px;">
+                        <!-- Materials like wood and bone will be shown here -->
+                    </div>
+                    <div style="font-size: 11px; opacity: 0.7; color: #d1d5db;">* 시설물은 던전에 입장한 후 원하는 위치에 고정하여 설치할 수 있습니다.</div>
+                </div>
+            </div>
+        `;
+
+        const appContainer = document.getElementById('app-container') || document.body;
+        appContainer.appendChild(overlay);
+
+        // Close events
+        const closeBtn = document.getElementById('defense-manage-close');
+        if (closeBtn) closeBtn.onclick = () => this.hideDefenseManagement();
+        overlay.onclick = (e) => { if (e.target === overlay) this.hideDefenseManagement(); };
+
+        await this.refreshDefenseManagement();
+    }
+
+    hideDefenseManagement() {
+        if (this.defenseManagementOverlay) {
+            this.defenseManagementOverlay.remove();
+            this.defenseManagementOverlay = null;
+        }
+    }
+
+    async refreshDefenseManagement() {
+        if (!this.defenseManagementOverlay) return;
+
+        const recipeList = document.getElementById('defense-recipe-list');
+        const ownedList = document.getElementById('owned-defense-list');
+        const materialDisplay = document.getElementById('defense-material-display');
+
+        if (!recipeList || !ownedList || !materialDisplay) return;
+
+        // 1. Materials
+        const wood = await DBManager.getInventoryItem('emoji_wood');
+        const bone = await DBManager.getInventoryItem('emoji_bone');
+        materialDisplay.innerHTML = `
+            <div style="display:flex; align-items:center; gap:5px; color: #fff; font-weight: bold;"><img src="assets/emojis/1fab5.svg" style="width:20px; height:20px;"> ${wood ? wood.amount : 0}</div>
+            <div style="display:flex; align-items:center; gap:5px; color: #fff; font-weight: bold;"><img src="assets/emojis/1f9b4.svg" style="width:20px; height:20px;"> ${bone ? bone.amount : 0}</div>
+        `;
+
+        // 2. Recipes
+        const recipes = [
+            { id: 'turret_bowgun', req: { emoji_wood: 2000, emoji_bone: 1000 } }
+        ];
+
+        let recipeHtml = '';
+        for (const r of recipes) {
+            const item = ItemManager.getItem(r.id);
+            const hasWood = wood && wood.amount >= r.req.emoji_wood;
+            const hasBone = bone && bone.amount >= r.req.emoji_bone;
+            const canCraft = hasWood && hasBone;
+            const iconUrl = item.customAsset || 'assets/emojis/' + ItemManager.getSVGFilename(r.id);
+
+            recipeHtml += `
+                <div class="craft-card" data-id="${r.id}" 
+                     style="background: rgba(0,0,0,0.3); border: 2px solid #059669; border-radius: 12px; padding: 12px; display: flex; align-items: center; gap: 15px; position: relative; overflow: hidden; transition: all 0.2s ease;">
+                    <div class="retro-scanline-overlay" style="pointer-events: none;"></div>
+                    <img src="${iconUrl}" style="width: 48px; height: 48px; object-fit: contain; image-rendering: pixelated; background: rgba(255,255,255,0.05); border-radius: 8px; padding: 4px; border: 1px solid rgba(255,255,255,0.1);">
+                    <div style="flex: 1;">
+                        <div style="font-weight: bold; font-size: 14px; color: #fff;">${item.name}</div>
+                        <div style="font-size: 10px; color: #34d399; margin-bottom: 4px;">${item.description}</div>
+                        <div style="font-size: 11px; color: #d1d5db; display: flex; align-items: center; gap: 8px;">
+                            <span style="display:flex; align-items:center; gap:2px; color: ${hasWood ? '#fff' : '#ef4444'}"><img src="assets/emojis/1fab5.svg" style="width:12px; height:12px;"> ${r.req.emoji_wood}</span>
+                            <span style="display:flex; align-items:center; gap:2px; color: ${hasBone ? '#fff' : '#ef4444'}"><img src="assets/emojis/1f9b4.svg" style="width:12px; height:12px;"> ${r.req.emoji_bone}</span>
+                        </div>
+                    </div>
+                    <button class="shop-buy-btn defense-craft-btn" data-id="${r.id}" ${canCraft ? '' : 'disabled'} 
+                            style="padding: 8px 15px; font-size: 12px; height: auto; background: ${canCraft ? 'linear-gradient(to bottom, #10b981, #059669)' : '#333'}; opacity: ${canCraft ? 1 : 0.5}; cursor: ${canCraft ? 'pointer' : 'not-allowed'}; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); color: #fff; font-weight: bold;">제작</button>
+                </div>
+            `;
+        }
+        recipeList.innerHTML = recipeHtml;
+
+        // Bind craft buttons
+        recipeList.querySelectorAll('.defense-craft-btn').forEach(btn => {
+            btn.onclick = async (e) => {
+                const itemId = btn.dataset.id;
+                const recipe = recipes.find(r => r.id === itemId);
+
+                // Deduct materials
+                const currentWood = await DBManager.getInventoryItem('emoji_wood');
+                const currentBone = await DBManager.getInventoryItem('emoji_bone');
+
+                if (currentWood && currentWood.amount >= recipe.req.emoji_wood &&
+                    currentBone && currentBone.amount >= recipe.req.emoji_bone) {
+                    await DBManager.saveInventoryItem('emoji_wood', currentWood.amount - recipe.req.emoji_wood);
+                    await DBManager.saveInventoryItem('emoji_bone', currentBone.amount - recipe.req.emoji_bone);
+
+                    // Create UNIQUE structure instance
+                    const instanceId = `str_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+                    await DBManager.saveStructureInstance({
+                        id: instanceId,
+                        baseId: itemId,
+                        level: 1,
+                        createdAt: Date.now()
+                    });
+
+                    this.showToast(`${ItemManager.getItem(itemId).name} 제작 성공! 🛡️`);
+                    await this.refreshDefenseManagement();
+                    if (this.refreshInventory) this.refreshInventory();
+                } else {
+                    this.showToast('재료가 부족합니다!');
+                }
+            };
+        });
+
+        // 3. Owned Structures (Fetch from structure_instances table)
+        const structures = await DBManager.getAllStructureInstances();
+
+        let ownedHtml = '';
+        if (structures.length === 0) {
+            ownedHtml = `<div style="grid-column: 1/-1; text-align: center; opacity: 0.4; padding: 40px; font-size: 12px; color: #fff;">보유 중인 시설물이 없습니다.</div>`;
+        } else {
+            // Sort by newest first
+            structures.sort((a, b) => b.createdAt - a.createdAt);
+
+            for (const s of structures) {
+                const base = ItemManager.getItem(s.baseId);
+                if (!base) continue;
+
+                const iconUrl = base.customAsset || 'assets/emojis/' + ItemManager.getSVGFilename(s.baseId);
+                const shortId = s.id.split('_').pop();
+
+                ownedHtml += `
+                    <div class="owned-equip-card structure-instance-card" data-instance-id="${s.id}"
+                         style="background: rgba(255,255,255,0.05); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; align-items: center; gap: 5px; position: relative; cursor: pointer;" 
+                         title="${base.name}\n(ID: ${s.id})">
+                        <div style="position: absolute; top: -5px; right: -5px; background: #10b981; color: #fff; font-size: 7px; font-weight: bold; padding: 1px 4px; border-radius: 3px; border: 1px solid rgba(255,255,255,0.2);">X1</div>
+                        <img src="${iconUrl}" style="width: 32px; height: 32px; object-fit: contain; image-rendering: pixelated; filter: drop-shadow(0 0 5px rgba(16, 185, 129, 0.3));">
+                        <div style="font-size: 9px; color: #fff; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; font-weight: bold;">${base.name}</div>
+                        <div style="font-size: 7px; color: #34d399; opacity: 0.6;">#${shortId}</div>
+                    </div>
+                `;
+            }
+        }
+        ownedList.innerHTML = ownedHtml;
+    }
+
     async refreshEquipmentCrafting() {
         if (!this.equipmentCraftingOverlay) return;
 
@@ -1664,28 +1969,29 @@ export default class UIManager {
     }
 
     async updateDungeonTickets() {
-        const ticket = await DBManager.getInventoryItem('emoji_ticket');
-        const count = ticket ? ticket.amount : 0;
+        const ticketInfo = [
+            { id: 'UNDEAD_GRAVEYARD', ticketId: 'emoji_ticket' },
+            { id: 'SWAMPLAND', ticketId: 'swampland_ticket' }
+        ];
 
-        // Find the Undead Graveyard dropdown item
         const dropdownItems = document.querySelectorAll('.nav-dropdown-item');
-        dropdownItems.forEach(item => {
-            if (item.dataset.dungeon === 'UNDEAD_GRAVEYARD') {
-                let badge = item.querySelector('.dungeon-ticket-badge');
-                if (!badge) {
-                    badge = document.createElement('span');
-                    badge.className = 'dungeon-ticket-badge';
-                    item.appendChild(badge);
-                }
-                badge.innerText = `🎫 ${count}`;
+        for (const info of ticketInfo) {
+            const ticket = await DBManager.getInventoryItem(info.ticketId);
+            const count = ticket ? ticket.amount : 0;
 
-                if (count <= 0) {
-                    item.style.opacity = '0.5';
-                } else {
-                    item.style.opacity = '1';
+            dropdownItems.forEach(item => {
+                if (item.dataset.dungeon === info.id) {
+                    let badge = item.querySelector('.dungeon-ticket-badge');
+                    if (!badge) {
+                        badge = document.createElement('span');
+                        badge.className = 'dungeon-ticket-badge';
+                        item.appendChild(badge);
+                    }
+                    badge.innerText = `🎫 ${count}`;
+                    item.style.opacity = count <= 0 ? '0.5' : '1';
                 }
-            }
-        });
+            });
+        }
     }
 
     async updateBestRounds() {

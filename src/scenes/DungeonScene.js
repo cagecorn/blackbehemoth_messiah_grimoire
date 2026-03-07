@@ -5,6 +5,9 @@ import Goblin from '../modules/AI/Goblin.js';
 import Orc from '../modules/AI/Orc.js';
 import SkeletonWarrior from '../modules/AI/SkeletonWarrior.js';
 import SkeletonWizard from '../modules/AI/SkeletonWizard.js';
+import CrocodileWarrior from '../modules/AI/CrocodileWarrior.js';
+import CrocodileArcher from '../modules/AI/CrocodileArcher.js';
+import CrocodileHealer from '../modules/AI/CrocodileHealer.js';
 import MonsterHealer from '../modules/AI/MonsterHealer.js';
 import Archer from '../modules/Player/Archer.js';
 import Healer from '../modules/Player/Healer.js';
@@ -39,6 +42,7 @@ import PetManager from '../modules/Player/PetManager.js';
 import DBManager from '../modules/Database/DBManager.js';
 import buildingManager from '../modules/Core/BuildingManager.js';
 import SupportActionManager from '../modules/Combat/SupportActionManager.js';
+import StructureManager from '../modules/Core/StructureManager.js';
 // partyManager will be accessed via this.game.partyManager
 
 
@@ -55,6 +59,11 @@ export default class DungeonScene extends Phaser.Scene {
         this.weatherManager = null;
         this.ambientMoteManager = null;
         this.supportActionManager = null;
+        this.structureManager = null;
+
+        // Construction Mode State
+        this.isConstructionMode = false;
+        this.selectedStructureId = null; // Instance ID to place
 
         // Reward values
         this.killExp = 25;
@@ -136,6 +145,17 @@ export default class DungeonScene extends Phaser.Scene {
                 await DBManager.saveInventoryItem('emoji_ticket', ticket.amount - 1);
                 EventBus.emit(EventBus.EVENTS.INVENTORY_UPDATED);
                 EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, `[입장] 언데드 묘지 입장권 1장을 소모했습니다. 🎫`);
+            } else if (this.dungeonType === 'SWAMPLAND' && this.currentRound === 1) {
+                const ticket = await DBManager.getInventoryItem('swampland_ticket');
+                if (!ticket || ticket.amount <= 0) {
+                    if (this.game.uiManager) this.game.uiManager.showToast('입장권이 소진되어 [저주받은 숲]으로 이동합니다! 🎫');
+                    this.scene.start('DungeonScene', { dungeonType: 'CURSED_FOREST', startRound: 1 });
+                    return;
+                }
+                // Deduct Ticket
+                await DBManager.saveInventoryItem('swampland_ticket', ticket.amount - 1);
+                EventBus.emit(EventBus.EVENTS.INVENTORY_UPDATED);
+                EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, `[입장] 늪지대 입장권 1장을 소모했습니다. 🎫`);
             }
 
             if (this.game.uiManager) {
@@ -150,6 +170,11 @@ export default class DungeonScene extends Phaser.Scene {
             this.events.once('shutdown', () => {
                 if (this.supportActionManager) this.supportActionManager.destroy();
             });
+
+            // --- Construction / Deployment Input ---
+            this.input.on('pointerdown', this.handleConstructionPointer, this);
+            this.input.on('pointermove', this.handleConstructionDrag, this);
+            this.input.on('pointerup', () => { this.isDraggingCamera = false; });
 
             // --- Messiah Touch Interaction ---
             this.input.on('pointerdown', this.handleMessiahTouch, this);
@@ -244,6 +269,8 @@ export default class DungeonScene extends Phaser.Scene {
             this.shieldManager = new ShieldManager(this);
             this.barkManager = new BarkManager(this);
             this.petManager = new PetManager(this);
+            this.structureManager = new StructureManager(this);
+            await this.structureManager.initDungeonStructures();
 
             // ⚔️ Premium Skill FX Layer (with Global Bloom)
             // This layer hosts all magical effects, projectiles, and skill visuals.
@@ -589,6 +616,17 @@ export default class DungeonScene extends Phaser.Scene {
             buildingManager.update(delta);
         }
 
+        // --- 1.3 Defense Structures Update ---
+        if (this.structureManager) {
+            this.structureManager.update(time, delta);
+        }
+
+        // --- 1.4 Construction Mode Camera ---
+        if (this.isConstructionMode) {
+            this.updateConstructionCamera(delta);
+            return; // Skip normal gameplay updates
+        }
+
         // --- 1.5 Global Systems Update ---
         if (this.game.messiahManager) {
             this.game.messiahManager.update(time, delta);
@@ -809,19 +847,25 @@ export default class DungeonScene extends Phaser.Scene {
             // Heal all before restart to ensure they spawn with full HP
             if (this.game.partyManager) this.game.partyManager.healAll();
 
-            // Check if we need a ticket to restart this specific dungeon
+            // Ticket deduction for specific dungeons
             if (this.dungeonType === 'UNDEAD_GRAVEYARD') {
-                DBManager.getInventoryItem('emoji_ticket').then(ticket => {
-                    if (!ticket || ticket.amount <= 0) {
-                        if (this.game.uiManager) this.game.uiManager.showToast('입장권 소진으로 [저주받은 숲]으로 복귀합니다.');
-                        this.scene.start('DungeonScene', { dungeonType: 'CURSED_FOREST', startRound: 1 });
-                    } else {
-                        this.scene.restart({ dungeonType: this.dungeonType, startRound: 1 });
-                    }
-                });
-            } else {
-                this.scene.restart();
+                const hasTicket = this.game.inventory.removeItem('emoji_ticket', 1);
+                if (!hasTicket) {
+                    console.warn('[DungeonScene] No ticket for Undead Graveyard. Returning.');
+                    this.game.uiManager.showToast('언데드 묘지 입장권(🎫)이 필요합니다.');
+                    this.scene.start('DungeonScene', { dungeonType: 'CURSED_FOREST' });
+                    return;
+                }
+            } else if (this.dungeonType === 'SWAMPLAND') {
+                const hasTicket = this.game.inventory.removeItem('swampland_ticket', 1);
+                if (!hasTicket) {
+                    console.warn('[DungeonScene] No ticket for Swampland. Returning.');
+                    this.game.uiManager.showToast('늪지대 입장권(🎫)이 필요합니다.');
+                    this.scene.start('DungeonScene', { dungeonType: 'CURSED_FOREST' });
+                    return;
+                }
             }
+            this.scene.restart({ dungeonType: this.dungeonType, startRound: 1 });
         });
     }
 
@@ -1015,7 +1059,10 @@ export default class DungeonScene extends Phaser.Scene {
             'goblin': Goblin,
             'orc': Orc,
             'skeleton_warrior': SkeletonWarrior,
-            'skeleton_wizard': SkeletonWizard
+            'skeleton_wizard': SkeletonWizard,
+            crocodile_warrior: CrocodileWarrior,
+            crocodile_archer: CrocodileArcher,
+            crocodile_healer: CrocodileHealer
         };
 
         // Total spawn count increases with rounds
@@ -1170,8 +1217,9 @@ export default class DungeonScene extends Phaser.Scene {
         // Find an inactive monster of the same class
         let monster = this.monsterPool[className].find(m => !m.active);
 
-        // Prepare config
-        const baseConfig = classConfig || MonsterClasses[className.toUpperCase()] || MonsterClasses.GOBLIN;
+        // Prepare config - Map CamelCase ClassName (e.g. CrocodileWarrior) to SCREAMING_SNAKE_CASE (e.g. CROCODILE_WARRIOR)
+        const screamingKey = className.replace(/([a-z])([A-Z])/g, '$1_$2').toUpperCase();
+        const baseConfig = classConfig || MonsterClasses[screamingKey] || MonsterClasses[className.toUpperCase()] || MonsterClasses.GOBLIN;
         const config = scaleStats(baseConfig, level, type);
 
         if (monster) {
@@ -1446,4 +1494,73 @@ export default class DungeonScene extends Phaser.Scene {
      * @param {string} iconId Asset key
      */
 
+    // --- Construction Mode Logic ---
+
+    async toggleConstructionMode(instanceId = null) {
+        this.isConstructionMode = !!instanceId;
+        this.selectedStructureId = instanceId;
+
+        if (this.isConstructionMode) {
+            console.log(`[Construction] Entering Mode for instance: ${instanceId}`);
+            this.physics.pause();
+            // Stop animations for everyone
+            this.mercenaries.getChildren().forEach(m => { if (m.stopIdleBob) m.stopIdleBob(); });
+            this.enemies.getChildren().forEach(e => { if (e.stopIdleBob) e.stopIdleBob(); });
+
+            if (this.game.uiManager) this.game.uiManager.showConstructionUI();
+        } else {
+            console.log('[Construction] Exiting Mode');
+            this.physics.resume();
+            if (this.game.uiManager) this.game.uiManager.hideConstructionUI();
+        }
+    }
+
+    handleConstructionPointer(pointer) {
+        if (!this.isConstructionMode || !this.selectedStructureId) return;
+
+        // Long Press (Mobile) or Right Click (PC)
+        // Note: pointer.rightButtonDown() might require 'disableContextMenu' in config
+        if (pointer.rightButtonDown() || pointer.msSinceDown > 500) {
+            const worldPoint = pointer.positionToCamera(this.cameras.main);
+            this.placeStructureAt(worldPoint.x, worldPoint.y);
+        } else {
+            // Start dragging for panning
+            this.isDraggingCamera = true;
+            this.lastPointerX = pointer.x;
+            this.lastPointerY = pointer.y;
+        }
+    }
+
+    handleConstructionDrag(pointer) {
+        if (!this.isConstructionMode || !this.isDraggingCamera) return;
+
+        const dx = (this.lastPointerX - pointer.x) / this.cameras.main.zoom;
+        const dy = (this.lastPointerY - pointer.y) / this.cameras.main.zoom;
+
+        this.cameraTarget.x += dx;
+        this.cameraTarget.y += dy;
+
+        this.lastPointerX = pointer.x;
+        this.lastPointerY = pointer.y;
+    }
+
+    updateConstructionCamera(delta) {
+        // dynamicCamera follows cameraTarget, so we just pan cameraTarget
+        // Bound checks
+        const bounds = this.physics.world.bounds;
+        if (bounds) {
+            this.cameraTarget.x = Phaser.Math.Clamp(this.cameraTarget.x, 0, bounds.width);
+            this.cameraTarget.y = Phaser.Math.Clamp(this.cameraTarget.y, 0, bounds.height);
+        }
+    }
+
+    async placeStructureAt(x, y) {
+        if (!this.structureManager || !this.selectedStructureId) return;
+
+        const spawned = await this.structureManager.placeStructure(this.selectedStructureId, x, y);
+        if (spawned) {
+            if (this.game.uiManager) this.game.uiManager.showToast('시설물 배치 완료! 🛡️');
+            this.toggleConstructionMode(null); // Exit mode after placement
+        }
+    }
 }

@@ -11,7 +11,9 @@
 - **Messiah Touch (메시아 터치)**: 자동 전투 중 유저가 직접 화면을 터치하여 전투에 개입하는 권능 시스템.
 - **Divine Essence (전능의 정수) ✨**: 메시아의 권능을 강화하는 데 필요한 신성한 재료. 정예/보스 몬스터에게서 획득 가능.
 - **Growth Gear (성장 장비)**: 제작을 통해 획득하며, 전투 경험치를 통해 레벨업하고 추가 옵션이 개방되는 특수 장비.
-- **Equipment Crafting (장비 제작)**: 영지에서 재료 이모지를 소모하여 강력한 성장 장비를 제작하는 시스템.
+- `swampland_ticket`: 늪지대 입장권 🎫
+- `emoji_clover`: 클로버 (☘️) - 늪지대 전용 재료
+- `crocodile_warrior_sprite`, `crocodile_archer_sprite`, `crocodile_healer_sprite`: 늪지대 악어 3종 스프라이트
 - (Official Project Name)
 
 이 프로젝트는 기존에 진행하던 게임의 아이디어를 일부 계승하여 새롭게 시작하는 2D RPG 게임 프로젝트입니다.
@@ -59,6 +61,7 @@
   * `iceRes`: 얼음 저항력 (%)
   * `lightningRes`: 번개 저항력 (%)
   * `id`: 엔티티 고유 식별자
+  * **주의**: 신규 몬스터/용병 추가 시 위 명칭을 제외한 임의의 명칭(예: `attackDamage`) 사용을 엄격히 금지합니다.
 
 ## 성장 장비 랜덤 옵션 (Growth Equipment Random Options)
 장비 레벨 10단위(10, 20, 30, 40, 50)마다 아래 풀에서 중복되지 않은 옵션이 하나씩 개방됩니다.
@@ -133,7 +136,10 @@
 - **GOOD**: `this.bonusAtk += amount;` / `this.bonusSpeed += 50;`
 - **표준 보너스 속성**: `bonusAtk`, `bonusMAtk`, `bonusCrit`, `bonusEva`, `bonusSpeed`, `bonusDef`, `bonusMDef`, `bonusAtkSpd`, `bonusAcc`, `bonusDR`, `bonusCastSpd`, `bonusUltChargeSpeed`
  
- 
+   * `swampland_ticket`: 늪지대 입장권
+  * `emoji_clover`: 클로버 (☘️)
+
+
 +### 6. 장비 및 성장 시스템 (Equipment & Growth)
 +
 +새로운 장비를 추가하거나 관련 로직을 수정할 때 아래 표준을 반드시 준수하십시오.
@@ -398,6 +404,8 @@
 
 ### 2. 최초 1회 설정 방법
 자동 배포가 처음 실행된 후(Push 후 약 1~2분 뒤), 깃허브 저장소 설정에서 딱 한 번만 아래 설정을 해주세요.
+5. 새로운 중요한 패치를 할 때마다 그 로직을 개발자 콘솔 창에서 로그로 확인할 수 있도록 디버깅 로그를 심어주세요.
+6. **패치 노트 유지 원칙**: 패치 노트는 데모 유저 정보 제공 및 개발 로그의 역할을 겸하므로, 신규 내용을 상단에 추가하되 이전 내용을 축약하거나 삭제하지 말고 그대로 유지해야 합니다.
 
 1.  깃허브 웹사이트의 본인 저장소(Repository)로 이동합니다.
 2.  상단 메뉴에서 **Settings** 포크 모양 아이콘을 클릭합니다.
@@ -421,3 +429,15 @@ npm run dev
 플레이어와 함께 단계적으로 진행할 예정인 최적화 항목들입니다.
 - [ ] **FXManager 확장 (파티클 & 그래픽 풀링)**: 힐, 혈흔, 스파클 파티클 이미터와 원형/타원형 그래픽 객체들을 풀링 시스템으로 관리하여 가비지 컬렉션 부하 최소화.
 - [ ] **스킬 시각 효과 리팩토링**: 모든 스킬(메테오, 오라 포함)이 `FXManager`의 풀링된 객체를 사용하도록 코드를 전반적으로 점검하고 수정.
+
+---
+
+## 🛠️ 신규 스테이지 패치 가이드 (New Stage Patch Checklist)
+새로운 던전이나 스테이지를 추가할 때 누락되기 쉬운 항목들입니다. 패치 시 반드시 체크하세요.
+
+1.  **Dungeon Toggle UI 연동**: `UIManager.js`의 `updateDungeonTickets()`와 `updateBestRounds()`에 신규 던전 타입을 추가하여 드롭다운에서 티켓 수와 최고 기록이 표시되게 합니다.
+2.  **Monster Stat Mapping**: `DungeonScene.js`의 `spawnMonster()` 로직에서 클래스명(PascalCase)과 `EntityStats.js`의 키(SCREAMING_SNAKE_CASE)가 일치하는지 확인합니다.
+3.  **AI Behavior Tree 검증**: 몬스터 클래스의 `initAI()`에서 `BehaviorTreeManager`를 호출할 때 인자값이 정확한지 확인합니다. (특히 `applyRangedAI` 등의 두 번째 인자 실수 주의)
+4.  **Shop Manager 등록**: `ShopManager.js`에 신규 던전 입장권을 판매 목록에 추가합니다.
+5.  **Global Terminology 업데이트**: 신규 아이템, 재료, 몬스터 명칭을 `README.md` 상단에 추가하여 명칭 통일성을 유지합니다.
+6.  **Debug Log 삽입**: 신규 스테이지 진입, 웨이브 스폰, 보상 획득 시 개발자 콘솔에서 확인할 수 있는 로그를 남깁니다.

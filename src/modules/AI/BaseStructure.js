@@ -1,0 +1,217 @@
+import Phaser from 'phaser';
+import HealthBar from '../UI/HealthBar.js';
+import EventBus from '../Events/EventBus.js';
+import ItemManager from '../Core/ItemManager.js';
+import { StructureStats } from '../Core/EntityStats.js';
+import DBManager from '../Database/DBManager.js';
+
+/**
+ * BaseStructure.js
+ * Base class for all defense structures (Turrets, Barricades, etc.)
+ */
+export default class BaseStructure extends Phaser.GameObjects.Container {
+    constructor(scene, x, y, instanceId, baseId) {
+        super(scene, x, y);
+        this.scene = scene;
+        this.instanceId = instanceId;
+        this.baseId = baseId;
+
+        // Retrieve config from EntityStats
+        const config = StructureStats[baseId.toUpperCase()] || {
+            name: 'Unknown Structure',
+            hp: 100, maxHp: 100, atk: 10, def: 10, sprite: 'bow_turret_sprite'
+        };
+        this.config = config;
+
+        // Identity
+        this.unitName = config.name;
+        this.team = 'player'; // Structures are allies
+        this.id = instanceId;
+
+        // Stats
+        this.maxHp = config.maxHp || 100;
+        this.hp = config.hp || this.maxHp;
+        this.atk = config.atk || 0;
+        this.mAtk = config.mAtk || 0;
+        this.def = config.def || 0;
+        this.mDef = config.mDef || 0;
+        this.atkSpd = config.atkSpd || 1500;
+        this.atkRange = config.atkRange || 450;
+        this.acc = config.acc || 100;
+        this.crit = config.crit || 5;
+        this.fireRes = config.fireRes || 0;
+        this.iceRes = config.iceRes || 0;
+        this.lightningRes = config.lightningRes || 0;
+
+        // Combat Timers
+        this.lastAttackTime = 0;
+
+        // Setup Physics & Rendering
+        this.scene.add.existing(this);
+        this.scene.physics.add.existing(this);
+
+        this.sprite = this.scene.add.image(0, 0, config.sprite || 'bow_turret_sprite');
+        const spriteSize = config.spriteSize || 64;
+        this.sprite.setDisplaySize(spriteSize, spriteSize);
+        this.add(this.sprite);
+
+        const radius = config.physicsRadius || 25;
+        this.body.setCircle(radius);
+        this.body.setOffset(-radius, -radius);
+        this.body.setImmovable(true); // Structures don't move
+        this.body.setCollideWorldBounds(true);
+
+        this.barYOffset = spriteSize / 2 + 20;
+        this.healthBar = new HealthBar(scene, this, 0, -this.barYOffset, 56, 6);
+
+        // Track stats for persistence
+        this.lastSaveTime = 0;
+        this.saveInterval = 2000; // Save HP every 2s if changed
+        this.lastHp = this.hp;
+
+        console.log(`[BaseStructure] Created ${this.unitName} (${this.instanceId}) at ${x}, ${y}`);
+    }
+
+    get targetGroup() {
+        if (!this.scene) return { getChildren: () => [] };
+        return this.scene.enemies;
+    }
+
+    takeDamage(amount, attacker = null, isUltimate = false, element = null, isCritical = false) {
+        if (!this.active || this.hp <= 0) return;
+
+        // Evasion check (structures usually don't evade)
+        const finalDamage = Math.max(1, amount - this.def);
+        this.hp -= finalDamage;
+        if (this.hp < 0) this.hp = 0;
+
+        this.updateHealthBar();
+
+        if (this.scene.fxManager) {
+            const color = isCritical ? '#ff0000' : '#ff5555';
+            this.scene.fxManager.showDamageText(this, finalDamage, color, isCritical);
+        }
+
+        // Visual Hit Effect
+        this.scene.tweens.add({
+            targets: this.sprite,
+            tint: 0xff0000,
+            duration: 100,
+            yoyo: true,
+            onComplete: () => { if (this.sprite) this.sprite.clearTint(); }
+        });
+
+        if (this.hp <= 0) {
+            this.die();
+        }
+    }
+
+    receiveHeal(amount) {
+        if (!this.active || this.hp <= 0) return;
+        this.hp = Math.min(this.maxHp, this.hp + amount);
+        this.updateHealthBar();
+        if (this.scene.fxManager) {
+            this.scene.fxManager.showHealEffect(this);
+        }
+    }
+
+    updateHealthBar() {
+        if (this.healthBar) {
+            this.healthBar.setValue((this.hp / this.maxHp) * 100);
+        }
+    }
+
+    update(time, delta) {
+        if (!this.active || this.hp <= 0) return;
+
+        // Combat logic: Find target and attack
+        this.handleCombat(time);
+
+        // Periodic Persistence
+        if (time - this.lastSaveTime > this.saveInterval) {
+            if (this.hp !== this.lastHp) {
+                this.saveState();
+                this.lastHp = this.hp;
+            }
+            this.lastSaveTime = time;
+        }
+    }
+
+    handleCombat(time) {
+        if (time - this.lastAttackTime < this.atkSpd) return;
+
+        const target = this.findNearestEnemy();
+        if (target) {
+            this.fireProjectile(target);
+            this.lastAttackTime = time;
+        }
+    }
+
+    findNearestEnemy() {
+        const enemies = this.targetGroup.getChildren();
+        let nearest = null;
+        let minDist = this.atkRange;
+
+        for (const enemy of enemies) {
+            if (!enemy.active || enemy.hp <= 0) continue;
+            const dist = Phaser.Math.Distance.Between(this.x, this.y, enemy.x, enemy.y);
+            if (dist < minDist) {
+                minDist = dist;
+                nearest = enemy;
+            }
+        }
+        return nearest;
+    }
+
+    fireProjectile(target) {
+        if (!this.scene.projectileManager) return;
+
+        // Calculate Damage
+        let damage = this.atk;
+        const isCritical = Math.random() * 100 < this.crit;
+        if (isCritical) damage *= 1.5;
+
+        // Sprite facing check
+        if (target.x < this.x) this.sprite.setScale(-Math.abs(this.sprite.scaleX), this.sprite.scaleY);
+        else this.sprite.setScale(Math.abs(this.sprite.scaleX), this.sprite.scaleY);
+
+        // Projectile Type
+        const projType = this.config.id === 'bow_turret' ? 'archer' : 'laser';
+
+        this.scene.projectileManager.fire(this.x, this.y, target.x, target.y, damage, projType, false, this.targetGroup, this, null, false, null, isCritical);
+    }
+
+    async saveState() {
+        try {
+            const inst = await DBManager.getStructureInstance(this.instanceId);
+            if (inst) {
+                inst.currentHp = this.hp;
+                await DBManager.saveStructureInstance(inst);
+            }
+        } catch (e) {
+            console.error(`[BaseStructure] Failed to save state for ${this.instanceId}`, e);
+        }
+    }
+
+    die() {
+        console.log(`[BaseStructure] ${this.unitName} destroyed!`);
+        if (this.healthBar) this.healthBar.destroy();
+
+        // Death Visual
+        this.scene.tweens.add({
+            targets: this,
+            alpha: 0,
+            scale: 1.5,
+            duration: 500,
+            onComplete: () => {
+                this.destroy();
+                // Optional: Notify StructureManager to cleanup?
+            }
+        });
+
+        // Mark as destroyed in DB? Or just keep 0 HP? 
+        // User said: "Each turret has unique ID... HP persistence". 
+        // Let's keep it in DB but with 0 HP.
+        this.saveState();
+    }
+}

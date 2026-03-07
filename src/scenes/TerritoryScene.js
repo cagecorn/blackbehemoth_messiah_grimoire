@@ -54,6 +54,14 @@ const TERRITORY_BANNERS = [
         action: null,
     },
     {
+        id: 'defense',
+        label: '방어 시설 관리',
+        sublabel: 'STRUCTURES',
+        cutscene: 'assets/characters/party/boon_cutscene.png',
+        accentColor: '#4ade80',
+        action: null,
+    },
+    {
         id: 'achievement',
         label: '업적',
         sublabel: 'ACHIEVEMENTS',
@@ -165,6 +173,12 @@ export default class TerritoryScene extends Phaser.Scene {
                         this.game.uiManager.showEquipmentCrafting();
                     }
                 });
+            } else if (b.id === 'defense') {
+                el.addEventListener('click', () => {
+                    if (this.game.uiManager) {
+                        this.game.uiManager.showDefenseManagement();
+                    }
+                });
             } else {
                 el.addEventListener('click', () => {
                     if (this.game.uiManager) {
@@ -234,11 +248,16 @@ export default class TerritoryScene extends Phaser.Scene {
             <div id="territory-patch-body">
                 <div class="patch-entry">
                     <div class="patch-date">▶ 2026-03-07 (Latest)</div>
-                    <div class="patch-item"><span class="patch-item-icon">⚔️</span>[장비창] 우드 시리즈 완결! 우드소드, 우드아머에 이어 **우드완드(무기)** 제작 기능이 추가되었습니다.</div>
-                    <div class="patch-item"><span class="patch-item-icon">🪄</span>[우드완드] 마법 공격력 특화 성장 무기로, 500개의 나무로 제작 가능합니다.</div>
+                    <div class="patch-item"><span class="patch-item-icon">🐊</span>[던전] 세 번째 던전 **[늪지대]** 업데이트! 새로운 중반부 전장이 추가되었습니다.</div>
+                    <div class="patch-item"><span class="patch-item-icon">⚔️</span>[몬스터] 악어 전사, 궁수, 힐러 3종 추가. 기존보다 강력한 능력치를 보유합니다.</div>
+                    <div class="patch-item"><span class="patch-item-icon">🎫</span>[입장권] 상점 구매 또는 언데드 묘지에서 늪지대 입장권을 획득하세요.</div>
+                    <div class="patch-item"><span class="patch-item-icon">☘️</span>[전리품] 신규 재료 클로버 및 상향된 보상을 획득 가능합니다.</div>
+                    <div class="patch-item"><span class="patch-item-icon">🪄</span>[장비창] 우드완드 추가 및 마법 공격력 특화 성장 무기 제작 가능.</div>
+                    <div class="patch-item"><span class="patch-item-icon">🛠️</span>[장비창] 기능 신설. 재료 아이템으로 장비 제작 및 장착이 가능합니다.</div>
+                    <div class="patch-item"><span class="patch-item-icon">🧱</span>[던전] 몬스터들이 낮은 확률로 벽돌 재료를 드랍하기 시작했습니다.</div>
+                    <div class="patch-item"><span class="patch-item-icon">❄️</span>[버그] 노아, 노엘 형제의 스킬 사용 시 프리징 현상을 해결했습니다.</div>
                     <div class="patch-item"><span class="patch-item-icon">🔋</span>설정 탭에서 [배터리 절약 방치 모드] 설정 가능.</div>
-                    <div class="patch-item"><span class="patch-item-icon">🧱</span>몬스터들이 낮은 확률로 벽돌 재료 드랍.</div>
-                    <div class="patch-item"><span class="patch-item-icon">❄️</span>노엘, 노아 형제 프리징 현상 수정.</div>
+                    <div class="patch-item"><span class="patch-item-icon">🛡️</span>[영지] **방어 시설 관리** 시스템 도입! 보우건 터렛을 제작하여 전투를 지원하세요.</div>
                 </div>
                 <div class="patch-entry">
                     <div class="patch-date">▶ 2026-03-06</div>
@@ -291,6 +310,6 @@ export default class TerritoryScene extends Phaser.Scene {
             console.log('[Territory] Battery Saver toggled:', enabled);
         });
 
-        console.log('[PatchNotes] 2026-03-04 패치 내역이 업데이트되었습니다.');
+        console.log('[PatchNotes] 2026-03-07 패치 내역이 업데이트되었습니다.');
     }
 }

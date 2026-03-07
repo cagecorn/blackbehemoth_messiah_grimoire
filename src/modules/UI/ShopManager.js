@@ -10,7 +10,8 @@ export default class ShopManager {
 
         this.inventory = {
             tickets: [
-                { id: 'emoji_ticket', price: 10, currency: 'emoji_coin', label: '언데드 묘지 입장권', icon: '🎫' }
+                { id: 'emoji_ticket', price: 10, currency: 'emoji_coin', label: '언데드 묘지 입장권', icon: '🎫' },
+                { id: 'swampland_ticket', price: 100, currency: 'emoji_coin', label: '늪지대 입장권', icon: '🎫' }
             ]
         };
     }
@@ -34,7 +35,6 @@ export default class ShopManager {
                     <div class="shop-sidebar">
                         <button class="shop-tab active" data-category="tickets">🎫 입장권</button>
                         <button class="shop-tab disabled" title="준비 중">🌿 재료</button>
-                        <button class="shop-tab disabled" title="준비 중">⚔️ 장비</button>
                     </div>
                     
                     <div class="shop-content">
@@ -73,25 +73,56 @@ export default class ShopManager {
 
     _attachEvents() {
         const closeBtn = document.getElementById('shop-close');
-        closeBtn.onclick = () => this.hide();
+        if (closeBtn) {
+            closeBtn.onclick = () => this.hide();
+        }
 
-        const cards = this.shopOverlay.querySelectorAll('.shop-item-card');
-        cards.forEach(card => {
-            const buyBtn = card.querySelector('.shop-buy-btn');
-            buyBtn.onclick = (e) => {
-                e.stopPropagation();
-                this._handlePurchase(
-                    card.dataset.id,
-                    parseInt(card.dataset.price),
-                    card.dataset.currency
-                );
+        const tabBtns = this.shopOverlay.querySelectorAll('.shop-tab');
+        tabBtns.forEach(btn => {
+            if (btn.classList.contains('disabled')) return;
+            btn.onclick = () => {
+                const category = btn.dataset.category;
+                if (!category) return;
+
+                this.currentCategory = category;
+
+                // UI Refresh
+                tabBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+
+                const grid = document.getElementById('shop-item-grid');
+                if (grid) {
+                    grid.innerHTML = this._renderCategory(category);
+                }
+
+                // Re-bind purchase events for new items
+                this._attachPurchaseEvents();
             };
         });
+
+        this._attachPurchaseEvents();
 
         // Close on overlay click (background)
         this.shopOverlay.onclick = (e) => {
             if (e.target === this.shopOverlay) this.hide();
         };
+    }
+
+    _attachPurchaseEvents() {
+        const cards = this.shopOverlay.querySelectorAll('.shop-item-card');
+        cards.forEach(card => {
+            const buyBtn = card.querySelector('.shop-buy-btn');
+            if (buyBtn) {
+                buyBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    this._handlePurchase(
+                        card.dataset.id,
+                        parseInt(card.dataset.price),
+                        card.dataset.currency
+                    );
+                };
+            }
+        });
     }
 
     async _handlePurchase(itemId, price, currencyId) {
@@ -102,8 +133,6 @@ export default class ShopManager {
             this.uiManager.showToast('자원이 부족합니다! ⚠️');
             return;
         }
-
-        // Processing Sound/Visual? (Add later)
 
         // Save Currency
         await DBManager.saveInventoryItem(currencyId, currentAmount - price);
