@@ -56,6 +56,11 @@ export default class BaseStructure extends Phaser.GameObjects.Container {
         this.bonusAcc = 0;
         this.bonusSpeed = 0;
         this.bonusCastSpd = 0;
+        this.bonusFireRes = 0;
+        this.bonusIceRes = 0;
+        this.bonusLightningRes = 0;
+        this.bonusRangeMin = 0;
+        this.bonusRangeMax = 0;
 
         // Combat Timers
         this.lastAttackTime = 0;
@@ -120,13 +125,14 @@ export default class BaseStructure extends Phaser.GameObjects.Container {
         }
     }
 
-    receiveHeal(amount) {
+    receiveHeal(amount, healerId = null) {
         if (!this.active || this.hp <= 0) return;
         this.hp = Math.min(this.maxHp, this.hp + amount);
         this.updateHealthBar();
         if (this.scene.fxManager) {
             this.scene.fxManager.showHealEffect(this);
         }
+        // Optional: Record healing in EventBus if needed
     }
 
     updateHealthBar() {
@@ -224,9 +230,19 @@ export default class BaseStructure extends Phaser.GameObjects.Container {
         });
 
         // Mark as destroyed in DB? Or just keep 0 HP? 
-        // User said: "Each turret has unique ID... HP persistence". 
-        // Let's keep it in DB but with 0 HP.
         this.saveState();
+    }
+
+    heal(amount, isSilent = false, healerId = null) {
+        if (!this.active || this.hp <= 0 || amount <= 0) return;
+        this.hp = Math.min(this.maxHp, this.hp + amount);
+        this.updateHealthBar();
+        if (this.scene.fxManager) {
+            if (!isSilent) {
+                this.scene.fxManager.showDamageText(this, '+' + Math.round(amount), '#00ff00');
+            }
+            this.scene.fxManager.showHealEffect(this);
+        }
     }
 
     // --- Unit Interface Implementations (Fixes target.getTotalCrit is not a function) ---
@@ -275,5 +291,43 @@ export default class BaseStructure extends Phaser.GameObjects.Container {
     gainUltGauge(amount) {
         // Structures don't have ultimates, but skills (like kiwi) might try to charge them.
         // We implement this as a dummy to avoid crashes.
+    }
+
+    getTotalSpeed() {
+        return (this.speed || 0) + (this.bonusSpeed || 0);
+    }
+
+    getTotalFireRes() {
+        return Math.min(75, (this.fireRes || 0) + (this.bonusFireRes || 0));
+    }
+
+    getTotalIceRes() {
+        return Math.min(75, (this.iceRes || 0) + (this.bonusIceRes || 0));
+    }
+
+    getTotalLightningRes() {
+        return Math.min(75, (this.lightningRes || 0) + (this.bonusLightningRes || 0));
+    }
+
+    getTotalCastSpd() {
+        const base = (this.castSpd || 1000) - (this.bonusCastSpd || 0);
+        return Math.max(200, base);
+    }
+
+    getTotalRangeMin() {
+        return Math.max(0, (this.rangeMin || 0) + (this.bonusRangeMin || 0));
+    }
+
+    getTotalRangeMax() {
+        return Math.max(0, (this.rangeMax || this.atkRange || 450) + (this.bonusRangeMax || 0));
+    }
+
+    syncStatusUI() {
+        // Placeholder for skill/buff compatibility
+    }
+
+    restoreSpriteTint() {
+        if (!this.sprite) return;
+        this.sprite.clearTint();
     }
 }
