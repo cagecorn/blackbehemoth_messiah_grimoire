@@ -134,13 +134,23 @@ export default class DungeonScene extends Phaser.Scene {
         this.cameras.main.setBounds(0, 0, worldWidth, worldHeight);
         this.physics.world.setBounds(0, 0, worldWidth, worldHeight);
 
+        // --- Viewport Constraint: Prevent UI overlap ---
+        // Refined offsets based on visual feedback to minimize black bars.
+        const topOffset = 60;
+        const bottomOffset = 40;
+        const gameHeight = this.scale.height;
+        const visibleHeight = gameHeight - topOffset - bottomOffset;
+
+        // Set the camera to render only in the central visible strip
+        this.cameras.main.setViewport(0, topOffset, this.scale.width, visibleHeight);
+
         // --- 2. Emergency Camera Setup: Enable basic zoom/controls immediately ---
         // Create a temporary camera target at center so user can zoom/pan during ticket check
         this.cameraTarget = this.add.container(worldWidth / 2, worldHeight / 2);
         this.dynamicCamera = new DynamicCameraManager(this, this.cameras.main);
         this.dynamicCamera.setTarget(this.cameraTarget);
 
-        console.log(`[Dungeon] Initializing World Bounds: ${worldWidth}x${worldHeight}`);
+        console.log(`[Dungeon] Initializing World Bounds: ${worldWidth}x${worldHeight} | Viewport: ${this.scale.width}x${visibleHeight} @ y:${topOffset}`);
 
         try {
             // --- Ticket Check (Only on Round 1 Entry/Loop) ---

@@ -63,6 +63,11 @@
   * `id`: 엔티티 고유 식별자
   * **주의**: 신규 몬스터/용병 추가 시 위 명칭을 제외한 임의의 명칭(예: `attackDamage`) 사용을 엄격히 금지합니다.
 
+* **빌드 및 배포 주의사항 (Build & Deployment Caveats):**
+  * **Vite Minification 이슈**: 프로덕션 빌드(Vite build) 시 자바스크립트 클래스 이름이 `a`, `b` 처럼 임의로 압축(Minify)됩니다. 
+  * 따라서 `MonsterClass.name` 처럼 클래스 이름에 의존하여 스탯을 조회하는 로직은 빌드 후 반드시 오작동합니다. 
+  * 모든 객체 생성 시에는 클래스 이름 대신 **명시적인 ID나 Config 객체**를 직접 넘겨주어야 합니다.
+
 ## 성장 장비 랜덤 옵션 (Growth Equipment Random Options)
 장비 레벨 10단위(10, 20, 30, 40, 50)마다 아래 풀에서 중복되지 않은 옵션이 하나씩 개방됩니다.
 
@@ -442,7 +447,7 @@ npm run dev
 새로운 던전이나 스테이지를 추가할 때 누락되기 쉬운 항목들입니다. 패치 시 반드시 체크하세요.
 
 1.  **Dungeon Toggle UI 연동**: `UIManager.js`의 `updateDungeonTickets()`와 `updateBestRounds()`에 신규 던전 타입을 추가하여 드롭다운에서 티켓 수와 최고 기록이 표시되게 합니다.
-2.  **Monster Stat Mapping**: `DungeonScene.js`의 `spawnMonster()` 로직에서 클래스명(PascalCase)과 `EntityStats.js`의 키(SCREAMING_SNAKE_CASE)가 일치하는지 확인합니다.
+2.  **Monster Stat Mapping**: `DungeonScene.js`의 `spawnMonster()` 호출 시 클래스 이름에 의존하지 말고, 반드시 **`MonsterClasses[ID.toUpperCase()]`**와 같은 명시적인 Config를 인자로 전달하세요. (Vite 압축 시 클래스 이름이 파괴되는 현상 방지)
 3.  **AI Behavior Tree 검증**: 몬스터 클래스의 `initAI()`에서 `BehaviorTreeManager`를 호출할 때 인자값이 정확한지 확인합니다. (특히 `applyRangedAI` 등의 두 번째 인자 실수 주의)
 4.  **Shop Manager 등록**: `ShopManager.js`에 신규 던전 입장권을 판매 목록에 추가합니다.
 5.  **Global Terminology 업데이트**: 신규 아이템, 재료, 몬스터 명칭을 `README.md` 상단에 추가하여 명칭 통일성을 유지합니다.
