@@ -888,12 +888,43 @@ export default class ChatChannel {
 
             slot.innerHTML = '';
             if (itemId) {
-                const filename = ItemManager.getSVGFilename(itemId);
-                const img = document.createElement('img');
-                img.src = `assets/emojis/${filename}`;
-                img.className = 'grim-icon';
-                img.dataset.itemId = itemId;
-                slot.appendChild(img);
+                if (itemId.startsWith('charm_')) {
+                    // It's a charm instance, need async fetch
+                    import('../Database/DBManager.js').then(module => {
+                        const DBManager = module.default;
+                        DBManager.getCharmInstance(itemId).then(inst => {
+                            if (!inst) return;
+                            const filename = ItemManager.getSVGFilename(inst.id);
+                            const img = document.createElement('img');
+                            img.src = `assets/emojis/${filename}`;
+                            img.className = 'grim-icon';
+                            img.dataset.itemId = itemId;
+
+                            const badge = document.createElement('div');
+                            badge.className = 'item-lv-tag';
+                            badge.style.cssText = 'position:absolute; bottom:0; right:0; background:#fbbf24; color:#000; font-size:8px; padding:1px 3px; border-radius:3px; z-index:1;';
+                            badge.textContent = `${inst.value}%`;
+
+                            // Re-check slot content to prevent race conditions if player clicked furiously
+                            if (slot.dataset.renderingId === itemId) {
+                                slot.innerHTML = '';
+                                slot.appendChild(img);
+                                slot.appendChild(badge);
+                            }
+                        });
+                    });
+                    slot.dataset.renderingId = itemId;
+                } else {
+                    const filename = ItemManager.getSVGFilename(itemId);
+                    const img = document.createElement('img');
+                    img.src = `assets/emojis/${filename}`;
+                    img.className = 'grim-icon';
+                    img.dataset.itemId = itemId;
+                    slot.appendChild(img);
+                    slot.dataset.renderingId = itemId;
+                }
+            } else {
+                slot.dataset.renderingId = '';
             }
         });
     }

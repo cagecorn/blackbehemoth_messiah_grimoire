@@ -167,6 +167,7 @@ export default class BaseStructure extends Phaser.GameObjects.Container {
 
     update(time, delta) {
         if (!this.active || this.hp <= 0) return;
+        if (this.scene.isConstructionMode) return; // Pause during building
         this.setDepth(this.y);
 
         // Check for incapacitating CC (Shock, Sleep, Stun)

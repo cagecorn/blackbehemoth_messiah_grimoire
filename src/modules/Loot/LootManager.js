@@ -70,10 +70,6 @@ export default class LootManager {
                 randomDrop = 'emoji_ticket';
             } else if (Math.random() < gemWeight) {
                 randomDrop = 'emoji_gem';
-            } else if ((isElite || isShadow) && Math.random() < 0.15) {
-                // 15% chance for a randomized charm from Elites/Shadows
-                const charms = ['emoji_fireworks', 'emoji_koinobori', 'emoji_sparkler', 'emoji_burger'];
-                randomDrop = Phaser.Utils.Array.GetRandom(charms);
             } else if ((isElite || isShadow) && Math.random() < 0.05) {
                 // 5% chance for Divine Essence from Elites/Shadows
                 randomDrop = 'emoji_divine_essence';
@@ -239,7 +235,8 @@ export default class LootManager {
             // Chapter A Charm Collection (Unique Instance)
             try {
                 const charmBase = CharmManager.getCharm(emojiId);
-                const instanceId = `charm_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+                const uniquePart = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID().split('-')[0] : Math.floor(Math.random() * 1000000);
+                const instanceId = `charm_${Date.now()}_${uniquePart}`;
 
                 // Use pre-rolled value from spawn, or fallback to default random
                 const rolledValue = item.rolledValue || (4 + Math.floor(Math.random() * 12));

@@ -473,8 +473,9 @@ export default class DungeonScene extends Phaser.Scene {
 
             // ESC to return (or close popups)
             this.input.keyboard.on('keydown-ESC', () => {
-                // Access UIManager via the game object (assuming it's attached there or globally accessible)
-                if (this.sys.game.uiManager && this.sys.game.uiManager.popupOverlay && this.sys.game.uiManager.popupOverlay.style.display === 'flex') {
+                if (this.isConstructionMode) {
+                    this.toggleConstructionMode(null);
+                } else if (this.sys.game.uiManager && this.sys.game.uiManager.popupOverlay && this.sys.game.uiManager.popupOverlay.style.display === 'flex') {
                     this.sys.game.uiManager.hidePopup();
                 } else {
                     this.scene.start('TerritoryScene');

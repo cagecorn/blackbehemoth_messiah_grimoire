@@ -259,64 +259,10 @@ export default class BootScene extends Phaser.Scene {
             const partyManager = (await import('../modules/Core/PartyManager.js')).default;
             const { Characters } = await import('../modules/Core/EntityStats.js');
 
-            const existingBurger = await DBManager.getInventoryItem('emoji_burger');
-            if (!existingBurger) {
-                console.log('[BootScene] Initializing starter 🍔 x10');
-                await DBManager.saveInventoryItem('emoji_burger', 10);
-            }
-
-            const existingFireNova = await DBManager.getInventoryItem('emoji_fireworks');
-            if (!existingFireNova) {
-                console.log('[BootScene] Initializing starter 🎆 x10');
-                await DBManager.saveInventoryItem('emoji_fireworks', 10);
-            }
-
-            const existingSparkNova = await DBManager.getInventoryItem('emoji_sparkler');
-            if (!existingSparkNova) {
-                console.log('[BootScene] Initializing starter 🎇 x10');
-                await DBManager.saveInventoryItem('emoji_sparkler', 10);
-            }
-
             const existingDivinaEssence = await DBManager.getInventoryItem('emoji_divine_essence');
             if (!existingDivinaEssence) {
                 console.log('[BootScene] Initializing starter ✨ x50');
                 await DBManager.saveInventoryItem('emoji_divine_essence', 50);
-            }
-
-            // --- Tactical Node Charms ---
-            const existingHater = await DBManager.getInventoryItem('emoji_pouting_face');
-            if (!existingHater) {
-                console.log('[BootScene] Initializing Node Charm: 😠 x10');
-                await DBManager.saveInventoryItem('emoji_pouting_face', 10);
-            }
-
-            const existingBlood = await DBManager.getInventoryItem('emoji_enraged_face');
-            if (!existingBlood) {
-                console.log('[BootScene] Initializing Node Charm: 😡 x10');
-                await DBManager.saveInventoryItem('emoji_enraged_face', 10);
-            }
-
-            const existingGuard = await DBManager.getInventoryItem('emoji_smiling_face_with_sunglasses');
-            if (!existingGuard) {
-                console.log('[BootScene] Initializing Node Charm: 😎 x10');
-                await DBManager.saveInventoryItem('emoji_smiling_face_with_sunglasses', 10);
-            }
-
-            // --- Class Charms (Chapter C) ---
-            const classCharms = [
-                'emoji_running_shoe', 'emoji_bullseye', 'emoji_shoe',   // Archer
-                'emoji_shield', 'emoji_wolf',                          // Warrior
-                'emoji_pill', 'emoji_bubbles',                         // Healer
-                'emoji_milky_way', 'emoji_cyclone',                    // Wizard
-                'emoji_musical_note'                                   // Bard
-            ];
-
-            for (const charmId of classCharms) {
-                const existing = await DBManager.getInventoryItem(charmId);
-                if (!existing) {
-                    console.log(`[BootScene] Initializing Class Charm: ${charmId} x10`);
-                    await DBManager.saveInventoryItem(charmId, 10);
-                }
             }
 
             // Demo Version: Give 2000 diamonds for starter
@@ -366,6 +312,14 @@ export default class BootScene extends Phaser.Scene {
         } catch (e) {
             console.error('[BootScene] Failed to initialize starter items', e);
         }
+
+        // Show UI Elements now that the game is ready
+        setTimeout(() => {
+            const sidebar = document.getElementById('sidebar-right');
+            const chatContainer = document.getElementById('chat-container');
+            if (sidebar) sidebar.classList.add('ready');
+            if (chatContainer) chatContainer.classList.add('ready');
+        }, 300);
 
         this.scene.start('TerritoryScene');
     }

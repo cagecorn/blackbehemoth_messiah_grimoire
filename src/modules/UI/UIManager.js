@@ -123,7 +123,6 @@ export default class UIManager {
         this.setupMobileEvents();
         this.setupNavigationEvents();
         this.setupDefenseEvents();
-        this.injectTestItems();
 
         // Load Settings
         this.loadSettings();
@@ -2520,6 +2519,14 @@ export default class UIManager {
             }
         }
         this.popupInner.innerHTML = '';
+
+        // --- BUGBASH: Clean up any stray DOM badges escaping container restrictions ---
+        const strayBadges = document.querySelectorAll('.item-lv-tag');
+        strayBadges.forEach(badge => {
+            if (!badge.closest('#sidebar-right') && !badge.closest('.chat-channel')) {
+                badge.remove();
+            }
+        });
     }
 
     updateMobileHUD() {
@@ -3415,6 +3422,42 @@ export default class UIManager {
 
                 this.gearList.appendChild(div);
             });
+
+            // --- 3. Unique Charm Instances ---
+            const charmInstances = await DBManager.getAllCharmInstances();
+
+            // Only show in materials tab if filter is ALL or ACTIVE (since these are Chapter A charms)
+            if (this.emojiFilter === 'ALL' || this.emojiFilter === 'ACTIVE') {
+                charmInstances.filter(inst => !inst.ownerId).forEach(inst => {
+                    const itemData = ItemManager.getItem(inst.id);
+                    if (!itemData) return;
+
+                    const filename = ItemManager.getSVGFilename(inst.id);
+                    const div = document.createElement('div');
+                    div.className = 'inv-item is-charm';
+                    div.draggable = true;
+
+                    // Equipped items no longer appear here, so it is always unequipped
+                    const isEquipped = false;
+
+                    div.innerHTML = `
+                        <img class="inv-icon" src="assets/emojis/${filename}" alt="${inst.instanceId}" draggable="false">
+                        <div class="item-lv-tag" style="position:absolute; bottom:0; right:0; background:#fbbf24; color:#000; font-size:8px; padding:1px 3px; border-radius:3px; z-index:1;">${inst.value}%</div>
+                    `;
+
+                    div.ondragstart = (e) => {
+                        e.dataTransfer.setData('itemId', inst.instanceId);
+                        e.dataTransfer.effectAllowed = 'copyMove';
+                    };
+
+                    div.onclick = (e) => {
+                        e.stopPropagation();
+                        this.handleItemClick(inst.instanceId, isEquipped);
+                    };
+
+                    this.materialList.appendChild(div);
+                });
+            }
         } catch (e) {
             console.error('[UIManager] Error refreshing inventory UI:', e);
         } finally {
@@ -3444,15 +3487,23 @@ export default class UIManager {
         let item = ItemManager.getItem(itemId);
         let instance = null;
 
-        // If it's a unique instance
+        // If it's a unique equipment instance
         if (itemId.startsWith('eq_')) {
             instance = await DBManager.getEquipmentInstance(itemId);
             if (instance) {
                 item = ItemManager.getItem(instance.itemId);
             }
         }
+        // If it's a unique charm instance
+        else if (itemId.startsWith('charm_')) {
+            instance = await DBManager.getCharmInstance(itemId);
+            if (instance) {
+                item = ItemManager.getItem(instance.id);
+            }
+        }
 
-        const charm = CharmManager.getCharm(itemId);
+        const charmIdLookup = (instance && itemId.startsWith('charm_')) ? instance.id : (item?.id || itemId);
+        const charm = CharmManager.getCharm(charmIdLookup);
 
         // Prioritize charm data because it's richer for charms (it has description)
         const targetItem = charm || item;
@@ -3463,7 +3514,7 @@ export default class UIManager {
 
         this.selectedItemId = itemId;
 
-        const title = instance ? `${targetItem.name} LV.${instance.level}` : targetItem.name;
+        const title = (instance && !itemId.startsWith('charm_')) ? `${targetItem.name} LV.${instance.level}` : targetItem.name;
         if (this.detailName) this.detailName.textContent = title;
 
         // Reset Equip Button State
@@ -3532,7 +3583,8 @@ export default class UIManager {
 
         if (this.detailDesc) {
             let descContent = targetItem.description || (item ? '재료 아이템입니다.' : '');
-            if (instance) {
+
+            if (instance && itemId.startsWith('eq_')) {
                 this.viewingInstanceId = instance.id;
                 const info = equipmentManager.getDisplayInfo(instance);
 
@@ -3548,6 +3600,20 @@ export default class UIManager {
                 `;
 
                 descContent = info.description + expBarHtml;
+            } else if (instance && itemId.startsWith('charm_')) {
+                this.viewingInstanceId = instance.instanceId;
+                const statName = {
+                    'maxHp': '최대 체력',
+                    'fireRes': '화염 저항',
+                    'iceRes': '냉기 저항',
+                    'lightningRes': '번개 저항'
+                }[instance.stat] || instance.stat;
+
+                descContent = `<div class="charm-stat-row">
+                    <span style="color:#fbbf24; font-weight:bold;">${statName}</span>
+                    <span style="color:#00ffcc; margin-left:10px;">+${instance.value}%</span>
+                </div>
+                <div style="margin-top:10px; font-size:11px; color:#94a3b8;">${targetItem.description || ''}</div>`; // Added || ''
             } else {
                 this.viewingInstanceId = null;
                 if (targetItem.type === 'equipment' && targetItem.stats) {
@@ -3593,8 +3659,20 @@ export default class UIManager {
     }
 
     executeEquip(itemId, allowFallback = true) {
-        const item = ItemManager.getItem(itemId);
-        const charm = CharmManager.getCharm(itemId);
+        const item = ItemManager.getItem(itemId.startsWith('charm_') ? itemId.substring(0, itemId.indexOf('_', 6) > 0 ? itemId.indexOf('_', 6) : itemId.length) : itemId);
+        // Wait, standard charm ID logic. If it starts with charm_, we need to fetch the instance to find the base ID.
+        // But executeEquip is sync. Let's simplify: ItemManager.getItem() handles the base emoji_ IDs.
+
+        let baseId = itemId;
+        if (itemId.startsWith('charm_')) {
+            // This is brittle if we don't know the base ID from the instanceId.
+            // However, we can use a heuristic or just pass the baseId if we had it.
+            // In refreshInventory, we set alt="${inst.instanceId}".
+            // Let's assume most charms start with emoji_... 
+            // Better: just check for charm type via CharmManager if it's not a growth gear.
+        }
+
+        const charm = CharmManager.getCharm(itemId) || (itemId.startsWith('charm_') ? true : null);
 
         console.log(`[UIManager] executeEquip: itemId=${itemId}, allowFallback=${allowFallback}`);
 

@@ -1405,12 +1405,34 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             }
         }
 
+        // Return old item if any
+        const oldItemId = this.grimoire[chapterId][index];
+        if (oldItemId && typeof oldItemId === 'string' && oldItemId.startsWith('charm_')) {
+            const DBManager = (await import('../Database/DBManager.js')).default;
+            const oldInst = await DBManager.getCharmInstance(oldItemId);
+            if (oldInst) {
+                oldInst.ownerId = null;
+                await DBManager.saveCharmInstance(oldInst);
+            }
+        }
+
         this.grimoire[chapterId][index] = itemId;
+
+        // Set ownerId for new item if it's a charm instance
+        if (itemId && typeof itemId === 'string' && itemId.startsWith('charm_')) {
+            const DBManager = (await import('../Database/DBManager.js')).default;
+            const newInst = await DBManager.getCharmInstance(itemId);
+            if (newInst) {
+                newInst.ownerId = this.id;
+                await DBManager.saveCharmInstance(newInst);
+            }
+        }
 
         // Re-apply grimoire effects
         GrimoireManager.applyAll(this);
 
         if (this.syncStatusUI) this.syncStatusUI();
+        import('../Events/EventBus.js').then(module => module.default.emit('UI_REFRESH_INVENTORY'));
         console.log(`[Grimoire] ${this.unitName} set ${chapter} slot ${index} to ${itemId}`);
     }
 
@@ -1422,12 +1444,23 @@ export default class Mercenary extends Phaser.GameObjects.Container {
                 (chapter === 'CLASS') ? GrimoireManager.CHAPTERS.CLASS :
                     GrimoireManager.CHAPTERS.TRANSFORMATION;
 
+        const oldItemId = this.grimoire[chapterId][index];
+        if (oldItemId && typeof oldItemId === 'string' && oldItemId.startsWith('charm_')) {
+            const DBManager = (await import('../Database/DBManager.js')).default;
+            const oldInst = await DBManager.getCharmInstance(oldItemId);
+            if (oldInst) {
+                oldInst.ownerId = null;
+                await DBManager.saveCharmInstance(oldInst);
+            }
+        }
+
         this.grimoire[chapterId][index] = null;
 
         // Re-apply grimoire effects
         GrimoireManager.applyAll(this);
 
         if (this.syncStatusUI) this.syncStatusUI();
+        import('../Events/EventBus.js').then(module => module.default.emit('UI_REFRESH_INVENTORY'));
         console.log(`[Grimoire] ${this.unitName} removed ${chapter} slot ${index}`);
     }
 

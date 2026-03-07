@@ -1,6 +1,7 @@
 import DBManager from '../Database/DBManager.js';
 import EventBus from '../Events/EventBus.js';
 import ItemManager from '../Core/ItemManager.js';
+import CharmManager from '../Core/CharmManager.js';
 
 export default class ShopManager {
     constructor(uiManager) {
@@ -13,6 +14,12 @@ export default class ShopManager {
                 { id: 'emoji_ticket', price: 10, currency: 'emoji_coin', label: '언데드 묘지 입장권', icon: '🎫' },
                 { id: 'swampland_ticket', price: 100, currency: 'emoji_coin', label: '늪지대 입장권', icon: '🎫' },
                 { id: 'lava_field_ticket', price: 500, currency: 'emoji_coin', label: '용암 지대 입장권', icon: '🎫' }
+            ],
+            charms: [
+                { id: 'emoji_fireworks', price: 100000, currency: 'emoji_coin', label: '화염 저항의 참', icon: '🎆' },
+                { id: 'emoji_koinobori', price: 100000, currency: 'emoji_coin', label: '냉기 저항의 참', icon: '🎏' },
+                { id: 'emoji_sparkler', price: 100000, currency: 'emoji_coin', label: '번개 저항의 참', icon: '🎇' },
+                { id: 'emoji_burger', price: 100000, currency: 'emoji_coin', label: '햄버거 참', icon: '🍔' }
             ]
         };
     }
@@ -35,6 +42,7 @@ export default class ShopManager {
                 <div class="shop-body">
                     <div class="shop-sidebar">
                         <button class="shop-tab active" data-category="tickets">🎫 입장권</button>
+                        <button class="shop-tab" data-category="charms">✨ 부적</button>
                         <button class="shop-tab disabled" title="준비 중">🌿 재료</button>
                     </div>
                     
@@ -145,12 +153,30 @@ export default class ShopManager {
         // Save Currency
         await DBManager.saveInventoryItem(currencyId, currentAmount - price);
 
-        // Save Item
-        const existingItem = await DBManager.getInventoryItem(itemId);
-        const newItemAmount = existingItem ? existingItem.amount + 1 : 1;
-        await DBManager.saveInventoryItem(itemId, newItemAmount);
+        const charmBase = CharmManager.getCharm(itemId);
+        if (charmBase) {
+            // Purchase Unique Charm Instance (Roll 2% ~ 8%)
+            const rolledValue = Math.floor(Math.random() * (8 - 2 + 1)) + 2;
+            const uniquePart = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID().split('-')[0] : Math.floor(Math.random() * 1000000);
+            const instanceId = `charm_${Date.now()}_${uniquePart}`;
 
-        this.uiManager.showToast(`${ItemManager.getItem(itemId).name} 구매 완료! ✨`);
+            const charmInstance = {
+                instanceId: instanceId,
+                id: itemId,
+                stat: charmBase.stat,
+                value: rolledValue,
+                collectedAt: Date.now()
+            };
+
+            await DBManager.saveCharmInstance(charmInstance);
+            this.uiManager.showToast(`${ItemManager.getItem(itemId).name} (${rolledValue}%) 구매 완료! ✨`);
+        } else {
+            // Save Normal Stackable Item
+            const existingItem = await DBManager.getInventoryItem(itemId);
+            const newItemAmount = existingItem ? existingItem.amount + 1 : 1;
+            await DBManager.saveInventoryItem(itemId, newItemAmount);
+            this.uiManager.showToast(`${ItemManager.getItem(itemId).name} 구매 완료! ✨`);
+        }
 
         // Refresh
         this._updateCurrency();

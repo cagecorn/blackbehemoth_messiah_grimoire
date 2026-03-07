@@ -1,7 +1,7 @@
 import { openDB } from 'idb';
 
 const DB_NAME = 'IsacRPG_DB';
-const DB_VERSION = 5;
+const DB_VERSION = 6;
 
 export default class DBManager {
     static async initDB() {
@@ -14,7 +14,7 @@ export default class DBManager {
             this.db = null;
         }
         this.db = await openDB(DB_NAME, DB_VERSION, {
-            upgrade(db) {
+            upgrade(db, oldVersion) {
                 // Emojis mapping (ID -> Amount)
                 if (!db.objectStoreNames.contains('inventory')) {
                     db.createObjectStore('inventory', { keyPath: 'id' });
@@ -39,9 +39,15 @@ export default class DBManager {
                 if (!db.objectStoreNames.contains('structure_instances')) {
                     db.createObjectStore('structure_instances', { keyPath: 'id' });
                 }
+
+                // --- DB Version 6 Migration ---
+                if (oldVersion < 6 && db.objectStoreNames.contains('charm_instances')) {
+                    db.deleteObjectStore('charm_instances'); // Recreate with correct keyPath
+                }
+
                 // Unique Charm Instances (Randomized values)
                 if (!db.objectStoreNames.contains('charm_instances')) {
-                    db.createObjectStore('charm_instances', { keyPath: 'id' });
+                    db.createObjectStore('charm_instances', { keyPath: 'instanceId' });
                 }
             },
         });
