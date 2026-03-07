@@ -81,8 +81,12 @@ export default class LootManager {
             }
             // ----------------------------------------------
 
+            // --- Texture Key Resolution ---
+            let textureKey = randomDrop;
+            if (randomDrop === 'swampland_ticket') textureKey = 'emoji_ticket';
+
             // Spawn the Sprite
-            const item = this.lootGroup.create(x, y, randomDrop);
+            const item = this.lootGroup.create(x, y, textureKey);
             item.setDisplaySize(32, 32);
             item.setOrigin(0.5, 0.5);
             item.emojiId = randomDrop;

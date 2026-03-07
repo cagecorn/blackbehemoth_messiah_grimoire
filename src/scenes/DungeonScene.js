@@ -327,7 +327,7 @@ export default class DungeonScene extends Phaser.Scene {
                     calculatedExp = Math.max(calculatedExp, this.killExp);
 
                     this.mercenaries.getChildren().forEach(merc => {
-                        if (merc.active && merc.hp > 0) {
+                        if (merc.active && merc.hp > 0 && typeof merc.addExp === 'function') {
                             merc.addExp(calculatedExp);
                         }
                     });
@@ -655,7 +655,7 @@ export default class DungeonScene extends Phaser.Scene {
             this.time.delayedCall(5000, () => {
                 // Grant Round Clear EXP
                 this.mercenaries.getChildren().forEach(merc => {
-                    if (merc.active && merc.hp > 0) {
+                    if (merc.active && merc.hp > 0 && typeof merc.addExp === 'function') {
                         merc.addExp(this.roundClearExp);
                     }
                 });

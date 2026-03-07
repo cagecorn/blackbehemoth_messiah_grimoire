@@ -4,7 +4,7 @@ import EventBus from '../Events/EventBus.js';
 import intentRouter from '../AI/IntentRouter.js';
 import localLLM from '../AI/LocalLLM.js';
 import embeddingGemma from '../AI/EmbeddingGemma.js';
-import { MercenaryClasses, Characters, PetStats, scaleStats } from '../Core/EntityStats.js';
+import { MercenaryClasses, Characters, PetStats, scaleStats, StructureStats } from '../Core/EntityStats.js';
 // partyManager will be accessed via this.scene.game.partyManager
 import ItemManager, { ITEM_TYPES } from '../Core/ItemManager.js';
 import CharmManager from '../Core/CharmManager.js';
@@ -668,19 +668,27 @@ export default class UIManager {
         }
 
         this.defenseDeploymentList.innerHTML = instances.map(inst => {
-            const config = Characters[inst.baseId.toUpperCase()] || { name: inst.baseId };
+            const baseIdUpper = inst.baseId.toUpperCase();
+            const config = StructureStats[baseIdUpper] || Characters[baseIdUpper] || { name: inst.baseId };
             const isPlaced = !!inst.dungeonId;
             const isHere = inst.dungeonId === currentDungeon;
-            const spriteUrl = `assets/structures/${inst.baseId}_sprite.png`;
+
+            // Resolve sprite - check StructureStats first, then Characters
+            let spriteUrl = `assets/structures/${inst.baseId}_sprite.png`;
+
+            // Specific overrides for known structures with mismatching IDs/Assets
+            if (inst.baseId === 'turret_bowgun' || inst.baseId === 'bow_turret') {
+                spriteUrl = 'assets/structures/bow_turret_sprite.png';
+            }
 
             let statusTag = '';
             let cardStyle = '';
             if (isHere) {
                 statusTag = '<span class="status-badge here">CURRENT</span>';
-                cardStyle = 'border-color: var(--retro-green); background: rgba(74, 222, 128, 0.1);';
+                cardStyle = 'border-color: #4ade80; background: rgba(74, 222, 128, 0.15);';
             } else if (isPlaced) {
                 statusTag = `<span class="status-badge placed">${inst.dungeonId}</span>`;
-                cardStyle = 'opacity: 0.7; grayscale(1); pointer-events: none;';
+                cardStyle = 'opacity: 0.7; filter: grayscale(0.8); pointer-events: none;';
             }
 
             return `
@@ -693,10 +701,10 @@ export default class UIManager {
                             <span class="deployment-card-name">${config.name}</span>
                             ${statusTag}
                         </div>
-                        <div class="deployment-card-id">ID: #${inst.id.slice(-6)}</div>
-                        <div class="deployment-card-stats">HP: ${inst.currentHp || 1000} / 1000</div>
+                        <div class="deployment-card-id">SERIAL: #${inst.id.slice(-6).toUpperCase()}</div>
+                        <div class="deployment-card-stats">STATUS: HP ${inst.currentHp || 1000} / 1000</div>
                     </div>
-                    ${!isPlaced ? '<div class="deploy-prompt">BUILD ▶</div>' : ''}
+                    ${!isPlaced ? '<div class="deploy-prompt">DEPLOY ▶</div>' : ''}
                 </div>
             `;
         }).join('');

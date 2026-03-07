@@ -71,21 +71,24 @@ export default class HelpPlantFriends {
     getEffect(texture) {
         switch (texture) {
             case 'emoji_kiwi': return (target, owner, scene) => {
-                target.gainUltGauge(5);
+                if (typeof target.gainUltGauge === 'function') target.gainUltGauge(5);
                 scene.fxManager.showDamageText(target, 'ULT GAUGE UP!', '#ff00ff');
             };
             case 'emoji_grapes': return (target, owner, scene) => {
-                const atkSpdBoost = Math.ceil(target.getTotalAtkSpd() * 0.2);
+                const baseSpd = typeof target.getTotalAtkSpd === 'function' ? target.getTotalAtkSpd() : (target.atkSpd || 1500);
+                const atkSpdBoost = Math.ceil(baseSpd * 0.2);
                 scene.buffManager.applyBuff(target, owner, 'Plant_AtkSpd', 5000, 0, 0, 0, { bonusAtkSpd: atkSpdBoost });
                 scene.fxManager.showDamageText(target, 'ATK SPD UP!', '#ffff88');
             };
             case 'emoji_watermelon': return (target, owner, scene) => {
-                const defBoost = Math.ceil(target.getTotalDef() * 0.1);
+                const baseDef = typeof target.getTotalDef === 'function' ? target.getTotalDef() : (target.def || 0);
+                const defBoost = Math.ceil(baseDef * 0.1);
                 scene.buffManager.applyBuff(target, owner, 'Plant_Def', 5000, 0, 0, 0, { bonusDef: defBoost });
                 scene.fxManager.showDamageText(target, 'DEF UP!', '#55ff55');
             };
             case 'emoji_pineapple': return (target, owner, scene) => {
-                const critBoost = Math.ceil(target.getTotalCrit() * 0.1);
+                const baseCrit = typeof target.getTotalCrit === 'function' ? target.getTotalCrit() : (target.crit || 0);
+                const critBoost = Math.ceil(baseCrit * 0.1);
                 scene.buffManager.applyBuff(target, owner, 'Plant_Crit', 5000, 0, 0, 0, { bonusCrit: critBoost });
                 scene.fxManager.showDamageText(target, 'CRIT UP!', '#ff8888');
             };

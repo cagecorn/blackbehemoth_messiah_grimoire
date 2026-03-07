@@ -43,6 +43,20 @@ export default class BaseStructure extends Phaser.GameObjects.Container {
         this.iceRes = config.iceRes || 0;
         this.lightningRes = config.lightningRes || 0;
 
+        // --- Standardized Bonus Stats (for BuffManager & Skills) ---
+        this.bonusAtk = 0;
+        this.bonusMAtk = 0;
+        this.bonusDef = 0;
+        this.bonusMDef = 0;
+        this.bonusCrit = 0;
+        this.bonusAtkSpd = 0; // Delay reduction
+        this.bonusAtkRange = 0;
+        this.bonusDR = 0;
+        this.bonusEva = 0;
+        this.bonusAcc = 0;
+        this.bonusSpeed = 0;
+        this.bonusCastSpd = 0;
+
         // Combat Timers
         this.lastAttackTime = 0;
 
@@ -81,7 +95,7 @@ export default class BaseStructure extends Phaser.GameObjects.Container {
         if (!this.active || this.hp <= 0) return;
 
         // Evasion check (structures usually don't evade)
-        const finalDamage = Math.max(1, amount - this.def);
+        const finalDamage = Math.max(1, amount - this.getTotalDef());
         this.hp -= finalDamage;
         if (this.hp < 0) this.hp = 0;
 
@@ -138,7 +152,7 @@ export default class BaseStructure extends Phaser.GameObjects.Container {
     }
 
     handleCombat(time) {
-        if (time - this.lastAttackTime < this.atkSpd) return;
+        if (time - this.lastAttackTime < this.getTotalAtkSpd()) return;
 
         const target = this.findNearestEnemy();
         if (target) {
@@ -150,7 +164,7 @@ export default class BaseStructure extends Phaser.GameObjects.Container {
     findNearestEnemy() {
         const enemies = this.targetGroup.getChildren();
         let nearest = null;
-        let minDist = this.atkRange;
+        let minDist = this.getTotalAtkRange();
 
         for (const enemy of enemies) {
             if (!enemy.active || enemy.hp <= 0) continue;
@@ -167,8 +181,8 @@ export default class BaseStructure extends Phaser.GameObjects.Container {
         if (!this.scene.projectileManager) return;
 
         // Calculate Damage
-        let damage = this.atk;
-        const isCritical = Math.random() * 100 < this.crit;
+        let damage = this.getTotalAtk();
+        const isCritical = Math.random() * 100 < this.getTotalCrit();
         if (isCritical) damage *= 1.5;
 
         // Sprite facing check
@@ -213,5 +227,53 @@ export default class BaseStructure extends Phaser.GameObjects.Container {
         // User said: "Each turret has unique ID... HP persistence". 
         // Let's keep it in DB but with 0 HP.
         this.saveState();
+    }
+
+    // --- Unit Interface Implementations (Fixes target.getTotalCrit is not a function) ---
+
+    getTotalAtk() {
+        return (this.atk || 0) + (this.bonusAtk || 0);
+    }
+
+    getTotalMAtk() {
+        return (this.mAtk || 0) + (this.bonusMAtk || 0);
+    }
+
+    getTotalDef() {
+        return (this.def || 0) + (this.bonusDef || 0);
+    }
+
+    getTotalMDef() {
+        return (this.mDef || 0) + (this.bonusMDef || 0);
+    }
+
+    getTotalCrit() {
+        return (this.crit || 0) + (this.bonusCrit || 0);
+    }
+
+    getTotalAtkSpd() {
+        const base = (this.atkSpd || 1500) - (this.bonusAtkSpd || 0);
+        return Math.max(200, base);
+    }
+
+    getTotalAtkRange() {
+        return (this.atkRange || 450) + (this.bonusAtkRange || 0);
+    }
+
+    getTotalDR() {
+        return (this.dr || 0) + (this.bonusDR || 0);
+    }
+
+    getTotalEva() {
+        return (this.eva || 0) + (this.bonusEva || 0);
+    }
+
+    getTotalAcc() {
+        return (this.acc || 100) + (this.bonusAcc || 0);
+    }
+
+    gainUltGauge(amount) {
+        // Structures don't have ultimates, but skills (like kiwi) might try to charge them.
+        // We implement this as a dummy to avoid crashes.
     }
 }
