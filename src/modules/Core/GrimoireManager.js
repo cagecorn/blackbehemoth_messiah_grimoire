@@ -1,3 +1,4 @@
+import { StageConfigs } from './EntityStats.js';
 import CharmManager from './CharmManager.js';
 import DBManager from '../Database/DBManager.js';
 import NodeCharmManager from '../AI/NodeCharmManager.js';
@@ -95,8 +96,19 @@ export default class GrimoireManager {
                 } else {
                     // It's a base ID (used for monsters/elites)
                     charmData = CharmManager.getCharm(charmEntry);
-                    // Randomize between 4 and 15 (consistent with player loot generation)
-                    value = Math.floor(Math.random() * 12) + 4;
+
+                    // Progressive randomization for monsters
+                    const stageConfig = StageConfigs[unit.scene?.dungeonType] || StageConfigs.CURSED_FOREST;
+                    const dungeonMult = stageConfig.goldMultiplier || 1.0;
+                    const level = unit.level || 1;
+                    const isElite = unit.isElite || false;
+                    const isShadow = unit.unitName?.toLowerCase().includes('shadow') || false;
+
+                    const advantage = (dungeonMult - 1) * 1.2 + (level / 20) + (isShadow ? 3 : (isElite ? 1 : 0));
+                    const minRoll = 2 + Math.floor(advantage / 2);
+                    const maxRoll = 8 + Math.floor(advantage);
+
+                    value = Math.floor(Math.random() * (maxRoll - minRoll + 1)) + minRoll;
                 }
             }
 

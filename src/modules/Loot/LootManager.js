@@ -70,6 +70,10 @@ export default class LootManager {
                 randomDrop = 'emoji_ticket';
             } else if (Math.random() < gemWeight) {
                 randomDrop = 'emoji_gem';
+            } else if ((isElite || isShadow) && Math.random() < 0.15) {
+                // 15% chance for a randomized charm from Elites/Shadows
+                const charms = ['emoji_fireworks', 'emoji_koinobori', 'emoji_sparkler', 'emoji_burger'];
+                randomDrop = Phaser.Utils.Array.GetRandom(charms);
             } else if ((isElite || isShadow) && Math.random() < 0.05) {
                 // 5% chance for Divine Essence from Elites/Shadows
                 randomDrop = 'emoji_divine_essence';
@@ -99,6 +103,15 @@ export default class LootManager {
             item.emojiId = randomDrop;
             item.isCollected = false;
             item.amount = 1; // Default
+
+            // --- Progressive Value Calculation for Charms ---
+            if (randomDrop && CharmManager.getCharm(randomDrop)) {
+                // Advantage scales with Dungeon, Level, and Rank (Balanced for 9 slots)
+                const advantage = (dungeonMult - 1) * 1.2 + (level / 20) + (isShadow ? 3 : (isElite ? 1 : 0));
+                const minRoll = 2 + Math.floor(advantage / 2);
+                const maxRoll = 8 + Math.floor(advantage);
+                item.rolledValue = Phaser.Math.Between(minRoll, maxRoll);
+            }
 
             // --- Dynamic Quantity Calculation ---
             if (randomDrop === 'emoji_coin') {
@@ -228,8 +241,8 @@ export default class LootManager {
                 const charmBase = CharmManager.getCharm(emojiId);
                 const instanceId = `charm_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
 
-                // Random Value: 4% to 15%
-                const rolledValue = 4 + Math.floor(Math.random() * 12);
+                // Use pre-rolled value from spawn, or fallback to default random
+                const rolledValue = item.rolledValue || (4 + Math.floor(Math.random() * 12));
 
                 const charmInstance = {
                     instanceId: instanceId,
