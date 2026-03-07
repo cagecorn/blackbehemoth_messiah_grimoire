@@ -4633,6 +4633,35 @@ input:checked+.slider-toggle:before {
     white-space: nowrap;
 }
 
+/* Mobile HUD Optimization: Tighten gaps and widths to prevent clipping */
+@media (max-width: 480px) {
+    #combat-hud-container {
+        gap: 3px;
+        top: 95px;
+        /* Slightly higher for more space */
+    }
+
+    #hud-round-display {
+        min-width: 70px !important;
+        padding: 0 6px !important;
+        gap: 4px !important;
+    }
+
+    #npc-hud,
+    #messiah-hud,
+    #defense-hud {
+        padding: 2px 4px !important;
+        min-width: 42px !important;
+        gap: 3px !important;
+    }
+
+    .npc-hud-card img,
+    #npc-hud-icon {
+        width: 20px !important;
+        height: 20px !important;
+    }
+}
+
 #combat-hud-container>div {
     pointer-events: auto;
 }
