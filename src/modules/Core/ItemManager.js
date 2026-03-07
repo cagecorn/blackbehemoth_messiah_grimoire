@@ -44,6 +44,14 @@ const ITEM_DATABASE = {
         customAsset: 'assets/structures/bow_turret_sprite.png',
         price: 500
     },
+    'healing_turret': {
+        name: '힐링 터렛',
+        type: 'structure',
+        icon: 'healing_turret',
+        description: '주기적으로 아군의 체력을 회복시키는 보조형 터렛입니다.',
+        customAsset: 'assets/structures/healing_turret_sprite.png',
+        price: 800
+    },
     'emoji_burger': { name: 'Hamburger', type: ITEM_TYPES.MATERIAL, icon: 'emoji_burger', chapter: 'ACTIVE' },
     'emoji_fireworks': { name: 'Fire Nova (🎆)', type: ITEM_TYPES.MATERIAL, icon: 'emoji_fireworks', chapter: 'ACTIVE' },
     'emoji_sparkler': { name: 'Spark Nova (🎇)', type: ITEM_TYPES.MATERIAL, icon: 'emoji_sparkler', chapter: 'ACTIVE' },

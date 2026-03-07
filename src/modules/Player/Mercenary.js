@@ -860,6 +860,9 @@ export default class Mercenary extends Phaser.GameObjects.Container {
 
     takeDamage(amount, attacker = null, isUltimate = false, element = null, isCritical = false, delay = 0) {
         if (!this.active || !this.scene) return;
+        if (amount <= 0 && !element) {
+            return; // Ignore pure-pulse effects that deal 0 dmg
+        }
 
         // --- 0. Accuracy vs Evasion Check ---
         const myEva = this.getTotalEva ? this.getTotalEva() : (this.eva || 0);
@@ -1006,6 +1009,9 @@ export default class Mercenary extends Phaser.GameObjects.Container {
 
     takeMagicDamage(amount, attacker = null, isUltimate = false, element = null, isCritical = false, delay = 0) {
         if (!this.active || !this.scene) return;
+        if (amount <= 0 && !element) {
+            return; // Ignore pure-pulse effects that deal 0 dmg
+        }
 
         // 1. Magic Damage is reduced by mDef
         let finalDamage = Math.max(1, amount - this.getTotalMDef());
@@ -1230,7 +1236,9 @@ export default class Mercenary extends Phaser.GameObjects.Container {
     }
 
     heal(amount, isSilent = false, healerId = null) {
-        if (!this.active || this.hp <= 0 || amount <= 0) return;
+        if (!this.active || this.hp <= 0 || amount <= 0) {
+            return;
+        }
 
         // Record healing for combat tracker
         if (healerId) {

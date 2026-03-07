@@ -1419,79 +1419,115 @@ export default class UIManager {
         // 1. Materials
         const wood = await DBManager.getInventoryItem('emoji_wood');
         const bone = await DBManager.getInventoryItem('emoji_bone');
+        const herb = await DBManager.getInventoryItem('emoji_herb');
+
         materialDisplay.innerHTML = `
             <div style="display:flex; align-items:center; gap:5px; color: #fff; font-weight: bold;"><img src="assets/emojis/1fab5.svg" style="width:20px; height:20px;"> ${wood ? wood.amount : 0}</div>
             <div style="display:flex; align-items:center; gap:5px; color: #fff; font-weight: bold;"><img src="assets/emojis/1f9b4.svg" style="width:20px; height:20px;"> ${bone ? bone.amount : 0}</div>
+            <div style="display:flex; align-items:center; gap:5px; color: #fff; font-weight: bold;"><img src="assets/emojis/1f33f.svg" style="width:20px; height:20px;"> ${herb ? herb.amount : 0}</div>
         `;
+
+        if (!this.currentDefenseFilter) this.currentDefenseFilter = 'turret_bowgun';
 
         // 2. Recipes
         const recipes = [
-            { id: 'turret_bowgun', req: { emoji_wood: 2000, emoji_bone: 1000 } }
+            { id: 'turret_bowgun', req: { emoji_wood: 2000, emoji_bone: 1000 } },
+            { id: 'healing_turret', req: { emoji_wood: 1000, emoji_herb: 800 } }
         ];
 
         let recipeHtml = '';
         for (const r of recipes) {
             const item = ItemManager.getItem(r.id);
-            const hasWood = wood && wood.amount >= r.req.emoji_wood;
-            const hasBone = bone && bone.amount >= r.req.emoji_bone;
-            const canCraft = hasWood && hasBone;
+            const isSelected = this.currentDefenseFilter === r.id;
+
+            // Check materials
+            const hasWood = wood && wood.amount >= (r.req.emoji_wood || 0);
+            const hasBone = bone && bone.amount >= (r.req.emoji_bone || 0);
+            const hasHerb = herb && herb.amount >= (r.req.emoji_herb || 0);
+            const canCraft = hasWood && hasBone && hasHerb;
+
             const iconUrl = item.customAsset || 'assets/emojis/' + ItemManager.getSVGFilename(r.id);
 
             recipeHtml += `
-                <div class="craft-card" data-id="${r.id}" 
-                     style="background: rgba(0,0,0,0.3); border: 2px solid #059669; border-radius: 12px; padding: 12px; display: flex; align-items: center; gap: 15px; position: relative; overflow: hidden; transition: all 0.2s ease;">
+                <div class="craft-card defense-recipe-card ${isSelected ? 'selected' : ''}" data-id="${r.id}" 
+                     style="background: ${isSelected ? 'rgba(16, 185, 129, 0.2)' : 'rgba(0,0,0,0.3)'}; 
+                            border: 2px solid ${isSelected ? '#34d399' : '#059669'}; 
+                            box-shadow: ${isSelected ? '0 0 15px rgba(52, 211, 153, 0.4)' : 'none'};
+                            border-radius: 12px; padding: 12px; display: flex; align-items: center; gap: 15px; 
+                            position: relative; overflow: hidden; cursor: pointer; transition: all 0.2s ease;">
                     <div class="retro-scanline-overlay" style="pointer-events: none;"></div>
                     <img src="${iconUrl}" style="width: 48px; height: 48px; object-fit: contain; image-rendering: pixelated; background: rgba(255,255,255,0.05); border-radius: 8px; padding: 4px; border: 1px solid rgba(255,255,255,0.1);">
                     <div style="flex: 1;">
                         <div style="font-weight: bold; font-size: 14px; color: #fff;">${item.name}</div>
                         <div style="font-size: 10px; color: #34d399; margin-bottom: 4px;">${item.description}</div>
                         <div style="font-size: 11px; color: #d1d5db; display: flex; align-items: center; gap: 8px;">
-                            <span style="display:flex; align-items:center; gap:2px; color: ${hasWood ? '#fff' : '#ef4444'}"><img src="assets/emojis/1fab5.svg" style="width:12px; height:12px;"> ${r.req.emoji_wood}</span>
-                            <span style="display:flex; align-items:center; gap:2px; color: ${hasBone ? '#fff' : '#ef4444'}"><img src="assets/emojis/1f9b4.svg" style="width:12px; height:12px;"> ${r.req.emoji_bone}</span>
+                            ${r.req.emoji_wood ? `<span style="display:flex; align-items:center; gap:2px; color: ${hasWood ? '#fff' : '#ef4444'}"><img src="assets/emojis/1fab5.svg" style="width:12px; height:12px;"> ${r.req.emoji_wood}</span>` : ''}
+                            ${r.req.emoji_bone ? `<span style="display:flex; align-items:center; gap:2px; color: ${hasBone ? '#fff' : '#ef4444'}"><img src="assets/emojis/1f9b4.svg" style="width:12px; height:12px;"> ${r.req.emoji_bone}</span>` : ''}
+                            ${r.req.emoji_herb ? `<span style="display:flex; align-items:center; gap:2px; color: ${hasHerb ? '#fff' : '#ef4444'}"><img src="assets/emojis/1f33f.svg" style="width:12px; height:12px;"> ${r.req.emoji_herb}</span>` : ''}
                         </div>
                     </div>
                     <button class="shop-buy-btn defense-craft-btn" data-id="${r.id}" ${canCraft ? '' : 'disabled'} 
                             style="padding: 8px 15px; font-size: 12px; height: auto; background: ${canCraft ? 'linear-gradient(to bottom, #10b981, #059669)' : '#333'}; opacity: ${canCraft ? 1 : 0.5}; cursor: ${canCraft ? 'pointer' : 'not-allowed'}; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); color: #fff; font-weight: bold;">제작</button>
+                    ${isSelected ? '<div style="position: absolute; top: 5px; right: 5px; color: #34d399; font-size: 10px;">★</div>' : ''}
                 </div>
             `;
         }
         recipeList.innerHTML = recipeHtml;
 
-        // Bind craft buttons
-        recipeList.querySelectorAll('.defense-craft-btn').forEach(btn => {
-            btn.onclick = async (e) => {
-                const itemId = btn.dataset.id;
-                const recipe = recipes.find(r => r.id === itemId);
-
-                // Deduct materials
-                const currentWood = await DBManager.getInventoryItem('emoji_wood');
-                const currentBone = await DBManager.getInventoryItem('emoji_bone');
-
-                if (currentWood && currentWood.amount >= recipe.req.emoji_wood &&
-                    currentBone && currentBone.amount >= recipe.req.emoji_bone) {
-                    await DBManager.saveInventoryItem('emoji_wood', currentWood.amount - recipe.req.emoji_wood);
-                    await DBManager.saveInventoryItem('emoji_bone', currentBone.amount - recipe.req.emoji_bone);
-
-                    // Create UNIQUE structure instance
-                    const instanceId = `str_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
-                    await DBManager.saveStructureInstance({
-                        id: instanceId,
-                        baseId: itemId,
-                        level: 1,
-                        createdAt: Date.now()
-                    });
-
-                    this.showToast(`${ItemManager.getItem(itemId).name} 제작 성공! 🛡️`);
-                    await this.refreshDefenseManagement();
-                    if (this.refreshInventory) this.refreshInventory();
-                } else {
-                    this.showToast('재료가 부족합니다!');
-                }
+        // Bind recipe card selection & craft buttons
+        recipeList.querySelectorAll('.defense-recipe-card').forEach(card => {
+            card.onclick = (e) => {
+                if (e.target.classList.contains('defense-craft-btn')) return;
+                const id = card.dataset.id;
+                this.currentDefenseFilter = id;
+                this.refreshDefenseManagement();
             };
+
+            const btn = card.querySelector('.defense-craft-btn');
+            if (btn) {
+                btn.onclick = async (e) => {
+                    const itemId = btn.dataset.id;
+                    const recipe = recipes.find(r => r.id === itemId);
+
+                    // Deduct materials
+                    const curWood = await DBManager.getInventoryItem('emoji_wood');
+                    const curBone = await DBManager.getInventoryItem('emoji_bone');
+                    const curHerb = await DBManager.getInventoryItem('emoji_herb');
+
+                    const reqWood = recipe.req.emoji_wood || 0;
+                    const reqBone = recipe.req.emoji_bone || 0;
+                    const reqHerb = recipe.req.emoji_herb || 0;
+
+                    if ((!reqWood || (curWood && curWood.amount >= reqWood)) &&
+                        (!reqBone || (curBone && curBone.amount >= reqBone)) &&
+                        (!reqHerb || (curHerb && curHerb.amount >= reqHerb))) {
+
+                        if (reqWood) await DBManager.saveInventoryItem('emoji_wood', curWood.amount - reqWood);
+                        if (reqBone) await DBManager.saveInventoryItem('emoji_bone', curBone.amount - reqBone);
+                        if (reqHerb) await DBManager.saveInventoryItem('emoji_herb', curHerb.amount - reqHerb);
+
+                        // Create UNIQUE structure instance
+                        const instanceId = `str_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+                        await DBManager.saveStructureInstance({
+                            id: instanceId,
+                            baseId: itemId,
+                            level: 1,
+                            createdAt: Date.now()
+                        });
+
+                        this.showToast(`${ItemManager.getItem(itemId).name} 제작 성공! 🛡️`);
+                        await this.refreshDefenseManagement();
+                        if (this.refreshInventory) this.refreshInventory();
+                    } else {
+                        this.showToast('재료가 부족합니다!');
+                    }
+                };
+            }
         });
 
-        // 3. Owned Structures (Fetch from structure_instances table)
-        const structures = await DBManager.getAllStructureInstances();
+        // 3. Owned Structures (Fetch from structure_instances table) filtered by current filter
+        const allStructures = await DBManager.getAllStructureInstances();
+        const structures = allStructures.filter(s => s.baseId === this.currentDefenseFilter);
 
         let ownedHtml = '';
         if (structures.length === 0) {
@@ -1507,9 +1543,13 @@ export default class UIManager {
                 const iconUrl = base.customAsset || 'assets/emojis/' + ItemManager.getSVGFilename(s.baseId);
                 const shortId = s.id.split('_').pop();
                 const isInstalled = !!s.dungeonId;
+                const isSelected = this.selectedStructureInstanceId === s.id;
 
                 let statusBadge = '';
                 let cardStyle = 'background: rgba(255,255,255,0.05); border: 1px solid rgba(16, 185, 129, 0.3);';
+                let btnText = isInstalled ? 'CURRENT' : 'DEPLOY ▶';
+                let btnColor = isInstalled ? '#10b981' : '#f59e0b';
+                let btnStyle = isSelected ? 'border: 2px solid #fff; box-shadow: 0 0 10px #fff;' : '';
 
                 if (isInstalled) {
                     statusBadge = `<div style="position: absolute; bottom: 5px; right: 5px; background: #3b82f6; color: #fff; font-size: 6px; font-weight: bold; padding: 1px 3px; border-radius: 2px;">${s.dungeonId.replace('_', ' ')}</div>`;
@@ -1518,18 +1558,51 @@ export default class UIManager {
 
                 ownedHtml += `
                     <div class="owned-equip-card structure-instance-card" data-instance-id="${s.id}"
-                         style="${cardStyle} border-radius: 8px; padding: 10px; display: flex; flex-direction: column; align-items: center; gap: 5px; position: relative; cursor: pointer;" 
+                         style="${cardStyle} border-radius: 8px; padding: 10px; display: flex; flex-direction: row; align-items: center; gap: 15px; position: relative; cursor: pointer; transition: all 0.2s;" 
                          title="${base.name}\n${isInstalled ? 'INSTALLED: ' + s.dungeonId : 'IN INVENTORY'}">
-                        <div style="position: absolute; top: -5px; right: -5px; background: #10b981; color: #fff; font-size: 7px; font-weight: bold; padding: 1px 4px; border-radius: 3px; border: 1px solid rgba(255,255,255,0.2);">X1</div>
-                        <img src="${iconUrl}" style="width: 32px; height: 32px; object-fit: contain; image-rendering: pixelated; filter: drop-shadow(0 0 5px rgba(16, 185, 129, 0.3));">
-                        <div style="font-size: 9px; color: #fff; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; font-weight: bold;">${base.name}</div>
-                        <div style="font-size: 7px; color: #34d399; opacity: 0.6;">#${shortId}</div>
+                        
+                        <div style="background: rgba(0,0,0,0.5); border-radius: 6px; padding: 8px; border: 1px solid rgba(255,255,255,0.1);">
+                            <img src="${iconUrl}" style="width: 32px; height: 32px; object-fit: contain; image-rendering: pixelated; filter: drop-shadow(0 0 5px rgba(16, 185, 129, 0.3));">
+                        </div>
+
+                        <div style="flex: 1;">
+                            <div style="font-size: 11px; color: #fff; font-weight: bold;">${base.name}</div>
+                            <div style="font-size: 8px; color: #34d399; opacity: 0.6;">SERIAL: #${shortId}</div>
+                            <div style="font-size: 8px; color: #fbbf24;">STATUS: HP ${s.currentHp || s.maxHp || 1000} / ${s.maxHp || 1000}</div>
+                        </div>
+
+                        <div class="deploy-unit-btn" data-instance-id="${s.id}" 
+                             style="font-size: 9px; font-weight: bold; color: ${btnColor}; ${btnStyle} transition: transform 0.1s;">
+                            ${btnText}
+                        </div>
+
                         ${statusBadge}
                     </div>
                 `;
             }
         }
         ownedList.innerHTML = ownedHtml;
+
+        // Bind Deployment Buttons
+        ownedList.querySelectorAll('.structure-instance-card').forEach(card => {
+            card.onclick = () => {
+                const instanceId = card.dataset.instanceId;
+                const inst = structures.find(s => s.id === instanceId);
+
+                // If we are in DungeonScene, trigger deployment
+                if (this.scene && this.scene.constructor.name === 'DungeonScene') {
+                    if (inst.dungeonId) {
+                        this.showToast('이미 설치된 시설물입니다!');
+                        return;
+                    }
+
+                    this.hideDefenseManagement();
+                    this.scene.startConstructionMode(instanceId);
+                } else {
+                    this.showToast('던전 안에서만 설치가 가능합니다!');
+                }
+            };
+        });
     }
 
     async refreshEquipmentCrafting() {

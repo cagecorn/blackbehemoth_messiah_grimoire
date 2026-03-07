@@ -17,6 +17,7 @@
 - `emoji_candle`: 양초 (🕯️) - 용암 지물 전용 재료
 - `crocodile_warrior_sprite`, `crocodile_archer_sprite`, `crocodile_healer_sprite`: 늪지대 악어 3종 스프라이트
 - `fire_spirit_warrior_sprite`, `fire_spirit_archer_sprite`, `fire_spirit_wizard_sprite`: 용암 지대 화염 정령 3종 스프라이트
+- `bow_turret_sprite`, `healing_turret_sprite`: 방어 시설 터렛 2종 스프라이트
 - (Official Project Name)
 
 이 프로젝트는 기존에 진행하던 게임의 아이디어를 일부 계승하여 새롭게 시작하는 2D RPG 게임 프로젝트입니다.

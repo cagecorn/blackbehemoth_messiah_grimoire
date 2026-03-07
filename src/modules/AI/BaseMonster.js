@@ -296,6 +296,7 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
 
     takeDamage(amount, attacker = null, isUltimate = false, element = null, isCritical = false, delay = 0) {
         if (!this.active || !this.scene) return;
+        if (amount <= 0 && !element) return;
 
         // --- 0. Accuracy vs Evasion Check ---
         if (attacker && typeof attacker === 'object' && attacker.acc !== undefined && this.eva !== undefined) {
@@ -430,6 +431,7 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
 
     takeMagicDamage(amount, attacker = null, isUltimate = false, element = null, isCritical = false, delay = 0) {
         if (!this.active || !this.scene) return;
+        if (amount <= 0 && !element) return;
 
         const attackerId = (attacker && typeof attacker === 'object') ? (attacker.id || attacker.className) : attacker;
 

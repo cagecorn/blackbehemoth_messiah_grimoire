@@ -150,7 +150,8 @@ export default class ProjectileManager {
             'meteor': '☄️',
             'fire': '🔥',
             'fireball': '🔥',
-            'emoji_fire': '🔥'
+            'emoji_fire': '🔥',
+            'heal_pulse': '✨'
         };
 
         // Check if image/texture actually exists in the scene

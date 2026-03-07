@@ -1341,6 +1341,34 @@ export const StructureStats = {
         physicsRadius: 25,
         spriteSize: 80,
         aiType: 'RANGED'
+    },
+    HEALING_TURRET: {
+        id: 'healing_turret',
+        name: '힐링 터렛',
+        sprite: 'healing_turret_sprite',
+        projectileType: 'heal_pulse',
+        hp: 800,
+        maxHp: 800,
+        atk: 0,
+        mAtk: 40,
+        def: 20,
+        mDef: 25,
+        speed: 0,
+        atkSpd: 2000,
+        atkRange: 500,
+        rangeMin: 0,
+        rangeMax: 500,
+        castSpd: 1000,
+        acc: 100,
+        eva: 0,
+        crit: 5,
+        ultChargeSpeed: 1.0,
+        fireRes: 10,
+        iceRes: 10,
+        lightningRes: 10,
+        physicsRadius: 25,
+        spriteSize: 80,
+        aiType: 'SUPPORT'
     }
 };
 

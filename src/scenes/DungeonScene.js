@@ -1623,4 +1623,8 @@ export default class DungeonScene extends Phaser.Scene {
             this.toggleConstructionMode(null); // Exit mode after placement
         }
     }
+
+    startConstructionMode(instanceId) {
+        this.toggleConstructionMode(instanceId);
+    }
 }

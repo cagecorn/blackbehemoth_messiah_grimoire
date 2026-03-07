@@ -218,12 +218,12 @@ export default class BaseStructure extends Phaser.GameObjects.Container {
             target.x, target.y,
             damage,
             projType,
-            false, // isUltimate
+            false, // isMagic
             this.targetGroup,
             this,
-            null, // element
-            isParabolic, // Enable parabolic arc for arrows
             null, // onHitCallback
+            false, // isUltimate
+            null, // element
             isCritical
         );
     }

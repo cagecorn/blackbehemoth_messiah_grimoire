@@ -248,6 +248,7 @@ export default class TerritoryScene extends Phaser.Scene {
             <div id="territory-patch-body">
                 <div class="patch-entry">
                     <div class="patch-date">▶ 2026-03-07 (Latest)</div>
+                    <div class="patch-item"><span class="patch-item-icon">🧚</span>[영지] **힐링 터렛** 업데이트! 아군을 치유하는 새로운 방어 시설을 건설해보세요. (✨ 반짝이 투사체 적용)</div>
                     <div class="patch-item"><span class="patch-item-icon">🔥</span>[던전] 네 번째 던전 **[용암 지대]** 업데이트! 뜨거운 전장의 막이 열렸습니다.</div>
                     <div class="patch-item"><span class="patch-item-icon">🕯️</span>[몬스터] 화염 정령 전사, 궁수, 마법사 3종 등장. 처치 시 **[양초]** 획득 가능.</div>
                     <div class="patch-item"><span class="patch-item-icon">🛡️</span>[영지] **방어 시설 관리** 시스템 도입! 보우건 터렛을 제작하여 전투를 지원하세요.</div>

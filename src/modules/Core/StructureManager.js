@@ -1,4 +1,5 @@
 import BaseStructure from '../AI/BaseStructure.js';
+import HealingTurret from '../AI/HealingTurret.js';
 import DBManager from '../Database/DBManager.js';
 import EventBus from '../Events/EventBus.js';
 
@@ -41,7 +42,13 @@ export default class StructureManager {
      * Spawn a structure instance into the scene.
      */
     spawnStructure(instanceId, baseId, x, y, hpCap) {
-        const structure = new BaseStructure(this.scene, x, y, instanceId, baseId);
+        let structure;
+        if (baseId === 'healing_turret') {
+            structure = new HealingTurret(this.scene, x, y, instanceId, baseId);
+        } else {
+            structure = new BaseStructure(this.scene, x, y, instanceId, baseId);
+        }
+
         if (hpCap !== undefined) structure.hp = hpCap;
         structure.updateHealthBar();
 
