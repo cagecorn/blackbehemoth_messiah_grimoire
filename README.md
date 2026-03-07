@@ -54,7 +54,39 @@
   * `acc`: 정확도 (물리 공격 시)
   * `eva`: 회피도 (물리 공격 시)
   * `crit`: 치명타율
+  * `ultChargeSpeed`: 궁극기 충전 속도 배율 (기본 1.0)
+  * `fireRes`: 불 저항력 (%)
+  * `iceRes`: 얼음 저항력 (%)
+  * `lightningRes`: 번개 저항력 (%)
   * `id`: 엔티티 고유 식별자
+
+## 성장 장비 랜덤 옵션 (Growth Equipment Random Options)
+장비 레벨 10단위(10, 20, 30, 40, 50)마다 아래 풀에서 중복되지 않은 옵션이 하나씩 개방됩니다.
+
+### ⚔️ 무기 옵션 풀 (Weapon Option Pool)
+- **속성 인챈트 (Element)**: 개방 시 무기에 속성 Prefix 부여 (한 종류만 가능)
+  - 불 🔥 (`fire`), 얼음 ❄️ (`ice`), 번개 ⚡ (`lightning`)
+- **스탯 배율 (Multipliers)**: 기본 스탯에 합산 곱연산 적용
+  - `atkMult`: 물리 공격력 +10~40%
+  - `mAtkMult`: 마법 공격력 +10~40%
+  - `atkSpdMult`: 공격 속도 +5~30%
+  - `castSpdMult`: 시전 속도 +5~30%
+  - `atkRangeMult`: 공격 사거리 +5~15%
+  - `accMult`: 정확도 +10~50%
+  - `critMult`: 치명타율 +5~20%
+  - `ultChargeSpeedMult`: 궁극기 충전 속도 +1~5%
+
+### 🛡️ 방어구 옵션 풀 (Armor Option Pool)
+- **스탯 배율 (Multipliers)**: 기본 스탯에 합산 곱연산 적용
+  - `maxHpMult`: 최대 체력 +10~30%
+  - `defMult`: 방어력 +10~40%
+  - `mDefMult`: 마법 방어력 +10~40%
+  - `castSpdMult`: 시전 속도 +5~20%
+  - `ultChargeSpeedMult`: 궁극기 충전 속도 +1~5%
+- **저항력 (Resistances)**: 
+  - `fireRes`: 불 저항력 +10~30%
+  - `iceRes`: 얼음 저항력 +10~30%
+  - `lightningRes`: 번개 저항력 +10~30%
 
 * **UI 레이어 아키텍처 (UI Layer Architecture):**
   * 여러 레이어가 겹치는 모바일 UI의 특성상, 아래의 `z-index` 표준을 반드시 준수하여 요소 간 가림 현상을 방지합니다.
@@ -99,7 +131,38 @@
 궁극기나 스킬로 일시적인 스탯 보너스를 부여할 때는 **기본 스탯을 직접 수정하지 마십시오.** (영구 스탯 오염 방지)
 - **BAD**: `this.atk *= 1.5;` / `this.speed += 50;`
 - **GOOD**: `this.bonusAtk += amount;` / `this.bonusSpeed += 50;`
-- **표준 보너스 속성**: `bonusAtk`, `bonusMAtk`, `bonusCrit`, `bonusEva`, `bonusSpeed`, `bonusDef`, `bonusMDef`, `bonusAtkSpd`, `bonusAcc`, `bonusDR`, `bonusCastSpd`
+- **표준 보너스 속성**: `bonusAtk`, `bonusMAtk`, `bonusCrit`, `bonusEva`, `bonusSpeed`, `bonusDef`, `bonusMDef`, `bonusAtkSpd`, `bonusAcc`, `bonusDR`, `bonusCastSpd`, `bonusUltChargeSpeed`
+ 
+ 
++### 6. 장비 및 성장 시스템 (Equipment & Growth)
++
++새로운 장비를 추가하거나 관련 로직을 수정할 때 아래 표준을 반드시 준수하십시오.
++
++#### 6.1. 장비 슬롯 표준 (Standard Slots)
++용병은 최대 4개의 장비 슬롯을 가집니다. 신규 장비 정의 시 `ItemManager.EQUIP_SLOTS`를 사용하세요.
++- `weapon` (무기): 공격 관련 주 스탯. 무기 속성(Prefix)이 부여됨.
++- `armor` (갑옷): 방어 관련 주 스탯. 피격 시 경험치 획득.
++- `necklace` (목걸이): 유틸리티/특수 능력.
++- `ring` (반지): 유틸리티/특수 능력.
++
++#### 6.2. 성장 장비 로직 (Growth Gear Logic)
++`eq_` 프리픽스로 시작하는 고유 인스턴스 장비의 핵심 동작 방식입니다.
++- **경험치 획득 (EXP Gain)**:
++  - **무기**: 적에게 입힌 **최종 데미지**만큼 경험치 획득. (`BaseMonster.js` 참조)
++  - **갑옷**: 적에게 받은 **원시 데미지(방어 전)**만큼 경험치 획득. (`Mercenary.js` -> `takeDamage` 참조)
++- **레벨업 능력치 동기화**:
++  - 장비 레벨업 시 `EQUIPMENT_LEVEL_UP` 이벤트가 발생합니다.
++  - `Mercenary.js`는 이를 수신하여 인스턴스의 `level`과 `stats`를 `equipmentManager.getEffectiveStats`를 통해 즉시 갱신합니다.
++  - 동기화 후 반드시 `this.syncStatusUI()`를 호출하여 HUD에 반영해야 합니다.
++
++#### 6.3. 데이터 무결성 및 소유권 (Ownership)
++- 모든 성장 장비 인스턴스는 `ownerId`를 통해 현재 장착 중인 용병을 추적합니다.
++- `Mercenary.js`의 `equipItem` 및 `unequipItem`을 통해서만 장착 상태를 변경해야 하며, 이 과정에서 DB의 `ownerId`가 함께 업데이트되어야 합니다.
++
++#### 6.4. UI 필터링 및 관리 (Inventory UI)
++- **전용 필터**: 장비 인벤토리는 `this.equipFilter`(`ALL`, `WEAPON`, `ARMOR` 등)를 통해 분류됩니다.
++- **중복 장착 방지**: 특정 용병이 이미 장착 중인 인스턴스는 다른 용병의 인벤토리 목록에서 제외(또는 비활성화)되어야 합니다.
++
 
 
 ### 🖥️ UI 레이어 아키텍처 (UI Layer Architecture)

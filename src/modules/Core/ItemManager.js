@@ -12,7 +12,9 @@ export const ITEM_TYPES = {
 export const EQUIP_SLOTS = {
     WEAPON: 'weapon',
     ARMOR: 'armor',
-    ACCESSORY: 'accessory'
+    ACCESSORY: 'accessory',
+    NECKLACE: 'necklace',
+    RING: 'ring'
 };
 
 export const WEAPON_PREFIXES = {
@@ -87,6 +89,10 @@ const ITEM_DATABASE = {
 export default class ItemManager {
     static getItem(id) {
         return ITEM_DATABASE[id] || null;
+    }
+
+    static getAllItems() {
+        return ITEM_DATABASE;
     }
 
     static getSVGFilename(id) {

@@ -33,7 +33,7 @@ export const MercenaryClasses = {
         fireRes: 0,
         iceRes: 0,
         lightningRes: 0,
-        growth: { maxHp: 20, atk: 3, mAtk: 0.5, def: 2, mDef: 1, acc: 0.5, eva: 0.5 }
+        growth: { maxHp: 20, atk: 3, mAtk: 1, def: 2, mDef: 1.2, acc: 0.5, eva: 0.5 }
     },
     ARCHER: {
         id: 'archer',
@@ -61,7 +61,7 @@ export const MercenaryClasses = {
         fireRes: 0,
         iceRes: 0,
         lightningRes: 0,
-        growth: { maxHp: 10, atk: 3, mAtk: 0.5, def: 1, mDef: 1, acc: 2, eva: 2, atkSpd: -5 }
+        growth: { maxHp: 10, atk: 3, mAtk: 1, def: 1, mDef: 1, acc: 2, eva: 2, atkSpd: -5 }
     },
     HEALER: {
         id: 'healer',
@@ -89,7 +89,7 @@ export const MercenaryClasses = {
         fireRes: 0,
         iceRes: 0,
         lightningRes: 0,
-        growth: { maxHp: 8, atk: 0.5, mAtk: 3, def: 0.5, mDef: 2, acc: 1, eva: 1 }
+        growth: { maxHp: 10, atk: 1, mAtk: 4, def: 1, mDef: 2.5, acc: 1, eva: 1 }
     },
     WIZARD: {
         id: 'wizard',
@@ -117,7 +117,7 @@ export const MercenaryClasses = {
         fireRes: 0,
         iceRes: 0,
         lightningRes: 0,
-        growth: { maxHp: 8, atk: 0.5, mAtk: 4, def: 0.5, mDef: 1.5, acc: 2, eva: 1 }
+        growth: { maxHp: 10, atk: 1, mAtk: 5, def: 1, mDef: 2, acc: 2, eva: 1 }
     },
     BARD: {
         id: 'bard',
@@ -145,7 +145,7 @@ export const MercenaryClasses = {
         fireRes: 0,
         iceRes: 0,
         lightningRes: 0,
-        growth: { maxHp: 12, atk: 1.5, mAtk: 1.5, def: 1.5, mDef: 1.5, acc: 0.5, eva: 0.5 }
+        growth: { maxHp: 15, atk: 1.8, mAtk: 1.8, def: 1.8, mDef: 1.8, acc: 1, eva: 1 }
     }
 };
 
@@ -502,7 +502,7 @@ export const Characters = {
         mAtk: 40,
         def: 15,
         castSpd: 1200,
-        growth: { maxHp: 18, atk: 1, mAtk: 3.5, def: 1.5, mDef: 2, acc: 0.5, eva: 0.5 },
+        growth: { maxHp: 18, atk: 1.5, mAtk: 4, def: 1.5, mDef: 3, acc: 1, eva: 1 },
         personality: '심각한 망상증 성기사. 자기가 세상의 주인공이고 나머지는 조연이라 생각한다. 평소엔 친절한 맏형이지만, 악한 존재 앞에선 미친개로 돌변하여 폭주한다.',
         relationships: {
             aren: '나의 충실한 부하 1호(라고 멋대로 생각함).',

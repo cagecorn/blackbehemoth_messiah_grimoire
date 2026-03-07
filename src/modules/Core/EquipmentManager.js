@@ -14,6 +14,23 @@ class EquipmentManager {
         this.instances = {}; // Cache of active instances if needed
     }
 
+    static WEAPON_OPTION_POOL = [
+        // Elements (Low probability)
+        { id: 'fire', type: 'element', value: 'fire', weight: 5, label: '무기 속성: 불 🔥' },
+        { id: 'ice', type: 'element', value: 'ice', weight: 5, label: '무기 속성: 얼음 ❄️' },
+        { id: 'lightning', type: 'element', value: 'lightning', weight: 5, label: '무기 속성: 번개 ⚡' },
+        // Multipliers
+        { id: 'atkMult', type: 'mult', stat: 'atkMult', min: 0.1, max: 0.4, weight: 20, label: '공격력' },
+        { id: 'mAtkMult', type: 'mult', stat: 'mAtkMult', min: 0.1, max: 0.4, weight: 20, label: '마법 공격력' },
+        { id: 'castSpdMult', type: 'mult', stat: 'castSpdMult', min: 0.05, max: 0.3, weight: 15, label: '시전 속도' },
+        { id: 'atkSpdMult', type: 'mult', stat: 'atkSpdMult', min: 0.05, max: 0.3, weight: 15, label: '공격 속도' },
+        { id: 'atkRangeMult', type: 'mult', stat: 'atkRangeMult', min: 0.05, max: 0.15, weight: 10, label: '공격 사거리' },
+        { id: 'accMult', type: 'mult', stat: 'accMult', min: 0.1, max: 0.5, weight: 15, label: '정확도' },
+        { id: 'critMult', type: 'mult', stat: 'critMult', min: 0.05, max: 0.2, weight: 15, label: '치명타율' },
+        // New Stat
+        { id: 'ultChargeSpeedMult', type: 'mult', stat: 'ultChargeSpeedMult', min: 0.01, max: 0.05, weight: 10, label: '궁극기 충전 속도' }
+    ];
+
     /**
      * EXP Curve: Astronomical requirements for equipment.
      * Level 50 is the goal.
@@ -103,6 +120,16 @@ class EquipmentManager {
         const status = this.calculateLevelFromExp(instance.exp);
         instance.level = status.level;
 
+        // Check for 10-level milestones (10, 20, 30, 40, 50)
+        if (instance.level > oldLevel) {
+            const milestones = [10, 20, 30, 40, 50];
+            for (const m of milestones) {
+                if (oldLevel < m && instance.level >= m) {
+                    await this._unlockRandomOption(instance);
+                }
+            }
+        }
+
         await DBManager.saveEquipmentInstance(instance);
 
         // Emit general update for real-time UI (EXP bar)
@@ -122,8 +149,74 @@ class EquipmentManager {
     }
 
     /**
+     * Internal method to unlock a random option for a weapon.
+     */
+    async _unlockRandomOption(instance) {
+        if (!instance.randomOptions) instance.randomOptions = [];
+
+        // Filter pool: exclude already possessed options.
+        // Also, if an element is already present, exclude all other element options to maintain balance.
+        const existingIds = instance.randomOptions.map(o => o.id);
+        const hasElement = instance.randomOptions.some(o => o.type === 'element');
+
+        const pool = (instance.slot === 'armor') ? EquipmentManager.ARMOR_OPTION_POOL : EquipmentManager.WEAPON_OPTION_POOL;
+
+        const availablePool = pool.filter(o => {
+            if (existingIds.includes(o.id)) return false;
+            if (hasElement && o.type === 'element') return false;
+            return true;
+        });
+
+        if (availablePool.length === 0) return;
+
+        // Weighted random selection
+        const totalWeight = availablePool.reduce((sum, o) => sum + o.weight, 0);
+        let random = Math.random() * totalWeight;
+        let selected = availablePool[0];
+
+        for (const opt of availablePool) {
+            if (random < opt.weight) {
+                selected = opt;
+                break;
+            }
+            random -= opt.weight;
+        }
+
+        let finalOpt = { ...selected };
+        if (selected.type === 'mult') {
+            // Random value within range
+            const val = selected.min + Math.random() * (selected.max - selected.min);
+            finalOpt.value = parseFloat(val.toFixed(3)); // 3 decimal places
+        }
+
+        instance.randomOptions.push(finalOpt);
+
+        // Specific handling for elements: set as prefix if weapon has no prefix?
+        if (selected.type === 'element') {
+            instance.prefix = {
+                name: selected.value === 'fire' ? '불타는' : (selected.value === 'ice' ? '빙결의' : '번개의'),
+                element: selected.value,
+                bonusAtk: 0
+            };
+        }
+
+        console.log(`[EquipmentManager] Unlocked random option for ${instance.id}:`, finalOpt);
+    }
+
+    /**
      * Calculates current stats based on level.
      */
+    static ARMOR_OPTION_POOL = [
+        { id: 'hp_pct', label: '최대 체력', type: 'mult', stat: 'maxHpMult', min: 0.10, max: 0.30, weight: 15 },
+        { id: 'def_pct', label: '방어력', type: 'mult', stat: 'defMult', min: 0.10, max: 0.40, weight: 15 },
+        { id: 'mDef_pct', label: '마법 방어력', type: 'mult', stat: 'mDefMult', min: 0.10, max: 0.40, weight: 15 },
+        { id: 'castSpd_pct', label: '시전 속도', type: 'mult', stat: 'castSpdMult', min: 0.05, max: 0.20, weight: 10 },
+        { id: 'ult_charge', label: '궁극기 충전 속도', type: 'mult', stat: 'ultChargeSpeedMult', min: 0.01, max: 0.05, weight: 10 },
+        { id: 'fire_res', label: '불 저항력', type: 'add', stat: 'fireRes', min: 10, max: 30, weight: 10 },
+        { id: 'ice_res', label: '얼음 저항력', type: 'add', stat: 'iceRes', min: 10, max: 30, weight: 10 },
+        { id: 'lightning_res', label: '번개 저항력', type: 'add', stat: 'lightningRes', min: 10, max: 30, weight: 10 }
+    ];
+
     getEffectiveStats(instance, baseItem) {
         if (!instance || !baseItem) return {};
 
@@ -133,14 +226,25 @@ class EquipmentManager {
         if (instance.itemId === 'wood_sword') {
             // "atk": 공격력 + 5 (일부러 낮게 잡음) + 레벨일 오를 때마다 공격력 + 25%
             const levelBonus = 1 + (0.25 * (instance.level - 1));
-            stats.atk = Math.floor(5 * levelBonus);
+            stats.atk = Math.round(5 * levelBonus);
         }
 
         // Custom logic for Wood Armor
         if (instance.itemId === 'wood_armor') {
             const levelBonus = 1 + (0.25 * (instance.level - 1));
-            stats.def = Math.floor(5 * levelBonus);
-            stats.mDef = Math.floor(2 * levelBonus);
+            stats.def = Math.round(5 * levelBonus);
+            stats.mDef = Math.round(2 * levelBonus);
+        }
+
+        // Apply Random Options
+        if (instance.randomOptions && Array.isArray(instance.randomOptions)) {
+            instance.randomOptions.forEach(opt => {
+                if (opt.type === 'mult') {
+                    stats[opt.stat] = (stats[opt.stat] || 0) + opt.value;
+                } else if (opt.type === 'add') {
+                    stats[opt.stat] = (stats[opt.stat] || 0) + opt.value;
+                }
+            });
         }
 
         return stats;
@@ -160,19 +264,32 @@ class EquipmentManager {
         desc += `\n- 경험치: ${instance.exp.toLocaleString()} / ${nextLevelExp.toLocaleString()}`;
 
         if (stats.atk) desc += `\n- 공격력: +${stats.atk}`;
-        if (stats.def) desc += `\n- 방력: +${stats.def}`;
+        if (stats.def) desc += `\n- 방어력: +${stats.def}`;
         if (stats.mDef) desc += `\n- 마법 방어력: +${stats.mDef}`;
 
         // Random Options
         desc += `\n\n[랜덤 옵션]`;
-        for (let i = 1; i <= 5; i++) {
-            const reqLv = i * 10;
+        const optionsConfig = [10, 20, 30, 40, 50];
+        optionsConfig.forEach((reqLv, idx) => {
             if (instance.level >= reqLv) {
-                desc += `\n- 옵션 ${i}: 활성화됨 (추후 추가)`;
+                const opt = (instance.randomOptions && instance.randomOptions[idx]) ? instance.randomOptions[idx] : null;
+                if (opt) {
+                    if (opt.type === 'mult') {
+                        const percent = Math.round(opt.value * 100);
+                        desc += `\n- 옵션 ${idx + 1}: ${opt.label} +${percent}%`;
+                    } else if (opt.type === 'add') {
+                        const suffix = opt.stat.toLowerCase().includes('res') ? '%' : '';
+                        desc += `\n- 옵션 ${idx + 1}: ${opt.label} +${opt.value}${suffix}`;
+                    } else {
+                        desc += `\n- 옵션 ${idx + 1}: ${opt.label}`;
+                    }
+                } else {
+                    desc += `\n- 옵션 ${idx + 1}: 활성화됨 (데이터 없음)`;
+                }
             } else {
-                desc += `\n- 옵션 ${i}: LV.${reqLv}에 개방`;
+                desc += `\n- 옵션 ${idx + 1}: LV.${reqLv}에 개방`;
             }
-        }
+        });
 
         return {
             name: `${baseItem.name} LV.${instance.level}`,

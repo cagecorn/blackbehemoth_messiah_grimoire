@@ -274,6 +274,7 @@ export default class ChatChannel {
                     <div class="stat-item"><span class="stat-label">ACC</span><span class="stat-value" data-stat="acc">0</span></div>
                     <div class="stat-item"><span class="stat-label">EVA</span><span class="stat-value" data-stat="eva">0</span></div>
                     <div class="stat-item"><span class="stat-label">CRIT</span><span class="stat-value" data-stat="crit">0</span></div>
+                    <div class="stat-item"><span class="stat-label">ULT CHRG</span><span class="stat-value" data-stat="ultChargeSpeed">1.0</span></div>
                 </div>
                 <button class="dash-back-btn">돌아가기</button>
             </div>
@@ -640,7 +641,7 @@ export default class ChatChannel {
                             };
                             cache.root.classList.add('gear-slot-pending');
                             this.uiManager.showPopup('inventory');
-                            if (this.uiManager.switchInventoryTab) this.uiManager.switchInventoryTab('gear');
+                            if (this.uiManager.switchInventoryTab) this.uiManager.switchInventoryTab('gear', key);
                         }
                     } else {
                         this._showGearDetail(key, currentItem); // Fire and forget or handle error
@@ -767,7 +768,7 @@ export default class ChatChannel {
                 };
                 this.domCache.gear[slot].root.classList.add('gear-slot-pending');
                 this.uiManager.showPopup('inventory');
-                if (this.uiManager.switchInventoryTab) this.uiManager.switchInventoryTab('gear');
+                if (this.uiManager.switchInventoryTab) this.uiManager.switchInventoryTab('gear', slot);
             }
         };
         titleContainer.appendChild(changeBtn);
@@ -809,15 +810,39 @@ export default class ChatChannel {
                 { lv: 50, idx: 5 }
             ];
 
-            optionsConfig.forEach(cfg => {
+            optionsConfig.forEach((cfg, idx) => {
                 const optDiv = document.createElement('div');
                 optDiv.style.cssText = 'display: flex; justify-content: space-between; font-size: 10px; color: #888; margin-bottom: 2px;';
 
                 const isUnlocked = instance.level >= cfg.lv;
-                const optValue = isUnlocked ? '개방됨 (설정 대기 중)' : `LV.${cfg.lv}에 개방`;
-                const optColor = isUnlocked ? '#aaa' : '#555';
+                const optData = (instance.randomOptions && instance.randomOptions[idx]) ? instance.randomOptions[idx] : null;
 
-                optDiv.innerHTML = `<span style="color: ${optColor};">옵션 ${cfg.idx}</span><span style="color: ${optColor};">${optValue}</span>`;
+                let optName = `옵선 ${cfg.idx}`;
+                let optValue = `LV.${cfg.lv}에 개방`;
+                let optColor = '#555';
+
+                if (isUnlocked) {
+                    optColor = '#aaa';
+                    if (optData) {
+                        optName = optData.label;
+                        if (optData.type === 'mult') {
+                            const percent = Math.round(optData.value * 100);
+                            optValue = `+${percent}%`;
+                            optColor = '#fbbf24'; // Golden for unlocked stats
+                        } else if (optData.type === 'add') {
+                            const suffix = optData.stat.toLowerCase().includes('res') ? '%' : '';
+                            optValue = `+${optData.value}${suffix}`;
+                            optColor = '#fbbf24';
+                        } else {
+                            optValue = '부여됨';
+                            optColor = '#4ade80'; // Green for elements
+                        }
+                    } else {
+                        optValue = '개방됨';
+                    }
+                }
+
+                optDiv.innerHTML = `<span style="color: ${optColor};">${optName}</span><span style="color: ${optColor};">${optValue}</span>`;
                 statsList.appendChild(optDiv);
             });
         } else {
@@ -905,7 +930,8 @@ export default class ChatChannel {
             { key: 'castSpd', val: stats.castSpd },
             { key: 'acc', val: stats.acc },
             { key: 'eva', val: stats.eva },
-            { key: 'crit', val: stats.crit !== undefined ? `${stats.crit}%` : undefined }
+            { key: 'crit', val: stats.crit !== undefined ? `${stats.crit}%` : undefined },
+            { key: 'ultChargeSpeed', val: stats.ultChargeSpeed !== undefined ? `${stats.ultChargeSpeed.toFixed(2)}x` : undefined }
         ];
 
         statMappings.forEach(entry => {

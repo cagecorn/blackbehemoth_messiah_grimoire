@@ -6,7 +6,7 @@ import localLLM from '../AI/LocalLLM.js';
 import embeddingGemma from '../AI/EmbeddingGemma.js';
 import { MercenaryClasses, Characters, PetStats, scaleStats } from '../Core/EntityStats.js';
 // partyManager will be accessed via this.scene.game.partyManager
-import ItemManager from '../Core/ItemManager.js';
+import ItemManager, { ITEM_TYPES } from '../Core/ItemManager.js';
 import CharmManager from '../Core/CharmManager.js';
 import ShopManager from './ShopManager.js';
 import npcManager from '../Core/NPCManager.js';
@@ -91,6 +91,8 @@ export default class UIManager {
         this.pendingGearSlot = null; // Track gear slot clicked in ChatChannel
         this.emojiFilter = 'ALL'; // Filter for Emoji Inventory
         this.viewingInstanceId = null; // Track which unique item is being viewed for real-time updates
+        this.currentCraftFilter = null; // Filter for equipment crafting UI
+        this.equipFilter = 'ALL'; // Filter for Equipment Inventory
 
         this.shopManager = new ShopManager(this);
 
@@ -748,11 +750,20 @@ export default class UIManager {
         if (tabGear) tabGear.onclick = () => this.switchInventoryTab('gear');
 
         // Emoji Filter Listeners
-        const filterButtons = document.querySelectorAll('.emoji-filter-bar .filter-btn');
+        const filterButtons = document.querySelectorAll('.emoji-filter-bar:not(.equip-filter-bar) .filter-btn');
         filterButtons.forEach(btn => {
             btn.onclick = () => {
                 const filter = btn.dataset.filter;
                 this.setEmojiFilter(filter);
+            };
+        });
+
+        // Equipment Filter Listeners
+        const equipFilterButtons = document.querySelectorAll('.equip-filter-bar .filter-btn');
+        equipFilterButtons.forEach(btn => {
+            btn.onclick = () => {
+                const filter = btn.dataset.equipFilter;
+                this.setEquipFilter(filter);
             };
         });
     }
@@ -897,11 +908,29 @@ export default class UIManager {
         this.inventoryDirty = true;
     }
 
+    setEquipFilter(filter) {
+        this.equipFilter = filter || 'ALL';
+
+        // Update button UI
+        const filterButtons = document.querySelectorAll('.equip-filter-bar .filter-btn');
+        filterButtons.forEach(btn => {
+            if (btn.dataset.equipFilter === this.equipFilter) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+
+        this.inventoryDirty = true;
+    }
+
     switchInventoryTab(tab, filter = null) {
-        if (tab === 'materials' && filter) {
-            this.setEmojiFilter(filter);
-        } else if (tab === 'materials' && !filter) {
-            this.setEmojiFilter('ALL');
+        if (tab === 'materials') {
+            if (filter) this.setEmojiFilter(filter);
+            else this.setEmojiFilter('ALL');
+        } else if (tab === 'gear') {
+            if (filter) this.setEquipFilter(filter);
+            else this.setEquipFilter('ALL');
         }
 
         const sectionMaterials = document.getElementById('section-materials');
@@ -1180,34 +1209,61 @@ export default class UIManager {
         const wood = await DBManager.getInventoryItem('emoji_wood');
         materialDisplay.innerHTML = `<div style="display:flex; align-items:center; gap:5px; color: #fff; font-weight: bold;"><img src="assets/emojis/1fab5.svg" style="width:20px; height:20px;"> ${wood ? wood.amount : 0}</div>`;
 
-        // 2. Recipes (Wood Sword only for now)
-        const recipes = [
-            { id: 'wood_sword', req: { emoji_wood: 500 } }
-        ];
+        // 2. Recipes (Dynamic from ItemManager)
+        const allItems = ItemManager.getAllItems();
+        const recipes = [];
+        for (const id in allItems) {
+            if (allItems[id].type === ITEM_TYPES.EQUIPMENT) {
+                recipes.push({ id, req: { emoji_wood: 500 } });
+            }
+        }
+
+        // Set default filter if none selected
+        if (!this.currentCraftFilter && recipes.length > 0) {
+            this.currentCraftFilter = recipes[0].id;
+        }
 
         let recipeHtml = '';
         for (const r of recipes) {
             const item = ItemManager.getItem(r.id);
             const canCraft = wood && wood.amount >= r.req.emoji_wood;
             const iconUrl = item.customAsset || 'assets/emojis/' + ItemManager.getSVGFilename(r.id);
+            const isSelected = this.currentCraftFilter === r.id;
 
             recipeHtml += `
-                <div class="craft-card" style="background: rgba(0,0,0,0.3); border: 2px solid #5b21b6; border-radius: 12px; padding: 12px; display: flex; align-items: center; gap: 15px; position: relative; overflow: hidden;">
+                <div class="craft-card ${isSelected ? 'selected' : ''}" data-id="${r.id}" 
+                     style="background: ${isSelected ? 'rgba(124, 58, 237, 0.2)' : 'rgba(0,0,0,0.3)'}; 
+                            border: 2px solid ${isSelected ? '#a78bfa' : '#5b21b6'}; 
+                            box-shadow: ${isSelected ? '0 0 15px rgba(167, 139, 250, 0.4)' : 'none'};
+                            border-radius: 12px; padding: 12px; display: flex; align-items: center; gap: 15px; 
+                            position: relative; overflow: hidden; cursor: pointer; transition: all 0.2s ease;">
                     <div class="retro-scanline-overlay" style="pointer-events: none;"></div>
                     <img src="${iconUrl}" style="width: 48px; height: 48px; object-fit: contain; image-rendering: pixelated; background: rgba(255,255,255,0.05); border-radius: 8px; padding: 4px; border: 1px solid rgba(255,255,255,0.1);">
                     <div style="flex: 1;">
                         <div style="font-weight: bold; font-size: 14px; color: #fff;">${item.name}</div>
-                        <div style="font-size: 11px; color: #a78bfa; display: flex; align-items: center; gap: 4px;">재료: <img src="assets/emojis/1fab5.svg" style="width:14px; height:14px;"> 500</div>
+                        <div style="font-size: 11px; color: #a78bfa; display: flex; align-items: center; gap: 4px;">재료: <img src="assets/emojis/1fab5.svg" style="width:14px; height:14px;"> ${r.req.emoji_wood}</div>
                     </div>
                     <button class="shop-buy-btn craft-btn" data-id="${r.id}" ${canCraft ? '' : 'disabled'} style="padding: 8px 15px; font-size: 12px; height: auto; background: ${canCraft ? 'linear-gradient(to bottom, #7c3aed, #5b21b6)' : '#333'}; opacity: ${canCraft ? 1 : 0.5}; cursor: ${canCraft ? 'pointer' : 'not-allowed'}; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); color: #fff; font-weight: bold;">제작</button>
+                    ${isSelected ? '<div style="position: absolute; top: 5px; right: 5px; color: #a78bfa; font-size: 10px;">★</div>' : ''}
                 </div>
             `;
         }
         recipeList.innerHTML = recipeHtml;
 
-        // Bind craft buttons
-        recipeList.querySelectorAll('.craft-btn').forEach(btn => {
-            btn.onclick = async () => {
+        // Bind recipe card selection & craft buttons
+        recipeList.querySelectorAll('.craft-card').forEach(card => {
+            card.onclick = (e) => {
+                // If button was clicked, don't trigger filter (craftItem handled below)
+                if (e.target.classList.contains('craft-btn')) return;
+
+                const id = card.dataset.id;
+                this.currentCraftFilter = id;
+                this.refreshEquipmentCrafting();
+            };
+
+            const btn = card.querySelector('.craft-btn');
+            btn.onclick = async (e) => {
+                e.stopPropagation(); // Prevent card click
                 const itemId = btn.dataset.id;
                 const result = await equipmentManager.craftItem(itemId);
                 if (result.success) {
@@ -1219,12 +1275,23 @@ export default class UIManager {
             };
         });
 
-        // 3. Owned Instances
-        const instances = await DBManager.getAllEquipmentInstances();
+        // 3. Owned Instances (Filtered by selection)
+        let instances = await DBManager.getAllEquipmentInstances();
+
+        // Apply filter if exists
+        if (this.currentCraftFilter) {
+            instances = instances.filter(inst => inst.itemId === this.currentCraftFilter);
+        }
+
         let ownedHtml = '';
         if (instances.length === 0) {
-            ownedHtml = `<div style="grid-column: 1/-1; text-align: center; opacity: 0.4; padding: 40px; font-size: 12px; color: #fff;">제작된 성장 장비가 없습니다.</div>`;
+            ownedHtml = `<div style="grid-column: 1/-1; text-align: center; opacity: 0.4; padding: 40px; font-size: 12px; color: #fff;">
+                ${this.currentCraftFilter ? ItemManager.getItem(this.currentCraftFilter).name + ' ' : ''}보유 인벤토리가 비어있습니다.
+            </div>`;
         } else {
+            // Sort by level descending
+            instances.sort((a, b) => b.level - a.level);
+
             for (const inst of instances) {
                 const base = ItemManager.getItem(inst.itemId);
                 const iconUrl = base.customAsset || 'assets/emojis/' + ItemManager.getSVGFilename(inst.itemId);
@@ -1970,6 +2037,21 @@ export default class UIManager {
             this.hideTooltip(); // Hide any floating item tooltips
             this.popupOverlay.style.display = 'none';
         }
+    }
+
+    isItemEquippedByAny(instanceId) {
+        if (!this.channels) return false;
+        for (const channel of this.channels) {
+            if (channel.equipment) {
+                for (const slot in channel.equipment) {
+                    const item = channel.equipment[slot];
+                    if (!item) continue;
+                    const equippedId = (typeof item === 'string') ? item : (item.instanceId || item.id);
+                    if (equippedId === instanceId) return true;
+                }
+            }
+        }
+        return false;
     }
 
     handleEquipmentExpUpdated(payload) {
@@ -2817,8 +2899,11 @@ export default class UIManager {
                 const itemData = ItemManager.getItem(item.id);
                 if (!itemData) return false;
 
-                // If Gear tab, show all gear
-                if (itemData.type === 'equipment') return true;
+                // If Gear tab, respect the equip filter
+                if (itemData.type === 'equipment') {
+                    if (this.equipFilter === 'ALL') return true;
+                    return itemData.slot === this.equipFilter;
+                }
 
                 // If Emoji tab, respect the filter
                 if (this.emojiFilter === 'ALL') return true;
@@ -2874,7 +2959,12 @@ export default class UIManager {
             });
 
             // --- 2. Growth Equipment Instances ---
-            const unequippedInstances = equipmentInstances.filter(inst => !inst.ownerId);
+            const unequippedInstances = equipmentInstances.filter(inst => {
+                if (inst.ownerId) return false;
+                if (this.equipFilter === 'ALL') return true;
+                const itemData = ItemManager.getItem(inst.itemId);
+                return itemData && itemData.slot === this.equipFilter;
+            });
 
             unequippedInstances.forEach(inst => {
                 const itemData = ItemManager.getItem(inst.itemId);

@@ -52,6 +52,9 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         this.acc = config.acc || 100;
         this.eva = config.eva || 0;
         this.crit = config.crit || 0;
+        this.ultChargeSpeed = config.ultChargeSpeed || 1.0;
+        this.maxHpMult = 1.0;
+        this.castSpdMult = 1.0;
 
         // Dynamic Buffs
         this.bonusAtk = 0;
@@ -71,6 +74,9 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         this.bonusFireRes = 0;
         this.bonusIceRes = 0;
         this.bonusLightningRes = 0;
+        this.bonusUltChargeSpeed = 0;
+        this.bonusMaxHpMult = 0;
+        this.bonusCastSpdMult = 0;
         this.isTacticalCommandActive = false;
         this.isBloodRaging = false;
         this.isStunned = false;
@@ -97,10 +103,15 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         this.autoUlt = true; // Auto-use by default
 
         this.equipment = {
-            weapon: null,
-            armor: null,
-            accessory: null
+            weapon: config.weapon || null,
+            armor: config.armor || null,
+            necklace: config.necklace || null,
+            ring: config.ring || null
         };
+        // Merge with existing equipment from config if any
+        if (config.equipment) {
+            this.equipment = { ...this.equipment, ...config.equipment };
+        }
 
         // --- Grimoire System (Messiah Grimoire) ---
         GrimoireManager.initGrimoire(this);
@@ -221,6 +232,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         // ─────────────────────────────────────────────────────────
 
         this.setupBaseEventListeners();
+        this.setupGrowthEventListeners();
     }
 
     // ================================================================
@@ -264,6 +276,41 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         if (snapBack && this.sprite) {
             this.sprite.y = 0;
         }
+    }
+
+    setupGrowthEventListeners() {
+        this._onEquipmentLevelUp = (payload) => {
+            const { instanceId, level } = payload;
+
+            // Check if this mercenary is wearing the leveled-up item
+            for (const slot in this.equipment) {
+                const item = this.equipment[slot];
+                if (!item) continue;
+
+                const equippedId = (typeof item === 'string') ? item : (item.instanceId || item.id);
+                if (equippedId === instanceId) {
+                    const baseItem = ItemManager.getItem(item.itemId || item.id);
+                    if (baseItem) {
+                        // 1. Update memory state
+                        item.level = level;
+                        item.stats = equipmentManager.getEffectiveStats(item, baseItem);
+
+                        // 2. Log for Rule #4 (Debug)
+                        console.log(`%c[Mercenary] %c${this.unitName}%c의 장비 [${baseItem.name}] 레벨업! (Lv.${level}) 능력치를 동기화합니다.`,
+                            'color: #00ffcc; font-weight: bold;',
+                            'color: #ffffff;',
+                            'color: #00ffcc;'
+                        );
+
+                        // 3. Sync UI (effective stats)
+                        this.syncStatusUI();
+                    }
+                    break;
+                }
+            }
+        };
+
+        EventBus.on('EQUIPMENT_LEVEL_UP', this._onEquipmentLevelUp);
     }
 
     setupBaseEventListeners() {
@@ -421,12 +468,23 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         return (weapon && weapon.prefix) ? weapon.prefix : null;
     }
 
+    getTotalMaxHp() {
+        let base = this.maxHp || 0;
+        let multipliers = (this.maxHpMult - 1) + (this.bonusMaxHpMult || 0);
+
+        // Pet Passive
+        const petBonus = this.scene?.game?.partyManager?.getGlobalPetBonus('maxHpMult') || 0;
+        multipliers += petBonus;
+
+        return Math.floor(base * (1 + multipliers));
+    }
+
     getTotalAtk() {
         const base = (this.atk || 0) + this.getEquipmentBonus('atk');
         const additions = (this.bonusAtk || 0);
 
         // Multipliers (Additive stacking: 1 + m1 + m2 + ...)
-        let multipliers = 0;
+        let multipliers = this.getEquipmentBonus('atkMult') || 0;
 
         // [NodeCharm] Enraged (😠) bonus: UP TO +15% based on missing HP
         if (this.blackboard && this.blackboard.get('enraged_active')) {
@@ -450,11 +508,15 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         const base = (this.mAtk || 0) + this.getEquipmentBonus('mAtk');
         const additions = (this.bonusMAtk || 0);
 
-        let multipliers = 0;
+        let multipliers = this.getEquipmentBonus('mAtkMult') || 0;
 
         // Tactical Command: +50%
         if (this.isTacticalCommandActive) {
             multipliers += 0.5;
+        }
+
+        if (this.grimoire_transmult) {
+            multipliers += (this.grimoire_transmult - 1);
         }
 
         // Pet Passive
@@ -465,14 +527,27 @@ export default class Mercenary extends Phaser.GameObjects.Container {
     }
 
     getTotalCrit() {
-        return this.crit + (this.bonusCrit || 0);
+        const base = this.crit + this.getEquipmentBonus('crit') + (this.bonusCrit || 0);
+        const multipliers = this.getEquipmentBonus('critMult') || 0;
+        return base * (1 + multipliers);
+    }
+
+    getTotalCastSpd() {
+        let base = this.castSpd || 1000;
+        let multipliers = (this.castSpdMult - 1) + (this.bonusCastSpdMult || 0);
+        
+        // Lower is better/faster? In many systems CastSpd is a reduction.
+        // But usually "Speed" means "Rate". If it's a "Delay", mult reduces it.
+        // readme says: "시전 속도 5~30% 증가" -> 1000ms delay goes to 800ms.
+        // So we divide by (1 + multipliers)
+        return Math.floor(base / (1 + multipliers));
     }
 
     getTotalDef() {
         const base = (this.def || 0) + this.getEquipmentBonus('def');
         const additions = (this.bonusDef || 0);
 
-        let multipliers = 0;
+        let multipliers = this.getEquipmentBonus('defMult') || 0;
         // [NodeCharm] Bodyguard (😎) bonus: +10% Defense
         if (this.blackboard && this.blackboard.get('guard_active')) {
             multipliers += 0.1;
@@ -484,13 +559,16 @@ export default class Mercenary extends Phaser.GameObjects.Container {
     getTotalMDef() {
         const base = (this.mDef || 0) + this.getEquipmentBonus('mDef');
         const additions = (this.bonusMDef || 0);
-        return (base + additions);
+        let multipliers = this.getEquipmentBonus('mDefMult') || 0;
+        return (base + additions) * (1 + multipliers);
     }
 
     getTotalAtkSpd() {
         // Lower is faster
-        const base = Math.max(100, this.atkSpd - (this.bonusAtkSpd || 0));
-        return this.isFrozen ? base * 2 : base;
+        const base = Math.max(100, (this.atkSpd || 1000) + this.getEquipmentBonus('atkSpd') - (this.bonusAtkSpd || 0));
+        const multipliers = this.getEquipmentBonus('atkSpdMult') || 0;
+        const result = base * (1 - multipliers); // Reducing delay
+        return this.isFrozen ? result * 2 : result;
     }
 
     getTotalAtkRange() {
@@ -502,11 +580,15 @@ export default class Mercenary extends Phaser.GameObjects.Container {
     }
 
     getTotalEva() {
-        return (this.eva || 0) + (this.bonusEva || 0);
+        const base = (this.eva || 0) + this.getEquipmentBonus('eva') + (this.bonusEva || 0);
+        const multipliers = this.getEquipmentBonus('evaMult') || 0;
+        return base * (1 + multipliers);
     }
 
     getTotalAcc() {
-        return (this.acc || 100) + (this.bonusAcc || 0);
+        const base = (this.acc || 100) + this.getEquipmentBonus('acc') + (this.bonusAcc || 0);
+        const multipliers = this.getEquipmentBonus('accMult') || 0;
+        return base * (1 + multipliers);
     }
 
     getTotalSpeed() {
@@ -522,8 +604,16 @@ export default class Mercenary extends Phaser.GameObjects.Container {
     }
 
     getTotalCastSpd() {
-        const base = Math.max(100, this.castSpd - (this.bonusCastSpd || 0));
-        return this.isFrozen ? base * 2 : base;
+        const base = (this.castSpd || 1000) + this.getEquipmentBonus('castSpd') + (this.bonusCastSpd || 0);
+        const multipliers = this.getEquipmentBonus('castSpdMult') || 0;
+        const result = base * (1 - multipliers); // Reducing delay
+        return this.isFrozen ? result * 2 : result;
+    }
+
+    getTotalUltChargeSpeed() {
+        const base = (this.ultChargeSpeed || 1.0) + this.getEquipmentBonus('ultChargeSpeed') + (this.bonusUltChargeSpeed || 0);
+        const multipliers = this.getEquipmentBonus('ultChargeSpeedMult') || 0;
+        return base * (1 + multipliers);
     }
 
     getTotalSpeed() {
@@ -1162,8 +1252,9 @@ export default class Mercenary extends Phaser.GameObjects.Container {
     gainUltGauge(amount) {
         if (!this.active || this.hp <= 0) return;
 
-        // console.log(`[Ult Debug] ${this.unitName} gain gauge: +${amount} (Current: ${this.ultGauge})`);
-        this.ultGauge = Math.min(this.maxUltGauge, this.ultGauge + amount);
+        const effectiveAmount = amount * this.getTotalUltChargeSpeed();
+        // console.log(`[Ult Debug] ${this.unitName} gain gauge: +${effectiveAmount} (Current: ${this.ultGauge})`);
+        this.ultGauge = Math.min(this.maxUltGauge, this.ultGauge + effectiveAmount);
 
         EventBus.emit(EventBus.EVENTS.STATUS_UPDATED, {
             agentId: this.id,
@@ -1360,6 +1451,9 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         EventBus.off(EventBus.EVENTS.ULT_TRIGGER, this.handleUltTrigger);
         EventBus.off('PERK_LEARN', this.handlePerkLearn);
         EventBus.off('GRIMOIRE_REQUEST', this.handleGrimoireRequest);
+        if (this._onEquipmentLevelUp) {
+            EventBus.off('EQUIPMENT_LEVEL_UP', this._onEquipmentLevelUp);
+        }
 
         console.log(`[Mercenary] Cleaned up listeners for ${this.unitName}(${this.characterId})`);
 
@@ -1651,8 +1745,8 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             maxHp: this.maxHp,
             atk: this.getTotalAtk(),
             mAtk: this.getTotalMAtk(),
-            def: this.def,
-            mDef: this.mDef,
+            def: this.getTotalDef(),
+            mDef: this.getTotalMDef(),
             speed: this.speed,
             atkSpd: icon_atk_spd,
             atkRange: this.atkRange,
@@ -1662,6 +1756,10 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             acc: this.acc,
             eva: this.eva,
             crit: this.getTotalCrit(),
+            fireRes: this.fireRes + (this.bonusFireRes || 0),
+            iceRes: this.iceRes + (this.bonusIceRes || 0),
+            lightningRes: this.lightningRes + (this.bonusLightningRes || 0),
+            ultChargeSpeed: this.getTotalUltChargeSpeed(),
             className: this.className,
             classId: this.className,
             characterId: this.characterId,
@@ -1730,6 +1828,10 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             acc: this.acc,
             eva: this.eva,
             crit: this.crit,
+            ultChargeSpeed: this.ultChargeSpeed,
+            fireRes: this.fireRes,
+            iceRes: this.iceRes,
+            lightningRes: this.lightningRes,
             activatedPerks: this.activatedPerks,
             equipment: this.equipment,
             grimoire: this.grimoire,
