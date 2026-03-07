@@ -311,7 +311,7 @@ export default class ChatChannel {
                 <button class="dash-back-btn">돌아가기</button>
             </div>
             <div class="chat-narrative-view" id="narrative-${id}" style="display: none;">
-                <!-- Narrative blocks injected here -->
+                <div class="narrative-content"></div>
                 <button class="dash-back-btn">돌아가기</button>
             </div>
         `;
@@ -1029,7 +1029,8 @@ export default class ChatChannel {
             `;
         });
         html += '</div>';
-        this.narrativeView.innerHTML = html;
+        const contentEl = this.narrativeView.querySelector('.narrative-content');
+        if (contentEl) contentEl.innerHTML = html;
     }
 
     updateUltGauge(progress) {
