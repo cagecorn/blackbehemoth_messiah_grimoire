@@ -74,6 +74,15 @@ export default class DungeonScene extends Phaser.Scene {
         this.dungeonType = data?.dungeonType || 'CURSED_FOREST';
         this.dungeonId = this.dungeonType; // Crucial for Structure Persistence
         this.currentRound = data?.startRound || 1;
+
+        console.log(`%c[Dungeon DEBUG] Scene Init - Type: ${this.dungeonType} | Round: ${this.currentRound}`, "background: #222; color: #ff00ff; font-weight: bold;");
+        const cfg = StageConfigs[this.dungeonType];
+        if (cfg) {
+            console.log(`%c[Dungeon DEBUG] StageConfigs detected: ${cfg.name} | Pool: ${JSON.stringify(cfg.monsterPool)}`, "background: #222; color: #00ffff;");
+        } else {
+            console.error(`%c[Dungeon ERROR] StageConfigs for '${this.dungeonType}' is missing!`, "background: #f00; color: #fff;");
+        }
+
         // Reset state on every entry
         this.isResting = false;
         this.isUltimateActive = false;
