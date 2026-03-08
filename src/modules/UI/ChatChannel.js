@@ -136,7 +136,6 @@ export default class ChatChannel {
                 <div class="grim-container">
                     <div class="grim-header-row">
                         <div class="grim-page-header">📖 MESSIAH GRIMOIRE</div>
-                        <button class="grim-close-btn dash-back-btn" title="닫기">×</button>
                     </div>
                     
                     <div class="grim-page">
@@ -170,6 +169,7 @@ export default class ChatChannel {
                             </div>
                         </div>
                     </div>
+                    <button class="dash-back-btn">돌아가기</button>
                 </div>
             </div>
 

@@ -3491,9 +3491,6 @@ body {
     background: radial-gradient(circle, rgba(255, 215, 0, 0.1), rgba(0, 0, 0, 0.8)) !important;
 }
 
-.chat-grimoire-view .dash-back-btn:not(.grim-close-btn) {
-    display: none !important;
-}
 
 /* --- Settings Popup Styles --- */
 .settings-menu {
