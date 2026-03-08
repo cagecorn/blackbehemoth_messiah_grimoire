@@ -173,39 +173,24 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             const savedState = this.scene.game.partyManager.getState(this.id);
 
             if (savedState) {
-                this.activatedPerks = savedState.activatedPerks || this.activatedPerks || [];
-                this.equipment = savedState.equipment || this.equipment;
-
                 // SPECIAL FIX: Core Stats (HP, ATK, DEF, etc.) are derived from Level/Star via scaleStats.
                 // If a scaledConfig was passed, it contains the correct values for the current level.
-                // We ONLY load from savedState if the character doesn't have a scaledConfig OR for persistent properties like equipment/perks.
-                // However, since we now pass scaledConfig in all scenes, we skip overwriting core combat stats here to avoid "Level 1 Stat Overwrite" bug.
+                // We ONLY load from savedState for persistent properties like equipment/perks/HP.
 
-                // Do NOT overwrite: maxHp, atk, mAtk, def, mDef from savedState IF they are clearly "Standardized" class stats.
-                // (Unless we implementation a way to have permanent stat-up potions/books later).
-
-                // For now, only load current HP (to persist damage taken).
+                // 1. Current HP (to persist damage taken)
                 this.hp = savedState.hp !== undefined ? savedState.hp : this.hp;
                 if (this.hp > this.maxHp) this.hp = this.maxHp;
 
-                // Load utility stats that might have come from equipment (if we decide to persist them in savedState)
-                // But generally, the scene's scaleStats result should be the source of truth.
-                this.speed = savedState.speed || this.speed;
-                this.atkSpd = savedState.atkSpd || this.atkSpd;
-                this.atkRange = savedState.atkRange || this.atkRange;
-                this.rangeMin = savedState.rangeMin || this.rangeMin;
-                this.rangeMax = savedState.rangeMax || this.rangeMax;
-                this.castSpd = savedState.castSpd || this.castSpd;
-                this.acc = savedState.acc || this.acc;
-                this.eva = savedState.eva || this.eva;
-                this.crit = savedState.crit || this.crit;
-                this.ultChargeSpeed = savedState.ultChargeSpeed || this.ultChargeSpeed;
-                this.fireRes = savedState.fireRes !== undefined ? savedState.fireRes : this.fireRes;
-                this.iceRes = savedState.iceRes !== undefined ? savedState.iceRes : this.iceRes;
-                this.lightningRes = savedState.lightningRes !== undefined ? savedState.lightningRes : this.lightningRes;
-
+                // 2. Persistent Identity & Progression
+                this.level = savedState.level || this.level;
+                this.exp = savedState.exp || this.exp;
                 this.activatedPerks = savedState.activatedPerks || this.activatedPerks || [];
                 this.equipment = savedState.equipment || this.equipment;
+
+                // 3. SPECIAL FIX: Do NOT load core combat/utility stats from savedState anymore.
+                // These MUST be derived from scaleStats (level/star rank) to prevent "Inflation Bug".
+                // This protects: speed, atkSpd, castSpd, acc, eva, crit, ultChargeSpeed, resistances.
+
                 // Sync persistent Grimoire state
                 if (savedState.grimoire) {
                     this.grimoire = savedState.grimoire;

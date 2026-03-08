@@ -128,11 +128,11 @@ export default class Nickle extends Archer {
         this.syncStatusUI();
 
         // Safe Retreat: Give a temporary speed boost and force AI to re-evaluate
-        const originalSpeed = this.speed;
-        this.speed *= 2.0;
+        const retreatBoost = this.speed; // +100% speed
+        this.bonusSpeed += retreatBoost;
         this.scene.time.delayedCall(1500, () => {
             if (this.active) {
-                this.speed = originalSpeed;
+                this.bonusSpeed -= retreatBoost;
             }
         });
 

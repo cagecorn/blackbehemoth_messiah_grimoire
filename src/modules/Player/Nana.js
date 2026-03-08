@@ -37,7 +37,7 @@ export default class Nana extends Bard {
     update(time, delta) {
         if (this.isBerserk) {
             super.update(time, delta);
-        if (!this.active || !this.scene) return; // Calls Bard.update -> Mercenary.update
+            if (!this.active || !this.scene) return; // Calls Bard.update -> Mercenary.update
             this.handleBerserkVisuals();
             return;
         }
@@ -92,7 +92,7 @@ export default class Nana extends Bard {
         // 1. Visual change
         this.sprite.setTexture('nana_ultimate_sprite');
 
-        // Save old stats
+        // Save old stats (to calculate bonuses)
         this.oldStats = {
             atk: this.atk,
             atkSpd: this.atkSpd,
@@ -111,15 +111,10 @@ export default class Nana extends Bard {
         this.bonusCrit += 50;
         this.bonusEva += 40;
 
-        // Range modification still done directly as it's a fixed mode-swap
-        this.atkRange = 60;
-        this.rangeMin = 0;
-        this.rangeMax = 80;
-
-        // Update config for AI visibility
-        this.config.atkRange = this.atkRange;
-        this.config.rangeMin = this.rangeMin;
-        this.config.rangeMax = this.rangeMax;
+        // Range modification using bonus properties (not persisted)
+        this.bonusAtkRange = 60 - (this.oldStats.atkRange || 200);
+        this.bonusRangeMin = 0 - (this.oldStats.rangeMin || 150);
+        this.bonusRangeMax = 80 - (this.oldStats.rangeMax || 220);
 
         // 3. AI Swap
         // Melee AI for berserk mode
@@ -159,13 +154,9 @@ export default class Nana extends Bard {
         this.bonusCrit -= 50;
         this.bonusEva -= 40;
 
-        this.atkRange = this.oldStats.atkRange;
-        this.rangeMin = this.oldStats.rangeMin;
-        this.rangeMax = this.oldStats.rangeMax;
-
-        this.config.atkRange = this.oldStats.atkRange;
-        this.config.rangeMin = this.oldStats.rangeMin;
-        this.config.rangeMax = this.oldStats.rangeMax;
+        this.bonusAtkRange = 0;
+        this.bonusRangeMin = 0;
+        this.bonusRangeMax = 0;
 
         // 3. AI Revert
         this.initAI(); // Back to Bard AI
