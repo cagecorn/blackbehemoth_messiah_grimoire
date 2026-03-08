@@ -4,7 +4,7 @@ import EventBus from '../Events/EventBus.js';
 import intentRouter from '../AI/IntentRouter.js';
 import localLLM from '../AI/LocalLLM.js';
 import embeddingGemma from '../AI/EmbeddingGemma.js';
-import { MercenaryClasses, Characters, PetStats, scaleStats, StructureStats, Skins } from '../Core/EntityStats.js';
+import { MercenaryClasses, Characters, PetStats, scaleStats, StructureStats, Skins, MonsterClasses, StageConfigs } from '../Core/EntityStats.js';
 // partyManager will be accessed via this.scene.game.partyManager
 import ItemManager, { ITEM_TYPES } from '../Core/ItemManager.js';
 import CharmManager from '../Core/CharmManager.js';
@@ -2117,6 +2117,183 @@ export default class UIManager {
                 this.achievementsOverlay = null;
             }
         }, 300);
+    }
+
+    async showMonsterCodex() {
+        if (this.monsterCodexOverlay) return;
+
+        const overlay = document.createElement('div');
+        overlay.id = 'monster-codex-overlay';
+        overlay.className = 'retro-menu-overlay fade-in';
+        overlay.style.cssText = `
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); z-index: 30000;
+            display: flex; justify-content: center; align-items: center;
+            backdrop-filter: blur(8px); font-family: var(--font-pixel);
+            padding: 10px; box-sizing: border-box;
+        `;
+
+        this.monsterCodexOverlay = overlay;
+        this.currentCodexCategory = 'CURSED_FOREST';
+
+        overlay.innerHTML = `
+            <div class="retro-container" style="width: 100%; max-width: 800px; height: 95%; background: #0f172a; border: 2px solid #4ade80; border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; position: relative; box-shadow: 0 0 30px rgba(0,0,0,1);">
+                <!-- Header -->
+                <div style="background: #1e293b; padding: 12px 15px; border-bottom: 2px solid #4ade80; display: flex; justify-content: space-between; align-items: center;">
+                    <h2 style="margin: 0; color: #4ade80; font-size: 16px; text-shadow: 0 0 10px rgba(74,222,128,0.5);">👾 몬스터 도감</h2>
+                    <button id="close-codex" class="retro-btn" style="background: transparent; border: none; color: #ef4444; font-size: 20px; cursor: pointer; padding: 0 5px;">✕</button>
+                </div>
+                
+                <div id="codex-main-body" style="display: flex; flex: 1; overflow: hidden; flex-direction: row;">
+                    <!-- Sidebar -->
+                    <div id="codex-sidebar" style="width: 120px; background: #1e293b; border-right: 1px solid rgba(74,222,128,0.2); display: flex; flex-direction: column; gap: 4px; padding: 8px; overflow-y: auto;">
+                        <button class="codex-tab active" data-cat="CURSED_FOREST" style="padding: 8px; background: rgba(74,222,128,0.2); border: 1px solid #4ade80; color: #fff; text-align: left; border-radius: 4px; font-size: 10px;">🌲 저주받은 숲</button>
+                        <button class="codex-tab" data-cat="UNDEAD_GRAVEYARD" style="padding: 8px; background: transparent; border: 1px solid rgba(74,222,128,0.2); color: #94a3b8; text-align: left; border-radius: 4px; font-size: 10px;">🪦 언데드 묘지</button>
+                        <button class="codex-tab" data-cat="SWAMPLAND" style="padding: 8px; background: transparent; border: 1px solid rgba(74,222,128,0.2); color: #94a3b8; text-align: left; border-radius: 4px; font-size: 10px;">🐸 늪지대</button>
+                        <button class="codex-tab" data-cat="LAVA_FIELD" style="padding: 8px; background: transparent; border: 1px solid rgba(74,222,128,0.2); color: #94a3b8; text-align: left; border-radius: 4px; font-size: 10px;">🌋 용암 지대</button>
+                        <button class="codex-tab" data-cat="WINTER_LAND" style="padding: 8px; background: transparent; border: 1px solid rgba(74,222,128,0.2); color: #94a3b8; text-align: left; border-radius: 4px; font-size: 10px;">❄️ 겨울의 나라</button>
+                    </div>
+                    
+                    <!-- Content -->
+                    <div id="codex-content" style="flex: 1; padding: 12px; overflow-y: auto; background: #0f172a; display: flex; flex-direction: column; gap: 15px;">
+                        <!-- Monster Cards go here -->
+                    </div>
+                </div>
+                
+                <!-- Footer Info -->
+                <div style="background: #1e293b; padding: 10px 20px; border-top: 1px solid rgba(74,222,128,0.2); font-size: 11px; color: #64748b; display: flex; justify-content: space-between;">
+                    <span>* 모든 능력치는 1층(Level 1) 기준 기본 스탯입니다.</span>
+                    <span>Antigravity Codex System v1.0</span>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(overlay);
+
+        // Bind Close
+        overlay.querySelector('#close-codex').onclick = () => this.hideMonsterCodex();
+
+        // Bind Tabs
+        const tabs = overlay.querySelectorAll('.codex-tab');
+        tabs.forEach(tab => {
+            tab.onclick = () => {
+                tabs.forEach(t => {
+                    t.classList.remove('active');
+                    t.style.background = 'transparent';
+                    t.style.borderColor = 'rgba(74,222,128,0.2)';
+                    t.style.color = '#94a3b8';
+                });
+                tab.classList.add('active');
+                tab.style.background = 'rgba(74,222,128,0.2)';
+                tab.style.borderColor = '#4ade80';
+                tab.style.color = '#fff';
+                this.currentCodexCategory = tab.dataset.cat;
+                this.refreshMonsterCodex();
+            };
+        });
+
+        this.refreshMonsterCodex();
+    }
+
+    hideMonsterCodex() {
+        if (!this.monsterCodexOverlay) return;
+        this.monsterCodexOverlay.classList.add('fade-out');
+        setTimeout(() => {
+            if (this.monsterCodexOverlay) {
+                this.monsterCodexOverlay.remove();
+                this.monsterCodexOverlay = null;
+            }
+        }, 300);
+    }
+
+    refreshMonsterCodex() {
+        if (!this.monsterCodexOverlay) return;
+        const content = document.getElementById('codex-content');
+        if (!content) return;
+
+        const stageConfig = StageConfigs[this.currentCodexCategory];
+        if (!stageConfig) {
+            content.innerHTML = '<div style="color: #64748b; text-align: center; padding: 40px;">데이터가 존재하지 않습니다.</div>';
+            return;
+        }
+
+        // Pool logic: Cursed Forest is special in DungeonScene.js (Goblin, Shaman, Orc)
+        let monsterPool = stageConfig.monsterPool || [];
+        if (this.currentCodexCategory === 'CURSED_FOREST' && monsterPool.length === 0) {
+            monsterPool = ['goblin', 'shaman', 'orc'];
+        }
+
+        if (monsterPool.length === 0) {
+            content.innerHTML = '<div style="color: #64748b; text-align: center; padding: 40px;">등록된 몬스터 정보가 없습니다.</div>';
+            return;
+        }
+
+        content.innerHTML = monsterPool.map(mId => this._renderMonsterCard(mId)).join('');
+    }
+
+    _renderMonsterCard(monsterId) {
+        const config = MonsterClasses[monsterId.toUpperCase()];
+        if (!config) return '';
+
+        const stage = StageConfigs[this.currentCodexCategory]?.name || 'Unknown';
+
+        // Stats to display
+        const displayStats = [
+            { label: 'HP', val: config.maxHp, icon: '❤️' },
+            { label: 'ATK', val: config.atk, icon: '⚔️' },
+            { label: 'M.ATK', val: config.mAtk, icon: '🔮' },
+            { label: 'DEF', val: config.def, icon: '🛡️' },
+            { label: 'M.DEF', val: config.mDef, icon: '✨' },
+            { label: 'SPD', val: config.speed, icon: '👟' },
+            { label: 'ACC', val: config.acc, icon: '🎯' },
+            { label: 'EVA', val: config.eva, icon: '💨' },
+            { label: 'CRIT', val: config.crit + '%', icon: '💥' }
+        ];
+
+        const secondaryStats = [
+            { label: 'AtkSpd', val: (config.atkSpd / 1000).toFixed(1) + 's', icon: '⏱️' },
+            { label: 'Range', val: config.atkRange, icon: '📏' },
+            { label: 'FireRes', val: config.fireRes + '%', icon: '🔥' },
+            { label: 'IceRes', val: config.iceRes + '%', icon: '❄️' },
+            { label: 'LightRes', val: config.lightningRes + '%', icon: '⚡' }
+        ];
+
+        return `
+            <div class="monster-card" style="background: rgba(30,41,59,0.5); border: 1px solid rgba(74,222,128,0.3); border-radius: 8px; padding: 12px; display: flex; flex-wrap: wrap; gap: 15px;">
+                <!-- Left/Top: Sprite & Identity -->
+                <div style="width: 100px; display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                    <div style="width: 70px; height: 70px; background: rgba(0,0,0,0.3); border: 1px solid rgba(74,222,128,0.5); border-radius: 8px; display: flex; justify-content: center; align-items: center; position: relative; overflow: hidden;">
+                        <div class="retro-scanline-overlay" style="position: absolute; inset: 0; pointer-events: none; opacity: 0.1;"></div>
+                        <img src="assets/characters/enemies/${config.sprite || 'goblin_sprite'}.png" style="width: 56px; height: 56px; object-fit: contain; image-rendering: pixelated; position: relative; z-index: 1;">
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="color: #4ade80; font-size: 11px; font-weight: bold; white-space: nowrap;">${config.name}</div>
+                        <div style="color: #64748b; font-size: 9px; margin-top: 1px;">📍 ${stage}</div>
+                    </div>
+                </div>
+                
+                <!-- Right/Bottom: Stats Grid -->
+                <div style="flex: 1; min-width: 160px; display: flex; flex-direction: column; gap: 8px;">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(65px, 1fr)); gap: 5px;">
+                        ${displayStats.map(s => `
+                            <div style="background: rgba(15,23,42,0.8); padding: 4px 6px; border-radius: 4px; border: 1px solid rgba(148,163,184,0.15); display: flex; justify-content: space-between; align-items: center;">
+                                <span style="font-size: 9px; color: #94a3b8;">${s.icon} ${s.label}</span>
+                                <span style="font-size: 10px; color: #f1f5f9; font-weight: bold;">${s.val}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                    
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px; border-top: 1px solid rgba(74,222,128,0.15); padding-top: 6px;">
+                        ${secondaryStats.map(s => `
+                            <div style="display: flex; align-items: center; gap: 3px; background: rgba(0,0,0,0.2); padding: 2px 5px; border-radius: 3px;">
+                                <span style="font-size: 9px; color: #64748b;">${s.icon}${s.label}:</span>
+                                <span style="font-size: 9px; color: #94a3b8; font-weight: bold;">${s.val}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            </div>
+        `;
     }
 
     async refreshAchievements() {

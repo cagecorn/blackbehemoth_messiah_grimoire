@@ -69,6 +69,14 @@ const TERRITORY_BANNERS = [
         accentColor: '#c03a3a',
         action: function () { if (this.game && this.game.uiManager) this.game.uiManager.showAchievementsUI(); },
     },
+    {
+        id: 'monster-codex',
+        label: '몬스터 도감',
+        sublabel: 'MONSTER CODEX',
+        cutscene: 'assets/characters/enemies/goblin_cutscene.png',
+        accentColor: '#4ade80',
+        action: function () { if (this.game && this.game.uiManager) this.game.uiManager.showMonsterCodex(); },
+    },
 ];
 
 export default class TerritoryScene extends Phaser.Scene {
@@ -183,6 +191,12 @@ export default class TerritoryScene extends Phaser.Scene {
                 el.addEventListener('click', () => {
                     if (this.game.uiManager) {
                         this.game.uiManager.showMercenaryRoster();
+                    }
+                });
+            } else if (b.id === 'monster-codex') {
+                el.addEventListener('click', () => {
+                    if (this.game.uiManager) {
+                        this.game.uiManager.showMonsterCodex();
                     }
                 });
             } else {
