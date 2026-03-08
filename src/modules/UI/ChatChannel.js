@@ -910,6 +910,25 @@ export default class ChatChannel {
                                 slot.innerHTML = '';
                                 slot.appendChild(img);
                                 slot.appendChild(badge);
+
+                                // Add Remove Button (ⓧ)
+                                const removeBtn = document.createElement('div');
+                                removeBtn.className = 'grim-remove-btn';
+                                removeBtn.innerHTML = 'ⓧ';
+                                removeBtn.title = '장착 해제 (우클릭도 가능)';
+                                removeBtn.onclick = (e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    import('../Events/EventBus.js').then(module => {
+                                        module.default.emit('GRIMOIRE_REQUEST', {
+                                            unitId: this.linkedUnitId,
+                                            chapter: chapter,
+                                            index: index,
+                                            action: 'remove'
+                                        });
+                                    });
+                                };
+                                slot.appendChild(removeBtn);
                             }
                         });
                     });

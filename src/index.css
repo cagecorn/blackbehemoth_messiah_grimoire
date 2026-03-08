@@ -3416,6 +3416,35 @@ body {
     background: rgba(212, 175, 55, 0.2) !important;
 }
 
+/* Grimoire Slot Remove Button (ⓧ) */
+.grim-remove-btn {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    width: 14px;
+    height: 14px;
+    background: #ef4444;
+    color: white;
+    font-size: 8px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    cursor: pointer;
+    z-index: 10;
+    transition: all 0.2s;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.8);
+    line-height: 1;
+}
+
+.grim-remove-btn:hover {
+    background: #ff0000;
+    transform: scale(1.2);
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.6);
+}
+
 .grim-icon {
     width: 26px;
     height: 26px;

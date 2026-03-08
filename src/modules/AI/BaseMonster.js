@@ -398,7 +398,7 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
             ? `was hit for ${finalDamage.toFixed(1)} ${elementTag}physical damage${shieldInfolocal}.`
             : `completely absorbed ${elementTag}physical damage via Defense/Shield!`;
 
-        console.info(`%c[Combat] %c${this.unitName}%c ${damageMsg} (HP: ${this.hp.toFixed(1)}/${this.maxHp})`,
+        console.info(`%c[Combat] %c${this.unitName}%c ${damageMsg} (HP: ${this.hp.toFixed(1)}/${this.getTotalMaxHp()})`,
             'color: #ffaa00; font-weight: bold;',
             'color: #ff5555;',
             'color: #e0e0e0;'
@@ -409,7 +409,7 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
         // Bourne Identity Shake: Stronger shake for critical hits or high damage
         if (this.scene && EventBus) {
             let shakeIntensity = isCritical ? 8 : 3;
-            if (finalDamage > this.maxHp * 0.1) shakeIntensity += 5; // Extra shake for big hits
+            if (finalDamage > this.getTotalMaxHp() * 0.1) shakeIntensity += 5; // Extra shake for big hits
             EventBus.emit(EventBus.EVENTS.CAMERA_SHAKE, { intensity: shakeIntensity });
         }
 
@@ -569,7 +569,7 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
             ? `was hit for ${finalDamage.toFixed(1)} ${elementTag}magic damage${shieldInfolocal}.`
             : `completely absorbed ${elementTag}magic damage via MDef/Shield!`;
 
-        console.info(`%c[Combat] %c${this.unitName}%c ${damageMsg} (HP: ${this.hp.toFixed(1)}/${this.maxHp})`,
+        console.info(`%c[Combat] %c${this.unitName}%c ${damageMsg} (HP: ${this.hp.toFixed(1)}/${this.getTotalMaxHp()})`,
             'color: #ffaa00; font-weight: bold;',
             'color: #ff5555;',
             'color: #e0e0e0;'
@@ -580,7 +580,7 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
         // Bourne Identity Shake for Magic Damage
         if (this.scene && EventBus) {
             let shakeIntensity = isCritical ? 10 : 4; // Magic impacts feel "heavier"
-            if (finalDamage > this.maxHp * 0.1) shakeIntensity += 6;
+            if (finalDamage > this.getTotalMaxHp() * 0.1) shakeIntensity += 6;
             EventBus.emit(EventBus.EVENTS.CAMERA_SHAKE, { intensity: shakeIntensity });
         }
 
@@ -636,12 +636,12 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
 
     updateHealthBar() {
         if (this.healthBar) {
-            const hpPercent = (this.hp / this.maxHp) * 100;
+            const hpPercent = (this.hp / this.getTotalMaxHp()) * 100;
             let shieldPercent = 0;
 
             if (this.scene && this.scene.shieldManager) {
                 const shieldAmount = this.scene.shieldManager.getShield(this);
-                shieldPercent = (shieldAmount / this.maxHp) * 100;
+                shieldPercent = (shieldAmount / this.getTotalMaxHp()) * 100;
             }
 
             this.healthBar.setValue(hpPercent, shieldPercent);
@@ -853,7 +853,7 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
         const base = this.atk + (this.bonusAtk || 0);
         let nodeMult = 1.0;
         if (this.blackboard && this.blackboard.get('enraged_active')) {
-            const missingHpRatio = 1 - (this.hp / this.maxHp);
+            const missingHpRatio = 1 - (this.hp / this.getTotalMaxHp());
             nodeMult += missingHpRatio * 0.15; // Max 1.15x at 0% HP
         }
         const tactMult = this.isTacticalCommandActive ? 1.5 : 1.0;

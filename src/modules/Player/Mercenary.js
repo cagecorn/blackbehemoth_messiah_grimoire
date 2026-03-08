@@ -134,8 +134,10 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             }
         }
 
-        // Apply all grimoire effects
-        GrimoireManager.applyAll(this);
+        // Initialize Grimoire
+        GrimoireManager.initGrimoire(this);
+        GrimoireManager.applyAll(this); // Constructor usually stays non-async to avoid breaking instantiation, but applyAll is safe to fire-and-forget here if initialization is synchronous. However, for complete safety, we usually await it in an init method.
+        // For now, loadState (which is async) will handle the critical await.
         if (config.activatedPerks) {
             for (let i = 0; i < Math.min(config.activatedPerks.length, 6); i++) {
                 this.grimoire[GrimoireManager.CHAPTERS.CLASS][i] = config.activatedPerks[i];
@@ -604,15 +606,15 @@ export default class Mercenary extends Phaser.GameObjects.Container {
     }
 
     getTotalFireRes() {
-        return Math.min(90, (this.fireRes || 0) + (this.grimoireBonuses?.fireResAdd || 0));
+        return Math.min(90, (this.fireRes || 0) + (this.bonusFireRes || 0) + (this.grimoireBonuses?.fireResAdd || 0));
     }
 
     getTotalIceRes() {
-        return Math.min(90, (this.iceRes || 0) + (this.grimoireBonuses?.iceResAdd || 0));
+        return Math.min(90, (this.iceRes || 0) + (this.bonusIceRes || 0) + (this.grimoireBonuses?.iceResAdd || 0));
     }
 
     getTotalLightningRes() {
-        return Math.min(90, (this.lightningRes || 0) + (this.grimoireBonuses?.lightningResAdd || 0));
+        return Math.min(90, (this.lightningRes || 0) + (this.bonusLightningRes || 0) + (this.grimoireBonuses?.lightningResAdd || 0));
     }
 
     getTotalUltChargeSpeed() {
@@ -1111,17 +1113,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         });
     }
 
-    getTotalFireRes() {
-        return Math.min(75, (this.fireRes || 0) + (this.bonusFireRes || 0));
-    }
 
-    getTotalIceRes() {
-        return Math.min(75, (this.iceRes || 0) + (this.bonusIceRes || 0));
-    }
-
-    getTotalLightningRes() {
-        return Math.min(75, (this.lightningRes || 0) + (this.bonusLightningRes || 0));
-    }
 
     restoreSpriteTint() {
         if (!this.sprite) return;
@@ -1171,7 +1163,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         const multi = this.starMultiplier || 1.0;
 
         if (growth.maxHp) this.maxHp += Math.floor(growth.maxHp * multi);
-        this.hp = this.maxHp;
+        this.hp = this.getTotalMaxHp(); // Full heal on level up should use total max HP
         if (growth.atk) this.atk += growth.atk * multi;
         if (growth.mAtk) this.mAtk += growth.mAtk * multi;
         if (growth.def) this.def += growth.def * multi;
@@ -1199,7 +1191,8 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         }
 
         this.hp += amount;
-        if (this.hp > this.maxHp) this.hp = this.maxHp;
+        const maxHp = this.getTotalMaxHp();
+        if (this.hp > maxHp) this.hp = maxHp;
         this.updateHealthBar();
     }
 
@@ -1428,8 +1421,18 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             }
         }
 
+        // Capture old HP ratio before grimoire change
+        const oldMaxHp = this.getTotalMaxHp();
+        const oldHpRatio = this.hp / oldMaxHp;
+
         // Re-apply grimoire effects
-        GrimoireManager.applyAll(this);
+        await GrimoireManager.applyAll(this);
+
+        // Adjust HP to maintain current ratio with new MaxHP
+        const newMaxHp = this.getTotalMaxHp();
+        this.hp = Math.min(newMaxHp, Math.floor(newMaxHp * oldHpRatio));
+        if (oldHpRatio >= 1.0) this.hp = newMaxHp; // Convenience for full HP
+        this.updateHealthBar();
 
         if (this.syncStatusUI) this.syncStatusUI();
         import('../Events/EventBus.js').then(module => module.default.emit('UI_REFRESH_INVENTORY'));
@@ -1456,8 +1459,18 @@ export default class Mercenary extends Phaser.GameObjects.Container {
 
         this.grimoire[chapterId][index] = null;
 
+        // Capture old HP ratio before grimoire change
+        const oldMaxHp = this.getTotalMaxHp();
+        const oldHpRatio = this.hp / oldMaxHp;
+
         // Re-apply grimoire effects
-        GrimoireManager.applyAll(this);
+        await GrimoireManager.applyAll(this);
+
+        // Adjust HP to maintain current ratio with new MaxHP
+        const newMaxHp = this.getTotalMaxHp();
+        this.hp = Math.min(newMaxHp, Math.floor(newMaxHp * oldHpRatio));
+        if (oldHpRatio >= 1.0) this.hp = newMaxHp; // Convenience for full HP
+        this.updateHealthBar();
 
         if (this.syncStatusUI) this.syncStatusUI();
         import('../Events/EventBus.js').then(module => module.default.emit('UI_REFRESH_INVENTORY'));
@@ -1750,23 +1763,23 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             exp: this.exp,
             expToNextLevel: this.expToNextLevel,
             hp: this.hp,
-            maxHp: this.maxHp,
+            maxHp: this.getTotalMaxHp(),
             atk: this.getTotalAtk(),
             mAtk: this.getTotalMAtk(),
             def: this.getTotalDef(),
             mDef: this.getTotalMDef(),
-            speed: this.speed,
+            speed: this.getTotalSpeed(),
             atkSpd: icon_atk_spd,
-            atkRange: this.atkRange,
-            rangeMin: this.rangeMin,
-            rangeMax: this.rangeMax,
-            castSpd: this.castSpd,
-            acc: this.acc,
-            eva: this.eva,
+            atkRange: this.getTotalAtkRange(),
+            rangeMin: this.getTotalRangeMin(),
+            rangeMax: this.getTotalRangeMax(),
+            castSpd: this.getTotalCastSpd(),
+            acc: this.getTotalAcc(),
+            eva: this.getTotalEva(),
             crit: this.getTotalCrit(),
-            fireRes: this.fireRes + (this.bonusFireRes || 0),
-            iceRes: this.iceRes + (this.bonusIceRes || 0),
-            lightningRes: this.lightningRes + (this.bonusLightningRes || 0),
+            fireRes: this.getTotalFireRes(),
+            iceRes: this.getTotalIceRes(),
+            lightningRes: this.getTotalLightningRes(),
             ultChargeSpeed: this.getTotalUltChargeSpeed(),
             className: this.className,
             classId: this.className,
@@ -1871,7 +1884,8 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         checkAndFix('crit', this.crit, expectedCrit);
 
         if (corrected) {
-            if (this.hp > this.maxHp) this.hp = this.maxHp;
+            const totalMaxHp = this.getTotalMaxHp();
+            if (this.hp > totalMaxHp) this.hp = totalMaxHp;
             this.scene?.game?.partyManager?.saveState(this.id, this.getState());
         }
     }
@@ -1890,26 +1904,26 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             x: this.x,
             y: this.y,
             hp: this.hp,
-            maxHp: this.getTotalMaxHp(),
+            maxHp: this.maxHp, // PERSIST BASE MAX HP
             level: this.level,
             exp: this.exp,
-            atk: this.getTotalAtk(),
-            mAtk: this.getTotalMAtk(),
-            def: this.getTotalDef(),
-            mDef: this.getTotalMDef(),
-            speed: this.getTotalSpeed(),
-            atkSpd: this.getTotalAtkSpd(),
-            castSpd: this.getTotalCastSpd(),
-            atkRange: this.getTotalAtkRange(),
+            atk: this.atk,         // PERSIST BASE ATK
+            mAtk: this.mAtk,       // PERSIST BASE MATK
+            def: this.def,         // PERSIST BASE DEF
+            mDef: this.mDef,       // PERSIST BASE MDEF
+            speed: this.speed,     // PERSIST BASE SPEED
+            atkSpd: this.atkSpd,
+            castSpd: this.castSpd,
+            atkRange: this.atkRange,
             rangeMin: this.rangeMin,
             rangeMax: this.rangeMax,
-            acc: this.getTotalAcc(),
-            eva: this.getTotalEva(),
-            crit: this.getTotalCrit(),
-            ultChargeSpeed: this.getTotalUltChargeSpeed(),
-            fireRes: this.getTotalFireRes(),
-            iceRes: this.getTotalIceRes(),
-            lightningRes: this.getTotalLightningRes(),
+            acc: this.acc,
+            eva: this.eva,
+            crit: this.crit,
+            ultChargeSpeed: this.ultChargeSpeed,
+            fireRes: this.fireRes,
+            iceRes: this.iceRes,
+            lightningRes: this.lightningRes,
             activatedPerks: this.activatedPerks,
             equipment: this.equipment,
             grimoire: this.grimoire,
