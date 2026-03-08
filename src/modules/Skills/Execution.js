@@ -62,19 +62,37 @@ export default class Execution {
             }
         }
 
-        // 3. Return to origin
+        // 3. Return to origin (always clean up, even if caster died during the loop)
+        const doCleanup = () => {
+            if (darken && darken.active) darken.destroy();
+            if (caster && caster.sprite) {
+                caster.sprite.setScale(originalScaleX, originalScaleY);
+                caster.sprite.setRotation(0);
+                caster.sprite.clearTint();
+            }
+            if (caster) caster.isStunned = false;
+            console.log('[Execution] Ultimate finished — sprite restored.');
+        };
+
+        if (!caster.active || !scene) {
+            doCleanup();
+            return;
+        }
+
         scene.tweens.add({
             targets: caster,
             x: originalX,
             y: originalY,
             duration: 250,
             ease: 'Cubic.easeOut',
-            onComplete: () => {
-                caster.isStunned = false;
-                darken.destroy();
-                caster.sprite.setScale(originalScaleX, originalScaleY);
-                caster.sprite.setRotation(0);
-                caster.sprite.clearTint();
+            onComplete: doCleanup
+        });
+
+        // Safety net: if the return tween is also killed, clean up after 400ms
+        scene.time.delayedCall(400, () => {
+            if (caster && caster.isStunned) {
+                console.warn('[Execution] Safety timeout fired — forcing cleanup.');
+                doCleanup();
             }
         });
     }
@@ -121,23 +139,35 @@ export default class Execution {
 
         // Movement
         return new Promise(resolve => {
+            let settled = false;
+            const settle = (fromTimeout = false) => {
+                if (settled) return;
+                settled = true;
+                // Always restore sprite state before moving on to next strike
+                if (caster && caster.sprite) {
+                    caster.sprite.setRotation(0);
+                    caster.sprite.setScale(originalScaleX, originalScaleY);
+                    caster.sprite.clearTint();
+                }
+                if (!fromTimeout) {
+                    soundEffects.playWhipSound();
+                    scene.cameras.main.shake(150, 0.012);
+                }
+                resolve();
+            };
+
             scene.tweens.add({
                 targets: caster,
                 x: tx,
                 y: ty,
                 duration: 90,
                 ease: 'Linear',
-                onComplete: () => {
-                    // Restore rotation and scale for next frame/strike
-                    caster.sprite.setRotation(0);
-                    caster.sprite.setScale(originalScaleX, originalScaleY);
-
-                    // Sound & Effects
-                    soundEffects.playWhipSound();
-                    scene.cameras.main.shake(150, 0.012);
-                    resolve();
-                }
+                onComplete: () => settle(false)
             });
+
+            // Safety net: if tween is killed externally (scene change, CC, killTweensOf),
+            // still resolve and restore sprite after 300ms max.
+            scene.time.delayedCall(300, () => settle(true));
         });
     }
 
