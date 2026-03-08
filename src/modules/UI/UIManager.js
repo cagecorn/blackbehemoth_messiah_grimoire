@@ -4340,8 +4340,11 @@ export default class UIManager {
             return `
                 <div class="merc-detail-view" id="merc-detail-${m.id}">
                     <div class="merc-detail-header">
-                        <div class="merc-detail-sprite-wrap">
-                            <img src="assets/characters/party/${m.sprite}.png" class="merc-detail-sprite">
+                        <div class="merc-detail-left-col">
+                            <div class="merc-detail-sprite-wrap">
+                                <img src="assets/characters/party/${m.sprite}.png" class="merc-detail-sprite">
+                            </div>
+                            <button class="theme-skin-btn active-btn" onclick="window.uiManager.openSkinSelector('${m.id}')">[테마 스킨 교체]</button>
                         </div>
                         <div class="merc-detail-title-info">
                             <div class="merc-detail-name-row">
@@ -4376,8 +4379,6 @@ export default class UIManager {
                             <div class="skill-desc">${m.ultimateDescription}</div>
                         </div>
                     </div>
-
-                    <button class="theme-skin-btn active-btn" onclick="window.uiManager.openSkinSelector('${m.id}')">[테마 스킨 교체]</button>
                 </div>
             `;
         };
@@ -4442,6 +4443,7 @@ export default class UIManager {
 
                     /* Detail Header */
                     .merc-detail-header { display: flex; gap: 20px; align-items: flex-start; }
+                    .merc-detail-left-col { display: flex; flex-direction: column; gap: 12px; width: 130px; align-items: center; }
                     .merc-detail-sprite-wrap {
                         width: 120px; height: 120px;
                         background: radial-gradient(circle, #334155 0%, #0f172a 100%);
@@ -4489,11 +4491,12 @@ export default class UIManager {
 
                     .theme-skin-btn {
                         background: #1e293b; border: 1px solid #475569; border-radius: 8px;
-                        color: #94a3b8; padding: 12px; cursor: pointer; font-weight: bold;
-                        transition: all 0.2s; margin-top: 10px; font-family: 'Press Start 2P', cursive; font-size: 10px;
+                        color: #94a3b8; padding: 10px 5px; cursor: pointer; font-weight: bold;
+                        transition: all 0.2s; font-family: 'Press Start 2P', cursive; font-size: 9px;
+                        width: 100%; text-align: center; white-space: nowrap; box-shadow: 0 4px 6px rgba(0,0,0,0.3);
                     }
-                    .theme-skin-btn.active-btn { border-color: #fbbf24; color: #fbbf24; }
-                    .theme-skin-btn.active-btn:hover { background: #fbbf24; color: #0f172a; }
+                    .theme-skin-btn.active-btn { border-color: #fbbf24; color: #fbbf24; background: rgba(251, 191, 36, 0.1); box-shadow: 0 0 10px rgba(251, 191, 36, 0.15); }
+                    .theme-skin-btn.active-btn:hover { background: #fbbf24; color: #0f172a; box-shadow: 0 0 15px rgba(251, 191, 36, 0.4); transform: translateY(-2px); }
 
                     /* Skin Selector Modal */
                     .skin-selector-overlay {
