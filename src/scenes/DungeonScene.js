@@ -1346,7 +1346,8 @@ export default class DungeonScene extends Phaser.Scene {
             id: characterConfig.id + '_shadow_' + Phaser.Math.Between(10000, 99999), // unique ID
             name: `Lv.${level} 그림자 ${characterConfig.name}`,
             team: 'enemy',
-            hideInUI: true  // Don't show in portrait bar
+            hideInUI: true,  // Don't show in portrait bar
+            expReward: 200   // Shadow Mercs are elite-tier enemies — much more EXP than regular monsters
         };
 
         // For shadow enemies, we want them following their own leader if possible.

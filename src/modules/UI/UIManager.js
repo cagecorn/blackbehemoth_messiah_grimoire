@@ -2353,11 +2353,11 @@ export default class UIManager {
         const baseExpReward = config.expReward || 25;
         const lv50ExpReward = Math.floor(baseExpReward * (1 + (50 - 1) * 0.1));
 
-        // Build EXP variant string (Epic monsters already have premium baked into expReward)
+        // Build EXP variant string
+        // - 일반 몬스터는 그림자 용병이 될 수 없으므로 "그림자 x5" 배지는 표시하지 않음
         const expVariants = [];
         if (isSkeleton && !isEpic) expVariants.push('스켈레톤 x1.5');
         expVariants.push('엘리트 x3');
-        expVariants.push('그림자 x5');
 
         return `
             <div class="monster-card" style="background: rgba(30,41,59,0.5); border: 1px solid rgba(74,222,128,0.3); border-radius: 8px; padding: 12px; display: flex; flex-wrap: wrap; gap: 15px;">
