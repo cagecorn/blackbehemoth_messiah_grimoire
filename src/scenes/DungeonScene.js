@@ -389,6 +389,11 @@ export default class DungeonScene extends Phaser.Scene {
                 console.log('[DungeonScene] Total Shutdown: Removed EventBus listeners + Cleaned up Managers.');
             });
 
+            // --- 3. Spawn Player Party (Dungeon Start) ---
+            const activeParty = this.game.partyManager.getActiveParty();
+            const startPos = { x: 400, y: 512 }; // Standard starting position
+            let playerLeader = null;
+
             activeParty.forEach((charId, i) => {
                 if (!charId) return;
 
