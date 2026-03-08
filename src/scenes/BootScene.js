@@ -98,13 +98,14 @@ export default class BootScene extends Phaser.Scene {
         this.load.svg('emoji_star', 'assets/emojis/2b50.svg', { width: 64, height: 64 });
         this.load.svg('emoji_wind', 'assets/emojis/1f4a8.svg', { width: 64, height: 64 });
         this.load.svg('emoji_sleep', 'assets/emojis/1f4a4.svg', { width: 64, height: 64 });
+        this.load.svg('emoji_snowball', 'assets/emojis/2744.svg', { width: 64, height: 64 });
         this.load.svg('emoji_plane', 'assets/emojis/2708.svg', { width: 128, height: 128 });
         this.load.svg('emoji_cloud', 'assets/emojis/2601.svg', { width: 128, height: 128 });
         this.load.svg('emoji_smoke', 'assets/emojis/1f4ad.svg', { width: 64, height: 64 });
         this.load.svg('emoji_sweat', 'assets/emojis/1f4a6.svg', { width: 64, height: 64 });
+        this.load.svg('emoji_ice_cube', 'assets/emojis/1f9ca.svg', { width: 64, height: 64 });
         this.load.svg('emoji_cry', 'assets/emojis/1f62d.svg', { width: 64, height: 64 });
         this.load.svg('emoji_heart', 'assets/emojis/2764.svg', { width: 64, height: 64 });
-        this.load.svg('emoji_snowball', 'assets/emojis/2744.svg', { width: 64, height: 64 });
         this.load.svg('emoji_snowman', 'assets/emojis/26c4.svg', { width: 64, height: 64 });
         this.load.svg('emoji_snowcloud', 'assets/emojis/1f328.svg', { width: 128, height: 128 });
         this.load.svg('emoji_burger', 'assets/emojis/1f354.svg', { width: 64, height: 64 });
@@ -180,6 +181,9 @@ export default class BootScene extends Phaser.Scene {
         this.load.image('fire_spirit_warrior_sprite', 'assets/characters/enemies/fire_spirit_warrior_sprite.png');
         this.load.image('fire_spirit_archer_sprite', 'assets/characters/enemies/fire_spirit_archer_sprite.png');
         this.load.image('fire_spirit_wizard_sprite', 'assets/characters/enemies/fire_spirit_wizard_sprite.png');
+        this.load.image('ice_spirit_warrior_sprite', 'assets/characters/enemies/ice_spirit_warrior_sprite.png');
+        this.load.image('ice_spirit_wizard_sprite', 'assets/characters/enemies/ice_spirit_wizard_sprite.png');
+        this.load.image('ice_spirit_healer_sprite', 'assets/characters/enemies/ice_spirit_healer_sprite.png');
         this.load.image('goblin_sprite', 'assets/characters/enemies/goblin_sprite.png');
         this.load.image('orc_sprite', 'assets/characters/enemies/orc_sprite.png');
         this.load.image('skeleton_warrior_sprite', 'assets/characters/enemies/skeleton_warrior_sprite.png');
@@ -229,6 +233,7 @@ export default class BootScene extends Phaser.Scene {
         this.load.image('bg_raid', 'assets/background/battle_stage_raid.png');
         this.load.image('bg_undead_graveyard', 'assets/background/battle-stage-graveyard.png');
         this.load.image('bg_arena', 'assets/background/battle-stage-arena.png');
+        this.load.image('bg_winter_land', 'assets/background/battle-stage-winter_land.png');
 
         // Load UI/Icon assets
         this.load.image('logo_icon', 'assets/icon/logo_icon.png');

@@ -11,6 +11,9 @@ import CrocodileHealer from '../modules/AI/CrocodileHealer.js';
 import FireSpiritWarrior from '../modules/AI/FireSpiritWarrior.js';
 import FireSpiritArcher from '../modules/AI/FireSpiritArcher.js';
 import FireSpiritWizard from '../modules/AI/FireSpiritWizard.js';
+import IceSpiritWarrior from '../modules/AI/IceSpiritWarrior.js';
+import IceSpiritWizard from '../modules/AI/IceSpiritWizard.js';
+import IceSpiritHealer from '../modules/AI/IceSpiritHealer.js';
 import MonsterHealer from '../modules/AI/MonsterHealer.js';
 import Archer from '../modules/Player/Archer.js';
 import Healer from '../modules/Player/Healer.js';
@@ -182,6 +185,28 @@ export default class DungeonScene extends Phaser.Scene {
                 await DBManager.saveInventoryItem('swampland_ticket', ticket.amount - 1);
                 EventBus.emit(EventBus.EVENTS.INVENTORY_UPDATED);
                 EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, `[입장] 늪지대 입장권 1장을 소모했습니다. 🎫`);
+            } else if (this.dungeonType === 'LAVA_FIELD' && this.currentRound === 1) {
+                const ticket = await DBManager.getInventoryItem('lava_field_ticket');
+                if (!ticket || ticket.amount <= 0) {
+                    if (this.game.uiManager) this.game.uiManager.showToast('입장권이 소진되어 [저주받은 숲]으로 이동합니다! 🎫');
+                    this.scene.start('DungeonScene', { dungeonType: 'CURSED_FOREST', startRound: 1 });
+                    return;
+                }
+                // Deduct Ticket
+                await DBManager.saveInventoryItem('lava_field_ticket', ticket.amount - 1);
+                EventBus.emit(EventBus.EVENTS.INVENTORY_UPDATED);
+                EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, `[입장] 용암 지대 입장권 1장을 소모했습니다. 🎫`);
+            } else if (this.dungeonType === 'WINTER_LAND' && this.currentRound === 1) {
+                const ticket = await DBManager.getInventoryItem('winter_land_ticket');
+                if (!ticket || ticket.amount <= 0) {
+                    if (this.game.uiManager) this.game.uiManager.showToast('입장권이 소진되어 [저주받은 숲]으로 이동합니다! 🎫');
+                    this.scene.start('DungeonScene', { dungeonType: 'CURSED_FOREST', startRound: 1 });
+                    return;
+                }
+                // Deduct Ticket
+                await DBManager.saveInventoryItem('winter_land_ticket', ticket.amount - 1);
+                EventBus.emit(EventBus.EVENTS.INVENTORY_UPDATED);
+                EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, `[입장] 겨울의 나라 입장권 1장을 소모했습니다. 🎫`);
             }
 
             if (this.game.uiManager) {
@@ -1185,7 +1210,10 @@ export default class DungeonScene extends Phaser.Scene {
             crocodile_healer: CrocodileHealer,
             fire_spirit_warrior: FireSpiritWarrior,
             fire_spirit_archer: FireSpiritArcher,
-            fire_spirit_wizard: FireSpiritWizard
+            fire_spirit_wizard: FireSpiritWizard,
+            ice_spirit_warrior: IceSpiritWarrior,
+            ice_spirit_wizard: IceSpiritWizard,
+            ice_spirit_healer: IceSpiritHealer
         };
 
         // Total spawn count increases with rounds

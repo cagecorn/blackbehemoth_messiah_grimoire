@@ -13,7 +13,8 @@ export default class ShopManager {
             tickets: [
                 { id: 'emoji_ticket', price: 10, currency: 'emoji_coin', label: '언데드 묘지 입장권', icon: '🎫' },
                 { id: 'swampland_ticket', price: 100, currency: 'emoji_coin', label: '늪지대 입장권', icon: '🎫' },
-                { id: 'lava_field_ticket', price: 500, currency: 'emoji_coin', label: '용암 지대 입장권', icon: '🎫' }
+                { id: 'lava_field_ticket', price: 500, currency: 'emoji_coin', label: '용암 지대 입장권', icon: '🎫' },
+                { id: 'winter_land_ticket', price: 1000, currency: 'emoji_coin', label: '겨울의 나라 입장권', icon: '🎫' }
             ],
             charms: [
                 { id: 'emoji_fireworks', price: 100000, currency: 'emoji_coin', label: '화염 저항의 참', icon: '🎆' },

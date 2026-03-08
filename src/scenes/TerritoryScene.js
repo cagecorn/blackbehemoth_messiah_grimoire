@@ -252,6 +252,9 @@ export default class TerritoryScene extends Phaser.Scene {
                 </div>
                 <div class="patch-entry">
                     <div class="patch-date">▶ 2026-03-08 (Latest)</div>
+                    <div class="patch-item"><span class="patch-item-icon">❄️</span>[던전] 다섯 번째 던전 **[겨울의 나라]** 업데이트! 극한의 추위 속 새로운 모험이 시작됩니다.</div>
+                    <div class="patch-item"><span class="patch-item-icon">🧊</span>[몬스터] 얼음 정령 전사, 마법사, 힐러 3종 등장. 처치 시 **[영원한 얼음]** 획득 가능.</div>
+                    <div class="patch-item"><span class="patch-item-icon">🥶</span>[상태이상] 신규 효과 **[빙결]** 도입! 몬스터의 공격 시 일정 확률로 이동/공격 속도가 50% 감소합니다.</div>
                     <div class="patch-item"><span class="patch-item-icon">🚀</span>[성장] **용병 레벨 제한 해제!** 하드코딩 되어있던 40레벨 제한이 삭제되어, 이제 무한히 스케일링하며 성장할 수 있습니다.</div>
                     <div class="patch-item"><span class="patch-item-icon">⚔️</span>[용병] **고급 고용 용병 2종 추가!** [고용 전사], [고용 아쳐]가 새롭게 합류했습니다.</div>
                     <div class="patch-item"><span class="patch-item-icon">✨</span>[용병] **압도적인 전력!** 평균 파티 레벨의 2배 규모로 스케일링되어 전장에 투입됩니다.</div>

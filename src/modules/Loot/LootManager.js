@@ -10,7 +10,7 @@ export default class LootManager {
         this.lootGroup = this.scene.physics.add.group();
 
         // Specific Emoji keys we preloaded in BootScene
-        this.drops = ['emoji_coin', 'emoji_gem', 'emoji_meat', 'emoji_wood', 'emoji_herb', 'emoji_brick', 'emoji_candle'];
+        this.drops = ['emoji_coin', 'emoji_gem', 'emoji_meat', 'emoji_wood', 'emoji_herb', 'emoji_brick', 'emoji_candle', 'eternal_ice'];
     }
 
     // Called when an enemy dies
@@ -63,6 +63,12 @@ export default class LootManager {
             } else if (this.scene.dungeonType === 'SWAMPLAND' && Math.random() < 0.5) {
                 // 50% chance for Clover in Swampland
                 randomDrop = 'emoji_clover';
+            } else if (this.scene.dungeonType === 'LAVA_FIELD' && Math.random() < 0.05) {
+                // 5% chance for Winter Land ticket in Lava Field
+                randomDrop = 'winter_land_ticket';
+            } else if (this.scene.dungeonType === 'WINTER_LAND' && Math.random() < 0.3) {
+                // 30% chance for Eternal Ice in Winter Land
+                randomDrop = 'eternal_ice';
             } else if (this.scene.dungeonType === 'LAVA_FIELD' && Math.random() < 0.3) {
                 // 30% chance for Candle in Lava Field
                 randomDrop = 'emoji_candle';
@@ -90,7 +96,8 @@ export default class LootManager {
 
             // --- Texture Key Resolution ---
             let textureKey = randomDrop;
-            if (randomDrop === 'swampland_ticket' || randomDrop === 'lava_field_ticket') textureKey = 'emoji_ticket';
+            if (randomDrop === 'swampland_ticket' || randomDrop === 'lava_field_ticket' || randomDrop === 'winter_land_ticket') textureKey = 'emoji_ticket';
+            if (randomDrop === 'eternal_ice') textureKey = 'emoji_ice_cube';
 
             // Spawn the Sprite
             const item = this.lootGroup.create(x, y, textureKey);
@@ -186,10 +193,12 @@ export default class LootManager {
             'emoji_ticket': '🎫',
             'swampland_ticket': '🎫',
             'lava_field_ticket': '🎫',
+            'winter_land_ticket': '🎫',
             'emoji_clover': '☘️',
             'emoji_candle': '🕯️',
             'emoji_divine_essence': '✨',
-            'emoji_brick': '🧱'
+            'emoji_brick': '🧱',
+            'eternal_ice': '🧊'
         };
         const unicodeEmoji = emojiMap[emojiId] || '❓';
 

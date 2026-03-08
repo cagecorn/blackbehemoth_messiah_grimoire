@@ -2110,7 +2110,8 @@ export default class UIManager {
         const ticketInfo = [
             { id: 'UNDEAD_GRAVEYARD', ticketId: 'emoji_ticket' },
             { id: 'SWAMPLAND', ticketId: 'swampland_ticket' },
-            { id: 'LAVA_FIELD', ticketId: 'lava_field_ticket' }
+            { id: 'LAVA_FIELD', ticketId: 'lava_field_ticket' },
+            { id: 'WINTER_LAND', ticketId: 'winter_land_ticket' }
         ];
 
         const dropdownItems = document.querySelectorAll('.nav-dropdown-item');

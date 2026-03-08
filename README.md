@@ -15,6 +15,7 @@
 - `lava_field_ticket`: 용암 지대 입장권 🎫 (500골드)
 - `emoji_clover`: 클로버 (☘️) - 늪지대 전용 재료
 - `emoji_candle`: 양초 (🕯️) - 용암 지물 전용 재료
+- `eternal_ice`: 영원한 얼음 (🧊) - 겨울의 나라 전용 재료, 양초의 상위 재료
 - `crocodile_warrior_sprite`, `crocodile_archer_sprite`, `crocodile_healer_sprite`: 늪지대 악어 3종 스프라이트
 - `fire_spirit_warrior_sprite`, `fire_spirit_archer_sprite`, `fire_spirit_wizard_sprite`: 용암 지대 화염 정령 3종 스프라이트
 - `bow_turret_sprite`, `healing_turret_sprite`: 방어 시설 터렛 2종 스프라이트

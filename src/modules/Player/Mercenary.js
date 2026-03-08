@@ -550,7 +550,8 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         let multipliers = 0;
         if (this.grimoire_transmult) multipliers += (this.grimoire_transmult - 1);
         const petBonus = this.scene?.game?.partyManager?.getGlobalPetBonus('speedMult') || 0;
-        return Math.floor(base * (1 + multipliers + petBonus));
+        const result = base * (1 + multipliers + petBonus);
+        return Math.floor(this.isFrozen ? result * 0.5 : result);
     }
 
     getTotalAtkSpd() {

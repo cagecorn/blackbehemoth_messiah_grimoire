@@ -676,8 +676,17 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
         // For monsters, we use 'laser' for magic types, 'archer' for others
         const projectileType = isMagic ? 'laser' : 'archer';
         const element = this.config.element || null;
+        const freezeChance = this.config.freezeChance || 0;
 
-        this.scene.projectileManager.fire(this.x, this.y, target.x, target.y, finalDmg, projectileType, isMagic, this.targetGroup, this, null, false, element, isCritical);
+        const onHit = (t, d, isUlt) => {
+            if (freezeChance > 0 && Math.random() < freezeChance) {
+                if (this.scene.ccManager) {
+                    this.scene.ccManager.applyFreeze(t, 3000);
+                }
+            }
+        };
+
+        this.scene.projectileManager.fire(this.x, this.y, target.x, target.y, finalDmg, projectileType, isMagic, this.targetGroup, this, onHit, false, element, isCritical);
 
         return true;
     }
@@ -837,6 +846,14 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
 
             const element = this.config.element || null;
             this.target.takeDamage(damage, this, false, element, isCritical);
+
+            // Freeze Application for Melee
+            const freezeChance = this.config.freezeChance || 0;
+            if (freezeChance > 0 && Math.random() < freezeChance) {
+                if (this.scene.ccManager) {
+                    this.scene.ccManager.applyFreeze(this.target, 3000);
+                }
+            }
 
             // Visual attack nudge
             this.scene.tweens.add({
