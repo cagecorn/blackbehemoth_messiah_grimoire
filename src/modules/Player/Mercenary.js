@@ -173,14 +173,23 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             const savedState = this.scene.game.partyManager.getState(this.id);
 
             if (savedState) {
-                this.level = savedState.level || this.level;
-                this.exp = savedState.exp || this.exp;
+                this.activatedPerks = savedState.activatedPerks || this.activatedPerks || [];
+                this.equipment = savedState.equipment || this.equipment;
+
+                // SPECIAL FIX: Core Stats (HP, ATK, DEF, etc.) are derived from Level/Star via scaleStats.
+                // If a scaledConfig was passed, it contains the correct values for the current level.
+                // We ONLY load from savedState if the character doesn't have a scaledConfig OR for persistent properties like equipment/perks.
+                // However, since we now pass scaledConfig in all scenes, we skip overwriting core combat stats here to avoid "Level 1 Stat Overwrite" bug.
+
+                // Do NOT overwrite: maxHp, atk, mAtk, def, mDef from savedState IF they are clearly "Standardized" class stats.
+                // (Unless we implementation a way to have permanent stat-up potions/books later).
+
+                // For now, only load current HP (to persist damage taken).
                 this.hp = savedState.hp !== undefined ? savedState.hp : this.hp;
-                this.maxHp = savedState.maxHp || this.maxHp;
-                this.atk = savedState.atk || this.atk;
-                this.mAtk = savedState.mAtk || this.mAtk;
-                this.def = savedState.def || this.def;
-                this.mDef = savedState.mDef || this.mDef;
+                if (this.hp > this.maxHp) this.hp = this.maxHp;
+
+                // Load utility stats that might have come from equipment (if we decide to persist them in savedState)
+                // But generally, the scene's scaleStats result should be the source of truth.
                 this.speed = savedState.speed || this.speed;
                 this.atkSpd = savedState.atkSpd || this.atkSpd;
                 this.atkRange = savedState.atkRange || this.atkRange;
@@ -1896,9 +1905,17 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         let corrected = false;
 
         const checkAndFix = (statName, current, expected) => {
+            // Fix if too high (cheating/corruption)
             if (current > expected * margin) {
-                console.warn(`%c[Stat-Sanitizer] %c${this.unitName}%c의 ${statName.toUpperCase()} 수치 오염 감지(${current.toFixed(1)} > Max ${expected.toFixed(1)}). 정상 수치로 복구합니다.`,
+                console.warn(`%c[Stat-Sanitizer] %c${this.unitName}%c의 ${statName.toUpperCase()} 수치 과다 오염 감지(${current.toFixed(1)} > Max ${expected.toFixed(1)}). 정상 수치로 복구합니다.`,
                     'color: #ff9d00; font-weight: bold;', 'color: #ffffff;', 'color: #ff9d00;');
+                this[statName] = expected;
+                corrected = true;
+            }
+            // Fix if too low (the "Nickle" bug / Stale save data)
+            else if (current < expected * 0.95) { // 5% margin
+                console.warn(`%c[Stat-Sanitizer] %c${this.unitName}%c의 ${statName.toUpperCase()} 수치 과소 감지(${current.toFixed(1)} < Expected ${expected.toFixed(1)}). 정상 수치로 업데이트합니다.`,
+                    'color: #00afff; font-weight: bold;', 'color: #ffffff;', 'color: #00afff;');
                 this[statName] = expected;
                 corrected = true;
             }

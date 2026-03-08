@@ -1443,12 +1443,19 @@ export function scaleStats(config, level, type = 'NORMAL') {
     const starLevel = config.star || 1;
     const starMultiplier = Math.pow(1.2, starLevel - 1);
 
-    const growth = config.growth || {
-        maxHp: (config.maxHp || 100) * 0.1,
-        atk: (config.atk || 10) * 0.1,
-        mAtk: (config.mAtk || 10) * 0.1,
-        def: (config.def || 5) * 0.05,
-        mDef: (config.mDef || 5) * 0.05,
+    // Merge class-specific defaults if not already present
+    // This ensures named characters (Nickle, Ella, etc.) use their class growth rates.
+    let baseClassConfig = null;
+    if (config.classId) {
+        baseClassConfig = MercenaryClasses[config.classId.toUpperCase()];
+    }
+
+    const growth = config.growth || (baseClassConfig ? baseClassConfig.growth : null) || {
+        maxHp: (config.maxHp || (baseClassConfig?.maxHp) || 100) * 0.1,
+        atk: (config.atk || (baseClassConfig?.atk) || 10) * 0.1,
+        mAtk: (config.mAtk || (baseClassConfig?.mAtk) || 10) * 0.1,
+        def: (config.def || (baseClassConfig?.def) || 5) * 0.05,
+        mDef: (config.mDef || (baseClassConfig?.mDef) || 5) * 0.05,
         acc: 1,
         eva: 0.5,
         crit: 0.2
