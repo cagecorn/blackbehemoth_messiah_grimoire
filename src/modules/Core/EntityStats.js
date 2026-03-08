@@ -1464,26 +1464,29 @@ export function scaleStats(config, level, type = 'NORMAL') {
     newConfig.def = Math.floor(((config.def || 5) + (levelFactor * (growth.def || 0))) * starMultiplier * variant.power);
     newConfig.mDef = Math.floor(((config.mDef || 5) + (levelFactor * (growth.mDef || 0))) * starMultiplier * variant.power);
 
-    // 2. Speed Scaling
-    newConfig.speed = (config.speed || 100) * variant.speed + (levelFactor * 0.5);
+    // 2. Speed Scaling (Static as per user request)
+    newConfig.speed = (config.speed || 100) * variant.speed;
 
-    // 3. Accuracy/Evasion/Critical Scaling
-    newConfig.acc = Math.floor(((config.acc || 90) + (levelFactor * (growth.acc || 0))) + variant.acc + (starLevel - 1) * 5);
-    newConfig.eva = (config.eva || 5) + (levelFactor * (growth.eva || 0)) + variant.eva + (starLevel - 1) * 3;
-    newConfig.crit = (config.crit || 5) + (levelFactor * (growth.crit || 0)) + variant.crit + (starLevel - 1) * 2;
+    // 3. Accuracy/Evasion/Critical Scaling (Static as per user request)
+    newConfig.acc = (config.acc || 90) + variant.acc;
+    newConfig.eva = (config.eva || 5) + variant.eva;
+    newConfig.crit = (config.crit || 5) + variant.crit;
 
-    // 4. Attack Speed Reduction (Decreases by 1% per level, max 50%)
-    const atkSpdReduction = Math.min(0.5, levelFactor * 0.01);
-    newConfig.atkSpd = Math.floor((config.atkSpd || 1500) * (1 - atkSpdReduction));
-    newConfig.castSpd = Math.floor((config.castSpd || 1000) * (1 - atkSpdReduction));
+    // 4. Attack/Cast Speed (Static as per user request)
+    newConfig.atkSpd = config.atkSpd || 1500;
+    newConfig.castSpd = config.castSpd || 1000;
 
     // 5. Explicitly carry over the new stats (with defaults just in case)
     newConfig.ultChargeSpeed = config.ultChargeSpeed || 1.0;
+    // RESISTANCES: Do NOT grow with level (as per user request)
     newConfig.fireRes = config.fireRes || 0;
     newConfig.iceRes = config.iceRes || 0;
     newConfig.lightningRes = config.lightningRes || 0;
+
+    // RANGES: Do NOT grow with level
     newConfig.rangeMin = config.rangeMin || 0;
     newConfig.rangeMax = config.rangeMax || config.atkRange || 100;
+    newConfig.atkRange = config.atkRange || 100;
 
     newConfig.level = level;
     newConfig.type = type;

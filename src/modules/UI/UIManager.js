@@ -1772,7 +1772,7 @@ export default class UIManager {
                     <button class="shop-close-btn" id="npc-hire-close">✕</button>
                 </div>
                 
-                <div class="shop-body" style="padding: 20px; display: flex; flex-direction: column; gap: 20px;">
+                <div class="shop-body" style="padding: 20px; display: flex; flex-direction: column; gap: 20px; max-height: 60vh; overflow-y: auto;">
                     <div id="npc-hire-list" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
                         <!-- NPC cards will be injected here -->
                     </div>

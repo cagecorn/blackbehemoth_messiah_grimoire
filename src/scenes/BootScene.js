@@ -205,6 +205,10 @@ export default class BootScene extends Phaser.Scene {
         this.load.image('veve_cutscene', 'assets/characters/party/veve_cutscene.png');
         this.load.image('veve_ultimate_sprite', 'assets/characters/party/veve_ultimate_sprite.png');
 
+        // Hired Mercenary Sprites
+        this.load.image('hired_warrior_sprite', 'assets/npc/hired_warrior_sprite.png');
+        this.load.image('hired_archer_sprite', 'assets/npc/hired_archer_sprite.png');
+
         // Pet Assets
         this.load.image('dog_pet', 'assets/pet/dog_pet.png');
         this.load.image('wolf_pet', 'assets/pet/wolf_pet.png');

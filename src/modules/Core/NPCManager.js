@@ -27,6 +27,28 @@ class NPCManager {
                 cost: 50000,
                 maxStacks: 50,
                 description: '던전/레이드에서 패배 시, 1라운드가 아닌 현재 라운드에서 재시작 (50회)'
+            },
+            'HIRED_WARRIOR': {
+                id: 'HIRED_WARRIOR',
+                name: '고용 전사',
+                sprite: 'hired_warrior_sprite',
+                icon: 'assets/npc/hired_warrior_sprite.png',
+                cost: 50000,
+                maxStacks: 10,
+                description: '전투에 직접 참여하는 강력한 전사. 사망 시 스택을 소모해 즉시 부활합니다. (10회)',
+                isCombatant: true,
+                classId: 'warrior'
+            },
+            'HIRED_ARCHER': {
+                id: 'HIRED_ARCHER',
+                name: '고용 아쳐',
+                sprite: 'hired_archer_sprite',
+                icon: 'assets/npc/hired_archer_sprite.png',
+                cost: 50000,
+                maxStacks: 10,
+                description: '전투에 직접 참여하는 강력한 아쳐. 사망 시 스택을 소모해 즉시 부활합니다. (10회)',
+                isCombatant: true,
+                classId: 'archer'
             }
         };
     }

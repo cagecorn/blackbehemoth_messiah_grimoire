@@ -249,6 +249,9 @@ export default class TerritoryScene extends Phaser.Scene {
                 <div class="patch-entry">
                     <div class="patch-date">▶ 2026-03-08 (Latest)</div>
                     <div class="patch-item"><span class="patch-item-icon">🚀</span>[성장] **용병 레벨 제한 해제!** 하드코딩 되어있던 40레벨 제한이 삭제되어, 이제 무한히 스케일링하며 성장할 수 있습니다.</div>
+                    <div class="patch-item"><span class="patch-item-icon">⚔️</span>[용병] **고급 고용 용병 2종 추가!** [고용 전사], [고용 아쳐]가 새롭게 합류했습니다.</div>
+                    <div class="patch-item"><span class="patch-item-icon">✨</span>[용병] **압도적인 전력!** 평균 파티 레벨의 2배 규모로 스케일링되어 전장에 투입됩니다.</div>
+                    <div class="patch-item"><span class="patch-item-icon">🔄</span>[용병] **자동 부활 시스템!** 보유 스택을 소모하여 사망 시 즉시 풀 체력으로 부활합니다.</div>
                 </div>
                 <div class="patch-entry">
                     <div class="patch-date">▶ 2026-03-07</div>
@@ -318,6 +321,6 @@ export default class TerritoryScene extends Phaser.Scene {
             console.log('[Territory] Battery Saver toggled:', enabled);
         });
 
-        console.log('[PatchNotes] 2026-03-07 패치 내역이 업데이트되었습니다.');
+        console.log('[PatchNotes] 2026-03-08 패치 내역이 업데이트되었습니다.');
     }
 }

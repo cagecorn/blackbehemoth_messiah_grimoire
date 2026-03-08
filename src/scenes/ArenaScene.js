@@ -20,7 +20,7 @@ import UltimateManager from '../modules/Combat/UltimateManager.js';
 import BuffManager from '../modules/Core/BuffManager.js';
 import SeparationManager from '../modules/Core/SeparationManager.js';
 import BarkManager from '../modules/AI/BarkManager.js';
-import { Characters } from '../modules/Core/EntityStats.js';
+import { Characters, scaleStats } from '../modules/Core/EntityStats.js';
 // partyManager will be accessed via this.game.partyManager
 import EventBus from '../modules/Events/EventBus.js';
 import buildingManager from '../modules/Core/BuildingManager.js';
@@ -167,12 +167,19 @@ export default class ArenaScene extends Phaser.Scene {
 
         activeParty.forEach((charId, i) => {
             if (!charId) return;
-            const config = Object.values(Characters).find(c => c.id === charId);
-            if (!config) return;
+            const charConfig = Object.values(Characters).find(c => c.id === charId);
+            if (!charConfig) return;
+
+            const star = this.game.partyManager.getHighestStar(charId);
+            const state = this.game.partyManager.getState(charId) || { level: 1 };
+            const level = state.level || 1;
+
+            // Apply Level/Star Scaling
+            const scaledConfig = scaleStats({ ...charConfig, star: star }, level);
 
             const x = centerX - 250;
-            const y = centerY - 150 + (i * 65); // Reduced spacing from 75 to 65 for 6 units
-            const unit = this.spawnUnit(config, x, y, 'player', null);
+            const y = centerY - 150 + (i * 65);
+            const unit = this.spawnUnit(scaledConfig, x, y, 'player', null);
             if (unit) {
                 this.mercenaries.add(unit);
                 unit.autoUlt = true; // Auto-ult in Arena
@@ -187,18 +194,21 @@ export default class ArenaScene extends Phaser.Scene {
         for (let i = 0; i < 6; i++) { // Increased to 6 enemies
             const randomChar = availableCharacters[i % availableCharacters.length];
             const x = centerX + 250;
-            const y = centerY - 150 + (i * 65); // Reduced spacing to 65
+            const y = centerY - 150 + (i * 65);
 
-            const enemyConfig = {
-                ...randomChar,
+            // Apply scaling to enemies as well
+            const enemyConfig = scaleStats(randomChar, avgLevel, 'NORMAL');
+
+            // Add unique ID and team info
+            const finalEnemyConfig = {
+                ...enemyConfig,
                 id: randomChar.id + '_enemy_' + this.battleCount + '_' + i,
-                characterId: randomChar.id, // Ensure characterId is preserved
+                characterId: randomChar.id,
                 name: `적 ${randomChar.name}`,
-                level: avgLevel,
                 team: 'enemy'
             };
 
-            const unit = this.spawnUnit(enemyConfig, x, y, 'enemy', null);
+            const unit = this.spawnUnit(finalEnemyConfig, x, y, 'enemy', null);
             if (unit) {
                 this.enemies.add(unit);
                 unit.autoUlt = true; // Auto-ult even for enemies
@@ -281,7 +291,11 @@ export default class ArenaScene extends Phaser.Scene {
         if (unitToSwap) {
             const x = unitToSwap.x;
             const y = unitToSwap.y;
-            const config = { ...Characters[characterId.toUpperCase()], team: 'player' };
+            const star = this.game.partyManager.getHighestStar(characterId);
+            const state = this.game.partyManager.getState(characterId) || { level: unitToSwap.level || 1 };
+            const level = state.level || unitToSwap.level || 1;
+            const scaledConfig = scaleStats({ ...Characters[characterId.toUpperCase()], star: star }, level);
+            const config = { ...scaledConfig, team: 'player' };
 
             unitToSwap.destroy();
 

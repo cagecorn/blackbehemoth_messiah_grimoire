@@ -24,6 +24,8 @@ import Noah from '../modules/Player/Noah.js';
 import Noel from '../modules/Player/Noel.js';
 import Wrinkle from '../modules/Player/Wrinkle.js';
 import Veve from '../modules/Player/Veve.js';
+import HiredWarrior from '../modules/Player/HiredWarrior.js';
+import HiredArcher from '../modules/Player/HiredArcher.js';
 import ProjectileManager from '../modules/Combat/ProjectileManager.js';
 import ParticleManager from '../modules/Particles/ParticleManager.js';
 import FXManager from '../modules/Combat/FXManager.js';
@@ -387,54 +389,56 @@ export default class DungeonScene extends Phaser.Scene {
                 console.log('[DungeonScene] Total Shutdown: Removed EventBus listeners + Cleaned up Managers.');
             });
 
-            // Spawn Party from PartyManager
-            const activeParty = this.game.partyManager.getActiveParty();
-            const startPos = this.dungeonManager.getPlayerStartPosition();
-
-            let playerLeader = null;
             activeParty.forEach((charId, i) => {
                 if (!charId) return;
 
                 const charConfig = Object.values(Characters).find(c => c.id === charId);
                 if (!charConfig) return;
 
+                const star = this.game.partyManager.getHighestStar(charId);
+                const state = this.game.partyManager.getState(charId) || { level: 1 };
+                const level = state.level || 1;
+
+                // Apply Level/Star Scaling
+                const scaledConfig = scaleStats({ ...charConfig, star: star }, level);
+
                 const x = startPos.x - (i * 40);
                 const y = startPos.y;
                 let unit = null;
 
                 if (charConfig.classId === 'warrior') {
-                    unit = new Warrior(this, x, y, charConfig);
+                    unit = new Warrior(this, x, y, scaledConfig);
                     if (!playerLeader) {
                         playerLeader = unit;
                         this.player = unit;
                     }
                 } else if (charId === 'wrinkle') {
-                    unit = new Wrinkle(this, x, y, playerLeader, charConfig);
+                    unit = new Wrinkle(this, x, y, playerLeader, scaledConfig);
                 } else if (charId === 'nickle') {
-                    unit = new Nickle(this, x, y, playerLeader, charConfig);
+                    unit = new Nickle(this, x, y, playerLeader, scaledConfig);
                 } else if (charConfig.classId === 'archer') {
-                    unit = new Archer(this, x, y, playerLeader, charConfig);
+                    unit = new Archer(this, x, y, playerLeader, scaledConfig);
                 } else if (charConfig.classId === 'healer') {
-                    unit = new Healer(this, x, y, playerLeader, charConfig);
+                    unit = new Healer(this, x, y, playerLeader, scaledConfig);
                 } else if (charConfig.classId === 'wizard') {
                     if (charId === 'bao') {
-                        unit = new Bao(this, x, y, playerLeader, charConfig);
+                        unit = new Bao(this, x, y, playerLeader, scaledConfig);
                     } else if (charId === 'aina') {
-                        unit = new Aina(this, x, y, playerLeader, charConfig);
+                        unit = new Aina(this, x, y, playerLeader, scaledConfig);
                     } else if (charId === 'veve') {
-                        unit = new Veve(this, x, y, playerLeader, charConfig);
+                        unit = new Veve(this, x, y, playerLeader, scaledConfig);
                     } else {
-                        unit = new Wizard(this, x, y, playerLeader, charConfig);
+                        unit = new Wizard(this, x, y, playerLeader, scaledConfig);
                     }
                 } else if (charConfig.classId === 'bard') {
                     if (charId === 'nana') {
-                        unit = new Nana(this, x, y, playerLeader, charConfig);
+                        unit = new Nana(this, x, y, playerLeader, scaledConfig);
                     } else if (charId === 'noah') {
-                        unit = new Noah(this, x, y, playerLeader, charConfig);
+                        unit = new Noah(this, x, y, playerLeader, scaledConfig);
                     } else if (charId === 'noel') {
-                        unit = new Noel(this, x, y, playerLeader, charConfig);
+                        unit = new Noel(this, x, y, playerLeader, scaledConfig);
                     } else {
-                        unit = new Bard(this, x, y, playerLeader, charConfig);
+                        unit = new Bard(this, x, y, playerLeader, scaledConfig);
                     }
                 }
 
@@ -455,6 +459,9 @@ export default class DungeonScene extends Phaser.Scene {
 
             // Initialize Pet after party spawn
             this.initPet();
+
+            // --- Spawn Hired Combatant NPC ---
+            this.spawnHiredNPC(startPos, playerLeader);
 
             // First wave of monsters (Now that player is spawned)
             this.spawnWave();
@@ -564,6 +571,68 @@ export default class DungeonScene extends Phaser.Scene {
         }
     }
 
+    async spawnHiredNPC(startPos, playerLeader) {
+        const npcManager = (await import('../modules/Core/NPCManager.js')).default;
+        const activeNPC = npcManager.getHiredNPC();
+
+        if (activeNPC && activeNPC.isCombatant && activeNPC.stacks > 0) {
+            console.log(`[Dungeon] Spawning Hired Combatant: ${activeNPC.name}`);
+
+            // Calculate Average Level of Top 6
+            const activeParty = this.mercenaries.getChildren().filter(m => !m.config.hideInUI && !m.isSummoned);
+            let totalLevel = 0;
+            activeParty.forEach(m => totalLevel += (m.level || 1));
+            const avgLevel = activeParty.length > 0 ? Math.round(totalLevel / activeParty.length) : 1;
+            const hiredLevel = avgLevel * 2;
+
+            const spawnX = startPos.x + 40; // Spawn slightly ahead/beside the leader
+            const spawnY = startPos.y - 40;
+
+            // Apply Level Scaling to Hired NPCs (Growth included)
+            const baseClassConfig = activeNPC.id === 'HIRED_WARRIOR' ? MercenaryClasses.WARRIOR : MercenaryClasses.ARCHER;
+            const scaledHiredConfig = scaleStats(baseClassConfig, hiredLevel, 'NORMAL');
+
+            let hiredUnit = null;
+            if (activeNPC.id === 'HIRED_WARRIOR') {
+                hiredUnit = new HiredWarrior(this, spawnX, spawnY, scaledHiredConfig);
+            } else if (activeNPC.id === 'HIRED_ARCHER') {
+                hiredUnit = new HiredArcher(this, spawnX, spawnY, playerLeader, scaledHiredConfig);
+            }
+
+            if (hiredUnit) {
+                this.mercenaries.add(hiredUnit);
+
+                // Scale stats based on level
+                if (typeof hiredUnit.addExp === 'function') {
+                    // Force the level and stats
+                    hiredUnit.level = hiredLevel;
+                    const { scaleStats } = await import('../modules/Core/EntityStats.js');
+                    const baseStats = MercenaryClasses[activeNPC.classId.toUpperCase()];
+                    const scaled = scaleStats(baseStats, hiredLevel);
+
+                    // Apply scaled stats
+                    hiredUnit.maxHp = scaled.maxHp;
+                    hiredUnit.hp = scaled.maxHp;
+                    hiredUnit.atk = scaled.atk;
+                    hiredUnit.mAtk = scaled.mAtk;
+                    hiredUnit.def = scaled.def;
+                    hiredUnit.mDef = scaled.mDef;
+
+                    hiredUnit.syncStatusUI();
+                }
+
+                // Consume a stack
+                await npcManager.consumeStack();
+                EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, `[용병] ${activeNPC.name}가 전투에 합류했습니다! (레벨 ${hiredLevel}) ⚔️`);
+
+                // Update NPC HUD via Event (if needed) or just let UIManager handle it
+                if (this.game.uiManager) {
+                    this.game.uiManager._updateNPCFormationSlot();
+                }
+            }
+        }
+    }
+
     handleDebugSwap(payload) {
         const { classId, characterId, unitId } = payload;
 
@@ -583,7 +652,13 @@ export default class DungeonScene extends Phaser.Scene {
         const x = existingUnit.x;
         const y = existingUnit.y;
         const leader = existingUnit.leader;
-        const config = { ...Characters[characterId.toUpperCase()], team: 'player' };
+
+        // Apply scaling for debug swap to match actual power levels
+        const star = this.game.partyManager.getHighestStar(characterId);
+        const state = this.game.partyManager.getState(characterId) || { level: existingUnit.level || 1 };
+        const level = state.level || existingUnit.level || 1;
+        const scaledConfig = scaleStats({ ...Characters[characterId.toUpperCase()], star: star }, level);
+        const config = { ...scaledConfig, team: 'player' };
 
         existingUnit.destroy();
 
@@ -1635,5 +1710,57 @@ export default class DungeonScene extends Phaser.Scene {
 
     startConstructionMode(instanceId) {
         this.toggleConstructionMode(instanceId);
+    }
+
+    async spawnHiredNPC(startPos, playerLeader) {
+        const { default: npcManager } = await import('../modules/Core/NPCManager.js');
+        const activeNPC = npcManager.getHiredNPC();
+
+        if (activeNPC && activeNPC.isCombatant && activeNPC.stacks > 0) {
+            console.log(`[Dungeon] Spawning Hired Combatant: ${activeNPC.name}`);
+
+            const spawnPos = startPos || (this.dungeonManager ? this.dungeonManager.getPlayerStartPosition() : { x: 400, y: 300 });
+
+            // Calculate Average Level of Top 6
+            const activeParty = this.mercenaries.getChildren().filter(m => !m.config.hideInUI && !m.isSummoned);
+            let totalLevel = 0;
+            activeParty.forEach(m => totalLevel += (m.level || 1));
+            const avgLevel = activeParty.length > 0 ? Math.round(totalLevel / activeParty.length) : 1;
+            const hiredLevel = avgLevel * 2;
+
+            let hiredUnit = null;
+            if (activeNPC.id === 'HIRED_WARRIOR') {
+                hiredUnit = new HiredWarrior(this, spawnPos.x, spawnPos.y, { level: hiredLevel });
+            } else if (activeNPC.id === 'HIRED_ARCHER') {
+                hiredUnit = new HiredArcher(this, spawnPos.x, spawnPos.y, playerLeader, { level: hiredLevel });
+            }
+
+            if (hiredUnit) {
+                console.log(`[Dungeon] Successfully instantiated ${hiredUnit.unitName} at level ${hiredLevel} at (${spawnPos.x}, ${spawnPos.y})`);
+                this.mercenaries.add(hiredUnit);
+
+                // Scale stats based on level
+                hiredUnit.level = hiredLevel;
+                const baseStats = MercenaryClasses[activeNPC.classId.toUpperCase()];
+                const scaled = scaleStats(baseStats, hiredLevel);
+
+                // Apply scaled stats
+                hiredUnit.maxHp = scaled.maxHp;
+                hiredUnit.hp = scaled.maxHp;
+                hiredUnit.atk = scaled.atk;
+                hiredUnit.mAtk = scaled.mAtk;
+                hiredUnit.def = scaled.def;
+                hiredUnit.mDef = scaled.mDef;
+
+                hiredUnit.syncStatusUI();
+
+                // Stacks are now consumed on death (Auto-Resurrection), not on entry.
+                EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, `[용병] ${activeNPC.name}가 전투에 합류했습니다! (레벨 ${hiredLevel}) ⚔️`);
+            } else {
+                console.warn(`[Dungeon] Failed to instantiate hired unit: ${activeNPC.id}`);
+            }
+        } else {
+            console.log(`[Dungeon] Spawning skipped. activeNPC: ${activeNPC?.id}, stacks: ${activeNPC?.stacks}`);
+        }
     }
 }

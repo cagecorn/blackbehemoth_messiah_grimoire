@@ -177,7 +177,24 @@ export default class Mercenary extends Phaser.GameObjects.Container {
                 this.exp = savedState.exp || this.exp;
                 this.hp = savedState.hp !== undefined ? savedState.hp : this.hp;
                 this.maxHp = savedState.maxHp || this.maxHp;
+                this.atk = savedState.atk || this.atk;
+                this.mAtk = savedState.mAtk || this.mAtk;
                 this.def = savedState.def || this.def;
+                this.mDef = savedState.mDef || this.mDef;
+                this.speed = savedState.speed || this.speed;
+                this.atkSpd = savedState.atkSpd || this.atkSpd;
+                this.atkRange = savedState.atkRange || this.atkRange;
+                this.rangeMin = savedState.rangeMin || this.rangeMin;
+                this.rangeMax = savedState.rangeMax || this.rangeMax;
+                this.castSpd = savedState.castSpd || this.castSpd;
+                this.acc = savedState.acc || this.acc;
+                this.eva = savedState.eva || this.eva;
+                this.crit = savedState.crit || this.crit;
+                this.ultChargeSpeed = savedState.ultChargeSpeed || this.ultChargeSpeed;
+                this.fireRes = savedState.fireRes !== undefined ? savedState.fireRes : this.fireRes;
+                this.iceRes = savedState.iceRes !== undefined ? savedState.iceRes : this.iceRes;
+                this.lightningRes = savedState.lightningRes !== undefined ? savedState.lightningRes : this.lightningRes;
+
                 this.activatedPerks = savedState.activatedPerks || this.activatedPerks || [];
                 this.equipment = savedState.equipment || this.equipment;
                 // Sync persistent Grimoire state
@@ -1310,6 +1327,34 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             }
         }
 
+        // --- Hired Mercenary Auto-Resurrection ---
+        if (this.config.id === 'hired_warrior' || this.config.id === 'hired_archer') {
+            if (npcManager && npcManager.getActiveNPC() && npcManager.getActiveNPC().stacks > 0) {
+                const activeNPC = npcManager.getActiveNPC();
+
+                console.log(`%c[Hire NPC] Auto-Resurrection for ${this.unitName}! Stacks: ${activeNPC.stacks} -> ${activeNPC.stacks - 1}`, "color: #00ff00; font-weight: bold;");
+
+                // Full Revive
+                this.hp = this.maxHp;
+                this.active = true;
+
+                // Visual feedback
+                if (this.scene.fxManager) {
+                    this.scene.fxManager.spawnEffect('heal_aura', this.x, this.y);
+                    this.scene.fxManager.showDamageText(this, 'RESURRECTED!', '#00ff00');
+                }
+
+                // Consume stack
+                npcManager.consumeStack();
+
+                // Emit sound
+                soundEffects.playUltimateSound();
+
+                this.updateHealthBar();
+                return; // Exit die(), mercenary survives!
+            }
+        }
+
         // Clean up all CC visuals and timers immediately
         if (this.scene && this.scene.ccManager) {
             this.scene.ccManager.cleanUpAllCC(this);
@@ -1519,7 +1564,12 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             }
         }
         if (this.ultBar) {
-            this.ultBar.setValue(this.ultGauge / this.maxUltGauge);
+            if (this.maxUltGauge > 0) {
+                this.ultBar.bar.setVisible(true);
+                this.ultBar.setValue(this.ultGauge / this.maxUltGauge);
+            } else {
+                this.ultBar.bar.setVisible(false);
+            }
         }
     }
 
