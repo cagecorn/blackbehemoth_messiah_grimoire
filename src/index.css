@@ -3861,7 +3861,7 @@ input:checked+.slider-toggle:before {
     height: 100vh;
     background: rgba(0, 0, 0, 0.7);
     backdrop-filter: blur(4px);
-    z-index: 30000;
+    z-index: 40000;
     display: flex;
     align-items: center;
     justify-content: center;
