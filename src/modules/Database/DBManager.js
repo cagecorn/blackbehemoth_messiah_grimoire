@@ -340,4 +340,31 @@ export default class DBManager {
         console.log(`[DBManager] ${charId} purchased skin: ${skinId}`);
         return { success: true };
     }
+
+    // --- Monster Achievements ---
+    static async recordMonsterKill(monsterId) {
+        if (!this.db) await this.initDB();
+        const ID = monsterId.toUpperCase();
+        const data = await this.db.get('settings', 'monster_kills') || { id: 'monster_kills', counts: {} };
+        const counts = data.counts || {};
+        counts[ID] = (counts[ID] || 0) + 1;
+        await this.db.put('settings', { id: 'monster_kills', counts });
+    }
+
+    static async getMonsterKills() {
+        if (!this.db) await this.initDB();
+        const data = await this.db.get('settings', 'monster_kills');
+        return data ? data.counts : {};
+    }
+
+    static async getClaimedMonsterAchievements() {
+        if (!this.db) await this.initDB();
+        const data = await this.db.get('settings', 'claimed_monster_achievements');
+        return data ? data.claims : {};
+    }
+
+    static async saveClaimedMonsterAchievements(claimsObj) {
+        if (!this.db) await this.initDB();
+        await this.db.put('settings', { id: 'claimed_monster_achievements', claims: claimsObj });
+    }
 }

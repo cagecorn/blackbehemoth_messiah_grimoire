@@ -185,6 +185,7 @@ export default class BootScene extends Phaser.Scene {
         this.load.image('ice_spirit_wizard_sprite', 'assets/characters/enemies/ice_spirit_wizard_sprite.png');
         this.load.image('ice_spirit_healer_sprite', 'assets/characters/enemies/ice_spirit_healer_sprite.png');
         this.load.image('goblin_sprite', 'assets/characters/enemies/goblin_sprite.png');
+        this.load.image('goblin_shaman_sprite', 'assets/characters/enemies/goblin_shaman_sprite.png');
         this.load.image('orc_sprite', 'assets/characters/enemies/orc_sprite.png');
         this.load.image('skeleton_warrior_sprite', 'assets/characters/enemies/skeleton_warrior_sprite.png');
         this.load.image('skeleton_wizard_sprite', 'assets/characters/enemies/skeleton_wizard_sprite.png');

@@ -1014,7 +1014,7 @@ export const MonsterClasses = {
     SHAMAN: {
         id: 'shaman',
         name: 'Goblin Shaman (주술사)',
-        sprite: 'goblin_sprite',
+        sprite: 'goblin_shaman_sprite',
         maxHp: 90,
         hp: 90,
         atk: 5,

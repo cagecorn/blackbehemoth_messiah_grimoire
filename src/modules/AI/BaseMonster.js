@@ -4,6 +4,7 @@ import EventBus from '../Events/EventBus.js';
 import CharmManager from '../Core/CharmManager.js';
 import GrimoireManager from '../Core/GrimoireManager.js';
 import equipmentManager from '../Core/EquipmentManager.js';
+import DBManager from '../Database/DBManager.js';
 
 /**
  * BaseMonster.js
@@ -726,6 +727,9 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
             id: this.config.id,
             isElite: this.isElite
         });
+
+        // Persistent kill tracking for achievements
+        DBManager.recordMonsterKill(this.config.id);
 
         if (this.scene && this.scene.lootManager) {
             // Use container world coordinates (x, y) which are more stable during death

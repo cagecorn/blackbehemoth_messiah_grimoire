@@ -2040,6 +2040,9 @@ export default class UIManager {
     async showAchievementsUI() {
         if (this.achievementsOverlay) return;
 
+        // Current tab state
+        this.currentAchievementTab = 'DUNGEON';
+
         const overlay = document.createElement('div');
         overlay.id = 'achievements-overlay';
         overlay.className = 'shop-overlay retro-scanline-overlay';
@@ -2052,13 +2055,18 @@ export default class UIManager {
                     <button class="shop-close-btn" id="achievements-close" style="color: #fca5a5;">✕</button>
                 </div>
                 
-                <div class="shop-body" style="padding: 20px;">
-                    <div style="font-family: var(--font-pixel); color: #fca5a5; font-size: 11px; margin-bottom: 15px; text-align: center; border-bottom: 1px solid rgba(239, 68, 68, 0.3); padding-bottom: 10px;">
-                        던전 돌파 시 메시아 경험치(✨)를 획득하여 권능을 강화하세요!
+                <div class="shop-body" style="padding: 10px 20px 20px 20px; display: flex; flex-direction: column;">
+                    <!-- Tabs -->
+                    <div style="display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 1px solid rgba(239,68,68,0.3); padding-bottom: 5px;">
+                        <button id="achieve-tab-dungeon" class="retro-btn achievement-tab-btn active" style="flex: 1; font-size: 11px; padding: 6px; background: rgba(239,68,68,0.3); border-color: #ef4444;">던전 업적</button>
+                        <button id="achieve-tab-monster" class="retro-btn achievement-tab-btn" style="flex: 1; font-size: 11px; padding: 6px; border-color: rgba(239,68,68,0.3);">몬스터 업적</button>
+                    </div>
+
+                    <div style="font-family: var(--font-pixel); color: #fca5a5; font-size: 11px; margin-bottom: 15px; text-align: center;">
+                        목표 달성 시 메시아 경험치(✨)를 획득하여 권능을 강화하세요!
                     </div>
                     <div id="achievements-list" style="display: flex; flex-direction: column; gap: 12px; max-height: 50vh; overflow-y: auto; padding-right: 5px;">
                         <!-- Achievements injected here -->
-                        <div style="text-align: center; color: #94a3b8; font-size: 14px; padding: 20px;">데이터를 불러오는 중...</div>
                     </div>
                 </div>
             </div>
@@ -2068,6 +2076,34 @@ export default class UIManager {
 
         document.getElementById('achievements-close').onclick = () => this.hideAchievementsUI();
         overlay.onclick = (e) => { if (e.target === overlay) this.hideAchievementsUI(); };
+
+        // Tab Events
+        const dungeonTab = document.getElementById('achieve-tab-dungeon');
+        const monsterTab = document.getElementById('achieve-tab-monster');
+
+        dungeonTab.onclick = () => {
+            if (this.currentAchievementTab === 'DUNGEON') return;
+            this.currentAchievementTab = 'DUNGEON';
+            dungeonTab.classList.add('active');
+            dungeonTab.style.background = 'rgba(239,68,68,0.3)';
+            dungeonTab.style.borderColor = '#ef4444';
+            monsterTab.classList.remove('active');
+            monsterTab.style.background = 'transparent';
+            monsterTab.style.borderColor = 'rgba(239,68,68,0.3)';
+            this.refreshAchievements();
+        };
+
+        monsterTab.onclick = () => {
+            if (this.currentAchievementTab === 'MONSTER') return;
+            this.currentAchievementTab = 'MONSTER';
+            monsterTab.classList.add('active');
+            monsterTab.style.background = 'rgba(239,68,68,0.3)';
+            monsterTab.style.borderColor = '#ef4444';
+            dungeonTab.classList.remove('active');
+            dungeonTab.style.background = 'transparent';
+            dungeonTab.style.borderColor = 'rgba(239,68,68,0.3)';
+            this.refreshAchievements();
+        };
 
         await this.refreshAchievements();
     }
@@ -2088,36 +2124,34 @@ export default class UIManager {
         const listContainer = document.getElementById('achievements-list');
         if (!listContainer) return;
 
-        const claimed = await DBManager.getClaimedAchievements();
+        listContainer.innerHTML = '<div style="text-align: center; color: #94a3b8; font-size: 14px; padding: 20px;">불러오는 중...</div>';
 
-        // Define target dungeons and their display names
-        // Note: IDs must match what DungeonScene.dungeonType passes to DBManager.saveBestRound (UPPERCASE)
+        if (this.currentAchievementTab === 'DUNGEON') {
+            await this._renderDungeonAchievements(listContainer);
+        } else {
+            await this._renderMonsterAchievements(listContainer);
+        }
+    }
+
+    async _renderDungeonAchievements(container) {
+        const claimed = await DBManager.getClaimedAchievements();
         const targets = [
-            { id: 'CURSED_FOREST', name: '저주받은 숲', icon: '🌲', isInfinite: true },
-            { id: 'UNDEAD_GRAVEYARD', name: '언데드 묘지', icon: '🪦', isInfinite: true },
-            { id: 'SWAMPLAND', name: '늪지대', icon: '🐸', isInfinite: true },
-            { id: 'LAVA_FIELD', name: '용암 지대', icon: '🌋', isInfinite: true },
-            { id: 'WINTER_LAND', name: '겨울의 나라', icon: '❄️', isInfinite: true }
+            { id: 'CURSED_FOREST', name: '저주받은 숲', icon: '🌲' },
+            { id: 'UNDEAD_GRAVEYARD', name: '언데드 묘지', icon: '🪦' },
+            { id: 'SWAMPLAND', name: '늪지대', icon: '🐸' },
+            { id: 'LAVA_FIELD', name: '용암 지대', icon: '🌋' },
+            { id: 'WINTER_LAND', name: '겨울의 나라', icon: '❄️' }
         ];
 
         let html = '';
-
         for (const t of targets) {
             const bestRound = await DBManager.getBestRound(t.id);
             const currentClaimed = claimed[t.id] || 0;
             const targetRound = currentClaimed + 10;
             const canClaim = bestRound >= targetRound;
 
-            let statusContent = '';
-
-            if (canClaim) {
-                statusContent = `<button class="achieve-claim-btn retro-btn" data-id="${t.id}" data-target="${targetRound}" style="background: #ef4444; border-color: #fca5a5; color: #fff; padding: 5px 15px; font-size: 11px;">[보상 수령]</button>`;
-            } else {
-                statusContent = `<div style="color: #94a3b8; font-size: 12px; font-family: var(--font-pixel);">진행도: ${bestRound} / ${targetRound}</div>`;
-            }
-
             html += `
-                <div class="achievement-card" style="background: rgba(0,0,0,0.4); border: 1px solid ${canClaim ? '#ef4444' : 'rgba(239,68,68,0.2)'}; border-radius: 8px; padding: 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: ${canClaim ? '0 0 10px rgba(239,68,68,0.2)' : 'none'};">
+                <div class="achievement-card" style="background: rgba(0,0,0,0.4); border: 1px solid ${canClaim ? '#ef4444' : 'rgba(239,68,68,0.2)'}; border-radius: 8px; padding: 15px; display: flex; justify-content: space-between; align-items: center;">
                     <div style="display: flex; flex-direction: column; gap: 5px;">
                         <div style="color: #fca5a5; font-size: 14px; font-weight: bold; font-family: var(--font-pixel);">
                             ${t.icon} ${t.name} <span style="color:#fbbf24; font-size: 12px;">(${targetRound}라운드 달성)</span>
@@ -2125,44 +2159,92 @@ export default class UIManager {
                         <div style="color: #cbd5e1; font-size: 11px;">보상: 메시아 경험치 ✨ 100</div>
                     </div>
                     <div>
-                        ${statusContent}
+                        ${canClaim ?
+                    `<button class="achieve-claim-btn retro-btn" data-type="DUNGEON" data-id="${t.id}" data-target="${targetRound}" style="background: #ef4444; border-color: #fca5a5; color: #fff; padding: 5px 15px; font-size: 11px;">[보상 수령]</button>` :
+                    `<div style="color: #94a3b8; font-size: 12px; font-family: var(--font-pixel);">진행도: ${bestRound} / ${targetRound}</div>`
+                }
                     </div>
                 </div>
             `;
         }
+        container.innerHTML = html;
+        this._bindAchievementClaimButtons(container);
+    }
 
-        listContainer.innerHTML = html;
+    async _renderMonsterAchievements(container) {
+        const kills = await DBManager.getMonsterKills();
+        const claimed = await DBManager.getClaimedMonsterAchievements();
 
-        // Bind buttons
-        const btns = listContainer.querySelectorAll('.achieve-claim-btn');
+        // Focused on Cursed Forest as requested
+        const targets = [
+            { id: 'GOBLIN', name: '고블린', icon: '👺' },
+            { id: 'SHAMAN', name: '고블린 샤먼', icon: '🧙‍♂️' },
+            { id: 'ORC', name: '오크 아처', icon: '🏹' }
+        ];
+
+        let html = '';
+        for (const t of targets) {
+            const currentKills = kills[t.id] || 0;
+            const currentClaimed = claimed[t.id] || 0;
+
+            // Tiers: 100, 1000, 10000...
+            let nextMilestone = 100;
+            if (currentClaimed >= 100) nextMilestone = 1000;
+            if (currentClaimed >= 1000) nextMilestone = 10000;
+            if (currentClaimed >= 10000) nextMilestone = currentClaimed + 10000; // Future proof
+
+            const canClaim = currentKills >= nextMilestone;
+
+            html += `
+                <div class="achievement-card" style="background: rgba(0,0,0,0.4); border: 1px solid ${canClaim ? '#ef4444' : 'rgba(239,68,68,0.2)'}; border-radius: 8px; padding: 15px; display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; flex-direction: column; gap: 5px;">
+                        <div style="color: #fca5a5; font-size: 14px; font-weight: bold; font-family: var(--font-pixel);">
+                            ${t.icon} ${t.name} 처치 <span style="color:#fbbf24; font-size: 12px;">(${nextMilestone}마리 달성)</span>
+                        </div>
+                        <div style="color: #cbd5e1; font-size: 11px;">보상: 메시아 경험치 ✨ 150</div>
+                    </div>
+                    <div>
+                        ${canClaim ?
+                    `<button class="achieve-claim-btn retro-btn" data-type="MONSTER" data-id="${t.id}" data-target="${nextMilestone}" style="background: #ef4444; border-color: #fca5a5; color: #fff; padding: 5px 15px; font-size: 11px;">[보상 수령]</button>` :
+                    `<div style="color: #94a3b8; font-size: 12px; font-family: var(--font-pixel);">진행도: ${currentKills} / ${nextMilestone}</div>`
+                }
+                    </div>
+                </div>
+            `;
+        }
+        container.innerHTML = html || '<div style="text-align: center; color: #94a3b8; font-size: 14px; padding: 20px;">아직 처치 기록이 없습니다.</div>';
+        this._bindAchievementClaimButtons(container);
+    }
+
+    _bindAchievementClaimButtons(container) {
+        const btns = container.querySelectorAll('.achieve-claim-btn');
         btns.forEach(btn => {
             btn.onclick = async () => {
-                const dungeonId = btn.dataset.id;
+                const type = btn.dataset.type;
+                const id = btn.dataset.id;
                 const targetReached = parseInt(btn.dataset.target);
-
-                // Double check
-                const latestClaimed = await DBManager.getClaimedAchievements();
-                latestClaimed[dungeonId] = targetReached;
-                await DBManager.saveClaimedAchievements(latestClaimed);
-
-                // Add exp
                 const game = this.scene.game || (this.scene.scene && this.scene.scene.game);
                 const mm = game?.messiahManager;
-                if (mm) {
-                    mm.addExp(100);
-                    this.showToast(`✨ 업적 달성! 메시아 경험치 수령!`);
 
-                    // FX
-                    btn.innerText = '수령 완료!';
-                    btn.style.background = '#10b981';
-                    btn.style.borderColor = '#34d399';
-                    btn.disabled = true;
-
-                    // Refresh after short delay
-                    setTimeout(() => {
-                        this.refreshAchievements();
-                    }, 800);
+                if (type === 'DUNGEON') {
+                    const latestClaimed = await DBManager.getClaimedAchievements();
+                    latestClaimed[id] = targetReached;
+                    await DBManager.saveClaimedAchievements(latestClaimed);
+                    if (mm) mm.addExp(100);
+                } else {
+                    const latestClaimed = await DBManager.getClaimedMonsterAchievements();
+                    latestClaimed[id] = targetReached;
+                    await DBManager.saveClaimedMonsterAchievements(latestClaimed);
+                    if (mm) mm.addExp(150);
                 }
+
+                this.showToast(`✨ 업적 달성! 메시아 경험치 수령!`);
+                btn.innerText = '수령 완료!';
+                btn.style.background = '#10b981';
+                btn.style.borderColor = '#34d399';
+                btn.disabled = true;
+
+                setTimeout(() => this.refreshAchievements(), 800);
             };
         });
     }
