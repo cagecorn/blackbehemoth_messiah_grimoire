@@ -750,7 +750,9 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
             attackerId: attackerId,
             level: this.level,
             id: this.config.id,
-            isElite: this.isElite
+            isElite: this.isElite,
+            isEpic: this.config.id?.startsWith('epic_') || false,
+            expReward: this.config.expReward || null
         });
 
         // Persistent kill tracking for achievements

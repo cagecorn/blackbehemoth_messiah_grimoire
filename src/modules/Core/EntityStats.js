@@ -1010,6 +1010,7 @@ export const MonsterClasses = {
         spawnOffset: { x: 400, y: 400 },
         aiType: 'MELEE',
         scale: 1,
+        expReward: 25,
         growth: { maxHp: 15, atk: 2.5, mAtk: 0.5, def: 0.8, mDef: 0.5, acc: 1.5, eva: 0.5, crit: 0.3 }
     },
     SHAMAN: {
@@ -1039,6 +1040,7 @@ export const MonsterClasses = {
         spriteSize: 64,
         aiType: 'SUPPORT',
         scale: 1.2,
+        expReward: 40,
         growth: { maxHp: 20, atk: 0.5, mAtk: 4, def: 1.2, mDef: 2.5, acc: 1, eva: 1, crit: 0.2 }
     },
     BOSS_GOBLIN: {
@@ -1098,6 +1100,7 @@ export const MonsterClasses = {
         spawnOffset: { x: 450, y: 450 },
         aiType: 'RANGED',
         scale: 1.1,
+        expReward: 45,
         growth: { maxHp: 35, atk: 4.5, mAtk: 1, def: 2, mDef: 1.5, acc: 2.5, eva: 1, crit: 0.5 }
     },
     EPIC_GOBLIN: {
@@ -1129,6 +1132,7 @@ export const MonsterClasses = {
         aiType: 'MELEE',
         scale: 2.2,
         skillName: 'Blood Rage',
+        expReward: 250,
         growth: { maxHp: 35, atk: 5.5, mAtk: 1.5, def: 2.5, mDef: 2.2, acc: 2.5, eva: 1.2, crit: 0.8 } // ~2x growth
     },
     EPIC_ORC: {
@@ -1160,6 +1164,7 @@ export const MonsterClasses = {
         aiType: 'RANGED',
         scale: 2.5,
         skillName: 'Electric Grenade',
+        expReward: 300,
         growth: { maxHp: 65, atk: 8.5, mAtk: 2.5, def: 4.5, mDef: 3.5, acc: 4, eva: 1.8, crit: 1.2 }
     },
 
@@ -1189,6 +1194,7 @@ export const MonsterClasses = {
         physicsRadius: 20,
         spriteSize: 64,
         aiType: 'MELEE',
+        expReward: 35,
         growth: { maxHp: 25, atk: 4, mAtk: 0, def: 2.5, mDef: 1, acc: 2, eva: 1, crit: 0.4 }
     },
     SKELETON_WIZARD: {
@@ -1217,6 +1223,7 @@ export const MonsterClasses = {
         physicsRadius: 18,
         spriteSize: 64,
         aiType: 'RANGED_MAGIC',
+        expReward: 45,
         growth: { maxHp: 18, atk: 1, mAtk: 5, def: 1, mDef: 3, acc: 1.5, eva: 1.5, crit: 0.6 }
     },
     CROCODILE_WARRIOR: {
@@ -1245,6 +1252,7 @@ export const MonsterClasses = {
         physicsRadius: 25,
         spriteSize: 64,
         aiType: 'MELEE',
+        expReward: 65,
         growth: { maxHp: 85, atk: 7.5, mAtk: 0, def: 5, mDef: 2.5, acc: 2.2, eva: 1.2, crit: 0.8 }
     },
     CROCODILE_ARCHER: {
@@ -1273,6 +1281,7 @@ export const MonsterClasses = {
         physicsRadius: 22,
         spriteSize: 64,
         aiType: 'RANGED',
+        expReward: 80,
         growth: { maxHp: 55, atk: 9, mAtk: 1.5, def: 2.5, mDef: 2, acc: 3, eva: 1.8, crit: 1.2 }
     },
     CROCODILE_HEALER: {
@@ -1301,6 +1310,7 @@ export const MonsterClasses = {
         physicsRadius: 20,
         spriteSize: 64,
         aiType: 'SUPPORT',
+        expReward: 75,
         growth: { maxHp: 45, atk: 1.5, mAtk: 8, def: 2, mDef: 3.5, acc: 1.8, eva: 1.5, crit: 0.5 }
     },
 
@@ -1331,6 +1341,7 @@ export const MonsterClasses = {
         scale: 1,
         aiType: 'MELEE',
         element: 'fire',
+        expReward: 95,
         growth: { maxHp: 100, atk: 12, mAtk: 0, def: 6, mDef: 4, acc: 2.5, eva: 1.5, crit: 1.0 }
     },
     FIRE_SPIRIT_ARCHER: {
@@ -1361,6 +1372,7 @@ export const MonsterClasses = {
         scale: 1,
         aiType: 'RANGED',
         element: 'fire',
+        expReward: 115,
         growth: { maxHp: 65, atk: 15, mAtk: 2, def: 3, mDef: 2.5, acc: 3.5, eva: 2.0, crit: 1.5 }
     },
     FIRE_SPIRIT_WIZARD: {
@@ -1391,6 +1403,7 @@ export const MonsterClasses = {
         scale: 1,
         aiType: 'RANGED_MAGIC',
         element: 'fire',
+        expReward: 110,
         growth: { maxHp: 55, atk: 2, mAtk: 14, def: 2.5, mDef: 5, acc: 2, eva: 1.8, crit: 1.0 }
     },
 
@@ -1422,6 +1435,7 @@ export const MonsterClasses = {
         aiType: 'MELEE',
         element: 'ice',
         freezeChance: 0.12,
+        expReward: 140,
         growth: { maxHp: 125, atk: 15, mAtk: 0, def: 8, mDef: 5, acc: 2.8, eva: 1.4, crit: 1.0 }
     },
     ICE_SPIRIT_WIZARD: {
@@ -1453,6 +1467,7 @@ export const MonsterClasses = {
         aiType: 'RANGED_MAGIC',
         element: 'ice',
         freezeChance: 0.12,
+        expReward: 165,
         growth: { maxHp: 75, atk: 2.5, mAtk: 18, def: 3.5, mDef: 6, acc: 2.2, eva: 1.8, crit: 1.2 }
     },
     ICE_SPIRIT_HEALER: {
@@ -1484,6 +1499,7 @@ export const MonsterClasses = {
         aiType: 'SUPPORT',
         element: 'ice',
         freezeChance: 0.12,
+        expReward: 155,
         growth: { maxHp: 85, atk: 1.8, mAtk: 12, def: 4, mDef: 7, acc: 2.0, eva: 1.6, crit: 0.8 }
     }
 };

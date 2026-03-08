@@ -373,13 +373,11 @@ export default class DungeonScene extends Phaser.Scene {
                     const isElite = payload.isElite || false;
                     const isShadow = (payload.monsterId && typeof payload.monsterId === 'string' && payload.monsterId.toLowerCase().includes('shadow'));
 
-                    // Base XP Scaling: killExp * (1 + (level - 1) * 0.1)
-                    // Skeletons give 1.5x more XP
-                    let calculatedExp = this.killExp * (1 + (monsterLevel - 1) * 0.1);
-
-                    if (monsterId.includes('skeleton')) {
-                        calculatedExp *= 1.5;
-                    }
+                    // Base XP Scaling: monsterExpReward * (1 + (level - 1) * 0.1)
+                    // Uses per-monster expReward if available, falls back to global killExp
+                    // Epic monsters already have a higher expReward baked in (no extra multiplier needed)
+                    const baseExp = payload.expReward || this.killExp;
+                    let calculatedExp = baseExp * (1 + (monsterLevel - 1) * 0.1);
 
                     if (isShadow) {
                         calculatedExp *= 5.0;

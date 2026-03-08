@@ -2348,6 +2348,17 @@ export default class UIManager {
             { label: 'LightRes', val: (config.lightningRes || 0) + '%', icon: '⚡' }
         ];
 
+        const isEpic = config.id?.startsWith('epic_');
+        const isSkeleton = config.id?.includes('skeleton');
+        const baseExpReward = config.expReward || 25;
+        const lv50ExpReward = Math.floor(baseExpReward * (1 + (50 - 1) * 0.1));
+
+        // Build EXP variant string (Epic monsters already have premium baked into expReward)
+        const expVariants = [];
+        if (isSkeleton && !isEpic) expVariants.push('스켈레톤 x1.5');
+        expVariants.push('엘리트 x3');
+        expVariants.push('그림자 x5');
+
         return `
             <div class="monster-card" style="background: rgba(30,41,59,0.5); border: 1px solid rgba(74,222,128,0.3); border-radius: 8px; padding: 12px; display: flex; flex-wrap: wrap; gap: 15px;">
                 <!-- Left/Top: Sprite & Identity -->
@@ -2380,6 +2391,24 @@ export default class UIManager {
                                 <span style="font-size: 9px; color: #94a3b8; font-weight: bold;">${s.val}</span>
                             </div>
                         `).join('')}
+                    </div>
+
+                    <!-- EXP Reward Section -->
+                    <div style="border: 1px solid rgba(250,204,21,0.3); background: rgba(250,204,21,0.05); border-radius: 5px; padding: 5px 8px;">
+                        <div style="font-size: 9px; color: #fbbf24; font-weight: bold; margin-bottom: 4px;">⭐ EXP 보상</div>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                            <div style="display: flex; align-items: center; gap: 4px;">
+                                <span style="font-size: 9px; color: #64748b;">Lv.1:</span>
+                                <span style="font-size: 10px; color: #fde68a; font-weight: bold;">${baseExpReward} EXP</span>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 4px;">
+                                <span style="font-size: 9px; color: #64748b;">Lv.50:</span>
+                                <span style="font-size: 10px; color: #fde68a; font-weight: bold;">~${lv50ExpReward} EXP</span>
+                            </div>
+                        </div>
+                        <div style="margin-top: 4px; display: flex; gap: 5px; flex-wrap: wrap;">
+                            ${expVariants.map(v => `<span style="font-size: 8px; background: rgba(250,204,21,0.15); border: 1px solid rgba(250,204,21,0.3); border-radius: 3px; padding: 1px 4px; color: #fbbf24;">${v}</span>`).join('')}
+                        </div>
                     </div>
 
                     ${config.skillName ? `
