@@ -259,6 +259,14 @@
 | `aina` | 아이나 | `wizard` | `SkillIceBall` | 차가운 얼음 여왕. 합리적이고 조언하기를 좋아하며, 매운 음식을 남몰래 즐깁니다. |
 | `wrinkle` | 링클 | `archer` | `GuillotinePaper` | 평행세계 '블랙 베히모스'의 메시아. 3스택마다 발동하는 [전광석화] 패시브와 화면 전체를 난도질하는 궁극기 보유. |
 
+## 👕 캐릭터 스킨 (Character Skins)
+원활한 코드 연동 및 스탯 보너스 판별을 위해, 캐릭터 스킨 데이터는 아래와 같은 정확한 `id` 값을 사용해야 합니다.
+
+*   **니클 (Nickle)**
+    *   **나 여우 아니다 (I'm not a fox)**: `nickle_fox`
+*   **나나 (Nana)**
+    *   **모두의 아이돌**: `nana_idol`
+
 ## 시스템 용어 및 상태 이상 (Global Terms & Status)
 
 * **DPS (Damage Per Second):** 초당 공격력. 유닛이 적에게 입힌 초당 총 피해량.

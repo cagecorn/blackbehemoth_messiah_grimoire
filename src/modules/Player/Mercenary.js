@@ -1698,9 +1698,19 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             });
         }
         if (this.isTacticalCommandActive) {
+            let desc = '기본 공격/마법/회복 위력이 50% 증가합니다.';
+            const partyManager = this.scene?.game?.partyManager;
+            if (partyManager) {
+                // Determine the caster of Tactical Command. For simplicity, since only Nickle casts it currently, we check Nickle's skin.
+                const casterSkinData = partyManager.getMercenarySkin('NICKLE');
+                if (casterSkinData && casterSkinData.equippedSkin === 'nickle_fox') {
+                    desc += '\n(닉클 스킨 효과: 공속 25% 상승)';
+                }
+            }
+
             statuses.push({
                 name: '전술 지휘 (Tactical Command)',
-                description: '기본 공격/마법/회복 위력이 50% 증가합니다.',
+                description: desc,
                 emoji: '📢',
                 category: 'buff'
             });
