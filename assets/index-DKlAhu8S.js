@@ -6426,6 +6426,10 @@ return new `+this.key+`();
                 <button id="territory-patch-close" title="닫기">✕</button>
             </div>
             <div id="territory-patch-body">
+                <div class="patch-entry" style="border: 2px solid #ff4444; background: rgba(255, 68, 68, 0.1); padding: 5px;">
+                    <div class="patch-date" style="color: #ff4444;">📢 **필독 공지**</div>
+                    <div class="patch-item" style="color: #ffffff; line-height: 1.4;">- 그동안 용병의 레벨과 별 등급이 올라도, 실제 스탯에는 반영이 되지 않는 어처구니 없는 실수를 방치하고 있었습니다. 게임의 핵심적인 요소를 놓쳐 플레이어분들의 핵심 재미를 상실하게 만든 점, 깊이 죄송합니다. -</div>
+                </div>
                 <div class="patch-entry">
                     <div class="patch-date">▶ 2026-03-08 (Latest)</div>
                     <div class="patch-item"><span class="patch-item-icon">🚀</span>[성장] **용병 레벨 제한 해제!** 하드코딩 되어있던 40레벨 제한이 삭제되어, 이제 무한히 스케일링하며 성장할 수 있습니다.</div>
