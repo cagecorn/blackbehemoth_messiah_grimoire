@@ -714,7 +714,8 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
             monsterId: this.sprite.texture.key,
             attackerId: attackerId,
             level: this.level,
-            id: this.config.id
+            id: this.config.id,
+            isElite: this.isElite
         });
 
         if (this.scene && this.scene.lootManager) {

@@ -336,6 +336,8 @@ export default class DungeonScene extends Phaser.Scene {
                 if (this.mercenaries && this.mercenaries.active) {
                     const monsterLevel = payload.level || 1;
                     const monsterId = payload.id || '';
+                    const isElite = payload.isElite || false;
+                    const isShadow = (payload.monsterId && typeof payload.monsterId === 'string' && payload.monsterId.toLowerCase().includes('shadow'));
 
                     // Base XP Scaling: killExp * (1 + (level - 1) * 0.1)
                     // Skeletons give 1.5x more XP
@@ -343,6 +345,12 @@ export default class DungeonScene extends Phaser.Scene {
 
                     if (monsterId.includes('skeleton')) {
                         calculatedExp *= 1.5;
+                    }
+
+                    if (isShadow) {
+                        calculatedExp *= 5.0;
+                    } else if (isElite) {
+                        calculatedExp *= 3.0;
                     }
 
                     calculatedExp = Math.floor(calculatedExp);
