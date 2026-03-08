@@ -1940,6 +1940,8 @@ export default class UIManager {
         // Stats Display
         const statsList = document.getElementById('messiah-stats-list');
         const stats = mm.getStats();
+        const requiredExp = stats.level * 100;
+        const expPct = Math.min(100, Math.floor((stats.exp / requiredExp) * 100));
         statsList.innerHTML = `
             <div style="display:flex; justify-content:space-between; color:#fbbf24;"><span>LEVEL</span><span>${stats.level}</span></div>
             <div style="display:flex; justify-content:space-between;"><span>ATK</span><span>${stats.atk}</span></div>
@@ -1948,6 +1950,15 @@ export default class UIManager {
             <div style="display:flex; justify-content:space-between;"><span>CAST SPD</span><span>${stats.castSpd}</span></div>
             <div style="display:flex; justify-content:space-between;"><span>ACC</span><span>${stats.acc}</span></div>
             <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:5px;"><span>CRIT</span><span>${stats.crit}%</span></div>
+            <div style="margin-top:10px;">
+                <div style="display:flex; justify-content:space-between; font-size:10px; color:#fbbf24; margin-bottom:4px; font-family:var(--font-pixel);">
+                    <span>✨ EXP</span><span>${stats.exp} / ${requiredExp}</span>
+                </div>
+                <div style="background:rgba(0,0,0,0.5); border:1px solid rgba(251,191,36,0.4); border-radius:4px; height:10px; overflow:hidden;">
+                    <div style="width:${expPct}%; height:100%; background:linear-gradient(to right,#92400e,#fbbf24); box-shadow:0 0 6px rgba(251,191,36,0.5); transition:width 0.3s ease;"></div>
+                </div>
+                <div style="text-align:right; font-size:9px; color:#94a3b8; margin-top:2px; font-family:var(--font-pixel);">NEXT LEVEL: ${requiredExp - stats.exp} EXP</div>
+            </div>
             <div style="margin-top:10px; font-size:11px; color:#94a3b8; line-height:1.4;">신성한 권능은 메시아의 스탯에 비례하여 위력이 강화됩니다.</div>
         `;
 
@@ -2080,12 +2091,13 @@ export default class UIManager {
         const claimed = await DBManager.getClaimedAchievements();
 
         // Define target dungeons and their display names
+        // Note: IDs must match what DungeonScene.dungeonType passes to DBManager.saveBestRound (UPPERCASE)
         const targets = [
-            { id: 'cursed_forest', name: '저주받은 숲', icon: '🌲', isInfinite: true },
-            { id: 'undead_graveyard', name: '언데드 묘지', icon: '🪦', isInfinite: false },
-            { id: 'swampland', name: '늪지대', icon: '🐸', isInfinite: false },
-            { id: 'lava_field', name: '용암 지대', icon: '🌋', isInfinite: false },
-            { id: 'winter_land', name: '겨울의 나라', icon: '❄️', isInfinite: false }
+            { id: 'CURSED_FOREST', name: '저주받은 숲', icon: '🌲', isInfinite: true },
+            { id: 'UNDEAD_GRAVEYARD', name: '언데드 묘지', icon: '🪦', isInfinite: true },
+            { id: 'SWAMPLAND', name: '늪지대', icon: '🐸', isInfinite: true },
+            { id: 'LAVA_FIELD', name: '용암 지대', icon: '🌋', isInfinite: true },
+            { id: 'WINTER_LAND', name: '겨울의 나라', icon: '❄️', isInfinite: true }
         ];
 
         let html = '';
@@ -2094,14 +2106,11 @@ export default class UIManager {
             const bestRound = await DBManager.getBestRound(t.id);
             const currentClaimed = claimed[t.id] || 0;
             const targetRound = currentClaimed + 10;
-            const isCompleted = currentClaimed >= 10 && !t.isInfinite;
-            const canClaim = bestRound >= targetRound && !isCompleted;
+            const canClaim = bestRound >= targetRound;
 
             let statusContent = '';
 
-            if (isCompleted) {
-                statusContent = `<div style="color: #10b981; font-weight: bold; font-size: 12px; font-family: var(--font-pixel);">[마스터 완료]</div>`;
-            } else if (canClaim) {
+            if (canClaim) {
                 statusContent = `<button class="achieve-claim-btn retro-btn" data-id="${t.id}" data-target="${targetRound}" style="background: #ef4444; border-color: #fca5a5; color: #fff; padding: 5px 15px; font-size: 11px;">[보상 수령]</button>`;
             } else {
                 statusContent = `<div style="color: #94a3b8; font-size: 12px; font-family: var(--font-pixel);">진행도: ${bestRound} / ${targetRound}</div>`;
