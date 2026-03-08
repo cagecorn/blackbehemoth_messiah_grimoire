@@ -50,7 +50,11 @@ export default class Nickle extends Archer {
         };
 
         // 1. Sprite Swap
-        this.sprite.setTexture('nickle_ultimate_sprite');
+        if (this.skinConfig && this.skinConfig.ultimateSprite) {
+            this.sprite.setTexture(this.skinConfig.ultimateSprite);
+        } else {
+            this.sprite.setTexture('nickle_ultimate_sprite');
+        }
 
         // 2. Stat Buffs (Using Bonus Properties)
         this.bonusSpeed += this.speed * 2.0; // +200% = x3.0 total

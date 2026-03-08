@@ -1,7 +1,7 @@
 import { openDB } from 'idb';
 
 const DB_NAME = 'IsacRPG_DB';
-const DB_VERSION = 6;
+const DB_VERSION = 7;
 
 export default class DBManager {
     static async initDB() {
@@ -48,6 +48,12 @@ export default class DBManager {
                 // Unique Charm Instances (Randomized values)
                 if (!db.objectStoreNames.contains('charm_instances')) {
                     db.createObjectStore('charm_instances', { keyPath: 'instanceId' });
+                }
+
+                // --- DB Version 7 Migration ---
+                // Mercenary Skins (Owned skins and equipped skin per character)
+                if (!db.objectStoreNames.contains('mercenary_skins')) {
+                    db.createObjectStore('mercenary_skins', { keyPath: 'charId' });
                 }
             },
         });
@@ -235,9 +241,26 @@ export default class DBManager {
         if (!this.db) await this.initDB();
         try {
             const all = await this.db.getAll('mercenary_roster');
-            // Convert list to simple lookup Object: { "aren": {"1": 2, "2": 1}, "nickle": {"2": 1} }
+            // Convert list to structured Object: { "nickle": { stars: {"1": 2}, total: 3 } }
             const roster = {};
-            all.forEach(item => { roster[item.charId] = item.stars; });
+            all.forEach(item => {
+                const charId = item.charId.toUpperCase(); // Normalize to Uppercase
+                const stars = item.stars || {};
+                let total = item.total || 0;
+
+                // --- Legacy Data Support ---
+                // If total is 0 but we have stars, infer the minimum total pulls
+                if (total === 0 && Object.keys(stars).length > 0) {
+                    for (const [star, count] of Object.entries(stars)) {
+                        const starLevel = parseInt(star);
+                        // 1-star = 1, 2-star = 3, 3-star = 9, etc. (3-merge logic)
+                        total += count * Math.pow(3, starLevel - 1);
+                    }
+                }
+
+                roster[charId] = { stars, total };
+            });
+            console.log('[DBManager] Mercenary Roster Loaded:', roster);
             return roster;
         } catch (err) {
             console.error('[DBManager] getMercenaryRoster error', err);
@@ -248,8 +271,11 @@ export default class DBManager {
     static async saveMercenaryRoster(rosterObj) {
         if (!this.db) await this.initDB();
         const tx = this.db.transaction('mercenary_roster', 'readwrite');
-        for (const [charId, stars] of Object.entries(rosterObj)) {
-            tx.store.put({ charId, stars });
+        for (const [charId, data] of Object.entries(rosterObj)) {
+            // data can be either the stars object (legacy) or the new { stars, total } structure
+            const stars = data.stars || data;
+            const total = data.total || 0;
+            tx.store.put({ charId, stars, total });
         }
         await tx.done;
     }
@@ -266,5 +292,40 @@ export default class DBManager {
         const data = await this.db.get('settings', 'hired_npc');
         console.log('[DBManager] getNPCState - Raw record from "settings":', data);
         return data ? data.state : null;
+    }
+
+    // --- Mercenary Skin Operations ---
+    static async getMercenarySkinData(charId) {
+        if (!this.db) await this.initDB();
+        const ID = charId.toUpperCase();
+        return await this.db.get('mercenary_skins', ID) || { charId: ID, ownedSkins: [], equippedSkin: null };
+    }
+
+    static async setEquippedSkin(charId, skinId) {
+        if (!this.db) await this.initDB();
+        const data = await this.getMercenarySkinData(charId);
+        data.equippedSkin = skinId;
+        await this.db.put('mercenary_skins', data);
+        console.log(`[DBManager] ${charId} equipped skin: ${skinId}`);
+    }
+
+    static async buySkin(charId, skinId, cost) {
+        if (!this.db) await this.initDB();
+
+        // 1. Deduct cost
+        const diamondData = await this.getInventoryItem('emoji_gem');
+        const currentDiamonds = diamondData ? diamondData.amount : 0;
+        if (currentDiamonds < cost) return { success: false, message: '다이아가 부족합니다.' };
+
+        await this.saveInventoryItem('emoji_gem', currentDiamonds - cost);
+
+        // 2. Add to owned skins
+        const data = await this.getMercenarySkinData(charId);
+        if (!data.ownedSkins.includes(skinId)) {
+            data.ownedSkins.push(skinId);
+        }
+        await this.db.put('mercenary_skins', data);
+        console.log(`[DBManager] ${charId} purchased skin: ${skinId}`);
+        return { success: true };
     }
 }

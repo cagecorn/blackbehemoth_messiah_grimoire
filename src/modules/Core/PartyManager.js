@@ -4,7 +4,7 @@
  * Tracks level, exp, hp, and equipment across scenes.
  */
 import DBManager from '../Database/DBManager.js';
-import { PetStats } from './EntityStats.js';
+import { PetStats, Skins } from './EntityStats.js';
 import EventBus from '../Events/EventBus.js';
 
 class PartyManager {
@@ -15,6 +15,7 @@ class PartyManager {
         this.activePet = 'dog_pet'; // Default pet
         this.petStates = {}; // Map of petId -> state object
         this.playerPetRoster = {}; // Map of petId -> { star: count } similar to mercenaries
+        this.mercenarySkins = {}; // Map of charId -> skin data { equippedSkin, ownedSkins }
         this.CHARM_GRID_SIZE = 9;
     }
 
@@ -36,6 +37,13 @@ class PartyManager {
         if (savedParty) {
             this.activeParty = savedParty;
             console.log('[PartyManager] Loaded saved party:', this.activeParty);
+
+            // Load Skins for active party
+            for (const charId of this.activeParty) {
+                if (charId) {
+                    this.mercenarySkins[charId.toUpperCase()] = await DBManager.getMercenarySkinData(charId);
+                }
+            }
         }
 
         const savedStates = await DBManager.getAllMercenaryStates();
@@ -75,8 +83,9 @@ class PartyManager {
         }
 
         // 데이터가 key(대문자)로 들어갔는지 charId(원형)로 들어갔는지 안전하게 체크
-        const rosterData = this.playerRoster[key] || this.playerRoster[charId];
-        const stars = Object.keys(rosterData).map(Number);
+        const rosterItem = this.playerRoster[key] || this.playerRoster[charId];
+        const starsData = rosterItem.stars || rosterItem;
+        const stars = Object.keys(starsData).map(Number);
         return stars.length > 0 ? Math.max(...stars) : 1;
     }
 
@@ -247,6 +256,14 @@ class PartyManager {
             state.charms = Array(this.CHARM_GRID_SIZE).fill(null);
         }
         return state || null;
+    }
+
+    getMercenarySkin(charId) {
+        return this.mercenarySkins[charId.toUpperCase()];
+    }
+
+    async loadSkinData(charId) {
+        this.mercenarySkins[charId.toUpperCase()] = await DBManager.getMercenarySkinData(charId);
     }
 
     /**

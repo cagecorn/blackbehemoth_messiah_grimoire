@@ -179,6 +179,12 @@ export default class TerritoryScene extends Phaser.Scene {
                         this.game.uiManager.showDefenseManagement();
                     }
                 });
+            } else if (b.id === 'companion') {
+                el.addEventListener('click', () => {
+                    if (this.game.uiManager) {
+                        this.game.uiManager.showMercenaryRoster();
+                    }
+                });
             } else {
                 el.addEventListener('click', () => {
                     if (this.game.uiManager) {

@@ -1,10 +1,40 @@
 ﻿/**
  * EntityStats.js
  * Centralized configuration for all mercenaries and monsters.
- * 
- * IMPORTANT: Strictly follow the naming convention defined in README.md:
- * - hp, maxHp, atk, mAtk, def, mDef, speed, atkSpd, castSpd, acc, eva, crit, id
  */
+
+export const Skins = {
+    NICKLE_FOX: {
+        id: 'nickle_fox',
+        characterId: 'nickle',
+        name: '여우 아니다 (I\'m not a fox)',
+        sprite: 'nickle_fox_sprite',
+        cutscene: 'nickle_fox_cutscene',
+        ultimateSprite: 'nickle_fox_ultimate_sprite',
+        price: 80000,
+        description: '귀여운 여우 복장을 입은 니클. 사실 자기는 여우가 아니라 늑대라고 주장하지만 아무도 안 믿는다.',
+        abilityBonus: {
+            skillId: 'tactical_command',
+            bonusText: '전술 지휘 시 공격 속도 +25% 추가 상승',
+            effect: { atkSpdMult: 0.25 }
+        }
+    },
+    NANA_IDOL: {
+        id: 'nana_idol',
+        characterId: 'nana',
+        name: '모두의 아이돌',
+        sprite: 'nana_idol_sprite',
+        cutscene: 'nana_idol_cutscene',
+        ultimateSprite: 'nana_idol_ultimate_sprite',
+        price: 120000,
+        description: '나나의 모두의 아이돌 스킨. 전장을 화려한 콘서트장으로 만든다.',
+        abilityBonus: {
+            skillId: 'musical_magical_critical',
+            bonusText: '뮤지컬매지컬크리티컬 시전 시 아군/적군 양쪽 동시 적용',
+            effect: { dualZone: true }
+        }
+    }
+};
 
 export const MercenaryClasses = {
     WARRIOR: {

@@ -209,6 +209,14 @@ export default class BootScene extends Phaser.Scene {
         this.load.image('veve_cutscene', 'assets/characters/party/veve_cutscene.png');
         this.load.image('veve_ultimate_sprite', 'assets/characters/party/veve_ultimate_sprite.png');
 
+        // Skin Assets
+        this.load.image('nickle_fox_sprite', 'assets/characters/skin/nickle_fox_sprite.png');
+        this.load.image('nickle_fox_cutscene', 'assets/characters/skin/nickle_fox_cutscene.png');
+        this.load.image('nickle_fox_ultimate_sprite', 'assets/characters/skin/nickle_fox_ultimate_sprite.png');
+        this.load.image('nana_idol_sprite', 'assets/characters/skin/nana_idol_sprite.png');
+        this.load.image('nana_idol_cutscene', 'assets/characters/skin/nana_idol_cutscene.png');
+        this.load.image('nana_idol_ultimate_sprite', 'assets/characters/skin/nana_idol_ultimate_sprite.png');
+
         // Hired Mercenary Sprites
         this.load.image('hired_warrior_sprite', 'assets/npc/hired_warrior_sprite.png');
         this.load.image('hired_archer_sprite', 'assets/npc/hired_archer_sprite.png');

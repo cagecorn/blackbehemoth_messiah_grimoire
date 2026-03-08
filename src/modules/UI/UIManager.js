@@ -4,7 +4,7 @@ import EventBus from '../Events/EventBus.js';
 import intentRouter from '../AI/IntentRouter.js';
 import localLLM from '../AI/LocalLLM.js';
 import embeddingGemma from '../AI/EmbeddingGemma.js';
-import { MercenaryClasses, Characters, PetStats, scaleStats, StructureStats } from '../Core/EntityStats.js';
+import { MercenaryClasses, Characters, PetStats, scaleStats, StructureStats, Skins } from '../Core/EntityStats.js';
 // partyManager will be accessed via this.scene.game.partyManager
 import ItemManager, { ITEM_TYPES } from '../Core/ItemManager.js';
 import CharmManager from '../Core/CharmManager.js';
@@ -4175,7 +4175,7 @@ export default class UIManager {
      * Shows a dramatic ultimate cutscene using the DOM to avoid Phaser camera issues.
      * Optimized with pooling to reuse the same elements.
      */
-    showUltimateCutscene(unitId, skillName, duration = 3000) {
+    showUltimateCutscene(unitOrId, skillName, duration = 3000) {
         return new Promise((resolve) => {
             // Lazy-initialize the cutscene UI elements (Pooling)
             if (!this.ultimateCutsceneUI) {
@@ -4245,10 +4245,20 @@ export default class UIManager {
             }
 
             const ui = this.ultimateCutsceneUI;
-            const spriteKey = unitId + '_cutscene';
+            let unitId = typeof unitOrId === 'string' ? unitOrId : unitOrId.characterId;
+            let spriteAsset = unitId + '_cutscene';
+
+            // Check for skin config directly on the unit object
+            if (typeof unitOrId === 'object' && unitOrId.skinConfig && unitOrId.skinConfig.cutscene) {
+                spriteAsset = unitOrId.skinConfig.cutscene;
+            }
 
             // Reset positions / content
-            ui.sprite.style.background = `url('assets/characters/party/${spriteKey}.png')`;
+            let assetPath = `assets/characters/party/${spriteAsset}.png`;
+            if (spriteAsset.includes('fox') || spriteAsset.includes('idol')) {
+                assetPath = `assets/characters/skin/${spriteAsset}.png`;
+            }
+            ui.sprite.style.background = `url('${assetPath}')`;
             ui.sprite.style.backgroundSize = 'contain';
             ui.sprite.style.backgroundRepeat = 'no-repeat';
             ui.sprite.style.backgroundPosition = 'bottom';
@@ -4290,5 +4300,354 @@ export default class UIManager {
                 }, 500);
             }, duration - 500);
         });
+    }
+
+    async showMercenaryRoster() {
+        if (!this.popupOverlay) return;
+
+        const rosterData = await DBManager.getMercenaryRoster();
+        const mercsToShow = [Characters.NICKLE, Characters.NANA];
+        this.currentRosterSelection = mercsToShow[0].id;
+
+        const renderStat = (label, value) => `
+            <div class="merc-stat-item">
+                <span class="stat-label">${label}</span>
+                <span class="stat-value">${value}</span>
+            </div>
+        `;
+
+        const renderMercDetail = (m) => {
+            const rosterItem = rosterData[m.id] || rosterData[m.id.toUpperCase()] || { stars: {}, total: 0 };
+            const totalPulls = rosterItem.total || 0;
+            const classConfig = MercenaryClasses[m.classId.toUpperCase()];
+
+            // Stats mapping
+            const stats = [
+                { label: 'HP', val: classConfig.maxHp },
+                { label: 'ATK', val: m.atk || classConfig.atk },
+                { label: 'M.ATK', val: m.mAtk || classConfig.mAtk },
+                { label: 'DEF', val: m.def || classConfig.def },
+                { label: 'M.DEF', val: m.mDef || classConfig.mDef },
+                { label: 'SPD', val: m.speed || classConfig.speed },
+                { label: 'ATK.SPD', val: m.atkSpd || classConfig.atkSpd },
+                { label: 'RANGE', val: m.atkRange || classConfig.atkRange },
+                { label: 'CAST', val: m.castSpd || classConfig.castSpd },
+                { label: 'ACC', val: m.acc || classConfig.acc },
+                { label: 'EVA', val: m.eva || classConfig.eva },
+                { label: 'CRIT', val: (m.crit || classConfig.crit) + '%' }
+            ];
+
+            return `
+                <div class="merc-detail-view" id="merc-detail-${m.id}">
+                    <div class="merc-detail-header">
+                        <div class="merc-detail-sprite-wrap">
+                            <img src="assets/characters/party/${m.sprite}.png" class="merc-detail-sprite">
+                        </div>
+                        <div class="merc-detail-title-info">
+                            <div class="merc-detail-name-row">
+                                <span class="merc-detail-name">${m.name}</span>
+                                <span class="merc-detail-count">보유: ${totalPulls}</span>
+                            </div>
+                            <div class="merc-detail-desc">${m.personality}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="merc-stats-section">
+                        <div class="section-title">DETAILED STATISTICS</div>
+                        <div class="merc-stats-grid">
+                            ${stats.map(s => renderStat(s.label, s.val)).join('')}
+                        </div>
+                    </div>
+
+                    <div class="merc-skills-section">
+                        <div class="section-title">SKILLS & ULTIMATE</div>
+                        <div class="merc-skill-card">
+                            <div class="skill-header">
+                                <span class="skill-emoji">${m.skillEmoji}</span>
+                                <span class="skill-name">${m.skillName}</span>
+                            </div>
+                            <div class="skill-desc">${m.skillDescription}</div>
+                        </div>
+                        <div class="merc-skill-card ultimate">
+                            <div class="skill-header">
+                                <span class="skill-emoji">✨</span>
+                                <span class="skill-name">${m.ultimateName}</span>
+                            </div>
+                            <div class="skill-desc">${m.ultimateDescription}</div>
+                        </div>
+                    </div>
+
+                    <button class="theme-skin-btn active-btn" onclick="window.uiManager.openSkinSelector('${m.id}')">[테마 스킨 교체]</button>
+                </div>
+            `;
+        };
+
+        const rosterHtml = `
+            <div class="mercenary-roster-v2">
+                <style>
+                    .mercenary-roster-v2 {
+                        display: flex;
+                        height: 100%;
+                        background: #0f172a;
+                        color: #e2e8f0;
+                        font-family: 'Outfit', sans-serif;
+                    }
+                    /* Sidebar */
+                    .roster-sidebar {
+                        width: 100px;
+                        background: rgba(30, 41, 59, 0.8);
+                        border-right: 2px solid #334155;
+                        display: flex;
+                        flex-direction: column;
+                        padding: 10px;
+                        gap: 10px;
+                        overflow-y: auto;
+                    }
+                    .sidebar-item {
+                        width: 70px;
+                        height: 70px;
+                        background: #1e293b;
+                        border: 2px solid #475569;
+                        border-radius: 8px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        cursor: pointer;
+                        transition: all 0.2s ease;
+                        flex-shrink: 0;
+                        position: relative;
+                    }
+                    .sidebar-item:hover { transform: scale(1.05); border-color: #94a3b8; }
+                    .sidebar-item.active { border-color: #fbbf24; background: #334155; box-shadow: 0 0 10px rgba(251, 191, 36, 0.3); }
+                    .sidebar-thumb { width: 48px; height: 48px; image-rendering: pixelated; }
+
+                    /* Content */
+                    .roster-content {
+                        flex: 1;
+                        padding: 20px;
+                        overflow-y: auto;
+                        display: flex;
+                        flex-direction: column;
+                        gap: 20px;
+                    }
+                    .section-title {
+                        font-family: 'Press Start 2P', cursive;
+                        font-size: 10px;
+                        color: #64748b;
+                        margin-bottom: 10px;
+                        letter-spacing: 1px;
+                        border-left: 3px solid #fbbf24;
+                        padding-left: 8px;
+                    }
+
+                    /* Detail Header */
+                    .merc-detail-header { display: flex; gap: 20px; align-items: flex-start; }
+                    .merc-detail-sprite-wrap {
+                        width: 120px; height: 120px;
+                        background: radial-gradient(circle, #334155 0%, #0f172a 100%);
+                        border: 2px solid #475569;
+                        border-radius: 12px;
+                        display: flex; align-items: center; justify-content: center;
+                    }
+                    .merc-detail-sprite { width: 100px; height: 100px; image-rendering: pixelated; }
+                    .merc-detail-title-info { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+                    .merc-detail-name-row { display: flex; align-items: center; justify-content: space-between; }
+                    .merc-detail-name { font-size: 28px; font-weight: 900; color: #fbbf24; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+                    .merc-detail-count { background: #7c3aed; padding: 2px 8px; border-radius: 6px; font-size: 12px; font-weight: bold; }
+                    .merc-detail-desc { font-size: 14px; color: #94a3b8; line-height: 1.5; font-style: italic; }
+
+                    /* Stats Grid */
+                    .merc-stats-grid {
+                        display: grid;
+                        grid-template-columns: repeat(4, 1fr);
+                        gap: 10px;
+                        background: rgba(30, 41, 59, 0.5);
+                        padding: 15px;
+                        border-radius: 12px;
+                        border: 1px solid #334155;
+                    }
+                    .merc-stat-item { display: flex; flex-direction: column; gap: 2px; }
+                    .stat-label { font-size: 10px; color: #64748b; font-weight: bold; }
+                    .stat-value { font-size: 16px; color: #f8fafc; font-weight: 800; font-family: 'Press Start 2P', cursive; font-size: 10px; }
+
+                    /* Skills */
+                    .merc-skills-section { display: flex; flex-direction: column; gap: 10px; }
+                    .merc-skill-card {
+                        background: #1e293b;
+                        border: 1px solid #334155;
+                        border-radius: 10px;
+                        padding: 12px;
+                        display: flex;
+                        flex-direction: column;
+                        gap: 6px;
+                    }
+                    .merc-skill-card.ultimate { border-color: #fbbf24; background: rgba(251, 191, 36, 0.05); }
+                    .skill-header { display: flex; align-items: center; gap: 10px; }
+                    .skill-emoji { font-size: 20px; }
+                    .skill-name { font-size: 16px; font-weight: bold; color: #fbbf24; }
+                    .skill-desc { font-size: 13px; color: #cbd5e1; line-height: 1.4; }
+
+                    .theme-skin-btn {
+                        background: #1e293b; border: 1px solid #475569; border-radius: 8px;
+                        color: #94a3b8; padding: 12px; cursor: pointer; font-weight: bold;
+                        transition: all 0.2s; margin-top: 10px; font-family: 'Press Start 2P', cursive; font-size: 10px;
+                    }
+                    .theme-skin-btn.active-btn { border-color: #fbbf24; color: #fbbf24; }
+                    .theme-skin-btn.active-btn:hover { background: #fbbf24; color: #0f172a; }
+
+                    /* Skin Selector Modal */
+                    .skin-selector-overlay {
+                        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                        background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 30000;
+                        backdrop-filter: blur(8px);
+                    }
+                    .skin-selector-card {
+                        background: #1e293b; border: 2px solid #fbbf24; border-radius: 16px;
+                        width: 500px; padding: 25px; display: flex; flex-direction: column; gap: 20px;
+                        box-shadow: 0 0 30px rgba(251, 191, 36, 0.2);
+                    }
+                    .skin-selector-header { display: flex; justify-content: space-between; align-items: center; }
+                    .skin-selector-title { font-size: 20px; color: #fbbf24; font-weight: bold; }
+                    .skin-selector-close { cursor: pointer; color: #94a3b8; font-size: 24px; }
+                    
+                    .skin-list { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
+                    .skin-item {
+                        border: 2px solid #334155; border-radius: 12px; padding: 10px;
+                        display: flex; flex-direction: column; align-items: center; gap: 10px;
+                        transition: all 0.2s; cursor: pointer; background: rgba(15, 23, 42, 0.5);
+                    }
+                    .skin-item:hover { transform: translateY(-5px); border-color: #475569; }
+                    .skin-item.owned { border-color: #fbbf24; }
+                    .skin-item.equipped { background: rgba(251, 191, 36, 0.1); border-color: #fbbf24; box-shadow: 0 0 10px rgba(251, 191, 36, 0.2); }
+                    
+                    .skin-thumb { width: 80px; height: 80px; image-rendering: pixelated; }
+                    .skin-name { font-size: 14px; font-weight: bold; color: #f8fafc; text-align: center; }
+                    .skin-price { color: #fbbf24; font-size: 12px; font-weight: bold; display: flex; align-items: center; gap: 4px; }
+                    .skin-equipped-tag { font-size: 10px; color: #fbbf24; font-weight: bold; }
+                    .skin-bonus { font-size: 11px; color: #94a3b8; text-align: center; font-style: italic; }
+                </style>
+
+                <div class="roster-sidebar">
+                    ${mercsToShow.map(m => `
+                        <div class="sidebar-item ${m.id === this.currentRosterSelection ? 'active' : ''}" 
+                             id="roster-item-${m.id}" 
+                             onclick="window.uiManager.switchRosterSelection('${m.id}')">
+                            <img src="assets/characters/party/${m.sprite}.png" class="sidebar-thumb">
+                        </div>
+                    `).join('')}
+                </div>
+
+                <div class="roster-content" id="roster-detail-container">
+                    ${renderMercDetail(mercsToShow.find(m => m.id === this.currentRosterSelection))}
+                </div>
+            </div>
+        `;
+
+        // We need a global way to handle the switch since the HTML is static
+        window.uiManager = this;
+        this.switchRosterSelection = (id) => {
+            const m = mercsToShow.find(merc => merc.id === id);
+            if (!m) return;
+
+            this.currentRosterSelection = id;
+
+            // Update sidebar active state
+            document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('active'));
+            const activeItem = document.getElementById(`roster-item-${id}`);
+            if (activeItem) activeItem.classList.add('active');
+
+            // Update content
+            const container = document.getElementById('roster-detail-container');
+            if (container) {
+                container.innerHTML = renderMercDetail(m);
+            }
+        };
+
+        this.openSkinSelector = async (charId) => {
+            const skinData = await DBManager.getMercenarySkinData(charId);
+            const availableSkins = Object.values(Skins).filter(s => s.characterId === charId);
+
+            const modal = document.createElement('div');
+            modal.className = 'skin-selector-overlay';
+
+            modal.innerHTML = `
+                <div class="skin-selector-card">
+                    <div class="skin-selector-header">
+                        <span class="skin-selector-title">스킨 선택 - ${charId.toUpperCase()}</span>
+                        <span class="skin-selector-close" onclick="this.closest('.skin-selector-overlay').remove()">×</span>
+                    </div>
+                    <div class="skin-list">
+                        <!-- Default Skin -->
+                        <div class="skin-item ${!skinData.equippedSkin ? 'equipped owned' : 'owned'}" 
+                             onclick="window.uiManager.handleSkinAction('${charId}', 'default')">
+                            <img src="assets/characters/party/${charId}_sprite.png" class="skin-thumb">
+                            <span class="skin-name">기본 외형</span>
+                            ${!skinData.equippedSkin ? '<span class="skin-equipped-tag">[착용 중]</span>' : ''}
+                        </div>
+                        
+                        ${availableSkins.map(s => {
+                const isOwned = skinData.ownedSkins.includes(s.id);
+                const isEquipped = skinData.equippedSkin === s.id;
+                return `
+                                <div class="skin-item ${isOwned ? 'owned' : ''} ${isEquipped ? 'equipped' : ''}"
+                                     onclick="window.uiManager.handleSkinAction('${charId}', '${s.id}')">
+                                    <img src="assets/characters/skin/${s.sprite}.png" class="skin-thumb">
+                                    <span class="skin-name">${s.name}</span>
+                                    <span class="skin-bonus">${s.abilityBonus.bonusText}</span>
+                                    ${isEquipped ? '<span class="skin-equipped-tag">[착용 중]</span>' :
+                        isOwned ? '<span class="skin-price">보유 중</span>' :
+                            `<span class="skin-price">💎 ${s.price.toLocaleString()}</span>`}
+                                </div>
+                            `;
+            }).join('')}
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+        };
+
+        this.handleSkinAction = async (charId, skinId) => {
+            const skinData = await DBManager.getMercenarySkinData(charId);
+            const skin = Object.values(Skins).find(s => s.id === skinId);
+
+            if (skinId === 'default') {
+                await DBManager.setEquippedSkin(charId, null);
+                this.updateSkinUI(charId, null);
+            } else if (skinData.ownedSkins.includes(skinId)) {
+                await DBManager.setEquippedSkin(charId, skinId);
+                this.updateSkinUI(charId, skinId);
+            } else {
+                // Buy logic
+                this.showConfirm(`${skin.name} 스킨을 ${skin.price.toLocaleString()}다이아에 구매하시겠습니까?`, async () => {
+                    const result = await DBManager.buySkin(charId, skinId, skin.price);
+                    if (result.success) {
+                        this.showToast('구매 완료!', 'success');
+                        await DBManager.setEquippedSkin(charId, skinId);
+                        EventBus.emit(EventBus.EVENTS.INVENTORY_UPDATED);
+                        this.updateSkinUI(charId, skinId);
+                    } else {
+                        this.showToast(result.message, 'error');
+                    }
+                });
+                return; // Wait for callback
+            }
+        };
+
+        this.updateSkinUI = async (charId, skinId) => {
+            // Update PartyManager cache immediately if possible
+            if (window._partyManagerInstance) {
+                await window._partyManagerInstance.loadSkinData(charId);
+            }
+
+            // Refresh
+            document.querySelector('.skin-selector-overlay')?.remove();
+            await this.showMercenaryRoster();
+
+            // Notify game to update sprites if in scene
+            EventBus.emit('SKIN_CHANGED', { charId, skinId });
+        };
+
+        this.showPopup(rosterHtml);
     }
 }

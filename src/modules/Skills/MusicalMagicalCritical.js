@@ -30,60 +30,93 @@ export default class MusicalMagicalCritical {
         const now = caster.scene.time.now;
         if (now - this.lastCastTime < this.cooldown) return false;
 
+        const skinBonus = caster.getSkinBonus ? caster.getSkinBonus('musical_magical_critical') : null;
+        const isDualZone = skinBonus && skinBonus.dualZone;
+
         // Find targets
-        const bestTarget = this.findBestTarget(caster);
-        if (!bestTarget) return false;
+        const targets = this.findBestTargets(caster, isDualZone);
+        if (!targets || targets.length === 0) return false;
 
         this.lastCastTime = now;
         const scene = caster.scene;
 
-        // Visuals: Rainfall of emojis
-        this.playVisuals(scene, bestTarget.x, bestTarget.y);
+        targets.forEach(target => {
+            // Visuals: Rainfall of emojis
+            this.playVisuals(scene, target.x, target.y);
 
-        // Apply effects
-        if (!caster.allyGroup || !caster.allyGroup.getChildren) return false;
-        const allies = caster.allyGroup.getChildren().filter(a => a.active && a.hp > 0);
+            // Apply effects
+            if (caster.allyGroup && caster.allyGroup.getChildren) {
+                const allies = caster.allyGroup.getChildren().filter(a => a.active && a.hp > 0);
+                allies.forEach(ally => {
+                    if (Phaser.Math.Distance.Between(target.x, target.y, ally.x, ally.y) < this.radius) {
+                        this.applyBuff(scene, caster, ally);
+                    }
+                });
+            }
 
-        allies.forEach(ally => {
-            if (Phaser.Math.Distance.Between(bestTarget.x, bestTarget.y, ally.x, ally.y) < this.radius) {
-                this.applyBuff(scene, caster, ally);
+            if (scene.aoeManager && caster.targetGroup) {
+                const damage = caster.getTotalMAtk() * this.damageMultiplier;
+                scene.aoeManager.triggerAoe(target.x, target.y, this.radius, damage, caster, caster.targetGroup, true);
             }
         });
-
-        if (scene.aoeManager) {
-            const damage = caster.getTotalMAtk() * this.damageMultiplier;
-            scene.aoeManager.triggerAoe(bestTarget.x, bestTarget.y, this.radius, damage, caster, caster.targetGroup, true);
-        }
 
         // Skill activation effect text
         if (scene.fxManager) {
             scene.fxManager.showDamageText(caster, 'MAGIC SHOW! ✨', '#ff88ff');
+            if (isDualZone) {
+                scene.time.delayedCall(300, () => {
+                    if (caster.active) scene.fxManager.showDamageText(caster, '듀얼 라이브! 🎤', '#ffff00');
+                });
+            }
         }
 
         return true;
     }
 
-    findBestTarget(caster) {
-        // Priority: 1. Ally + Enemy clump, 2. Enemy clump, 3. Ally clump
-        if (!caster.allyGroup || !caster.allyGroup.getChildren) return null;
-        if (!caster.targetGroup || !caster.targetGroup.getChildren) return null;
+    findBestTargets(caster, isDualZone) {
+        if (!caster.allyGroup || !caster.allyGroup.getChildren) return [];
+        if (!caster.targetGroup || !caster.targetGroup.getChildren) return [];
+
         const allies = caster.allyGroup.getChildren().filter(a => a.active && a.hp > 0);
         const enemies = caster.targetGroup.getChildren().filter(e => e.active && e.hp > 0);
 
-        const allPotential = [...allies, ...enemies];
-        if (allPotential.length === 0) return null;
+        if (allies.length === 0 && enemies.length === 0) return [];
 
+        if (isDualZone) {
+            let bestAllyPoint = null;
+            let maxAllyScore = -1;
+            allies.forEach(p => {
+                let score = 0;
+                allies.forEach(a => { if (Phaser.Math.Distance.Between(p.x, p.y, a.x, a.y) < this.radius) score += 1; });
+                if (score > maxAllyScore) { maxAllyScore = score; bestAllyPoint = { x: p.x, y: p.y }; }
+            });
+
+            let bestEnemyPoint = null;
+            let maxEnemyScore = -1;
+            enemies.forEach(p => {
+                let score = 0;
+                enemies.forEach(e => { if (Phaser.Math.Distance.Between(p.x, p.y, e.x, e.y) < this.radius) score += 1; });
+                if (score > maxEnemyScore) { maxEnemyScore = score; bestEnemyPoint = { x: p.x, y: p.y }; }
+            });
+
+            const targets = [];
+            if (bestAllyPoint) targets.push(bestAllyPoint);
+            if (bestEnemyPoint) targets.push(bestEnemyPoint);
+            return targets;
+        }
+
+        // Original logic for single point
+        const allPotential = [...allies, ...enemies];
         let bestPoint = null;
         let maxScore = -1;
 
-        // Sample points at each unit's location
         allPotential.forEach(p => {
             let score = 0;
             allies.forEach(a => {
                 if (Phaser.Math.Distance.Between(p.x, p.y, a.x, a.y) < this.radius) score += 1;
             });
             enemies.forEach(e => {
-                if (Phaser.Math.Distance.Between(p.x, p.y, e.x, e.y) < this.radius) score += 1.5; // Weight enemies slightly for offensive value
+                if (Phaser.Math.Distance.Between(p.x, p.y, e.x, e.y) < this.radius) score += 1.5;
             });
 
             if (score > maxScore) {
@@ -92,7 +125,7 @@ export default class MusicalMagicalCritical {
             }
         });
 
-        return bestPoint;
+        return bestPoint ? [bestPoint] : [];
     }
 
     playVisuals(scene, x, y) {

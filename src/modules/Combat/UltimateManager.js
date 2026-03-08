@@ -102,6 +102,6 @@ export default class UltimateManager {
         // Just delegate to the UIManager and wait for completion
         // The UIManager handles the DOM overlay, animations, and high-res sprites
         // which prevents the camera zoom bugs.
-        await this.scene.game.uiManager.showUltimateCutscene(unit.characterId, skillName, 3000);
+        await this.scene.game.uiManager.showUltimateCutscene(unit, skillName, 3000);
     }
 }

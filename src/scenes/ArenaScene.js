@@ -173,9 +173,13 @@ export default class ArenaScene extends Phaser.Scene {
             const star = this.game.partyManager.getHighestStar(charId);
             const state = this.game.partyManager.getState(charId) || { level: 1 };
             const level = state.level || 1;
+            const skinData = this.game.partyManager.getMercenarySkin(charId);
 
             // Apply Level/Star Scaling
             const scaledConfig = scaleStats({ ...charConfig, star: star }, level);
+            if (skinData && skinData.equippedSkin) {
+                scaledConfig.equippedSkin = skinData.equippedSkin;
+            }
 
             const x = centerX - 250;
             const y = centerY - 150 + (i * 65);

@@ -65,13 +65,13 @@ export default class TacticalCommand {
         SoundEffects.playJajajanSound();
 
         // Apply Buff
-        this.applyBuffToTarget(caster);
-        this.applyBuffToTarget(targetAlly);
+        this.applyBuffToTarget(caster, caster);
+        this.applyBuffToTarget(targetAlly, caster);
 
         return true;
     }
 
-    applyBuffToTarget(target) {
+    applyBuffToTarget(target, caster) {
         // Prevent overlapping internal timers if already buffed
         if (target.isTacticalCommandActive) {
             console.log(`[Skill] 📢 ${target.unitName} is already under Tactical Command. Refreshing...`);
@@ -96,6 +96,16 @@ export default class TacticalCommand {
 
         target.tacticalCommandGlow = target.sprite.postFX.addGlow(0xffff00, 2, 0, false, 0.1, 10);
 
+        // --- Skin Bonus: +25% Attack Speed (Nickle Fox Skin) ---
+        let skinBonusAtkSpd = 0;
+        // The CASTER must have the skin bonus, which then buffs the target
+        const skinBonus = (caster.getSkinBonus) ? caster.getSkinBonus(this.id) : null;
+        if (skinBonus && skinBonus.atkSpdMult) {
+            skinBonusAtkSpd = -(target.atkSpd * skinBonus.atkSpdMult); // Negative to decrease delay
+            target.bonusAtkSpd += skinBonusAtkSpd;
+            console.log(`[Skill] 📢 Tactial Command: Skin Bonus applied to ${target.unitName} (${skinBonusAtkSpd}ms AtkSpd delay reduction)`);
+        }
+
         // Set expiration timer
         target.tacticalCommandTimer = this.scene.time.delayedCall(this.duration, () => {
             if (target && target.active) {
@@ -105,6 +115,12 @@ export default class TacticalCommand {
                     target.tacticalCommandGlow = null;
                 }
                 if (target.syncStatusUI) target.syncStatusUI();
+
+                // Revert Skin Bonus
+                if (skinBonusAtkSpd !== 0) {
+                    target.bonusAtkSpd -= skinBonusAtkSpd;
+                }
+
                 console.log(`[Skill] 📢 Tactical Command expired for ${target.unitName}.`);
             }
         }, [], this);

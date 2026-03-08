@@ -90,7 +90,11 @@ export default class Nana extends Bard {
         this.isBerserk = true;
 
         // 1. Visual change
-        this.sprite.setTexture('nana_ultimate_sprite');
+        if (this.skinConfig && this.skinConfig.ultimateSprite) {
+            this.sprite.setTexture(this.skinConfig.ultimateSprite);
+        } else {
+            this.sprite.setTexture('nana_ultimate_sprite');
+        }
 
         // Save old stats (to calculate bonuses)
         this.oldStats = {
@@ -142,7 +146,12 @@ export default class Nana extends Bard {
         this.isBerserk = false;
 
         // 1. Visual Revert
-        this.sprite.setTexture('nana_sprite');
+        if (this.skinConfig && this.skinConfig.sprite) {
+            this.sprite.setTexture(this.skinConfig.sprite);
+        } else {
+            this.sprite.setTexture('nana_sprite');
+        }
+
         if (this.berserkAura) {
             this.berserkAura.destroy();
         }

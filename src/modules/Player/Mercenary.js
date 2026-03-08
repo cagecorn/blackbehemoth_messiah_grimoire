@@ -10,7 +10,7 @@ import GrimoireManager from '../Core/GrimoireManager.js';
 import DBManager from '../Database/DBManager.js';
 import soundEffects from '../Core/SoundEffects.js';
 import equipmentManager from '../Core/EquipmentManager.js';
-import { MercenaryClasses, Characters } from '../Core/EntityStats.js';
+import { MercenaryClasses, Characters, Skins } from '../Core/EntityStats.js';
 
 
 /**
@@ -28,6 +28,10 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         this.className = config.classId || config.id; // e.g., 'warrior'
         this.characterId = config.id; // e.g., 'aren' or 'silvi'
         this.unitName = config.name;
+
+        // Skin System
+        this.equippedSkin = config.equippedSkin || null;
+        this.skinConfig = this.equippedSkin ? Skins[this.equippedSkin.toUpperCase()] : null;
         this.hideInUI = config.hideInUI || false;
         this.isSummoned = config.isSummoned || false;
 
@@ -214,7 +218,8 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         this.scene.add.existing(this);
         this.scene.physics.add.existing(this);
 
-        this.sprite = this.scene.add.image(0, 0, config.sprite);
+        const spriteKey = this.skinConfig ? this.skinConfig.sprite : config.sprite;
+        this.sprite = this.scene.add.image(0, 0, spriteKey);
         const spriteSize = config.spriteSize || 64;
         const scale = config.scale || 1;
         this.sprite.setDisplaySize(spriteSize * scale, spriteSize * scale);
@@ -1127,6 +1132,16 @@ export default class Mercenary extends Phaser.GameObjects.Container {
     calculateExpToNextLevel(level) {
         // Simple scaling: 100, 250, 450, 700... (Level^2 * 50 + 50)
         return (level * level * 50) + 50;
+    }
+
+    /**
+     * Helper to get skin-specific bonus for a specific skill.
+     */
+    getSkinBonus(skillId) {
+        if (this.skinConfig && this.skinConfig.abilityBonus && this.skinConfig.abilityBonus.skillId === skillId) {
+            return this.skinConfig.abilityBonus.effect;
+        }
+        return null;
     }
 
     addExp(amount) {

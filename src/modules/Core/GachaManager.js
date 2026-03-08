@@ -49,15 +49,21 @@ export default class GachaManager {
 
         pulled.forEach(charId => {
             if (!roster[charId]) {
-                roster[charId] = {};
+                roster[charId] = { stars: {}, total: 0 };
             }
-            roster[charId]['1'] = (roster[charId]['1'] || 0) + 1;
+            // Ensure structure is correct (legacy data handles stars as the object)
+            if (!roster[charId].stars) {
+                roster[charId] = { stars: roster[charId], total: 0 };
+            }
+
+            roster[charId].stars['1'] = (roster[charId].stars['1'] || 0) + 1;
+            roster[charId].total = (roster[charId].total || 0) + 1;
         });
 
         // 4. 재귀적 3-Merge 룰 적용
         const distinctPulledIds = [...new Set(pulled)];
         for (const charId of distinctPulledIds) {
-            this.processMergesForChar(charId, roster[charId], mergeResults);
+            this.processMergesForChar(charId, roster[charId].stars, mergeResults);
         }
 
         // 5. 업데이트된 로스터 저장
