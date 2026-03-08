@@ -131,6 +131,18 @@ export default class DBManager {
         return false;
     }
 
+    // --- Achievements Persistence ---
+    static async getClaimedAchievements() {
+        if (!this.db) await this.initDB();
+        const data = await this.db.get('settings', 'claimed_achievements');
+        return data ? data.levels : {};
+    }
+
+    static async saveClaimedAchievements(levelsObj) {
+        if (!this.db) await this.initDB();
+        await this.db.put('settings', { id: 'claimed_achievements', levels: levelsObj });
+    }
+
     // --- Party Persistence ---
     static async saveParty(activeParty) {
         if (!this.db) await this.initDB();

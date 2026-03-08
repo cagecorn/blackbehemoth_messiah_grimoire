@@ -2025,6 +2025,139 @@ export default class UIManager {
         }, 300);
     }
 
+    // ─── Achievements UI ───────────────────────────────────────────────────────
+    async showAchievementsUI() {
+        if (this.achievementsOverlay) return;
+
+        const overlay = document.createElement('div');
+        overlay.id = 'achievements-overlay';
+        overlay.className = 'shop-overlay retro-scanline-overlay';
+        this.achievementsOverlay = overlay;
+
+        overlay.innerHTML = `
+            <div class="shop-container achievements-container" style="max-width: 600px; width: 95vw; border-color: #ef4444; box-shadow: 0 0 20px rgba(239, 68, 68, 0.2);">
+                <div class="shop-header" style="background: linear-gradient(to right, #450a0a, #7f1d1d, #450a0a); border-bottom: 2px solid #ef4444;">
+                    <div class="shop-title" style="color: #fca5a5; text-shadow: 0 0 10px rgba(252, 165, 165, 0.8);">🏆 ACHIEVEMENTS (업적)</div>
+                    <button class="shop-close-btn" id="achievements-close" style="color: #fca5a5;">✕</button>
+                </div>
+                
+                <div class="shop-body" style="padding: 20px;">
+                    <div style="font-family: var(--font-pixel); color: #fca5a5; font-size: 11px; margin-bottom: 15px; text-align: center; border-bottom: 1px solid rgba(239, 68, 68, 0.3); padding-bottom: 10px;">
+                        던전 돌파 시 메시아 경험치(✨)를 획득하여 권능을 강화하세요!
+                    </div>
+                    <div id="achievements-list" style="display: flex; flex-direction: column; gap: 12px; max-height: 50vh; overflow-y: auto; padding-right: 5px;">
+                        <!-- Achievements injected here -->
+                        <div style="text-align: center; color: #94a3b8; font-size: 14px; padding: 20px;">데이터를 불러오는 중...</div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('app-container').appendChild(overlay);
+
+        document.getElementById('achievements-close').onclick = () => this.hideAchievementsUI();
+        overlay.onclick = (e) => { if (e.target === overlay) this.hideAchievementsUI(); };
+
+        await this.refreshAchievements();
+    }
+
+    hideAchievementsUI() {
+        if (!this.achievementsOverlay) return;
+        this.achievementsOverlay.classList.add('fade-out');
+        setTimeout(() => {
+            if (this.achievementsOverlay) {
+                this.achievementsOverlay.remove();
+                this.achievementsOverlay = null;
+            }
+        }, 300);
+    }
+
+    async refreshAchievements() {
+        if (!this.achievementsOverlay) return;
+        const listContainer = document.getElementById('achievements-list');
+        if (!listContainer) return;
+
+        const claimed = await DBManager.getClaimedAchievements();
+
+        // Define target dungeons and their display names
+        const targets = [
+            { id: 'cursed_forest', name: '저주받은 숲', icon: '🌲', isInfinite: true },
+            { id: 'undead_graveyard', name: '언데드 묘지', icon: '🪦', isInfinite: false },
+            { id: 'swampland', name: '늪지대', icon: '🐸', isInfinite: false },
+            { id: 'lava_field', name: '용암 지대', icon: '🌋', isInfinite: false },
+            { id: 'winter_land', name: '겨울의 나라', icon: '❄️', isInfinite: false }
+        ];
+
+        let html = '';
+
+        for (const t of targets) {
+            const bestRound = await DBManager.getBestRound(t.id);
+            const currentClaimed = claimed[t.id] || 0;
+            const targetRound = currentClaimed + 10;
+            const isCompleted = currentClaimed >= 10 && !t.isInfinite;
+            const canClaim = bestRound >= targetRound && !isCompleted;
+
+            let statusContent = '';
+
+            if (isCompleted) {
+                statusContent = `<div style="color: #10b981; font-weight: bold; font-size: 12px; font-family: var(--font-pixel);">[마스터 완료]</div>`;
+            } else if (canClaim) {
+                statusContent = `<button class="achieve-claim-btn retro-btn" data-id="${t.id}" data-target="${targetRound}" style="background: #ef4444; border-color: #fca5a5; color: #fff; padding: 5px 15px; font-size: 11px;">[보상 수령]</button>`;
+            } else {
+                statusContent = `<div style="color: #94a3b8; font-size: 12px; font-family: var(--font-pixel);">진행도: ${bestRound} / ${targetRound}</div>`;
+            }
+
+            html += `
+                <div class="achievement-card" style="background: rgba(0,0,0,0.4); border: 1px solid ${canClaim ? '#ef4444' : 'rgba(239,68,68,0.2)'}; border-radius: 8px; padding: 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: ${canClaim ? '0 0 10px rgba(239,68,68,0.2)' : 'none'};">
+                    <div style="display: flex; flex-direction: column; gap: 5px;">
+                        <div style="color: #fca5a5; font-size: 14px; font-weight: bold; font-family: var(--font-pixel);">
+                            ${t.icon} ${t.name} <span style="color:#fbbf24; font-size: 12px;">(${targetRound}라운드 달성)</span>
+                        </div>
+                        <div style="color: #cbd5e1; font-size: 11px;">보상: 메시아 경험치 ✨ 100</div>
+                    </div>
+                    <div>
+                        ${statusContent}
+                    </div>
+                </div>
+            `;
+        }
+
+        listContainer.innerHTML = html;
+
+        // Bind buttons
+        const btns = listContainer.querySelectorAll('.achieve-claim-btn');
+        btns.forEach(btn => {
+            btn.onclick = async () => {
+                const dungeonId = btn.dataset.id;
+                const targetReached = parseInt(btn.dataset.target);
+
+                // Double check
+                const latestClaimed = await DBManager.getClaimedAchievements();
+                latestClaimed[dungeonId] = targetReached;
+                await DBManager.saveClaimedAchievements(latestClaimed);
+
+                // Add exp
+                const game = this.scene.game || (this.scene.scene && this.scene.scene.game);
+                const mm = game?.messiahManager;
+                if (mm) {
+                    mm.addExp(100);
+                    this.showToast(`✨ 업적 달성! 메시아 경험치 수령!`);
+
+                    // FX
+                    btn.innerText = '수령 완료!';
+                    btn.style.background = '#10b981';
+                    btn.style.borderColor = '#34d399';
+                    btn.disabled = true;
+
+                    // Refresh after short delay
+                    setTimeout(() => {
+                        this.refreshAchievements();
+                    }, 800);
+                }
+            };
+        });
+    }
+
     _updateNPCFormationSlot() {
         const npcSlotEl = document.getElementById('formation-npc-slot');
         if (!npcSlotEl) return;
@@ -4465,38 +4598,43 @@ export default class UIManager {
                     }
 
                     /* Detail Header */
-                    .merc-detail-header { display: flex; gap: 20px; align-items: flex-start; }
-                    .merc-detail-left-col { display: flex; flex-direction: column; gap: 12px; width: 130px; align-items: center; }
+                    .merc-detail-header { display: flex; gap: 15px; align-items: flex-start; flex-wrap: wrap; }
+                    .merc-detail-left-col { display: flex; flex-direction: column; gap: 12px; width: 110px; align-items: center; flex-shrink: 0; }
                     .merc-detail-sprite-wrap {
-                        width: 120px; height: 120px;
+                        width: 100%; height: 110px;
                         background: radial-gradient(circle, #334155 0%, #0f172a 100%);
                         border: 2px solid #475569;
                         border-radius: 12px;
                         display: flex; align-items: center; justify-content: center;
                     }
-                    .merc-detail-sprite { width: 100px; height: 100px; image-rendering: pixelated; }
-                    .merc-detail-title-info { flex: 1; display: flex; flex-direction: column; gap: 8px; }
-                    .merc-detail-name-row { display: flex; align-items: center; justify-content: space-between; }
-                    .merc-detail-name { font-size: 28px; font-weight: 900; color: #fbbf24; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
-                    .merc-detail-count { background: #7c3aed; padding: 2px 8px; border-radius: 6px; font-size: 12px; font-weight: bold; }
-                    .merc-detail-desc { font-size: 14px; color: #94a3b8; line-height: 1.5; font-style: italic; }
+                    .merc-detail-sprite { width: 90px; height: 90px; image-rendering: pixelated; }
+                    .merc-detail-title-info { flex: 1; display: flex; flex-direction: column; gap: 8px; min-width: 150px; }
+                    .merc-detail-name-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 5px; }
+                    .merc-detail-name { font-size: 24px; font-weight: 900; color: #fbbf24; text-shadow: 0 2px 4px rgba(0,0,0,0.5); word-break: keep-all; }
+                    .merc-detail-count { background: #7c3aed; padding: 2px 6px; border-radius: 6px; font-size: 11px; font-weight: bold; white-space: nowrap; }
+                    .merc-detail-desc { 
+                        font-size: 13px; color: #cbd5e1; line-height: 1.5; font-style: italic; 
+                        max-height: 100px; overflow-y: auto; padding-right: 5px;
+                    }
+                    .merc-detail-desc::-webkit-scrollbar { width: 4px; }
+                    .merc-detail-desc::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
 
                     /* Stats Grid */
                     .merc-stats-grid {
                         display: grid;
-                        grid-template-columns: repeat(4, 1fr);
-                        gap: 10px;
+                        grid-template-columns: repeat(auto-fit, minmax(50px, 1fr));
+                        gap: 8px;
                         background: rgba(30, 41, 59, 0.5);
-                        padding: 15px;
+                        padding: 12px;
                         border-radius: 12px;
                         border: 1px solid #334155;
                     }
-                    .merc-stat-item { display: flex; flex-direction: column; gap: 2px; }
-                    .stat-label { font-size: 10px; color: #64748b; font-weight: bold; }
-                    .stat-value { font-size: 16px; color: #f8fafc; font-weight: 800; font-family: 'Press Start 2P', cursive; font-size: 10px; }
+                    .merc-stat-item { display: flex; flex-direction: column; gap: 4px; align-items: center; text-align: center; }
+                    .stat-label { font-size: 9px; color: #94a3b8; font-weight: bold; }
+                    .stat-value { color: #f8fafc; font-weight: 800; font-family: 'Press Start 2P', cursive; font-size: 9px; }
 
                     /* Skills */
-                    .merc-skills-section { display: flex; flex-direction: column; gap: 10px; }
+                    .merc-skills-section { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
                     .merc-skill-card {
                         background: #1e293b;
                         border: 1px solid #334155;
@@ -4504,19 +4642,19 @@ export default class UIManager {
                         padding: 12px;
                         display: flex;
                         flex-direction: column;
-                        gap: 6px;
+                        gap: 8px;
                     }
                     .merc-skill-card.ultimate { border-color: #fbbf24; background: rgba(251, 191, 36, 0.05); }
-                    .skill-header { display: flex; align-items: center; gap: 10px; }
-                    .skill-emoji { font-size: 20px; }
-                    .skill-name { font-size: 16px; font-weight: bold; color: #fbbf24; }
-                    .skill-desc { font-size: 13px; color: #cbd5e1; line-height: 1.4; }
+                    .skill-header { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+                    .skill-emoji { font-size: 18px; }
+                    .skill-name { font-size: 15px; font-weight: bold; color: #fbbf24; }
+                    .skill-desc { font-size: 12px; color: #cbd5e1; line-height: 1.5; }
 
                     .theme-skin-btn {
-                        background: #1e293b; border: 1px solid #475569; border-radius: 8px;
-                        color: #94a3b8; padding: 10px 5px; cursor: pointer; font-weight: bold;
-                        transition: all 0.2s; font-family: 'Press Start 2P', cursive; font-size: 9px;
-                        width: 100%; text-align: center; white-space: nowrap; box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+                        background: #1e293b; border: 1px solid #fbbf24; border-radius: 6px;
+                        color: #fbbf24; padding: 8px 4px; cursor: pointer; font-weight: bold;
+                        transition: all 0.2s; font-family: 'Press Start 2P', cursive; font-size: 8px;
+                        width: 100%; text-align: center; white-space: nowrap; box-shadow: 0 2px 4px rgba(0,0,0,0.3);
                     }
                     .theme-skin-btn.active-btn { border-color: #fbbf24; color: #fbbf24; background: rgba(251, 191, 36, 0.1); box-shadow: 0 0 10px rgba(251, 191, 36, 0.15); }
                     .theme-skin-btn.active-btn:hover { background: #fbbf24; color: #0f172a; box-shadow: 0 0 15px rgba(251, 191, 36, 0.4); transform: translateY(-2px); }

@@ -67,7 +67,7 @@ const TERRITORY_BANNERS = [
         sublabel: 'ACHIEVEMENTS',
         cutscene: 'assets/characters/party/silvi_cutscene.png',
         accentColor: '#c03a3a',
-        action: null,
+        action: function () { if (this.game && this.game.uiManager) this.game.uiManager.showAchievementsUI(); },
     },
 ];
 
@@ -142,7 +142,7 @@ export default class TerritoryScene extends Phaser.Scene {
             const el = document.getElementById(`banner-${b.id}`);
             if (!el) return;
             if (b.action) {
-                el.addEventListener('click', () => b.action());
+                el.addEventListener('click', () => b.action.call(this));
             } else if (b.id === 'shop') {
                 el.addEventListener('click', () => {
                     if (this.game.uiManager) {

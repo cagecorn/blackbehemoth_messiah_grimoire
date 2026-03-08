@@ -61,6 +61,38 @@ class MessiahManager {
         });
     }
 
+    addExp(amount) {
+        this.stats.exp += amount;
+        let leveledUp = false;
+
+        while (true) {
+            const requiredExp = this.stats.level * 100;
+            if (this.stats.exp >= requiredExp) {
+                this.stats.exp -= requiredExp;
+                this.stats.level++;
+
+                // Stat scaling per level
+                this.stats.atk += 5;
+                this.stats.mAtk += 5;
+                this.stats.def += 2;
+                this.stats.acc += 1;
+                // crit and castSpd remain relatively static or can be scaled differently if needed
+
+                leveledUp = true;
+                EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, `[시스템] 메시아가 영적으로 각성했습니다! (Lv.${this.stats.level}) 🌟`, '#fbbf24');
+            } else {
+                break;
+            }
+        }
+
+        this.saveState();
+        if (leveledUp) {
+            EventBus.emit('MESSIAH_LEVELED_UP', this.stats.level);
+            // Also notify power UI if it's open
+            EventBus.emit('MESSIAH_POWER_UPGRADED', this.activePowerId);
+        }
+    }
+
     toggleAutoMode() {
         this.isAutoMode = !this.isAutoMode;
         this.saveState();
