@@ -102,6 +102,17 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             this.equipment = { ...this.equipment, ...config.equipment };
         }
 
+        // --- Stat Synergy Fix: Update effective stats for growth items ---
+        for (const slot in this.equipment) {
+            const item = this.equipment[slot];
+            if (item && item.itemId) {
+                const baseItem = ItemManager.getItem(item.itemId);
+                if (baseItem) {
+                    item.stats = equipmentManager.getEffectiveStats(item, baseItem);
+                }
+            }
+        }
+
         // --- Grimoire System (Messiah Grimoire) ---
         GrimoireManager.initGrimoire(this);
         // Link legacy arrays to Grimoire chapters for backward compatibility
@@ -386,7 +397,10 @@ export default class Mercenary extends Phaser.GameObjects.Container {
                 if (payload.itemId && payload.itemId.startsWith('eq_')) {
                     const inst = await DBManager.getEquipmentInstance(payload.itemId);
                     if (inst) {
-                        item = { ...ItemManager.getItem(inst.itemId), ...inst, instanceId: inst.id };
+                        const baseItem = ItemManager.getItem(inst.itemId);
+                        item = { ...baseItem, ...inst, instanceId: inst.id };
+                        // Ensure random options are active
+                        item.stats = equipmentManager.getEffectiveStats(item, baseItem);
                     }
                 } else {
                     item = ItemManager.getItem(payload.itemId);

@@ -97,6 +97,7 @@ class EquipmentManager {
             itemId: itemId,
             level: 1,
             exp: 0,
+            slot: baseItem.slot,
             ownerId: null,
             randomOptions: [] // To be implemented later
         };
@@ -159,7 +160,8 @@ class EquipmentManager {
         const existingIds = instance.randomOptions.map(o => o.id);
         const hasElement = instance.randomOptions.some(o => o.type === 'element');
 
-        const pool = (instance.slot === 'armor') ? EquipmentManager.ARMOR_OPTION_POOL : EquipmentManager.WEAPON_OPTION_POOL;
+        const slot = instance.slot || ItemManager.getItem(instance.itemId)?.slot;
+        const pool = (slot === 'armor') ? EquipmentManager.ARMOR_OPTION_POOL : EquipmentManager.WEAPON_OPTION_POOL;
 
         const availablePool = pool.filter(o => {
             if (existingIds.includes(o.id)) return false;
@@ -183,10 +185,11 @@ class EquipmentManager {
         }
 
         let finalOpt = { ...selected };
+        const val = selected.min + Math.random() * (selected.max - selected.min);
         if (selected.type === 'mult') {
-            // Random value within range
-            const val = selected.min + Math.random() * (selected.max - selected.min);
             finalOpt.value = parseFloat(val.toFixed(3)); // 3 decimal places
+        } else if (selected.type === 'add') {
+            finalOpt.value = Math.floor(val);
         }
 
         instance.randomOptions.push(finalOpt);
@@ -217,8 +220,46 @@ class EquipmentManager {
         { id: 'lightning_res', label: '번개 저항력', type: 'add', stat: 'lightningRes', min: 10, max: 30, weight: 10 }
     ];
 
+    validateAndFixOptions(instance) {
+        if (!instance || !instance.randomOptions || instance.randomOptions.length === 0) return;
+
+        const slot = instance.slot || ItemManager.getItem(instance.itemId)?.slot;
+        const correctPool = (slot === 'armor') ? EquipmentManager.ARMOR_OPTION_POOL : EquipmentManager.WEAPON_OPTION_POOL;
+        const correctIds = correctPool.map(o => o.id);
+
+        let modified = false;
+        instance.randomOptions = instance.randomOptions.map(opt => {
+            const isCorrupted = (opt.type === 'mult' || opt.type === 'add') && (opt.value === undefined || opt.value === null || isNaN(opt.value));
+
+            if (!correctIds.includes(opt.id) || isCorrupted) {
+                console.warn(`[EquipmentManager] Validating ${instance.id} (${slot}): Found invalid or corrupted option ${opt.id}. Re-rolling...`);
+                modified = true;
+
+                const availablePool = correctPool.filter(o => !instance.randomOptions.some(eo => eo.id === o.id));
+                const selected = availablePool[Math.floor(Math.random() * availablePool.length)];
+
+                let finalOpt = { ...selected };
+                const val = selected.min + Math.random() * (selected.max - selected.min);
+                if (selected.type === 'mult') {
+                    finalOpt.value = parseFloat(val.toFixed(3));
+                } else if (selected.type === 'add') {
+                    finalOpt.value = Math.floor(val);
+                }
+                return finalOpt;
+            }
+            return opt;
+        });
+
+        if (modified) {
+            console.log(`[EquipmentManager] Corrected invalid options for ${instance.id}.`);
+            DBManager.saveEquipmentInstance(instance).catch(err => console.error('[EquipmentManager] Error saving fixed instance:', err));
+        }
+    }
+
     getEffectiveStats(instance, baseItem) {
         if (!instance || !baseItem) return {};
+
+        this.validateAndFixOptions(instance);
 
         const stats = { ...baseItem.stats };
 
