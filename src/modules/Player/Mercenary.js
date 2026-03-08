@@ -1334,7 +1334,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
 
                 // Visual feedback
                 if (this.scene.fxManager) {
-                    this.scene.fxManager.spawnEffect('heal_aura', this.x, this.y);
+                    this.scene.fxManager.spawnHolyAura(this.x, this.y);
                     this.scene.fxManager.showDamageText(this, 'RESURRECTED!', '#00ff00');
                 }
 
