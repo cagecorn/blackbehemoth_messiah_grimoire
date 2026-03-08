@@ -2193,11 +2193,17 @@ export default class UIManager {
                     const level = state ? state.level : 1;
                     const starHtml = `<div style="position:absolute; top:4px; right:4px; font-size:10px; font-weight:bold; color:#fbbf24; text-shadow:0 1px 2px #000;">★${star}</div>`;
                     const levelHtml = `<div style="position:absolute; top:4px; left:4px; font-size:10px; font-weight:bold; color:#fff; text-shadow:0 1px 2px #000; background:rgba(0,0,0,0.5); padding:0 2px; border-radius:2px;">Lv.${level}</div>`;
+                    const skinData = partyManager.getMercenarySkin(char.id) || { equippedSkin: null };
+                    let spriteSrc = `assets/characters/party/${char.sprite}.png`;
+                    if (skinData.equippedSkin) {
+                        const skin = Object.values(Skins).find(s => s.id === skinData.equippedSkin);
+                        if (skin) spriteSrc = `assets/characters/skin/${skin.sprite}.png`;
+                    }
                     candidatesHtml += `
                         <div class="mercenary-card ${isSelected ? 'selected' : ''}" draggable="true" data-id="${char.id}" style="position:relative;">
                             ${starHtml}
                             ${levelHtml}
-                            <img src="assets/characters/party/${char.sprite}.png" alt="${char.name}">
+                            <img src="${spriteSrc}" alt="${char.name}">
                             <div class="merc-name">${char.name.split(' (')[0]}</div>
                         </div>
                     `;
@@ -2319,11 +2325,18 @@ export default class UIManager {
                 const level = state ? state.level : 1;
                 const starHtml = star > 0 ? `<div style="position:absolute; bottom:2px; right:4px; font-size:12px; font-weight:bold; color:#fbbf24; text-shadow:0 1px 2px #000; z-index:10;">★${star}</div>` : '';
                 const levelHtml = `<div style="position:absolute; top:2px; left:4px; font-size:10px; font-weight:bold; color:#fff; text-shadow:0 1px 2px #000; z-index:10; background:rgba(0,0,0,0.5); padding:0 2px; border-radius:2px;">Lv.${level}</div>`;
+                const skinData = partyManager.getMercenarySkin(char.id) || { equippedSkin: null };
+                let spriteSrc = `assets/characters/party/${char.sprite}.png`;
+                if (skinData.equippedSkin) {
+                    const skin = Object.values(Skins).find(s => s.id === skinData.equippedSkin);
+                    if (skin) spriteSrc = `assets/characters/skin/${skin.sprite}.png`;
+                }
+
                 slotEl.style.position = 'relative';
                 slotEl.innerHTML = `
                     ${starHtml}
                     ${levelHtml}
-                    <img src="assets/characters/party/${char.sprite}.png" alt="${char.name}">
+                    <img src="${spriteSrc}" alt="${char.name}">
                 `;
                 slotEl.classList.add('filled');
             } else {
@@ -2814,9 +2827,19 @@ export default class UIManager {
                 if (charConfig.rarity === 'BLACK_BEHEMOTH') {
                     portrait.classList.add('behemoth-portrait');
                 }
+                let spriteSrc = `assets/characters/party/${charConfig.sprite}.png`;
+                const partyManager = this.scene?.game?.partyManager;
+                if (partyManager && merc.characterId) {
+                    const skinData = partyManager.getMercenarySkin(merc.characterId);
+                    if (skinData && skinData.equippedSkin) {
+                        const skin = Object.values(Skins).find(s => s.id === skinData.equippedSkin);
+                        if (skin) spriteSrc = `assets/characters/skin/${skin.sprite}.png`;
+                    }
+                }
+
                 portrait.innerHTML = `
                     <div class="portrait-img-box">
-                        <img src="assets/characters/party/${charConfig.sprite}.png" alt="${merc.unitName}">
+                        <img src="${spriteSrc}" alt="${merc.unitName}">
                     </div>
                     <div class="portrait-info">
                         <div class="portrait-name-chip">${merc.unitName || merc.name || '???'}${starHtml}</div>
