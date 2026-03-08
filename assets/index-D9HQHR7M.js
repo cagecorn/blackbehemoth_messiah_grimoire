@@ -7472,8 +7472,11 @@ ${p.description}`,this.npcHud.classList.contains("active")||this.npcHud.classLis
         `,A=f=>{const t=(p[f.id]||p[f.id.toUpperCase()]||{total:0}).total||0,r=Dt[f.classId.toUpperCase()],v=[{label:"HP",val:r.maxHp},{label:"ATK",val:f.atk||r.atk},{label:"M.ATK",val:f.mAtk||r.mAtk},{label:"DEF",val:f.def||r.def},{label:"M.DEF",val:f.mDef||r.mDef},{label:"SPD",val:f.speed||r.speed},{label:"ATK.SPD",val:f.atkSpd||r.atkSpd},{label:"RANGE",val:f.atkRange||r.atkRange},{label:"CAST",val:f.castSpd||r.castSpd},{label:"ACC",val:f.acc||r.acc},{label:"EVA",val:f.eva||r.eva},{label:"CRIT",val:(f.crit||r.crit)+"%"}];return`
                 <div class="merc-detail-view" id="merc-detail-${f.id}">
                     <div class="merc-detail-header">
-                        <div class="merc-detail-sprite-wrap">
-                            <img src="assets/characters/party/${f.sprite}.png" class="merc-detail-sprite">
+                        <div class="merc-detail-left-col">
+                            <div class="merc-detail-sprite-wrap">
+                                <img src="assets/characters/party/${f.sprite}.png" class="merc-detail-sprite">
+                            </div>
+                            <button class="theme-skin-btn active-btn" onclick="window.uiManager.openSkinSelector('${f.id}')">[테마 스킨 교체]</button>
                         </div>
                         <div class="merc-detail-title-info">
                             <div class="merc-detail-name-row">
@@ -7508,8 +7511,6 @@ ${p.description}`,this.npcHud.classList.contains("active")||this.npcHud.classLis
                             <div class="skill-desc">${f.ultimateDescription}</div>
                         </div>
                     </div>
-
-                    <button class="theme-skin-btn active-btn" onclick="window.uiManager.openSkinSelector('${f.id}')">[테마 스킨 교체]</button>
                 </div>
             `},R=`
             <div class="mercenary-roster-v2">
@@ -7571,6 +7572,7 @@ ${p.description}`,this.npcHud.classList.contains("active")||this.npcHud.classLis
 
                     /* Detail Header */
                     .merc-detail-header { display: flex; gap: 20px; align-items: flex-start; }
+                    .merc-detail-left-col { display: flex; flex-direction: column; gap: 12px; width: 130px; align-items: center; }
                     .merc-detail-sprite-wrap {
                         width: 120px; height: 120px;
                         background: radial-gradient(circle, #334155 0%, #0f172a 100%);
@@ -7618,11 +7620,12 @@ ${p.description}`,this.npcHud.classList.contains("active")||this.npcHud.classLis
 
                     .theme-skin-btn {
                         background: #1e293b; border: 1px solid #475569; border-radius: 8px;
-                        color: #94a3b8; padding: 12px; cursor: pointer; font-weight: bold;
-                        transition: all 0.2s; margin-top: 10px; font-family: 'Press Start 2P', cursive; font-size: 10px;
+                        color: #94a3b8; padding: 10px 5px; cursor: pointer; font-weight: bold;
+                        transition: all 0.2s; font-family: 'Press Start 2P', cursive; font-size: 9px;
+                        width: 100%; text-align: center; white-space: nowrap; box-shadow: 0 4px 6px rgba(0,0,0,0.3);
                     }
-                    .theme-skin-btn.active-btn { border-color: #fbbf24; color: #fbbf24; }
-                    .theme-skin-btn.active-btn:hover { background: #fbbf24; color: #0f172a; }
+                    .theme-skin-btn.active-btn { border-color: #fbbf24; color: #fbbf24; background: rgba(251, 191, 36, 0.1); box-shadow: 0 0 10px rgba(251, 191, 36, 0.15); }
+                    .theme-skin-btn.active-btn:hover { background: #fbbf24; color: #0f172a; box-shadow: 0 0 15px rgba(251, 191, 36, 0.4); transform: translateY(-2px); }
 
                     /* Skin Selector Modal */
                     .skin-selector-overlay {
