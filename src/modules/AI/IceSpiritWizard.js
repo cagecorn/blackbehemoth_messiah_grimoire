@@ -16,8 +16,8 @@ export default class IceSpiritWizard extends BaseMonster {
         applyRangedAI(this);
     }
 
-    update() {
-        super.update();
+    update(time, delta) {
+        super.update(time, delta);
         this.findNearestEnemy();
     }
 }

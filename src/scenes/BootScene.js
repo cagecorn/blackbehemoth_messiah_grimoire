@@ -176,6 +176,10 @@ export default class BootScene extends Phaser.Scene {
         this.load.image('crocodile_warrior_sprite', 'assets/characters/enemies/crocodile_warrior_sprite.png');
         this.load.image('crocodile_archer_sprite', 'assets/characters/enemies/crocodile_archer_sprite.png');
         this.load.image('crocodile_healer_sprite', 'assets/characters/enemies/crocodile_healer_sprite.png');
+        this.load.image('epic_goblin_sprite', 'assets/characters/enemies/epic_goblin_sprite.png');
+        this.load.image('epic_goblin_cutscene', 'assets/characters/enemies/epic_goblin_cutscene.png');
+        this.load.image('epic_orc_sprite', 'assets/characters/enemies/epic_orc_sprite.png');
+        this.load.image('epic_orc_cutscene', 'assets/characters/enemies/epic_orc_cutscene.png');
 
         // Lava Field: Fire Spirits
         this.load.image('fire_spirit_warrior_sprite', 'assets/characters/enemies/fire_spirit_warrior_sprite.png');

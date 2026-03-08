@@ -161,6 +161,13 @@ export default class DungeonScene extends Phaser.Scene {
 
         console.log(`[Dungeon] Initializing World Bounds: ${worldWidth}x${worldHeight} | Viewport: ${this.scale.width}x${visibleHeight} @ y:${topOffset}`);
 
+        // --- Difficulty Setup ---
+        this.difficulty = await DBManager.getSelectedDifficulty(this.dungeonType);
+        console.log(`%c[Dungeon] Difficulty selected for ${this.dungeonType}: ${this.difficulty}`, "background: #222; color: #fb7185; font-weight: bold;");
+
+        const stageConfig = StageConfigs[this.dungeonType] || StageConfigs.CURSED_FOREST;
+        this.difficultyCfg = stageConfig.difficulties ? stageConfig.difficulties[this.difficulty] : { levelOffset: 0, spawnMult: 1, epicChanceBase: 0 };
+
         try {
             // --- Ticket Check (Only on Round 1 Entry/Loop) ---
             if (this.dungeonType === 'UNDEAD_GRAVEYARD' && this.currentRound === 1) {
@@ -807,10 +814,14 @@ export default class DungeonScene extends Phaser.Scene {
                 this.currentRound++;
                 if (this.game.uiManager) this.game.uiManager.updateRoundDisplay(`DUNGEON ROUND ${this.currentRound}`);
 
-                // Save Best Round
-                DBManager.saveBestRound(this.dungeonType, this.currentRound).then(isNewBest => {
+                // Save Best Round (Difficulty-Specific)
+                DBManager.saveBestRound(this.dungeonType, this.currentRound, this.difficulty).then(isNewBest => {
                     if (isNewBest) {
-                        EventBus.emit('BEST_ROUND_UPDATED', { dungeonType: this.dungeonType, round: this.currentRound });
+                        EventBus.emit('BEST_ROUND_UPDATED', {
+                            dungeonType: this.dungeonType,
+                            round: this.currentRound,
+                            difficulty: this.difficulty
+                        });
                     }
                 });
 
@@ -1165,7 +1176,8 @@ export default class DungeonScene extends Phaser.Scene {
         if (this.isResetting) return;
 
         const stageConfig = StageConfigs[this.dungeonType] || StageConfigs.CURSED_FOREST;
-        const pool = stageConfig.monsterPool || ['goblin', 'orc'];
+        // Base pool for normal/elite should EXCLUDE epic variants (which are handled separately)
+        const pool = (stageConfig.monsterPool || ['goblin', 'orc']).filter(id => !id.startsWith('epic_'));
 
         // Debug Log for Monster Pool
         console.log(`%c[Dungeon Spawn] Type: ${this.dungeonType} | Round: ${this.currentRound} | Pool: ${JSON.stringify(pool)}`, "color: #00ff00; font-weight: bold;");
@@ -1175,8 +1187,9 @@ export default class DungeonScene extends Phaser.Scene {
         }
 
         const startPos = this.dungeonManager.getPlayerStartPosition();
-        // Monster scaling: Increases every 5 rounds
-        const monsterLevel = Math.floor((this.currentRound - 1) / 5) + 1;
+        // Monster scaling: Increases every 5 rounds + Difficulty Level Offset
+        const levelOffset = this.difficultyCfg ? this.difficultyCfg.levelOffset : 0;
+        const monsterLevel = Math.floor((this.currentRound - 1) / 5) + 1 + levelOffset;
 
         // Elite Settings
         const eliteChance = Math.min(0.5, 0.1 + (this.currentRound - 1) * 0.05);
@@ -1207,6 +1220,9 @@ export default class DungeonScene extends Phaser.Scene {
         const monsterClassMap = {
             'goblin': Goblin,
             'orc': Orc,
+            'shaman': MonsterHealer,
+            'epic_goblin': Goblin,
+            'epic_orc': Orc,
             'skeleton_warrior': SkeletonWarrior,
             'skeleton_wizard': SkeletonWizard,
             crocodile_warrior: CrocodileWarrior,
@@ -1220,21 +1236,46 @@ export default class DungeonScene extends Phaser.Scene {
             ice_spirit_healer: IceSpiritHealer
         };
 
-        // Total spawn count increases with rounds
-        const spawnCount = 18 + (this.currentRound - 1) * 2;
+        // Total spawn count increases with rounds * Difficulty Multiplier
+        const spawnMult = this.difficultyCfg ? this.difficultyCfg.spawnMult : 1;
+        const spawnCount = Math.floor((18 + (this.currentRound - 1) * 2) * spawnMult);
+
+        const epicChance = (this.difficultyCfg && this.difficultyCfg.epicChanceBase)
+            ? Math.min(0.6, this.difficultyCfg.epicChanceBase + (this.currentRound - 1) * 0.02)
+            : 0;
 
         for (let i = 0; i < spawnCount; i++) {
-            const monsterId = Phaser.Utils.Array.GetRandom(pool);
+            const isEpic = epicChance > 0 && Math.random() < epicChance;
+            let currentPool = pool;
+            let targetType = 'NORMAL';
+
+            if (isEpic && this.difficultyCfg.epicPool) {
+                currentPool = this.difficultyCfg.epicPool;
+                targetType = 'EPIC';
+            }
+
+            const monsterId = Phaser.Utils.Array.GetRandom(currentPool);
             const MonsterClass = monsterClassMap[monsterId] || Goblin;
 
             // Random offset spread
-            const offsetX = Phaser.Math.Between(100, 500);
-            const offsetY = Phaser.Math.Between(-150, 150);
+            const offsetX = Phaser.Math.Between(100, 700);
+            const offsetY = Phaser.Math.Between(-250, 250);
 
-            const isEliteRequested = Math.random() < eliteChance;
+            const isEliteRequested = (targetType === 'NORMAL') && (Math.random() < eliteChance);
             const baseConfig = MonsterClasses[monsterId.toUpperCase()] || MonsterClasses.GOBLIN;
-            const monster = this.spawnMonster(MonsterClass, startPos.x + offsetX, startPos.y + offsetY, this.player, monsterLevel, baseConfig, isEliteRequested ? 'ELITE' : 'NORMAL');
-            applyEliteLogic(monster);
+
+            const monster = this.spawnMonster(MonsterClass, startPos.x + offsetX, startPos.y + offsetY, this.player, monsterLevel, baseConfig, targetType === 'EPIC' ? 'EPIC' : (isEliteRequested ? 'ELITE' : 'NORMAL'));
+
+            if (targetType === 'EPIC') {
+                monster.isEpic = true;
+                monster.setScale(baseConfig.scale || 2.0);
+                monster.sprite.setTint(0xff5555); // Reddish tint for Epic
+                if (monster.unitName && !monster.unitName.includes('💥')) {
+                    monster.unitName = `💥 ${monster.unitName} 💥`;
+                }
+            } else {
+                applyEliteLogic(monster);
+            }
         }
 
         // Special handling for Shamans (Healers) in Cursed Forest if not in pool but needed
@@ -1377,6 +1418,9 @@ export default class DungeonScene extends Phaser.Scene {
 
         // Prepare config (explicitly pass classConfig to scaleStats)
         const config = scaleStats(classConfig || MonsterClasses.GOBLIN, level, type);
+
+        // Ensure type/difficulty properties are passed
+        config.type = type;
 
         if (monster) {
             monster.reset(x, y, config, target);

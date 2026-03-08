@@ -84,6 +84,24 @@ export default class HealthBar {
             // Draw from the left (covering the HP bar)
             this.bar.fillRect(this.x - this.width / 2 + 1, this.y + 1, shieldWidth, this.height - 2);
         }
+
+        // --- Skill Gauge (Mana) ---
+        if (this.parentContainer && this.parentContainer.isEpic) {
+            const skillValue = this.parentContainer.skillGauge || 0;
+            const skillHeight = 4;
+            const skillY = this.y + this.height + 2;
+
+            // BG
+            this.bar.fillStyle(0x000000);
+            this.bar.fillRect(this.x - this.width / 2, skillY, this.width, skillHeight);
+
+            // Fill (Purple/Pink for Epic Skill)
+            this.bar.fillStyle(0xff00ff);
+            const skillWidth = Math.floor(this.p * skillValue);
+            if (skillWidth > 0) {
+                this.bar.fillRect(this.x - this.width / 2 + 1, skillY + 1, skillWidth - 2, skillHeight - 2);
+            }
+        }
     }
 
     destroy() {

@@ -5453,3 +5453,176 @@ input:checked+.slider:before {
 #construction-overlay {
     background: rgba(255, 176, 0, 0.05);
 }
+
+/* --- Difficulty Selection Toggle --- */
+#hud-round-display {
+    cursor: pointer;
+    position: relative;
+    transition: transform 0.1s;
+    user-select: none;
+}
+
+#hud-round-display:active {
+    transform: scale(0.95);
+}
+
+#difficulty-toggle-menu {
+    position: absolute;
+    top: 110%;
+    left: 0;
+    width: 140px;
+    background: rgba(15, 15, 20, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 6px;
+    z-index: 10000;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6), inset 0 0 15px rgba(255, 255, 255, 0.05);
+    transform-origin: top left;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.difficulty-menu-hidden {
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px) scale(0.9);
+    pointer-events: none;
+}
+
+.difficulty-menu-visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+}
+
+.diff-btn {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 8px;
+    color: #fff;
+    background: rgba(255, 255, 255, 0.05);
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.diff-btn::before {
+    content: '○';
+    font-size: 10px;
+    opacity: 0.5;
+}
+
+.diff-btn.selected::before {
+    content: '◈';
+    color: var(--retro-amber);
+    opacity: 1;
+}
+
+.diff-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.3);
+    padding-left: 14px;
+}
+
+.diff-btn.normal:hover {
+    color: #4ade80;
+    border-color: #4ade80;
+}
+
+.diff-btn.nightmare:hover {
+    color: #fb7185;
+    border-color: #fb7185;
+}
+
+.diff-btn.hell:hover {
+    color: #a78bfa;
+    border-color: #a78bfa;
+}
+
+.diff-btn.selected.normal {
+    border-color: #4ade80;
+    background: rgba(74, 222, 128, 0.1);
+    color: #4ade80;
+}
+
+.diff-btn.selected.nightmare {
+    border-color: #fb7185;
+    background: rgba(251, 113, 133, 0.1);
+    color: #fb7185;
+}
+
+.diff-btn.selected.hell {
+    border-color: #a78bfa;
+    background: rgba(167, 139, 250, 0.1);
+    color: #a78bfa;
+}
+
+/* Difficulty Visual Indicators on HUD */
+#hud-round-display.nightmare {
+    border: 1px solid #fb7185 !important;
+    box-shadow: 0 0 10px rgba(251, 113, 133, 0.4);
+}
+
+#hud-round-display.hell {
+    border: 1px solid #a78bfa !important;
+    box-shadow: 0 0 15px rgba(167, 139, 250, 0.5);
+    animation: hell-glow 2s infinite alternate;
+}
+
+@keyframes hell-glow {
+    from {
+        box-shadow: 0 0 5px rgba(167, 139, 250, 0.3);
+    }
+
+    to {
+        box-shadow: 0 0 20px rgba(167, 139, 250, 0.7);
+    }
+}
+/* --- Dungeon Best Round Badges (Difficulty Specific) --- */
+.best-round-badge {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 8px;
+    padding: 3px 6px;
+    border-radius: 4px;
+    margin-right: 8px;
+    background: rgba(16, 185, 129, 0.2);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.4);
+    text-shadow: 0 0 5px rgba(16, 185, 129, 0.5);
+    transition: all 0.3s ease;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.best-round-badge.normal {
+    background: rgba(16, 185, 129, 0.2);
+    color: #10b981;
+    border-color: rgba(16, 185, 129, 0.4);
+    text-shadow: 0 0 5px rgba(16, 185, 129, 0.5);
+}
+
+.best-round-badge.nightmare {
+    background: rgba(139, 92, 246, 0.2);
+    color: #a78bfa;
+    border-color: rgba(139, 92, 246, 0.4);
+    text-shadow: 0 0 5px rgba(139, 92, 246, 0.5);
+}
+
+.best-round-badge.hell {
+    background: rgba(239, 68, 68, 0.2);
+    color: #f87171;
+    border-color: rgba(239, 68, 68, 0.4);
+    text-shadow: 0 0 5px rgba(239, 68, 68, 0.5);
+}
+

@@ -58,8 +58,20 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
         this.isAsleep = false; // Sleep CC
         this.isFrozen = false; // Freeze CC
 
-        // Elite & Charm System (Messiah Grimoire)
+        // Elite & Epic System
         this.isElite = config.isElite || false;
+        this.isEpic = config.type === 'EPIC' || false;
+        this.skillGauge = 0;
+        this.skillCooldown = 8000 + (Math.random() * 4000); // ms base cooldown
+        this.skillTimer = 0;
+        this.skillName = config.skillName || '';
+
+        // --- Added for Pooling Reset ---
+        this.resetSkillState = () => {
+            this.skillGauge = 0;
+            this.skillTimer = 0;
+            if (this.healthBar) this.healthBar.draw();
+        };
 
         GrimoireManager.initGrimoire(this);
         // Link legacy arrays to Grimoire chapters
@@ -185,6 +197,12 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
 
         // Reset Grimoire/Charms
         this.isElite = config.isElite || false;
+        this.isEpic = config.type === 'EPIC' || false;
+        this.skillGauge = 0;
+        this.skillTimer = 0;
+        this.skillCooldown = 8000 + Math.random() * 4000;
+        this.skillName = config.skillName || '';
+
         GrimoireManager.initGrimoire(this);
         this.charms = this.grimoire[GrimoireManager.CHAPTERS.ACTIVE];
         this.nodeCharms = this.grimoire[GrimoireManager.CHAPTERS.TACTICAL];
@@ -256,6 +274,13 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
 
         if (this.isElite) {
             this.setElite(true);
+        }
+
+        // Reset Skill Logic for Epics
+        if (this.isEpic) {
+            this.skillTimer = 0;
+            this.skillGauge = 0;
+            this.skillName = config.skillName || '';
         }
 
         // Re-init AI (Subclasses should handle this)
@@ -773,7 +798,7 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
     update(time, delta) {
         if (this.isAirborne || this.isStunned || this.isAsleep) {
             // Can't act while CC'd. Keep velocity at 0 unless knocked back.
-            this.body.setVelocity(0, 0);
+            if (this.body) this.body.setVelocity(0, 0);
             return; // Early return to block BT and orientation
         } else if (this.btManager) {
             this.btManager.step();
@@ -783,7 +808,181 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
         // --- Update Charm Effects ---
         this.updateCharmEffects(delta);
 
+        // --- Update Epic Skill Logic ---
+        if (this.isEpic && this.hp > 0 && !this.isStunned && !this.isAsleep) {
+            this.updateEpicSkill(delta);
+        }
+
         this.updateVisualOrientation();
+    }
+
+    updateEpicSkill(delta) {
+        if (!this.isEpic) return;
+
+        this.skillTimer += delta;
+        this.skillGauge = Math.min(100, (this.skillTimer / this.skillCooldown) * 100);
+
+        if (this.skillGauge >= 100) {
+            this.executeEpicSkill();
+            this.skillTimer = 0;
+            this.skillGauge = 0;
+        }
+
+        // Redraw health bar to show skill gauge
+        if (this.healthBar) this.healthBar.draw();
+    }
+
+    executeEpicSkill() {
+        if (!this.skillName) return;
+
+        const normalizedSkill = this.skillName.replace(/\s+/g, '').toLowerCase();
+
+        console.info(`%c[Skill] %c${this.unitName}%c executes %c${this.skillName}!`,
+            'color: #ff00ff; font-weight: bold;',
+            'color: #ff5555;',
+            'color: #e0e0e0;',
+            'color: #ffaa00; font-weight: bold;'
+        );
+
+        if (normalizedSkill === 'bloodrage') {
+            this.executeBloodRage();
+        } else if (normalizedSkill === 'electricgrenade') {
+            this.executeElectricGrenade(this.target);
+        }
+    }
+
+    executeBloodRage() {
+        // Visual Effect: Blood Drops
+        const particleX = this.x;
+        const particleY = this.y - 20;
+
+        // Create blood particles manually (similar to BloodRage skill)
+        const emitter = this.scene.add.particles(0, 0, 'emoji_blood_drop', {
+            speed: { min: 20, max: 80 },
+            angle: { min: 0, max: 360 },
+            scale: { start: 0.3 * (this.config.scale || 1), end: 0 },
+            alpha: { start: 1, end: 0 },
+            lifespan: 1000,
+            frequency: 150,
+            follow: this,
+            followOffset: { x: 0, y: -20 }
+        });
+        emitter.setDepth(this.depth + 1);
+
+        // Shout
+        if (this.barkManager) {
+            this.barkManager.showBark(this, "RUAAAARGH! 🩸", "#ff0000");
+        }
+
+        // Stat Buff: Increase speed and attack speed for a duration
+        const originalSpeed = this.speed;
+        const originalAtkSpd = this.atkSpd;
+
+        this.speed *= 1.8;
+        this.atkSpd *= 0.5; // Half delay = double speed
+        this.sprite.setTint(0xff0000);
+        this.isBloodRaging = true;
+
+        this.scene.time.delayedCall(5000, () => {
+            if (!this.active) return;
+            this.speed = originalSpeed;
+            this.atkSpd = originalAtkSpd;
+            this.sprite.clearTint();
+            if (this.isEpic) this.sprite.setTint(0xff5555); // Restore Epic tint
+            this.isBloodRaging = false;
+            emitter.destroy();
+        });
+    }
+
+    executeElectricGrenade(target) {
+        if (!target || !target.active) return;
+
+        if (this.barkManager) {
+            this.barkManager.showBark(this, "SHOCKING! ⚡", "#ffff00");
+        }
+
+        const startX = this.x;
+        const startY = this.y;
+        const targetX = target.x;
+        const targetY = target.y;
+
+        // Create Grenade Sprite
+        const grenade = this.scene.add.image(startX, startY, 'emoji_bomb');
+        grenade.setTint(0xffff00);
+        grenade.setDepth(2000);
+        grenade.setDisplaySize(32, 32);
+
+        // Parabolic Flight
+        const curve = new Phaser.Curves.QuadraticBezier(
+            new Phaser.Math.Vector2(startX, startY),
+            new Phaser.Math.Vector2((startX + targetX) / 2, Math.min(startY, targetY) - 150),
+            new Phaser.Math.Vector2(targetX, targetY)
+        );
+
+        const duration = 600;
+        const path = { t: 0 };
+
+        this.scene.tweens.add({
+            targets: path,
+            t: 1,
+            duration: duration,
+            ease: 'Cubic.easeOut',
+            onUpdate: () => {
+                const p = curve.getPoint(path.t);
+                grenade.x = p.x;
+                grenade.y = p.y;
+                grenade.angle += 10;
+            },
+            onComplete: () => {
+                grenade.destroy();
+                this.explodeElectricGrenade(targetX, targetY);
+            }
+        });
+    }
+
+    explodeElectricGrenade(x, y) {
+        if (!this.scene || !this.active) return;
+
+        const aoeRadius = 100;
+        const shockDuration = 3000;
+        const damageMultiplier = 1.5;
+
+        // 1. Visual Effect (Explosion)
+        const flash = this.scene.add.circle(x, y, aoeRadius, 0xffff00, 0.4);
+        flash.setDepth(3000);
+        this.scene.tweens.add({
+            targets: flash,
+            alpha: 0,
+            scale: 1.5,
+            duration: 400,
+            onComplete: () => { if (flash) flash.destroy(); }
+        });
+
+        // 2. Electric Particles
+        const emitter = this.scene.add.particles(x, y, 'emoji_lightning', {
+            speed: { min: 100, max: 200 },
+            angle: { min: 0, max: 360 },
+            scale: { start: 0.6, end: 0 },
+            alpha: { start: 1, end: 0 },
+            lifespan: 600,
+            quantity: 20
+        });
+        emitter.setDepth(3000);
+        emitter.explode(20);
+        this.scene.time.delayedCall(1000, () => { if (emitter) emitter.destroy(); });
+
+        // 3. AOE Damage & CC
+        if (this.scene.aoeManager) {
+            const damage = this.atk * damageMultiplier;
+            const opposingGroup = this.scene.mercenaries; // Monsters target Mercenaries
+            const hitAllies = this.scene.aoeManager.triggerAoe(x, y, aoeRadius, damage, this, opposingGroup, false, false, 'lightning');
+
+            if (this.scene.ccManager) {
+                hitAllies.forEach(merc => {
+                    this.scene.ccManager.applyShock(merc, shockDuration);
+                });
+            }
+        }
     }
 
     updateCharmEffects(delta) {

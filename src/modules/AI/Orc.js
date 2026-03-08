@@ -8,10 +8,10 @@ import { MonsterClasses, scaleStats } from '../Core/EntityStats.js';
  * Ranged enemy using Orc sprite.
  */
 export default class Orc extends BaseMonster {
-    constructor(scene, x, y, target, level = 1) {
-        // We pass the ORC config from EntityStats
-        const config = scaleStats(MonsterClasses.ORC, level);
-        super(scene, x, y, config, target);
+    constructor(scene, x, y, target, level = 1, config = null) {
+        // Use passed config or scale from default
+        const finalConfig = config || scaleStats(MonsterClasses.ORC, level);
+        super(scene, x, y, finalConfig, target);
         this.initAI();
     }
 
@@ -26,8 +26,8 @@ export default class Orc extends BaseMonster {
         applyRangedAI(this);
     }
 
-    update() {
-        super.update();
+    update(time, delta) {
+        super.update(time, delta);
         // findNearestEnemy is now in BaseMonster
         this.findNearestEnemy();
     }

@@ -57,7 +57,9 @@ export default class UIManager {
         // Round Display Elements
         this.roundDisplay = document.getElementById('hud-round-display');
         this.roundText = document.getElementById('hud-round-text');
+        this.difficultyMenu = document.getElementById('difficulty-toggle-menu');
         this.lastRoundText = '';
+        this.currentDifficulty = 'NORMAL';
 
         // Defense HUD Elements
         this.defenseHud = document.getElementById('defense-hud');
@@ -599,6 +601,97 @@ export default class UIManager {
                 this.deselectItem();
             };
         }
+
+        // --- Difficulty Toggle Logic ---
+        if (this.roundDisplay) {
+            this.roundDisplay.addEventListener('click', (e) => {
+                // Ignore if clicking buttons inside the menu
+                if (e.target.closest('.diff-btn')) return;
+                this.toggleDifficultyMenu();
+            });
+        }
+
+        if (this.difficultyMenu) {
+            this.difficultyMenu.querySelectorAll('.diff-btn').forEach(btn => {
+                btn.onclick = async (e) => {
+                    e.stopPropagation();
+                    const diff = btn.dataset.diff;
+                    await this.handleDifficultyChange(diff);
+                };
+            });
+        }
+
+        // Close menu when clicking elsewhere
+        document.addEventListener('click', (e) => {
+            if (this.difficultyMenu && !this.roundDisplay.contains(e.target)) {
+                this.difficultyMenu.classList.add('difficulty-menu-hidden');
+                this.difficultyMenu.classList.remove('difficulty-menu-visible');
+            }
+        });
+    }
+
+    toggleDifficultyMenu() {
+        if (!this.difficultyMenu) return;
+        const isHidden = this.difficultyMenu.classList.contains('difficulty-menu-hidden');
+        if (isHidden) {
+            this.difficultyMenu.classList.remove('difficulty-menu-hidden');
+            this.difficultyMenu.classList.add('difficulty-menu-visible');
+
+            // For UI feedback, use the scene's dungeon type if available, otherwise global
+            const dungeonId = this.scene?.dungeonType || 'GLOBAL';
+            this.refreshDifficultyUI(dungeonId);
+        } else {
+            this.difficultyMenu.classList.add('difficulty-menu-hidden');
+            this.difficultyMenu.classList.remove('difficulty-menu-visible');
+        }
+    }
+
+    async refreshDifficultyUI(dungeonId = 'GLOBAL') {
+        const difficulty = await DBManager.getSelectedDifficulty(dungeonId);
+        this.currentDifficulty = difficulty;
+
+        if (this.difficultyMenu) {
+            this.difficultyMenu.querySelectorAll('.diff-btn').forEach(btn => {
+                if (btn.dataset.diff === difficulty) {
+                    btn.classList.add('selected');
+                } else {
+                    btn.classList.remove('selected');
+                }
+            });
+        }
+
+        // Update Round HUD color
+        if (this.roundDisplay) {
+            this.roundDisplay.classList.remove('normal', 'nightmare', 'hell');
+            this.roundDisplay.classList.add(difficulty.toLowerCase());
+        }
+    }
+
+    async handleDifficultyChange(difficulty) {
+        // Use current dungeon context if available
+        const dungeonId = this.scene?.dungeonType || 'GLOBAL';
+
+        const prevDiff = await DBManager.getSelectedDifficulty(dungeonId);
+        if (prevDiff === difficulty) {
+            this.toggleDifficultyMenu();
+            return;
+        }
+
+        await DBManager.saveSelectedDifficulty(difficulty, dungeonId);
+        this.currentDifficulty = difficulty;
+        this.refreshDifficultyUI(dungeonId);
+        this.toggleDifficultyMenu();
+
+        // Restart Dungeon if we are in one
+        const sceneKey = this.scene?.scene?.key || this.scene?.sys?.settings?.key;
+        if (sceneKey === 'DungeonScene') {
+            this.showToast(`${difficulty} 난이도로 던전을 재시작합니다.`);
+            // Restart with same params, DungeonScene.init will reload difficulty from DB
+            this.scene.scene.restart({ dungeonType: this.scene.dungeonType, startRound: 1 });
+        }
+
+        // Refresh Best Rounds display (all dungeons)
+        await this.updateBestRounds();
     }
 
     updateNPCHUD() {
@@ -2219,9 +2312,6 @@ export default class UIManager {
 
         // Pool logic: Cursed Forest is special in DungeonScene.js (Goblin, Shaman, Orc)
         let monsterPool = stageConfig.monsterPool || [];
-        if (this.currentCodexCategory === 'CURSED_FOREST' && monsterPool.length === 0) {
-            monsterPool = ['goblin', 'shaman', 'orc'];
-        }
 
         if (monsterPool.length === 0) {
             content.innerHTML = '<div style="color: #64748b; text-align: center; padding: 40px;">등록된 몬스터 정보가 없습니다.</div>';
@@ -2253,9 +2343,9 @@ export default class UIManager {
         const secondaryStats = [
             { label: 'AtkSpd', val: (config.atkSpd / 1000).toFixed(1) + 's', icon: '⏱️' },
             { label: 'Range', val: config.atkRange, icon: '📏' },
-            { label: 'FireRes', val: config.fireRes + '%', icon: '🔥' },
-            { label: 'IceRes', val: config.iceRes + '%', icon: '❄️' },
-            { label: 'LightRes', val: config.lightningRes + '%', icon: '⚡' }
+            { label: 'FireRes', val: (config.fireRes || 0) + '%', icon: '🔥' },
+            { label: 'IceRes', val: (config.iceRes || 0) + '%', icon: '❄️' },
+            { label: 'LightRes', val: (config.lightningRes || 0) + '%', icon: '⚡' }
         ];
 
         return `
@@ -2291,6 +2381,13 @@ export default class UIManager {
                             </div>
                         `).join('')}
                     </div>
+
+                    ${config.skillName ? `
+                    <div style="margin-top: 4px; border: 1px dashed rgba(255,170,0,0.4); background: rgba(255,170,0,0.05); padding: 5px 8px; border-radius: 5px; display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 10px; color: #ffaa00; font-weight: bold;">🌟 특수 기술:</span>
+                        <span style="font-size: 11px; color: #fff; text-shadow: 0 0 5px rgba(255,170,0,0.5);">${config.skillName}</span>
+                    </div>
+                    ` : ''}
                 </div>
             </div>
         `;
@@ -2545,20 +2642,32 @@ export default class UIManager {
 
     async updateBestRounds() {
         const dropdownItems = document.querySelectorAll('.nav-dropdown-item');
+
         for (const item of dropdownItems) {
             const dungeonType = item.dataset.dungeon;
             if (!dungeonType) continue;
 
-            const bestRound = await DBManager.getBestRound(dungeonType);
+            // Fetch specific difficulty for THIS dungeon
+            const difficulty = await DBManager.getSelectedDifficulty(dungeonType);
+            const bestRound = await DBManager.getBestRound(dungeonType, difficulty);
+
+            let badge = item.querySelector('.best-round-badge');
+            if (!badge) {
+                badge = document.createElement('span');
+                badge.className = 'best-round-badge';
+                item.prepend(badge);
+            }
+
+            // Update badge color based on THIS dungeon's setting
+            badge.classList.remove('normal', 'nightmare', 'hell');
+            badge.classList.add(difficulty.toLowerCase());
+
             if (bestRound > 0) {
-                let badge = item.querySelector('.best-round-badge');
-                if (!badge) {
-                    badge = document.createElement('span');
-                    badge.className = 'best-round-badge';
-                    // Insert before the label (the text node)
-                    item.prepend(badge);
-                }
                 badge.innerText = `🚩 R${bestRound}`;
+                badge.style.display = 'inline-block';
+            } else {
+                badge.innerText = `🚩 R0`;
+                badge.style.display = 'inline-block';
             }
         }
     }

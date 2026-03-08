@@ -172,7 +172,7 @@ export default class ImSorry {
 
                     if (target.handleKnockback) {
                         target.handleKnockback(kx, ky, 200);
-                    } else {
+                    } else if (target.body) {
                         target.body.setVelocity(kx, ky);
                     }
                 }

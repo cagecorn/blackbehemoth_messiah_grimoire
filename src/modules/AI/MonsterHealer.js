@@ -60,8 +60,8 @@ export default class MonsterHealer extends BaseMonster {
         // No melee dash logic needed.
     }
 
-    update() {
-        super.update();
+    update(time, delta) {
+        super.update(time, delta);
         // BaseMonster.update handles BT step and manual attack logic
         // But support AI handles everything via BT.
     }

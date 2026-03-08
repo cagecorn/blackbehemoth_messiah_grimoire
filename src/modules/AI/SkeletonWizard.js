@@ -7,9 +7,9 @@ import { MonsterClasses, scaleStats } from '../Core/EntityStats.js';
  * Ranged magic enemy for Undead Graveyard.
  */
 export default class SkeletonWizard extends BaseMonster {
-    constructor(scene, x, y, target, level = 1) {
-        const config = scaleStats(MonsterClasses.SKELETON_WIZARD, level);
-        super(scene, x, y, config, target);
+    constructor(scene, x, y, target, level = 1, config = null) {
+        const finalConfig = config || scaleStats(MonsterClasses.SKELETON_WIZARD, level);
+        super(scene, x, y, finalConfig, target);
         this.initAI();
     }
 
@@ -18,8 +18,8 @@ export default class SkeletonWizard extends BaseMonster {
         applyRangedAI(this);
     }
 
-    update() {
-        super.update();
+    update(time, delta) {
+        super.update(time, delta);
         // findNearestEnemy is now in BaseMonster
         this.findNearestEnemy();
     }

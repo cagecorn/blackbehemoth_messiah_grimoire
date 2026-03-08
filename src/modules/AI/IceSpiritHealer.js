@@ -41,8 +41,8 @@ export default class IceSpiritHealer extends BaseMonster {
         HealerActions.showHealFX(this.scene, target);
     }
 
-    update() {
-        super.update();
+    update(time, delta) {
+        super.update(time, delta);
         this.findNearestEnemy();
     }
 }

@@ -19,6 +19,7 @@ export default class SkillMessiah {
         await scene.ultimateManager.playCutscene(caster, this.name);
 
         // 2. Jump Phase
+        if (!caster.active || !caster.body) return;
         caster.isStunned = true; // Block actions during jump
         caster.body.setVelocity(0, 0);
 
@@ -39,6 +40,7 @@ export default class SkillMessiah {
         });
 
         // 3. Target Phase - Find densest area
+        if (!caster.active) return;
         const targetPoint = this.findDensestEnemyArea(scene, caster);
         caster.setPosition(targetPoint.x, targetPoint.y - 800);
 
@@ -69,9 +71,10 @@ export default class SkillMessiah {
         });
 
         // 5. Impact Phase
-        this.onImpact(scene, caster, targetPoint.x, targetPoint.y);
-
-        caster.isStunned = false;
+        if (caster.active) {
+            this.onImpact(scene, caster, targetPoint.x, targetPoint.y);
+            caster.isStunned = false;
+        }
     }
 
     findDensestEnemyArea(scene, caster) {

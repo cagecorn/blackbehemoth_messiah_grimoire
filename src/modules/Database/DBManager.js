@@ -110,22 +110,65 @@ export default class DBManager {
     }
 
     static async set(storeName, id, data) {
-        return this.save(storeName, id, data);
+        return await this.save(storeName, id, data);
+    }
+
+    static async getSelectedDifficulty(dungeonId = 'GLOBAL') {
+        let data = await this.get('settings', `selected_difficulty_${dungeonId}`);
+
+        // --- Migration Fallback ---
+        if (!data) {
+            // 1. Try Global setting if per-dungeon is missing
+            if (dungeonId !== 'GLOBAL') {
+                data = await this.get('settings', 'selected_difficulty_GLOBAL');
+            }
+            // 2. Try legacy keys (un-suffixed or camelCase)
+            if (!data) data = await this.get('settings', 'selected_difficulty');
+            if (!data) data = await this.get('settings', 'selectedDifficulty');
+
+            // Auto-migrate if found
+            if (data && dungeonId !== 'GLOBAL') {
+                await this.saveSelectedDifficulty(data.value, dungeonId);
+            }
+        }
+
+        return data ? data.value : 'NORMAL';
+    }
+
+    static async saveSelectedDifficulty(value, dungeonId = 'GLOBAL') {
+        await this.save('settings', `selected_difficulty_${dungeonId}`, { value });
+        console.log(`[DBManager] Saved difficulty for ${dungeonId}: ${value}`);
     }
 
     // --- Dungeon Progress ---
-    static async getBestRound(dungeonId) {
+    static async getBestRound(dungeonId, difficulty = 'NORMAL') {
         if (!this.db) await this.initDB();
-        const data = await this.db.get('settings', `best_round_${dungeonId}`);
+
+        const compositeKey = `best_round_${dungeonId}_${difficulty}`;
+        let data = await this.db.get('settings', compositeKey);
+
+        // --- Migration Fallback for NORMAL difficulty ---
+        if (!data && (difficulty === 'NORMAL' || difficulty === 'normal')) {
+            const legacyKey = `best_round_${dungeonId}`;
+            data = await this.db.get('settings', legacyKey);
+
+            if (data) {
+                console.log(`[DBManager] Migrating legacy record for ${dungeonId}: Round ${data.round}`);
+                // Auto-migrate to new format
+                await this.db.put('settings', { id: compositeKey, round: data.round });
+            }
+        }
+
         return data ? data.round : 0;
     }
 
-    static async saveBestRound(dungeonId, round) {
+    static async saveBestRound(dungeonId, round, difficulty = 'NORMAL') {
         if (!this.db) await this.initDB();
-        const currentBest = await this.getBestRound(dungeonId);
+        const currentBest = await this.getBestRound(dungeonId, difficulty);
         if (round > currentBest) {
-            await this.db.put('settings', { id: `best_round_${dungeonId}`, round });
-            console.log(`[DBManager] New best round for ${dungeonId}: ${round}`);
+            const compositeKey = `best_round_${dungeonId}_${difficulty}`;
+            await this.db.put('settings', { id: compositeKey, round });
+            console.log(`[DBManager] New best round for ${dungeonId} (${difficulty}): ${round}`);
             return true;
         }
         return false;

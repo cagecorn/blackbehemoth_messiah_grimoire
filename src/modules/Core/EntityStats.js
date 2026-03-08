@@ -977,7 +977,8 @@ export const PetStats = {
 
 export const MONSTER_SCALING = {
     ELITE: { hp: 2.5, power: 1.5, speed: 1.2, acc: 20, eva: 10, crit: 10 },
-    RAID: { hp: 50.0, power: 3.5, speed: 1.1, acc: 50, eva: 0, crit: 25 }
+    RAID: { hp: 50.0, power: 3.5, speed: 1.1, acc: 50, eva: 0, crit: 25 },
+    EPIC: { hp: 1.0, power: 1.0, speed: 1.0, acc: 0, eva: 0, crit: 0 }
 };
 
 export const MonsterClasses = {
@@ -1099,6 +1100,69 @@ export const MonsterClasses = {
         scale: 1.1,
         growth: { maxHp: 35, atk: 4.5, mAtk: 1, def: 2, mDef: 1.5, acc: 2.5, eva: 1, crit: 0.5 }
     },
+    EPIC_GOBLIN: {
+        id: 'epic_goblin',
+        name: 'Epic Goblin (에픽 고블린)',
+        sprite: 'epic_goblin_sprite',
+        cutscene: 'epic_goblin_cutscene',
+        maxHp: 200, // Normal Goblin is 120
+        hp: 200,
+        atk: 25, // Normal Goblin is 12
+        mAtk: 5,
+        def: 12, // Normal Goblin is 6
+        mDef: 10,
+        speed: 55, // Slightly faster than normal (50)
+        atkSpd: 1400, // Faster than normal (1600)
+        castSpd: 1000,
+        atkRange: 100,
+        rangeMin: 0,
+        rangeMax: 100,
+        acc: 100,
+        eva: 15,
+        crit: 15,
+        ultChargeSpeed: 1.2,
+        fireRes: 10,
+        iceRes: 10,
+        lightningRes: 10,
+        physicsRadius: 28,
+        spriteSize: 64,
+        aiType: 'MELEE',
+        scale: 2.2,
+        skillName: 'Blood Rage',
+        growth: { maxHp: 35, atk: 5.5, mAtk: 1.5, def: 2.5, mDef: 2.2, acc: 2.5, eva: 1.2, crit: 0.8 } // ~2x growth
+    },
+    EPIC_ORC: {
+        id: 'epic_orc',
+        name: 'Epic Orc Archer (에픽 오크 아처)',
+        sprite: 'epic_orc_sprite',
+        cutscene: 'epic_orc_cutscene',
+        maxHp: 280, // Normal Orc is 150
+        hp: 280,
+        atk: 35, // Normal Orc is 18
+        mAtk: 10,
+        def: 15, // Normal Orc is 12
+        mDef: 12,
+        speed: 50, // Slightly faster than normal (45)
+        atkSpd: 1500, // Faster than normal (1800)
+        castSpd: 1000,
+        atkRange: 450,
+        rangeMin: 150,
+        rangeMax: 450,
+        acc: 105,
+        eva: 10,
+        crit: 20,
+        ultChargeSpeed: 1.2,
+        fireRes: 15,
+        iceRes: 15,
+        lightningRes: 15,
+        physicsRadius: 25,
+        spriteSize: 64,
+        aiType: 'RANGED',
+        scale: 2.5,
+        skillName: 'Electric Grenade',
+        growth: { maxHp: 65, atk: 8.5, mAtk: 2.5, def: 4.5, mDef: 3.5, acc: 4, eva: 1.8, crit: 1.2 }
+    },
+
     SKELETON_WARRIOR: {
         id: 'skeleton_warrior',
         name: 'Skeleton Warrior (스켈레톤 전사)',
@@ -1502,7 +1566,13 @@ export const StageConfigs = {
         background: 'bg_cursed_forest',
         ambientColor: 0x1a003a,
         ambientAlpha: 0.22,
-        goldMultiplier: 1.0
+        goldMultiplier: 1.0,
+        monsterPool: ['goblin', 'shaman', 'orc', 'epic_goblin', 'epic_orc'],
+        difficulties: {
+            NORMAL: { levelOffset: 0, spawnMult: 1, epicChanceBase: 0 },
+            NIGHTMARE: { levelOffset: 40, spawnMult: 1.2, epicChanceBase: 0.1, epicPool: ['epic_goblin', 'epic_orc'] },
+            HELL: { levelOffset: 100, spawnMult: 2.0, epicChanceBase: 0.3, epicPool: ['epic_goblin', 'epic_orc'] }
+        }
     },
     ARENA: {
         id: 'arena',

@@ -16,8 +16,8 @@ export default class IceSpiritWarrior extends BaseMonster {
         applyMeleeAI(this, (agent) => agent.scene.mercenaries, 'AGGRESSIVE');
     }
 
-    update() {
-        super.update();
+    update(time, delta) {
+        super.update(time, delta);
         this.findNearestEnemy();
     }
 }

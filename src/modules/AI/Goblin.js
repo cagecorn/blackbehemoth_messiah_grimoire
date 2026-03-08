@@ -7,10 +7,10 @@ import { MonsterClasses, scaleStats } from '../Core/EntityStats.js';
  * Basic melee enemy.
  */
 export default class Goblin extends BaseMonster {
-    constructor(scene, x, y, target, level = 1) {
-        // We pass the GOBLIN config from EntityStats
-        const config = scaleStats(MonsterClasses.GOBLIN, level);
-        super(scene, x, y, config, target);
+    constructor(scene, x, y, target, level = 1, config = null) {
+        // Use passed config or scale from default
+        const finalConfig = config || scaleStats(MonsterClasses.GOBLIN, level);
+        super(scene, x, y, finalConfig, target);
         this.initAI();
     }
 
