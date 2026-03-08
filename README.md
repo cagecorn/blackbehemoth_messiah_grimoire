@@ -215,6 +215,27 @@
 
 ---
 
+### 🛡️ Core System Persistence & Scaling (실수 방지 가이드)
+
+다음은 과거 세션에서 발생했던 **"치명적인 스탯 증발/누락"** 실수를 되풀이하지 않기 위한 강력한 지침입니다.
+
+#### 1. 스탯 스케일링 (`scaleStats`) 호출 엄수
+- **현상**: 플레이어 캐릭터가 소환될 때 `scaleStats`를 거치지 않아 레벨 50인데 레벨 1의 스탯으로 싸우는 참사가 있었습니다.
+- **해결**: Dungeon, Raid, Arena 등 **모든 전투 씬**에서 유닛을 `new Class()`로 생성할 때 반드시 `scaleStats(baseConfig, level)`를 거친 `scaledConfig`를 전달해야 합니다.
+- **별 등급(Star)**: 별 등급은 `scaleStats` 내부에서 계산되므로, `scaleStats({ ...base, star: star }, level)` 처럼 별 등급 정보를 반드시 포함해 넘기세요.
+
+#### 2. 스탯 영속성 (Persistence) 관리
+- **현상**: 새로운 스탯을 추가해도 `Mercenary.js`의 `getState`나 `constructor`에서 누락되어, 세이브 파일을 불러올 때마다 스탯이 초기화되는 버그가 있었습니다.
+- **해결**:
+    - **저장**: `Mercenary.js`의 `getState()` 메서드에 신규 스탯을 반드시 추가하세요.
+    - **로드**: `Mercenary.js`의 `constructor`에서 `savedState`를 읽어올 때, `this.atk = savedState.atk || config.atk` 처럼 명시적으로 할당하십시오.
+
+#### 3. 유틸리티 스탯 성장 억제 (Static Utility)
+- **현상**: 공격 속도나 사거리가 레벨에 따라 무한히 성장하여 밸런스가 파괴될 뻔했습니다.
+- **해결**: `fireRes`, `iceRes`, `lightningRes`, `atkRange`, `speed`, `atkSpd` 등 유틸리티/속도 관련 14종 스탯은 **성장치(growth)를 0**으로 유지하세요. 오직 장비와 버프로만 올리는 것이 현재 게임의 기조입니다.
+
+---
+
 ## 캐릭터 로스터 (Characters)
 각 용병 캐릭터는 고유한 성격과 스킬을 보유하고 있으며, LLM 바크 시스템을 통해 각자의 페르소나를 표현합니다.
 
