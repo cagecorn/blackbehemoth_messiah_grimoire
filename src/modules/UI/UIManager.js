@@ -97,6 +97,7 @@ export default class UIManager {
         this.detailDesc = document.getElementById('detail-description');
         this.btnEquipItem = document.getElementById('btn-equip-item');
         this.btnDiscardItem = document.getElementById('btn-discard-item');
+        this.btnCloseDetail = document.getElementById('btn-close-detail');
         this.selectedItemId = null;
         this.pendingGrimoireSlot = null;
         this.pendingGearSlot = null; // Track gear slot clicked in ChatChannel
@@ -591,6 +592,13 @@ export default class UIManager {
                 }
             };
         }
+
+        if (this.btnCloseDetail) {
+            this.btnCloseDetail.onclick = (e) => {
+                e.stopPropagation();
+                this.deselectItem();
+            };
+        }
     }
 
     updateNPCHUD() {
@@ -907,8 +915,22 @@ export default class UIManager {
         // Inventory Tab Listeners
         const tabMaterials = document.getElementById('tab-materials');
         const tabGear = document.getElementById('tab-gear');
-        if (tabMaterials) tabMaterials.onclick = () => this.switchInventoryTab('materials');
-        if (tabGear) tabGear.onclick = () => this.switchInventoryTab('gear');
+        if (tabMaterials) tabMaterials.onclick = () => {
+            this.deselectItem();
+            this.switchInventoryTab('materials');
+        };
+        if (tabGear) tabGear.onclick = () => {
+            this.deselectItem();
+            this.switchInventoryTab('gear');
+        };
+
+        // Container clicks for deselection
+        if (this.materialList) {
+            this.materialList.onclick = () => this.deselectItem();
+        }
+        if (this.gearList) {
+            this.gearList.onclick = () => this.deselectItem();
+        }
 
         // Emoji Filter Listeners
         const filterButtons = document.querySelectorAll('.emoji-filter-bar:not(.equip-filter-bar) .filter-btn');
@@ -1055,6 +1077,8 @@ export default class UIManager {
 
     setEmojiFilter(filter) {
         this.emojiFilter = filter;
+        this.deselectItem(); // Clear selection when filter changes
+        this.refreshInventoryUI();
 
         // Update button UI
         const filterButtons = document.querySelectorAll('.emoji-filter-bar .filter-btn');
@@ -1071,6 +1095,8 @@ export default class UIManager {
 
     setEquipFilter(filter) {
         this.equipFilter = filter || 'ALL';
+        this.deselectItem(); // Clear selection when filter changes
+        this.refreshInventoryUI();
 
         // Update button UI
         const filterButtons = document.querySelectorAll('.equip-filter-bar .filter-btn');
@@ -3468,6 +3494,15 @@ export default class UIManager {
     handleItemClick(itemId, isAlreadyEquipped = false) {
         if (this.tooltipEl) this.tooltipEl.style.display = 'none'; // Kill legacy tooltip
 
+        // --- Toggle Logic: Deselect if clicking the same item again ---
+        if (this.selectedItemId === itemId) {
+            // Exceptions: Do not toggle if we are in a pending equip flow
+            if (!this.pendingGrimoireSlot && !this.pendingGearSlot) {
+                this.deselectItem();
+                return;
+            }
+        }
+
         let autoEquipped = false;
 
         // --- Improved UX: Two-Click System ---
@@ -3481,6 +3516,19 @@ export default class UIManager {
 
         // 2. Otherwise, just show the detail panel (first click or switching items)
         this.showItemDetail(itemId, isAlreadyEquipped || autoEquipped);
+    }
+
+    /**
+     * Resets current item selection and hides detail panel.
+     */
+    deselectItem() {
+        console.log('[UIManager] deselectItem');
+        this.selectedItemId = null;
+        this.viewingInstanceId = null;
+        if (this.detailPanel) {
+            this.detailPanel.style.display = 'none';
+        }
+        // Clear highlights if any were added via CSS
     }
 
     async showItemDetail(itemId, isAlreadyEquipped = false) {
