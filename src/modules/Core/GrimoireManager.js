@@ -107,6 +107,8 @@ export default class GrimoireManager {
                 const stat = charmData.stat;
                 const bonusValue = value / 100;
 
+                console.log(`[Grimoire] Applying ${charmData.name}: +${value}% to ${stat}`);
+
                 if (stat === 'maxHp') bonuses.maxHpMult += bonusValue;
                 else if (stat === 'atk') bonuses.atkMult += bonusValue;
                 else if (stat === 'mAtk') bonuses.mAtkMult += bonusValue;
@@ -117,6 +119,8 @@ export default class GrimoireManager {
                 else if (stat === 'crit') bonuses.critAdd += value;
             }
         }
+
+        console.log(`[Grimoire] Final bonuses for ${unit.unitName}:`, bonuses);
 
         // Apply finished bonuses to the unit atomically
         unit.grimoireBonuses = bonuses;

@@ -58,27 +58,10 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         this.maxHpMult = 1.0;
         this.castSpdMult = 1.0;
 
-        // Dynamic Buffs
-        this.bonusAtk = 0;
-        this.bonusMAtk = 0;
-        this.bonusDR = 0;
-        this.bonusCrit = 0;
-        this.bonusEva = 0;
-        this.bonusSpeed = 0;
-        this.bonusAtkSpd = 0;
-        this.bonusDef = 0;
-        this.bonusMDef = 0;
         this.bonusAtkRange = 0;
         this.bonusRangeMin = 0;
         this.bonusRangeMax = 0;
-        this.bonusCastSpd = 0;
-        this.bonusAcc = 0;
-        this.bonusFireRes = 0;
-        this.bonusIceRes = 0;
-        this.bonusLightningRes = 0;
-        this.bonusUltChargeSpeed = 0;
-        this.bonusMaxHpMult = 0;
-        this.bonusCastSpdMult = 0;
+
         this.isTacticalCommandActive = false;
         this.isBloodRaging = false;
         this.isStunned = false;
@@ -134,10 +117,8 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             }
         }
 
-        // Initialize Grimoire
-        GrimoireManager.initGrimoire(this);
-        GrimoireManager.applyAll(this); // Constructor usually stays non-async to avoid breaking instantiation, but applyAll is safe to fire-and-forget here if initialization is synchronous. However, for complete safety, we usually await it in an init method.
-        // For now, loadState (which is async) will handle the critical await.
+        // Apply all grimoire effects
+        GrimoireManager.applyAll(this);
         if (config.activatedPerks) {
             for (let i = 0; i < Math.min(config.activatedPerks.length, 6); i++) {
                 this.grimoire[GrimoireManager.CHAPTERS.CLASS][i] = config.activatedPerks[i];
@@ -208,7 +189,6 @@ export default class Mercenary extends Phaser.GameObjects.Container {
                 } else {
                     // Fallback migration for old saves
                     if (savedState.charms) this.grimoire[GrimoireManager.CHAPTERS.ACTIVE] = savedState.charms;
-                    if (savedState.nodeCharms) this.grimoire[GrimoireManager.CHAPTERS.TACTICAL] = savedState.nodeCharms;
                     if (savedState.activatedPerks) this.grimoire[GrimoireManager.CHAPTERS.CLASS] = savedState.activatedPerks;
                 }
                 this.expToNextLevel = this.calculateExpToNextLevel(this.level);
@@ -507,6 +487,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
     // --- Standardized 16 Stats Getters ---
     getTotalMaxHp() {
         const base = (this.maxHp || 100) + this.bonusMaxHp;
+        // Additive stacking for multipliers: (1 + sum of bonuses)
         const multipliers = (this.maxHpMult - 1) + (this.bonusMaxHpMult || 0) + (this.grimoireBonuses?.maxHpMult || 0);
         const petBonus = this.scene?.game?.partyManager?.getGlobalPetBonus('maxHpMult') || 0;
         const transMult = this.grimoire_transmult || 1.0;
@@ -582,7 +563,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
 
     getTotalEva() {
         const base = (this.eva || 0) + this.getEquipmentBonus('eva') + (this.bonusEva || 0);
-        const multipliers = this.getEquipmentBonus('evaMult') || 0;
+        const multipliers = (this.getEquipmentBonus('evaMult') || 0);
         return base * (1 + multipliers);
     }
 
@@ -600,26 +581,29 @@ export default class Mercenary extends Phaser.GameObjects.Container {
 
     getTotalCastSpd() {
         const base = Math.max(100, (this.castSpd || 1000) + this.getEquipmentBonus('castSpd') - (this.bonusCastSpd || 0));
-        const multipliers = (this.castSpdMult - 1) + (this.bonusCastSpdMult || 0) + (this.getEquipmentBonus('castSpdMult') || 0);
+        const multipliers = (this.castSpdMult - 1) + (this.bonusCastSpdMult || 0) + (this.getEquipmentBonus('castSpdMult') || 0) + (this.grimoireBonuses?.castSpdMult || 0);
         const result = base / (1 + multipliers);
         return this.isFrozen ? result * 2 : result;
     }
 
     getTotalFireRes() {
-        return Math.min(90, (this.fireRes || 0) + (this.bonusFireRes || 0) + (this.grimoireBonuses?.fireResAdd || 0));
+        const total = (this.fireRes || 0) + (this.getEquipmentBonus('fireRes') || 0) + (this.bonusFireRes || 0) + (this.grimoireBonuses?.fireResAdd || 0);
+        return Math.min(75, total);
     }
 
     getTotalIceRes() {
-        return Math.min(90, (this.iceRes || 0) + (this.bonusIceRes || 0) + (this.grimoireBonuses?.iceResAdd || 0));
+        const total = (this.iceRes || 0) + (this.getEquipmentBonus('iceRes') || 0) + (this.bonusIceRes || 0) + (this.grimoireBonuses?.iceResAdd || 0);
+        return Math.min(75, total);
     }
 
     getTotalLightningRes() {
-        return Math.min(90, (this.lightningRes || 0) + (this.bonusLightningRes || 0) + (this.grimoireBonuses?.lightningResAdd || 0));
+        const total = (this.lightningRes || 0) + (this.getEquipmentBonus('lightningRes') || 0) + (this.bonusLightningRes || 0) + (this.grimoireBonuses?.lightningResAdd || 0);
+        return Math.min(75, total);
     }
 
     getTotalUltChargeSpeed() {
         const base = (this.ultChargeSpeed || 1.0) + this.getEquipmentBonus('ultChargeSpeed') + (this.bonusUltChargeSpeed || 0);
-        const multipliers = this.getEquipmentBonus('ultChargeSpeedMult') || 0;
+        const multipliers = (this.getEquipmentBonus('ultChargeSpeedMult') || 0) + (this.grimoireBonuses?.ultChargeSpeedMult || 0);
         return base * (1 + multipliers);
     }
 
@@ -899,7 +883,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         if (armor) {
             const armorId = (typeof armor === 'string') ? armor : (armor.instanceId || armor.id);
             if (armorId && typeof armorId === 'string' && armorId.startsWith('eq_')) {
-                equipmentManager.addExp(armorId, amount);
+                equipmentManager.addExp(armorId, amount); // Armor: Raw damage taken
             }
         }
 
@@ -917,7 +901,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
                 const weapon = attacker.equipment.weapon;
                 const weaponId = (typeof weapon === 'string') ? weapon : (weapon.instanceId || weapon.id);
                 if (weaponId && typeof weaponId === 'string' && weaponId.startsWith('eq_')) {
-                    equipmentManager.addExp(weaponId, finalDamage);
+                    equipmentManager.addExp(weaponId, finalDamage); // Weapon: Damage dealt
                 }
             }
 
@@ -1027,7 +1011,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         if (armor) {
             const armorId = (typeof armor === 'string') ? armor : (armor.instanceId || armor.id);
             if (armorId && typeof armorId === 'string' && armorId.startsWith('eq_')) {
-                equipmentManager.addExp(armorId, amount);
+                // equipmentManager.addExp(armorId, amount); // Removed equipmentManager usage
             }
         }
 
@@ -1045,7 +1029,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
                 const weapon = attacker.equipment.weapon;
                 const weaponId = (typeof weapon === 'string') ? weapon : (weapon.instanceId || weapon.id);
                 if (weaponId && typeof weaponId === 'string' && weaponId.startsWith('eq_')) {
-                    equipmentManager.addExp(weaponId, finalDamage);
+                    // equipmentManager.addExp(weaponId, finalDamage); // Removed equipmentManager usage
                 }
             }
 
@@ -1114,7 +1098,6 @@ export default class Mercenary extends Phaser.GameObjects.Container {
     }
 
 
-
     restoreSpriteTint() {
         if (!this.sprite) return;
 
@@ -1163,7 +1146,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         const multi = this.starMultiplier || 1.0;
 
         if (growth.maxHp) this.maxHp += Math.floor(growth.maxHp * multi);
-        this.hp = this.getTotalMaxHp(); // Full heal on level up should use total max HP
+        this.hp = this.maxHp;
         if (growth.atk) this.atk += growth.atk * multi;
         if (growth.mAtk) this.mAtk += growth.mAtk * multi;
         if (growth.def) this.def += growth.def * multi;
@@ -1191,8 +1174,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         }
 
         this.hp += amount;
-        const maxHp = this.getTotalMaxHp();
-        if (this.hp > maxHp) this.hp = maxHp;
+        if (this.hp > this.maxHp) this.hp = this.maxHp;
         this.updateHealthBar();
     }
 
@@ -1411,6 +1393,12 @@ export default class Mercenary extends Phaser.GameObjects.Container {
 
         this.grimoire[chapterId][index] = itemId;
 
+        // Adjust HP to maintain current ratio with new MaxHP
+        const oldMaxHp = this.getTotalMaxHp();
+        const oldHpRatio = this.hp / Math.max(1, oldMaxHp);
+
+        this.grimoire[chapterId][index] = itemId;
+
         // Set ownerId for new item if it's a charm instance
         if (itemId && typeof itemId === 'string' && itemId.startsWith('charm_')) {
             const DBManager = (await import('../Database/DBManager.js')).default;
@@ -1421,14 +1409,9 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             }
         }
 
-        // Capture old HP ratio before grimoire change
-        const oldMaxHp = this.getTotalMaxHp();
-        const oldHpRatio = this.hp / oldMaxHp;
-
         // Re-apply grimoire effects
         await GrimoireManager.applyAll(this);
 
-        // Adjust HP to maintain current ratio with new MaxHP
         const newMaxHp = this.getTotalMaxHp();
         this.hp = Math.min(newMaxHp, Math.floor(newMaxHp * oldHpRatio));
         if (oldHpRatio >= 1.0) this.hp = newMaxHp; // Convenience for full HP
@@ -1447,6 +1430,9 @@ export default class Mercenary extends Phaser.GameObjects.Container {
                 (chapter === 'CLASS') ? GrimoireManager.CHAPTERS.CLASS :
                     GrimoireManager.CHAPTERS.TRANSFORMATION;
 
+        const oldMaxHp = this.getTotalMaxHp();
+        const oldHpRatio = this.hp / Math.max(1, oldMaxHp);
+
         const oldItemId = this.grimoire[chapterId][index];
         if (oldItemId && typeof oldItemId === 'string' && oldItemId.startsWith('charm_')) {
             const DBManager = (await import('../Database/DBManager.js')).default;
@@ -1459,14 +1445,9 @@ export default class Mercenary extends Phaser.GameObjects.Container {
 
         this.grimoire[chapterId][index] = null;
 
-        // Capture old HP ratio before grimoire change
-        const oldMaxHp = this.getTotalMaxHp();
-        const oldHpRatio = this.hp / oldMaxHp;
-
         // Re-apply grimoire effects
         await GrimoireManager.applyAll(this);
 
-        // Adjust HP to maintain current ratio with new MaxHP
         const newMaxHp = this.getTotalMaxHp();
         this.hp = Math.min(newMaxHp, Math.floor(newMaxHp * oldHpRatio));
         if (oldHpRatio >= 1.0) this.hp = newMaxHp; // Convenience for full HP
@@ -1884,8 +1865,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         checkAndFix('crit', this.crit, expectedCrit);
 
         if (corrected) {
-            const totalMaxHp = this.getTotalMaxHp();
-            if (this.hp > totalMaxHp) this.hp = totalMaxHp;
+            if (this.hp > this.maxHp) this.hp = this.maxHp;
             this.scene?.game?.partyManager?.saveState(this.id, this.getState());
         }
     }
