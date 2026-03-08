@@ -2352,12 +2352,20 @@ export default class UIManager {
         const kills = await DBManager.getMonsterKills();
         const claimed = await DBManager.getClaimedMonsterAchievements();
 
-        // Focused on Cursed Forest as requested
-        const targets = [
-            { id: 'GOBLIN', name: '고블린', icon: '👺' },
-            { id: 'SHAMAN', name: '고블린 샤먼', icon: '🧙‍♂️' },
-            { id: 'ORC', name: '오크 아처', icon: '🏹' }
-        ];
+        // Dynamically include all monsters from MonsterClasses
+        const targets = Object.keys(MonsterClasses).map(key => {
+            const m = MonsterClasses[key];
+            let icon = '👺'; // Default
+            if (m.id.includes('shaman')) icon = '🧙‍♂️';
+            if (m.id.includes('orc')) icon = '🏹';
+            if (m.id.includes('skeleton')) icon = '💀';
+            if (m.id.includes('crocodile')) icon = '🐊';
+            if (m.id.includes('spirit')) icon = '🔥';
+            if (m.id.includes('ice')) icon = '❄️';
+            if (m.id.includes('boss')) icon = '👑';
+
+            return { id: m.id.toUpperCase(), name: m.name.split('(')[0].trim(), icon: icon };
+        });
 
         let html = '';
         for (const t of targets) {
