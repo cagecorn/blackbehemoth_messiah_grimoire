@@ -1078,7 +1078,7 @@ export default class UIManager {
     setEmojiFilter(filter) {
         this.emojiFilter = filter;
         this.deselectItem(); // Clear selection when filter changes
-        this.refreshInventoryUI();
+        this.refreshInventory();
 
         // Update button UI
         const filterButtons = document.querySelectorAll('.emoji-filter-bar .filter-btn');
@@ -1096,7 +1096,7 @@ export default class UIManager {
     setEquipFilter(filter) {
         this.equipFilter = filter || 'ALL';
         this.deselectItem(); // Clear selection when filter changes
-        this.refreshInventoryUI();
+        this.refreshInventory();
 
         // Update button UI
         const filterButtons = document.querySelectorAll('.equip-filter-bar .filter-btn');
