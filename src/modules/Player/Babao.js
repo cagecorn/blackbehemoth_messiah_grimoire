@@ -6,7 +6,7 @@ import { SummonStats } from '../Core/EntityStats.js';
 /**
  * Babao.js
  * Bao's companion brother. 
- * Melee AI, stats scale withmaster's mAtk.
+ * Melee AI, stats scale with master's mAtk.
  * Special: 20% chance to knock targets airborne on basic attack.
  */
 export default class Babao extends Mercenary {
@@ -93,6 +93,27 @@ export default class Babao extends Mercenary {
         return;
     }
 
+    // --- Dynamic Scaling ---
+    getTotalMaxHp() {
+        if (!this.master || !this.master.active) return super.getTotalMaxHp();
+        return Math.floor(this.master.getTotalMAtk() * SummonStats.BABAO.hpMult);
+    }
+
+    getTotalAtk() {
+        if (!this.master || !this.master.active) return super.getTotalAtk();
+        return Math.floor((this.master.getTotalMAtk() * SummonStats.BABAO.atkMult) + (this.bonusAtk || 0));
+    }
+
+    getTotalDef() {
+        if (!this.master || !this.master.active) return super.getTotalDef();
+        return Math.floor((this.master.getTotalMDef() * SummonStats.BABAO.defMult) + (this.bonusDef || 0));
+    }
+
+    getTotalMDef() {
+        if (!this.master || !this.master.active) return super.getTotalMDef();
+        return Math.floor((this.master.getTotalMDef() * SummonStats.BABAO.defMult) + (this.bonusMDef || 0));
+    }
+
     /**
      * Babao has a long respawn cooldown on death.
      */
@@ -103,8 +124,8 @@ export default class Babao extends Mercenary {
         }
 
         // Visual "poof" instead of just vanishing
-        if (this.scene.fxManager) {
-            this.scene.fxManager.createSparkleEffect({ x: this.x, y: this.y });
+        if (this.scene && this.scene.fxManager) {
+            this.scene.fxManager.createSparkleEffect({ x: this.x, y: this.y, active: true });
         }
 
         super.die();
@@ -118,5 +139,9 @@ export default class Babao extends Mercenary {
         }
         super.update(time, delta);
         if (!this.active || !this.scene) return;
+
+        // Ensure HP stays within dynamic bounds
+        const currentMax = this.getTotalMaxHp();
+        if (this.hp > currentMax) this.hp = currentMax;
     }
 }

@@ -58,14 +58,6 @@ export default class GuardianAngel extends Mercenary {
 
     applyBuffStage(stage) {
         this.buffStage = stage;
-        const multiplier = 1 + (stage * 0.3); // Stage 1: +30%, Stage 2: +60%
-
-        const oldMaxHp = this.maxHp;
-        const baseAtk = this.config.atk;
-
-        this.maxHp = this.config.maxHp * multiplier;
-        this.hp = (this.hp / oldMaxHp) * this.maxHp; // maintain percentage
-        this.bonusAtk = baseAtk * (multiplier - 1);
 
         // Apply Tint for Buff Stages
         if (stage === 1) {
@@ -74,13 +66,42 @@ export default class GuardianAngel extends Mercenary {
             this.sprite.setTint(0xffd700); // Gold (Stronger)
         }
 
-        console.log(`[GuardianAngel] Buff Stage ${stage} applied. Atk: ${this.atk.toFixed(1)}`);
+        console.log(`[GuardianAngel] Buff Stage ${stage} applied. Atk: ${this.getTotalAtk().toFixed(1)}`);
 
         // Visual feedback for buff
-        if (this.scene.fxManager) {
+        if (this.scene && this.scene.fxManager) {
             this.scene.fxManager.showDamageText(this, `STEP ${stage} UP!`, '#ffff00');
             this.scene.fxManager.createSparkleEffect(this);
         }
+
+        this.syncStatusUI();
+    }
+
+    // --- Dynamic Scaling ---
+    get stageMultiplier() {
+        return 1 + (this.buffStage * 0.3);
+    }
+
+    getTotalMaxHp() {
+        if (!this.master || !this.master.active) return super.getTotalMaxHp();
+        const base = this.master.getTotalMAtk() * 10;
+        return Math.floor(base * this.stageMultiplier);
+    }
+
+    getTotalAtk() {
+        if (!this.master || !this.master.active) return super.getTotalAtk();
+        const base = (this.master.getTotalMAtk() * 1.5) + (this.bonusAtk || 0);
+        return Math.floor(base * this.stageMultiplier);
+    }
+
+    getTotalDef() {
+        if (!this.master || !this.master.active) return super.getTotalDef();
+        return Math.floor(this.master.getTotalMDef() + (this.bonusDef || 0));
+    }
+
+    getTotalMDef() {
+        if (!this.master || !this.master.active) return super.getTotalMDef();
+        return Math.floor(this.master.getTotalMDef() + (this.bonusMDef || 0));
     }
 
     die() {
@@ -94,5 +115,9 @@ export default class GuardianAngel extends Mercenary {
     update(time, delta) {
         super.update(time, delta);
         if (!this.active || !this.scene) return;
+
+        // Ensure HP stays within dynamic bounds if max HP changes
+        const currentMax = this.getTotalMaxHp();
+        if (this.hp > currentMax) this.hp = currentMax;
     }
 }

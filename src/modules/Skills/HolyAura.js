@@ -58,7 +58,7 @@ export default class HolyAura {
         caster.isHolyAuraActive = true;
 
         // Calculate scaling
-        const mAtk = caster.mAtk || 0;
+        const mAtk = caster.getTotalMAtk() || 0;
         const radius = this.baseRadius + (mAtk * this.radiusScale);
         const healAmount = this.baseHeal + (mAtk * this.healScale);
 

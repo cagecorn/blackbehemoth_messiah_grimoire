@@ -150,7 +150,7 @@ export default class Archer extends Mercenary {
         const trailTimer = this.scene.time.addEvent({
             delay: 50,
             callback: () => {
-                if (this.scene.fxManager) {
+                if (this.scene && this.scene.fxManager) {
                     this.scene.fxManager.createAfterimage(this, 400, 0.4);
                 }
             },

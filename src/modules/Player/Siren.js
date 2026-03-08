@@ -55,6 +55,11 @@ export default class Siren extends Mercenary {
     update(time, delta) {
         super.update(time, delta);
         if (!this.active || !this.scene) return;
+
+        // Ensure HP stays within dynamic bounds
+        const currentMax = this.getTotalMaxHp();
+        if (this.hp > currentMax) this.hp = currentMax;
+
         if (this.hp > 0) {
             this.findNearestEnemy();
         }
@@ -130,6 +135,27 @@ export default class Siren extends Mercenary {
                 this.scene.ccManager.applySleep(target, 4000);
             }
         }
+    }
+
+    // --- Dynamic Scaling ---
+    getTotalMaxHp() {
+        if (!this.master || !this.master.active) return super.getTotalMaxHp();
+        return Math.floor(this.master.getTotalMAtk() * 8);
+    }
+
+    getTotalMAtk() {
+        if (!this.master || !this.master.active) return super.getTotalMAtk();
+        return Math.floor((this.master.getTotalMAtk() * 1.2) + (this.bonusMAtk || 0));
+    }
+
+    getTotalDef() {
+        if (!this.master || !this.master.active) return super.getTotalDef();
+        return Math.floor((this.master.getTotalMDef() * 0.8) + (this.bonusDef || 0));
+    }
+
+    getTotalMDef() {
+        if (!this.master || !this.master.active) return super.getTotalMDef();
+        return Math.floor((this.master.getTotalMDef() * 1.2) + (this.bonusMDef || 0));
     }
 
     die() {

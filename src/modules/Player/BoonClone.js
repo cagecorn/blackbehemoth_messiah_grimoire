@@ -69,6 +69,27 @@ export default class BoonClone extends Mercenary {
         return this.skill.getCooldownProgress(this.scene.time.now, this.castSpd);
     }
 
+    // --- Dynamic Scaling ---
+    getTotalMaxHp() {
+        if (!this.master || !this.master.active) return super.getTotalMaxHp();
+        return Math.floor(this.master.getTotalMAtk() * 8);
+    }
+
+    getTotalAtk() {
+        if (!this.master || !this.master.active) return super.getTotalAtk();
+        return Math.floor((this.master.getTotalMAtk() * 1.2) + (this.bonusAtk || 0));
+    }
+
+    getTotalDef() {
+        if (!this.master || !this.master.active) return super.getTotalDef();
+        return Math.floor((this.master.getTotalDef() * 0.8) + (this.bonusDef || 0));
+    }
+
+    getTotalMDef() {
+        if (!this.master || !this.master.active) return super.getTotalMDef();
+        return Math.floor((this.master.getTotalMDef() * 0.8) + (this.bonusMDef || 0));
+    }
+
     die() {
         console.log(`[BoonClone] The clone has vanished.`);
         if (this.master && this.master.onCloneDied) {
@@ -80,5 +101,9 @@ export default class BoonClone extends Mercenary {
     update(time, delta) {
         super.update(time, delta);
         if (!this.active || !this.scene) return;
+
+        // Ensure HP stays within dynamic bounds
+        const currentMax = this.getTotalMaxHp();
+        if (this.hp > currentMax) this.hp = currentMax;
     }
 }
