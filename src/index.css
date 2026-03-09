@@ -1801,6 +1801,29 @@ body {
     color: var(--retro-white);
 }
 
+/* Mercenary Class Badges */
+.merc-class-badge {
+    position: absolute;
+    bottom: 24px;
+    right: 4px;
+    width: 22px;
+    height: 22px;
+    background: rgba(0, 0, 0, 0.75);
+    border-radius: 4px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+    z-index: 10;
+}
+
+.merc-class-badge img {
+    width: 16px !important;
+    height: 16px !important;
+    image-rendering: auto;
+}
+
 .party-slots {
     display: flex;
     justify-content: center;
@@ -5743,7 +5766,7 @@ input:checked+.slider:before {
 
 .fuc-title {
     font-family: var(--font-pixel, 'Press Start 2P', monospace);
-    font-size: 9px;
+    font-size: 12px;
     color: var(--retro-amber, #d4af37);
     text-shadow: 0 0 6px rgba(212, 175, 55, 0.6);
     letter-spacing: 1px;
@@ -5758,7 +5781,7 @@ input:checked+.slider:before {
     position: relative;
     z-index: 1;
     font-family: var(--font-pixel, 'Press Start 2P', monospace);
-    font-size: 8px;
+    font-size: 11px;
     color: #e0d0a0;
     background: linear-gradient(to bottom,
             rgba(255, 200, 100, 0.08),

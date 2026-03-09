@@ -2768,7 +2768,7 @@ export default class UIManager {
                         'bard': '1f3b6.svg'
                     };
                     const classSvg = classIcons[char.classId];
-                    const classHtml = classSvg ? `<div style="position:absolute; bottom:24px; right:4px; width:16px; height:16px; background:rgba(0,0,0,0.6); border-radius:3px; display:flex; justify-content:center; align-items:center; border:1px solid rgba(255,255,255,0.2);"><img src="assets/emojis/${classSvg}" style="width:12px; height:12px;"></div>` : '';
+                    const classHtml = classSvg ? `<div class="merc-class-badge"><img src="assets/emojis/${classSvg}"></div>` : '';
 
                     const skinData = partyManager.getMercenarySkin(char.id) || { equippedSkin: null };
                     let spriteSrc = `assets/characters/party/${char.sprite}.png`;
