@@ -3,6 +3,7 @@ import GachaManager from '../modules/Core/GachaManager.js';
 import DBManager from '../modules/Database/DBManager.js';
 import EventBus from '../modules/Events/EventBus.js';
 import SoundEffects from '../modules/Core/SoundEffects.js';
+import { Characters } from '../modules/Core/EntityStats.js';
 
 export default class GachaScene extends Phaser.Scene {
     constructor() {
@@ -22,6 +23,7 @@ export default class GachaScene extends Phaser.Scene {
 
         // Header UI (DOM)
         this.createDOMUI();
+        this.createOwnershipUI();
 
         // Cards Container for Animation
         this.cardsContainer = this.add.container(0, 0);
@@ -160,10 +162,93 @@ export default class GachaScene extends Phaser.Scene {
                 this.uiContainer.remove();
                 this.uiContainer = null;
             }
+            if (this.ownershipContainer) {
+                this.ownershipContainer.remove();
+                this.ownershipContainer = null;
+            }
             if (this.resultModal) {
                 this.resultModal.remove();
                 this.resultModal = null;
             }
+        });
+    }
+
+    createOwnershipUI() {
+        if (this.ownershipContainer) this.ownershipContainer.remove();
+
+        this.ownershipContainer = document.createElement('div');
+        this.ownershipContainer.className = 'gacha-ownership-sidebar';
+        this.ownershipContainer.style.cssText = `
+            position: absolute; top: 120px; left: 10px;
+            width: 140px; padding: 10px;
+            background: rgba(30, 27, 75, 0.85);
+            border: 2px solid #fbbf24;
+            border-radius: 4px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.5), inset 0 0 10px rgba(251, 191, 36, 0.2);
+            color: #fff;
+            font-family: 'Inter', sans-serif;
+            pointer-events: auto;
+            z-index: 1001;
+            display: flex; flex-direction: column; gap: 8px;
+            animation: slideInLeft 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        `;
+
+        const title = document.createElement('div');
+        title.innerText = '용병 보유 현황';
+        title.style.cssText = `
+            font-size: 13px; font-weight: 900; color: #fbbf24;
+            text-align: center; border-bottom: 1px solid rgba(251, 191, 36, 0.3);
+            padding-bottom: 5px; margin-bottom: 5px;
+            text-shadow: 1px 1px 0px #000;
+        `;
+        this.ownershipContainer.appendChild(title);
+
+        this.ownershipList = document.createElement('div');
+        this.ownershipList.style.cssText = `display: flex; flex-direction: column; gap: 6px;`;
+        this.ownershipContainer.appendChild(this.ownershipList);
+
+        document.body.appendChild(this.ownershipContainer);
+        this.refreshOwnershipUI();
+    }
+
+    async refreshOwnershipUI() {
+        if (!this.ownershipList) return;
+
+        const roster = await DBManager.getMercenaryRoster();
+        this.ownershipList.innerHTML = '';
+
+        // Filter and sort characters to show relevant ones
+        const charEntries = Object.values(Characters).filter(c => !c.hideInUI);
+
+        charEntries.forEach(char => {
+            const rosterData = roster[char.id.toUpperCase()] || { stars: {}, total: 0 };
+            const count = rosterData.total || 0;
+
+            const item = document.createElement('div');
+            item.style.cssText = `
+                display: flex; align-items: center; gap: 8px;
+                background: rgba(0,0,0,0.2); padding: 4px 6px; border-radius: 4px;
+                transition: transform 0.2s;
+            `;
+
+            // Highlight if count increased (visual feedback)
+            if (this._lastOwnershipCounts && this._lastOwnershipCounts[char.id] < count) {
+                item.style.animation = 'pulseGold 1s ease-out';
+            }
+
+            item.innerHTML = `
+                <img src="assets/characters/party/${char.sprite}.png" style="width: 24px; height: 24px; object-fit: contain; filter: drop-shadow(0 0 2px #000);">
+                <div style="flex: 1; font-size: 11px; font-weight: bold; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">${char.name.split(' (')[0]}</div>
+                <div style="color: ${count > 0 ? '#fbbf24' : '#64748b'}; font-size: 12px; font-weight: 900;">${count}</div>
+            `;
+            this.ownershipList.appendChild(item);
+        });
+
+        // Store counts for next flash effect
+        this._lastOwnershipCounts = {};
+        charEntries.forEach(c => {
+            const data = roster[c.id.toUpperCase()];
+            this._lastOwnershipCounts[c.id] = data ? data.total : 0;
         });
     }
 
@@ -204,6 +289,9 @@ export default class GachaScene extends Phaser.Scene {
 
         // Start Animation Phase
         await this.playGachaAnimation(result.pulled, result.mergeResults);
+
+        // Refresh ownership counts
+        await this.refreshOwnershipUI();
     }
 
     async executePetGacha() {
@@ -226,6 +314,9 @@ export default class GachaScene extends Phaser.Scene {
 
         // Simplified Pet Animation (Single Card)
         await this.playGachaAnimation([result.pulled], result.mergeResult ? [result.mergeResult] : []);
+
+        // Refresh ownership counts
+        await this.refreshOwnershipUI();
 
         this.petPullBtn.disabled = false;
         this.petPullBtn.style.opacity = '1';

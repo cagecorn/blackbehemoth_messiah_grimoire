@@ -99,9 +99,15 @@ export default class UltimateManager {
             return;
         }
 
+        // Dynamic Duration Scaling (Rule #1 & #2)
+        // If there are more ultimates waiting in the queue, speed up the current one.
+        const defaultDuration = 2000; // Reduced from 3000ms
+        const turboDuration = 1200;
+        const finalDuration = this.queue.length > 1 ? turboDuration : defaultDuration;
+
+        console.log(`[UltimateManager] Playing cutscene for ${unit.unitName}. Queue: ${this.queue.length}, Duration: ${finalDuration}ms`);
+
         // Just delegate to the UIManager and wait for completion
-        // The UIManager handles the DOM overlay, animations, and high-res sprites
-        // which prevents the camera zoom bugs.
-        await this.scene.game.uiManager.showUltimateCutscene(unit, skillName, 3000);
+        await this.scene.game.uiManager.showUltimateCutscene(unit, skillName, finalDuration);
     }
 }

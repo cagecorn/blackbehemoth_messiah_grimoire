@@ -5794,6 +5794,35 @@ input:checked+.slider:before {
     color: var(--retro-cyan, #00ffcc);
 }
 
+@keyframes slideInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes pulseGold {
+    0% {
+        box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.7);
+        background: rgba(251, 191, 36, 0.3);
+    }
+
+    70% {
+        box-shadow: 0 0 0 10px rgba(251, 191, 36, 0);
+        background: rgba(0, 0, 0, 0.2);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(251, 191, 36, 0);
+        background: rgba(0, 0, 0, 0.2);
+    }
+}
+
 .fuc-btn.fuc-disabled {
     opacity: 0.35;
     cursor: not-allowed;

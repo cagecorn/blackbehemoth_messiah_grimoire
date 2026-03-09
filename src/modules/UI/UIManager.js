@@ -5135,33 +5135,38 @@ export default class UIManager {
             ui.container.style.display = 'block';
             ui.container.style.opacity = '0';
 
-            // Phase 1: Fade In & Slide In
+            // Request Animation Frame for Snappier Transitions (Phase 1)
             requestAnimationFrame(() => {
+                ui.container.style.transition = 'opacity 0.2s ease-out';
                 ui.container.style.opacity = '1';
+                ui.sprite.style.transition = 'transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s';
                 ui.sprite.style.opacity = '1';
                 ui.sprite.style.transform = 'translateX(-50%) scale(1)';
+                ui.text.style.transition = 'opacity 0.2s ease-out 0.1s';
                 ui.text.style.opacity = '1';
             });
 
-            // Phase 2: Flash effect
+            // Phase 2: Relative Flash effect (Rule #3: ~35% into the duration)
+            const flashDelay = duration * 0.35;
             setTimeout(() => {
-                ui.flash.style.transition = 'opacity 0.1s';
+                ui.flash.style.transition = 'opacity 0.05s';
                 ui.flash.style.opacity = '1';
                 setTimeout(() => {
-                    ui.flash.style.transition = 'opacity 0.2s';
+                    ui.flash.style.transition = 'opacity 0.15s';
                     ui.flash.style.opacity = '0';
-                }, 100);
-            }, 1000);
+                }, 80);
+            }, flashDelay);
 
-            // Phase 3: Cleanup (Hide but don't remove from DOM)
+            // Phase 3: Cleanup (Relative to duration)
+            const fadeOutTime = 400;
             setTimeout(() => {
-                ui.container.style.transition = 'opacity 0.5s ease-in';
+                ui.container.style.transition = `opacity ${fadeOutTime / 1000}s ease-in`;
                 ui.container.style.opacity = '0';
                 setTimeout(() => {
                     ui.container.style.display = 'none';
                     resolve();
-                }, 500);
-            }, duration - 500);
+                }, fadeOutTime);
+            }, duration - fadeOutTime);
         });
     }
 
