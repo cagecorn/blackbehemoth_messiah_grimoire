@@ -151,35 +151,35 @@
 - **BAD**: `this.atk *= 1.5;` / `this.speed += 50;`
 - **GOOD**: `this.bonusAtk += amount;` / `this.bonusSpeed += 50;`
 - **표준 보너스 속성**: `bonusAtk`, `bonusMAtk`, `bonusCrit`, `bonusEva`, `bonusSpeed`, `bonusDef`, `bonusMDef`, `bonusAtkSpd`, `bonusAcc`, `bonusDR`, `bonusCastSpd`, `bonusUltChargeSpeed`, `bonusMaxHp`, `bonusMaxHpMult`
- 
-   * `swampland_ticket`: 늪지대 입장권
-  * `emoji_clover`: 클로버 (☘️)
 
+### 6. 장비 및 성장 시스템 (Equipment & Growth)
 
-+- `weapon` (무기): 공격 관련 주 스탯. 무기 속성(Prefix)이 부여됨.
-+- `armor` (갑옷): 방어 관련 주 스탯. 피격 시 경험치 획득.
-+- `necklace` (목걸이): 유틸리티/특수 능력.
-+- `ring` (반지): 유틸리티/특수 능력.
-+
-+#### 6.2. 성장 장비 로직 (Growth Gear Logic)
-+`eq_` 프리픽스로 시작하는 고유 인스턴스 장비의 핵심 동작 방식입니다.
-+- **경험치 획득 (EXP Gain)**:
-+  - **무기**: 적에게 입힌 **최종 데미지**만큼 경험치 획득. (`BaseMonster.js` 참조)
-+  - **갑옷**: 적에게 받은 **원시 데미지(방어 전)**만큼 경험치 획득. (`Mercenary.js` -> `takeDamage` 참조)
-+- **레벨업 능력치 동기화**:
-+  - 장비 레벨업 시 `EQUIPMENT_LEVEL_UP` 이벤트가 발생합니다.
-+  - `Mercenary.js`는 이를 수신하여 인스턴스의 `level`과 `stats`를 `equipmentManager.getEffectiveStats`를 통해 즉시 갱신합니다.
-+  - 동기화 후 반드시 `this.syncStatusUI()`를 호출하여 HUD에 반영해야 합니다.
-+
-+#### 6.3. 데이터 무결성 및 소유권 (Ownership)
-+- 모든 성장 장비 인스턴스는 `ownerId`를 통해 현재 장착 중인 용병을 추적합니다.
-+- `Mercenary.js`의 `equipItem` 및 `unequipItem`을 통해서만 장착 상태를 변경해야 하며, 이 과정에서 DB의 `ownerId`가 함께 업데이트되어야 합니다.
-+
-+#### 6.4. UI 필터링 및 관리 (Inventory UI)
-+- **전용 필터**: 장비 인벤토리는 `this.equipFilter`(`ALL`, `WEAPON`, `ARMOR` 등)를 통해 분류됩니다.
-+- **중복 장착 방지**: 특정 용병이 이미 장착 중인 인스턴스는 다른 용병의 인벤토리 목록에서 제외(또는 비활성화)되어야 합니다.
-+
+새로운 장비를 추가하거나 관련 로직을 수정할 때 아래 표준을 반드시 준수하십시오.
 
+#### 6.1. 장비 슬롯 표준 (Standard Slots)
+용병은 최대 4개의 장비 슬롯을 가집니다. 신규 장비 정의 시 `ItemManager.EQUIP_SLOTS`를 사용하세요.
+- `weapon` (무기): 공격 관련 주 스탯. 무기 속성(Prefix)이 부여됨.
+- `armor` (갑옷): 방어 관련 주 스탯. 피격 시 경험치 획득.
+- `necklace` (목걸이): 유틸리티/특수 능력.
+- `ring` (반지): 유틸리티/특수 능력.
+
+#### 6.2. 성장 장비 로직 (Growth Gear Logic)
+`eq_` 프리픽스로 시작하는 고유 인스턴스 장비의 핵심 동작 방식입니다.
+- **경험치 획득 (EXP Gain)**:
+  - **무기**: 적에게 입힌 **최종 데미지**만큼 경험치 획득. (`BaseMonster.js` 참조)
+  - **갑옷**: 적에게 받은 **원시 데미지(방어 전)**만큼 경험치 획득. (`Mercenary.js` -> `takeDamage` 참조)
+- **레벨업 능력치 동기화**:
+  - 장비 레벨업 시 `EQUIPMENT_LEVEL_UP` 이벤트가 발생합니다.
+  - `Mercenary.js`는 이를 수신하여 인스턴스의 `level`과 `stats`를 `equipmentManager.getEffectiveStats`를 통해 즉시 갱신합니다.
+  - 동기화 후 반드시 `this.syncStatusUI()`를 호출하여 HUD에 반영해야 합니다.
+
+#### 6.3. 데이터 무결성 및 소유권 (Ownership)
+- 모든 성장 장비 인스턴스는 `ownerId`를 통해 현재 장착 중인 용병을 추적합니다.
+- `Mercenary.js`의 `equipItem` 및 `unequipItem`을 통해서만 장착 상태를 변경해야 하며, 이 과정에서 DB의 `ownerId`가 함께 업데이트되어야 합니다.
+
+#### 6.4. UI 필터링 및 관리 (Inventory UI)
+- **전용 필터**: 장비 인벤토리는 `this.equipFilter`(`ALL`, `WEAPON`, `ARMOR` 등)를 통해 분류됩니다.
+- **중복 장착 방지**: 특정 용병이 이미 장착 중인 인스턴스는 다른 용병의 인벤토리 목록에서 제외(또는 비활성화)되어야 합니다.
 
 ### 🖥️ UI 레이어 아키텍처 (UI Layer Architecture)
 
@@ -208,6 +208,14 @@
 ### 5. 소환 및 복제물 (Summons & Clones)
 소환물의 초기 스탯은 소생(Master)의 `getTotal...()` 값을 기반으로 스케일링 되어야 합니다.
 - **예시**: `GuardianAngel`은 소환 시점 세라의 `getTotalMAtk()`를 기준으로 최대 체력과 공격력을 결정합니다.
+
+---
+
+### 6. AI & 스탯 스케일링 표준화 (AI & Stat Scaling Standardization - 2026.03.09)
+*   **거리 계산 표준화**: 모든 AI 스크립트(`RangedAI.js`, `HealerAI.js`, `BardAI.js`, `MeleeAI.js`)에서 거리 계산을 중심점 간 거리(`Phaser.Math.Distance.Between`)로 통일하여 일관된 카이팅 동작을 보장합니다.
+*   **스탯 상속 버그 수정 (`scaleStats`)**: 캐릭터 성장 시 클래스 기본 사거리(`rangeMin`, `atkRange`)가 누락되어 0(근접)으로 초기화되던 치명적인 버그를 수정했습니다. 이제 캐릭터 설정에 값이 없더라도 `MercenaryClasses`의 기본값을 상속받음으로써 정상적인 카이팅 동작을 수행하도록 보장합니다.
+*   **관성 이동 수정 (Momentum Drift)**: 원거리 유닛이 적정 사거리에 도달하면 즉시 속도를 리셋(`setVelocity(0, 0)`)하여 물리적 관성으로 적에게 근접하는 현상을 방지합니다.
+*   **타겟 활성화 체크**: `Wizard.js` 및 `Archer.js` 등 타겟 탐색 로직에서 `!enemy.active` 또는 `hp <= 0`인 대상을 무시하도록 보완하여 AI 안정성을 높였습니다.
 
 ---
 
@@ -286,10 +294,6 @@
 * **격려의 권능 (👍):** 아군을 터치하여 공격력을 일시적으로 강화합니다. (격려의 권능)
 * **핀치 줌 (Pinch Zoom):** 모바일/터치 기기에서 두 손가락으로 화면을 벌리거나 모아 카메라 배율을 조절하는 기능.
 * **Yippee!:** 펫 상호작용(터치) 시 펫이 기쁨을 표현하며 출력하는 전용 텍스트 효과.
-* **메시아의 권능 (Messiah Powers):**
-  * **심판의 권능 (👆):** 적을 터치하여 물리 피해를 입힙니다. (심판의 권능)
-  * **치료의 권능 (🫳):** 아군을 터치하여 체력을 회복시킵니다. (치료의 권능)
-  * **격려의 권능 (👍):** 아군을 터치하여 공격력을 일시적으로 강화합니다. (격려의 권능)
 
 ## 💎 용병 영입 및 승급 시스템 (Gacha & Merge)
 본 게임은 방치형 스케일링 성장 방식을 채택하고 있어 영웅의 한계 성장에 제한을 두지 않습니다.
