@@ -4376,13 +4376,16 @@ input:checked+.slider-toggle:before {
     background: rgba(0, 0, 0, 0.4);
     padding: 15px;
     flex: 1;
+    min-height: 0;
+    /* Ensures it respects flex container height */
     overflow-y: auto;
     scrollbar-width: thin;
     scrollbar-color: var(--retro-amber) transparent;
 }
 
 #territory-patch-body::-webkit-scrollbar {
-    width: 4px;
+    width: 8px;
+    /* Slightly wider for easier interaction */
 }
 
 #territory-patch-body::-webkit-scrollbar-track {
