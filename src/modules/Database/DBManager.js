@@ -201,24 +201,46 @@ export default class DBManager {
     // --- Mercenary State Persistence ---
     static async saveMercenaryState(id, state) {
         if (!this.db) await this.initDB();
+        const upperId = id.toUpperCase();
         // Create a copy without methods/circular refs
         const plainState = JSON.parse(JSON.stringify(state));
         // Important: Storage ID must come AFTER spread to avoid being overwritten by record.id
-        await this.db.put('party', { ...plainState, id: `state_${id}` });
-        console.log(`[DBManager] Saved mercenary state for ${id}:`, plainState);
+        await this.db.put('party', { ...plainState, id: `state_${upperId}` });
+        console.log(`[DBManager] Saved mercenary state for ${upperId}:`, plainState);
     }
 
     static async getAllMercenaryStates() {
         if (!this.db) await this.initDB();
         const all = await this.db.getAll('party');
         const states = {};
+        const keysToDelete = [];
+
         all.forEach(item => {
             if (item.id.startsWith('state_')) {
-                const charId = item.id.replace('state_', '');
-                states[charId] = { ...item };
-                delete states[charId].id; // Remove the DB key
+                const rawId = item.id.replace('state_', '');
+                const upperId = rawId.toUpperCase();
+
+                // If we detect a lowercase or mixed case key, mark it for deletion later
+                if (rawId !== upperId) {
+                    keysToDelete.push(item.id);
+                }
+
+                // If upperId already exists, we might want to prioritize the better one?
+                // For now, consistent with roster fix: last one wins or we merge.
+                // Since state is a single object, we take the one that's "more alive" or just uppercase.
+                if (!states[upperId] || rawId === upperId) {
+                    states[upperId] = { ...item };
+                    delete states[upperId].id; // Remove the DB key
+                }
             }
         });
+
+        // Cleanup duplicate/mixed-case keys
+        for (const fullId of keysToDelete) {
+            console.log(`[DBManager] Cleaning up legacy mixed-case state key: ${fullId}`);
+            await this.db.delete('party', fullId);
+        }
+
         return states;
     }
 

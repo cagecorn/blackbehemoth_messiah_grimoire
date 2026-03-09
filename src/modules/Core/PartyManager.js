@@ -31,9 +31,11 @@ class PartyManager {
     async handleEquipRequest(payload) {
         // payload: { unitId, itemId, slot }
         // unitId can be 'preview-sera' or a real unit.id
-        const charId = payload.unitId.startsWith('preview-') ?
+        const rawCharId = payload.unitId.startsWith('preview-') ?
             payload.unitId.replace('preview-', '') :
             window._sceneContext?.findCharacterIdByUnitId?.(payload.unitId) || payload.unitId;
+
+        const charId = rawCharId.toUpperCase();
 
         console.log(`[PartyManager] EQUIP_REQUEST for ${charId}:`, payload);
 
@@ -72,7 +74,8 @@ class PartyManager {
         }
     }
 
-    async equipItem(charId, slot, itemData) {
+    async equipItem(id, slot, itemData) {
+        const charId = id.toUpperCase();
         const state = this.getState(charId);
         if (!state) return;
         if (!state.equipment) state.equipment = { weapon: null, armor: null, necklace: null, ring: null };
@@ -105,7 +108,8 @@ class PartyManager {
         EventBus.emit(EventBus.EVENTS.INVENTORY_UPDATED);
     }
 
-    async unequipItem(charId, slot) {
+    async unequipItem(id, slot) {
+        const charId = id.toUpperCase();
         const state = this.getState(charId);
         if (!state || !state.equipment) return;
 
@@ -344,15 +348,17 @@ class PartyManager {
      * @param {Object} state 
      */
     async saveState(id, state) {
-        this.mercenaryStates[id] = {
-            ...this.mercenaryStates[id],
+        if (!id) return;
+        const upperId = id.toUpperCase();
+        this.mercenaryStates[upperId] = {
+            ...this.mercenaryStates[upperId],
             ...state,
-            grimoire: state.grimoire || this.mercenaryStates[id]?.grimoire,
+            grimoire: state.grimoire || this.mercenaryStates[upperId]?.grimoire,
             lastUpdate: Date.now()
         };
 
         // Persist state change
-        await DBManager.saveMercenaryState(id, this.mercenaryStates[id]);
+        await DBManager.saveMercenaryState(upperId, this.mercenaryStates[upperId]);
     }
 
     /**
@@ -361,7 +367,9 @@ class PartyManager {
      * @returns {Object|null}
      */
     getState(id) {
-        const state = this.mercenaryStates[id];
+        if (!id) return null;
+        const upperId = id.toUpperCase();
+        const state = this.mercenaryStates[upperId];
         if (state && !state.charms) {
             state.charms = Array(this.CHARM_GRID_SIZE).fill(null);
         }

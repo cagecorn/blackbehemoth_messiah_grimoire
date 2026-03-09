@@ -385,7 +385,11 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         EventBus.on('PERK_LEARN', this.handlePerkLearn);
 
         EventBus.on('EQUIPMENT_CHANGED', (payload) => {
-            if (payload.charId === this.characterId || payload.charId === this.id) {
+            const payloadId = payload.charId ? payload.charId.toUpperCase() : null;
+            const myCharId = this.characterId ? this.characterId.toUpperCase() : null;
+            const myUnitId = this.id ? this.id.toUpperCase() : null;
+
+            if (payloadId === myCharId || payloadId === myUnitId) {
                 console.log(`[Mercenary] EQUIPMENT_CHANGED syncing for ${this.unitName}`, payload);
                 this.equipment[payload.slot] = payload.itemData;
                 this.syncStatusUI();
