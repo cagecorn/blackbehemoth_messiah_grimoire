@@ -57,7 +57,7 @@ export default function applyMeleeAI(agent, targetListGetter, initialState = 'AG
             const dist = Phaser.Math.Distance.Between(a.x, a.y, t.x, t.y);
 
             // Check if this target matches the commander's priority
-            if (priorityRole && t.config && t.config.aiType === priorityRole) {
+            if (priorityRole && t.config && t.config.classId === priorityRole) {
                 if (dist < priorityMinDist) {
                     priorityMinDist = dist;
                     closestPriority = t;
@@ -100,12 +100,7 @@ export default function applyMeleeAI(agent, targetListGetter, initialState = 'AG
         const dist = Phaser.Math.Distance.Between(a.x, a.y, target.x, target.y);
         const atkRange = a.getTotalAtkRange ? a.getTotalAtkRange() : (a.config.atkRange || 50);
 
-        // Account for collision radii for better combat depth/reach
-        const r1 = a.body ? a.body.radius : 0;
-        const r2 = target.body ? target.body.radius : 0;
-        const reachDist = dist - r1 - r2;
-
-        if (reachDist > atkRange) {
+        if (dist > atkRange) {
             agent.scene.physics.moveToObject(agent, target, agent.getTotalSpeed ? agent.getTotalSpeed() : agent.speed);
             return 1; // RUNNING
         } else {

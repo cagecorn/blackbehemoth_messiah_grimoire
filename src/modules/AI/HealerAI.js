@@ -55,12 +55,9 @@ export default function applyHealerAI(unit, getAllyGroup, getEnemyGroup) {
         for (const enemy of children) {
             if (!enemy.active || enemy.hp <= 0 || enemy.className === 'pet') continue;
             const dist = Phaser.Math.Distance.Between(unit.x, unit.y, enemy.x, enemy.y);
-            const r1 = unit.body ? unit.body.radius : 0;
-            const r2 = enemy.body ? enemy.body.radius : 0;
-            const reachDist = dist - r1 - r2;
 
-            if (reachDist < minDist) {
-                minDist = reachDist;
+            if (dist < minDist) {
+                minDist = dist;
                 nearest = enemy;
             }
         }
@@ -76,23 +73,19 @@ export default function applyHealerAI(unit, getAllyGroup, getEnemyGroup) {
         const targetObj = unit.blackboard.get('target');
         if (!targetObj || !targetObj.active) return false;
         const dist = Phaser.Math.Distance.Between(unit.x, unit.y, targetObj.x, targetObj.y);
-        const r1 = unit.body ? unit.body.radius : 0;
-        const r2 = targetObj.body ? targetObj.body.radius : 0;
-        const reachDist = dist - r1 - r2;
 
-        const rangeMin = unit.config.rangeMin || 180;
-        return reachDist < rangeMin;
+        // [Standardization Fix] Use center-to-center distance to match perk triggers
+        const rangeMin = unit.getTotalRangeMin ? unit.getTotalRangeMin() : (unit.config.rangeMin || 180);
+        return dist < rangeMin;
     }, "Enemy Too Close?");
 
     const isAtIdealAttackRange = new Condition(() => {
         const targetObj = unit.blackboard.get('target');
         if (!targetObj || !targetObj.active) return false;
         const dist = Phaser.Math.Distance.Between(unit.x, unit.y, targetObj.x, targetObj.y);
-        const r1 = unit.body ? unit.body.radius : 0;
-        const r2 = targetObj.body ? targetObj.body.radius : 0;
-        const reachDist = dist - r1 - r2;
 
-        return reachDist <= (unit.config.atkRange || 200);
+        const atkRange = unit.getTotalAtkRange ? unit.getTotalAtkRange() : (unit.config.atkRange || 200);
+        return dist <= atkRange;
     }, "In Attack Range?");
 
     // 2. Actions
@@ -102,12 +95,9 @@ export default function applyHealerAI(unit, getAllyGroup, getEnemyGroup) {
         if (!target || !target.active || target.hp <= 0) return 2; // FAILED
 
         const dist = Phaser.Math.Distance.Between(unit.x, unit.y, target.x, target.y);
-        const r1 = unit.body ? unit.body.radius : 0;
-        const r2 = target.body ? target.body.radius : 0;
-        const reachDist = dist - r1 - r2;
-
         // Move to heal range if too far
-        if (reachDist > (unit.config.atkRange || 200)) {
+        const atkRange = unit.getTotalAtkRange ? unit.getTotalAtkRange() : (unit.config.atkRange || 200);
+        if (dist > atkRange) {
             const currentSpeed = unit.getTotalSpeed ? unit.getTotalSpeed() : unit.speed;
             unit.scene.physics.moveToObject(unit, target, currentSpeed);
             return 1; // RUNNING
@@ -143,17 +133,17 @@ export default function applyHealerAI(unit, getAllyGroup, getEnemyGroup) {
         if (!targetObj || !targetObj.active) return 2; // FAILED
 
         const dist = Phaser.Math.Distance.Between(unit.x, unit.y, targetObj.x, targetObj.y);
-        const r1 = unit.body ? unit.body.radius : 0;
-        const r2 = targetObj.body ? targetObj.body.radius : 0;
-        const reachDist = dist - r1 - r2;
-
         const atkRange = unit.getTotalAtkRange ? unit.getTotalAtkRange() : (unit.config.atkRange || 200);
-        if (reachDist > atkRange) {
+
+        if (dist > atkRange) {
             const currentSpeed = unit.getTotalSpeed ? unit.getTotalSpeed() : unit.speed;
             unit.scene.physics.moveToObject(unit, targetObj, currentSpeed);
             return 1; // RUNNING
+        } else {
+            // [Momentum Fix] Stop moving once in range
+            if (unit.body) unit.body.setVelocity(0, 0);
+            return 0; // SUCCESS
         }
-        return 0; // SUCCESS
     }, "Moving to Enemy");
 
     const attackAction = new Action(() => {

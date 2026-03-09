@@ -106,7 +106,7 @@ export const MercenaryClasses = {
         speed: 110,
         atkRange: 200,
         rangeMin: 180,
-        rangeMax: 250,
+        rangeMax: 260,
         atkSpd: 1500,
         castSpd: 1200,
         acc: 80,
@@ -131,10 +131,10 @@ export const MercenaryClasses = {
         mAtk: 35,
         def: 5,
         mDef: 20,
-        speed: 100,
-        atkRange: 250,
-        rangeMin: 120,
-        rangeMax: 250,
+        speed: 110,
+        atkRange: 300,
+        rangeMin: 160,
+        rangeMax: 300,
         atkSpd: 1200,
         castSpd: 1000,
         acc: 90,
@@ -1708,10 +1708,10 @@ export function scaleStats(config, level, type = 'NORMAL') {
     newConfig.iceRes = config.iceRes || 0;
     newConfig.lightningRes = config.lightningRes || 0;
 
-    // RANGES: Do NOT grow with level
-    newConfig.rangeMin = config.rangeMin || 0;
-    newConfig.rangeMax = config.rangeMax || config.atkRange || 100;
-    newConfig.atkRange = config.atkRange || 100;
+    // RANGES: Do NOT grow with level, but MUST inherit from class if missing in config
+    newConfig.rangeMin = (config.rangeMin !== undefined) ? config.rangeMin : (baseClassConfig?.rangeMin || 0);
+    newConfig.rangeMax = (config.rangeMax !== undefined) ? config.rangeMax : (baseClassConfig?.rangeMax || config.atkRange || 100);
+    newConfig.atkRange = (config.atkRange !== undefined) ? config.atkRange : (baseClassConfig?.atkRange || 100);
 
     newConfig.level = level;
     newConfig.type = type;

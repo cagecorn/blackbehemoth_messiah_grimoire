@@ -53,14 +53,11 @@ export default function applyBardAI(unit, getAllyGroup, getEnemyGroup) {
         let nearest = null;
         let minDist = Infinity;
         for (const enemy of children) {
-            if (!enemy.active || enemy.hp <= 0) continue;
+            if (!enemy.active || enemy.hp <= 0 || enemy.className === 'pet') continue;
             const dist = Phaser.Math.Distance.Between(unit.x, unit.y, enemy.x, enemy.y);
-            const r1 = unit.body ? unit.body.radius : 0;
-            const r2 = enemy.body ? enemy.body.radius : 0;
-            const reachDist = dist - r1 - r2;
 
-            if (reachDist < minDist) {
-                minDist = reachDist;
+            if (dist < minDist) {
+                minDist = dist;
                 nearest = enemy;
             }
         }
@@ -77,11 +74,9 @@ export default function applyBardAI(unit, getAllyGroup, getEnemyGroup) {
         if (!buffTarget) return false;
 
         const dist = Phaser.Math.Distance.Between(unit.x, unit.y, buffTarget.x, buffTarget.y);
-        const r1 = unit.body ? unit.body.radius : 0;
-        const r2 = buffTarget.body ? buffTarget.body.radius : 0;
-        const reachDist = dist - r1 - r2;
+        const atkRange = unit.getTotalAtkRange ? unit.getTotalAtkRange() : (unit.config.atkRange || 200);
 
-        return reachDist <= (unit.config.atkRange || 200);
+        return dist <= atkRange;
     }, "In Buff Range?");
 
     const isAtIdealAttackRange = new Condition(() => {
@@ -89,24 +84,18 @@ export default function applyBardAI(unit, getAllyGroup, getEnemyGroup) {
         if (!enemyTarget) return false;
 
         const dist = Phaser.Math.Distance.Between(unit.x, unit.y, enemyTarget.x, enemyTarget.y);
-        const r1 = unit.body ? unit.body.radius : 0;
-        const r2 = enemyTarget.body ? enemyTarget.body.radius : 0;
-        const reachDist = dist - r1 - r2;
-        const atkRange = unit.config.atkRange || 200;
+        const atkRange = unit.getTotalAtkRange ? unit.getTotalAtkRange() : (unit.config.atkRange || 200);
 
-        return reachDist <= atkRange;
+        return dist <= atkRange;
     }, "In Attack Range?");
 
     const isEnemyTooClose = new Condition(() => {
         const targetObj = unit.blackboard.get('target');
         if (!targetObj || !targetObj.active) return false;
         const dist = Phaser.Math.Distance.Between(unit.x, unit.y, targetObj.x, targetObj.y);
-        const r1 = unit.body ? unit.body.radius : 0;
-        const r2 = targetObj.body ? targetObj.body.radius : 0;
-        const reachDist = dist - r1 - r2;
 
-        const rangeMin = unit.config.rangeMin || 150;
-        return reachDist < rangeMin;
+        const rangeMin = unit.getTotalRangeMin ? unit.getTotalRangeMin() : (unit.config.rangeMin || 150);
+        return dist < rangeMin;
     }, "Enemy Too Close?");
 
     // 2. Actions
@@ -116,11 +105,9 @@ export default function applyBardAI(unit, getAllyGroup, getEnemyGroup) {
         if (!target || !target.active || target.hp <= 0) return 2; // FAILED
 
         const dist = Phaser.Math.Distance.Between(unit.x, unit.y, target.x, target.y);
-        const r1 = unit.body ? unit.body.radius : 0;
-        const r2 = target.body ? target.body.radius : 0;
-        const reachDist = dist - r1 - r2;
+        const atkRange = unit.getTotalAtkRange ? unit.getTotalAtkRange() : (unit.config.atkRange || 200);
 
-        if (reachDist > (unit.config.atkRange || 200)) {
+        if (dist > atkRange) {
             const currentSpeed = unit.getTotalSpeed ? unit.getTotalSpeed() : unit.speed;
             unit.scene.physics.moveToObject(unit, target, currentSpeed);
             return 1; // RUNNING
@@ -148,23 +135,22 @@ export default function applyBardAI(unit, getAllyGroup, getEnemyGroup) {
     }, "Kiting (Flee)");
 
     const moveToRange = new Action(() => {
-        let targetObj = unit.blackboard.get('buff_target');
-        if (!targetObj) targetObj = unit.blackboard.get('target');
-        if (!targetObj || !targetObj.active) return 2; // FAILED
+        const target = unit.blackboard.get('buff_target') || unit.blackboard.get('target');
+        if (!target || !target.active) return 2; // FAILED
 
-        const dist = Phaser.Math.Distance.Between(unit.x, unit.y, targetObj.x, targetObj.y);
-        const r1 = unit.body ? unit.body.radius : 0;
-        const r2 = targetObj.body ? targetObj.body.radius : 0;
-        const reachDist = dist - r1 - r2;
-
+        const dist = Phaser.Math.Distance.Between(unit.x, unit.y, target.x, target.y);
         const atkRange = unit.getTotalAtkRange ? unit.getTotalAtkRange() : (unit.config.atkRange || 200);
-        if (reachDist > atkRange) {
+
+        if (dist > atkRange) {
             const currentSpeed = unit.getTotalSpeed ? unit.getTotalSpeed() : unit.speed;
-            unit.scene.physics.moveToObject(unit, targetObj, currentSpeed);
+            unit.scene.physics.moveToObject(unit, target, currentSpeed);
             return 1; // RUNNING
+        } else {
+            // [Momentum Fix] Stop moving once in range
+            if (unit.body) unit.body.setVelocity(0, 0);
+            return 0; // SUCCESS
         }
-        return 0; // SUCCESS
-    }, "Moving to Target");
+    }, "Moving to Range");
 
     const attackAction = new Action(() => {
         const stance = unit.blackboard.get('ai_state');

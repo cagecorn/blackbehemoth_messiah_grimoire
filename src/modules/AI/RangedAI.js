@@ -26,25 +26,21 @@ export default function applyRangedAI(unit, skillNode = null) {
         const targetObj = unit.blackboard.get('target');
         if (!targetObj) return false;
         const dist = Phaser.Math.Distance.Between(unit.x, unit.y, targetObj.x, targetObj.y);
-        const r1 = unit.body ? unit.body.radius : 0;
-        const r2 = targetObj.body ? targetObj.body.radius : 0;
-        const reachDist = dist - r1 - r2;
 
-        const rangeMin = unit.rangeMin !== undefined ? unit.rangeMin : 150;
-        return reachDist < rangeMin;
+        // [Standardization Fix] Use center-to-center distance to match perk triggers 
+        // and prevent "approach too close" bug where radius subtraction made reachDist too small.
+        const rangeMin = unit.getTotalRangeMin ? unit.getTotalRangeMin() : (unit.rangeMin !== undefined ? unit.rangeMin : 150);
+        return dist < rangeMin;
     }, "Enemy Too Close?");
 
     const isAtIdealRange = new Condition(() => {
         const targetObj = unit.blackboard.get('target');
         if (!targetObj) return false;
         const dist = Phaser.Math.Distance.Between(unit.x, unit.y, targetObj.x, targetObj.y);
-        const r1 = unit.body ? unit.body.radius : 0;
-        const r2 = targetObj.body ? targetObj.body.radius : 0;
-        const reachDist = dist - r1 - r2;
 
         const rangeMin = unit.getTotalRangeMin ? unit.getTotalRangeMin() : (unit.rangeMin !== undefined ? unit.rangeMin : 150);
         const rangeMax = unit.getTotalRangeMax ? unit.getTotalRangeMax() : (unit.rangeMax !== undefined ? unit.rangeMax : 300);
-        return reachDist >= rangeMin && reachDist <= rangeMax;
+        return dist >= rangeMin && dist <= rangeMax;
     }, "In Ideal Range?");
 
     const fleeFromTarget = new Action(() => {
@@ -108,12 +104,9 @@ export default function applyRangedAI(unit, skillNode = null) {
         if (!targetObj) return 2; // FAILED
 
         const dist = Phaser.Math.Distance.Between(unit.x, unit.y, targetObj.x, targetObj.y);
-        const r1 = unit.body ? unit.body.radius : 0;
-        const r2 = targetObj.body ? targetObj.body.radius : 0;
-        const reachDist = dist - r1 - r2;
-
         const rangeMax = unit.getTotalRangeMax ? unit.getTotalRangeMax() : (unit.rangeMax !== undefined ? unit.rangeMax : 300);
-        if (reachDist > rangeMax) {
+
+        if (dist > rangeMax) {
             const angle = Phaser.Math.Angle.Between(unit.x, unit.y, targetObj.x, targetObj.y);
             const currentSpeed = unit.getTotalSpeed ? unit.getTotalSpeed() : unit.speed;
             unit.body.setVelocity(
@@ -121,8 +114,11 @@ export default function applyRangedAI(unit, skillNode = null) {
                 Math.sin(angle) * currentSpeed
             );
             return 1; // RUNNING
+        } else {
+            // [Momentum Fix] Stop moving once in range
+            if (unit.body) unit.body.setVelocity(0, 0);
+            return 0; // SUCCESS
         }
-        return 0; // SUCCESS
     }, "Moving to Target");
 
     const attackAction = new Action(() => {

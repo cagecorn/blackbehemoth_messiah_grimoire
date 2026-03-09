@@ -83,7 +83,7 @@ export default class Wizard extends Mercenary {
         let minDist = Infinity;
 
         for (const enemy of enemies) {
-            if (enemy.hp <= 0) continue;
+            if (!enemy.active || enemy.hp <= 0) continue;
             const dist = Phaser.Math.Distance.Between(this.x, this.y, enemy.x, enemy.y);
             if (dist < minDist) {
                 minDist = dist;
