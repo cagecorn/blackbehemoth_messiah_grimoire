@@ -26,8 +26,8 @@ const config = {
         mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH,
         parent: 'game-container',
-        width: 600,
-        height: 1067
+        width: 1280,
+        height: 720
     },
     // Locked resolution for maximum stability and performance
     resolution: 1,

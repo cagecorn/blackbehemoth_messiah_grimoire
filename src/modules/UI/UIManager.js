@@ -1246,9 +1246,15 @@ export default class UIManager {
         }
     }
 
-    showPopup(typeOrHtml) {
+    showPopup(typeOrHtml, isWide = false) {
         if (!this.popupOverlay || !this.popupInner) return;
         this.clearPopupSafe();
+
+        const content = document.getElementById('popup-content');
+        if (content) {
+            if (isWide) content.classList.add('wide');
+            else content.classList.remove('wide');
+        }
 
         if (typeOrHtml === 'inventory') {
             const invContent = document.getElementById('sidebar-right');
@@ -4925,28 +4931,32 @@ export default class UIManager {
                         </div>
                     </div>
                     
-                    <div class="merc-stats-section">
-                        <div class="section-title">DETAILED STATISTICS</div>
-                        <div class="merc-stats-grid">
-                            ${stats.map(s => renderStat(s.label, s.val)).join('')}
+                    <div class="merc-detail-columns">
+                        <div class="merc-stats-section">
+                            <div class="section-title">DETAILED STATISTICS</div>
+                            <div class="merc-stats-grid">
+                                ${stats.map(s => renderStat(s.label, s.val)).join('')}
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="merc-skills-section">
-                        <div class="section-title">SKILLS & ULTIMATE</div>
-                        <div class="merc-skill-card">
-                            <div class="skill-header">
-                                <span class="skill-emoji">${m.skillEmoji}</span>
-                                <span class="skill-name">${m.skillName}</span>
+                        <div class="merc-skills-section">
+                            <div class="section-title">SKILLS & ULTIMATE</div>
+                            <div class="merc-skills-grid">
+                                <div class="merc-skill-card">
+                                    <div class="skill-header">
+                                        <span class="skill-emoji">${m.skillEmoji}</span>
+                                        <span class="skill-name">${m.skillName}</span>
+                                    </div>
+                                    <div class="skill-desc">${m.skillDescription}</div>
+                                </div>
+                                <div class="merc-skill-card ultimate">
+                                    <div class="skill-header">
+                                        <span class="skill-emoji">✨</span>
+                                        <span class="skill-name">${m.ultimateName}</span>
+                                    </div>
+                                    <div class="skill-desc">${m.ultimateDescription}</div>
+                                </div>
                             </div>
-                            <div class="skill-desc">${m.skillDescription}</div>
-                        </div>
-                        <div class="merc-skill-card ultimate">
-                            <div class="skill-header">
-                                <span class="skill-emoji">✨</span>
-                                <span class="skill-name">${m.ultimateName}</span>
-                            </div>
-                            <div class="skill-desc">${m.ultimateDescription}</div>
                         </div>
                     </div>
                 </div>
@@ -4958,10 +4968,12 @@ export default class UIManager {
                 <style>
                     .mercenary-roster-v2 {
                         display: flex;
+                        width: 100%;
                         height: 100%;
                         background: #0f172a;
                         color: #e2e8f0;
                         font-family: 'Outfit', sans-serif;
+                        overflow: hidden;
                     }
                     /* Sidebar */
                     .roster-sidebar {
@@ -4973,6 +4985,7 @@ export default class UIManager {
                         padding: 10px;
                         gap: 10px;
                         overflow-y: auto;
+                        flex-shrink: 0;
                     }
                     .sidebar-item {
                         width: 70px;
@@ -4995,11 +5008,20 @@ export default class UIManager {
                     /* Content */
                     .roster-content {
                         flex: 1;
-                        padding: 20px;
+                        min-width: 0;
+                        height: 100%;
+                        display: flex;
+                        flex-direction: column;
+                        overflow: hidden;
+                    }
+                    .merc-detail-view {
+                        flex: 1;
+                        padding: 24px;
                         overflow-y: auto;
                         display: flex;
                         flex-direction: column;
                         gap: 20px;
+                        min-width: 0;
                     }
                     .section-title {
                         font-family: 'Press Start 2P', cursive;
@@ -5029,6 +5051,7 @@ export default class UIManager {
                     .merc-detail-desc { 
                         font-size: 13px; color: #cbd5e1; line-height: 1.5; font-style: italic; 
                         max-height: 100px; overflow-y: auto; padding-right: 5px;
+                        word-break: break-word;
                     }
                     .merc-detail-desc::-webkit-scrollbar { width: 4px; }
                     .merc-detail-desc::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
@@ -5048,7 +5071,8 @@ export default class UIManager {
                     .stat-value { color: #f8fafc; font-weight: 800; font-family: 'Press Start 2P', cursive; font-size: 9px; }
 
                     /* Skills */
-                    .merc-skills-section { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+                    .merc-skills-section { display: flex; flex-direction: column; gap: 10px; }
+                    .merc-skills-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
                     .merc-skill-card {
                         background: #1e293b;
                         border: 1px solid #334155;
@@ -5063,6 +5087,19 @@ export default class UIManager {
                     .skill-emoji { font-size: 18px; }
                     .skill-name { font-size: 15px; font-weight: bold; color: #fbbf24; }
                     .skill-desc { font-size: 12px; color: #cbd5e1; line-height: 1.5; }
+
+                    /* Desktop Columns */
+                    .merc-detail-columns {
+                        display: grid;
+                        grid-template-columns: 1fr 1fr;
+                        gap: 20px;
+                        margin-top: 10px;
+                    }
+                    @media (max-width: 800px) {
+                        .merc-detail-columns {
+                            grid-template-columns: 1fr;
+                        }
+                    }
 
                     .theme-skin-btn {
                         background: #1e293b; border: 1px solid #fbbf24; border-radius: 6px;
@@ -5226,6 +5263,6 @@ export default class UIManager {
             EventBus.emit('SKIN_CHANGED', { charId, skinId });
         };
 
-        this.showPopup(rosterHtml);
+        this.showPopup(rosterHtml, true);
     }
 }

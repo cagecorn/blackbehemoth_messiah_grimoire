@@ -100,8 +100,6 @@ body {
 #app-container {
     width: 100vw;
     height: 100vh;
-    max-width: 480px;
-    /* Constrain for PC */
     margin: 0 auto;
     /* Center on PC */
     position: relative;
@@ -1962,7 +1960,6 @@ body {
     width: 100%;
     pointer-events: none;
     z-index: 20001;
-    /* Navigation Bar Priority */
     display: flex;
     flex-direction: column;
     box-sizing: border-box;
@@ -1974,8 +1971,8 @@ body {
     left: 0;
     width: 100%;
     pointer-events: none;
-    z-index: 1000;
-    /* Below popups, same as round display */
+    z-index: 20002;
+    /* Above building grid */
     display: flex;
     flex-direction: column;
     box-sizing: border-box;
@@ -1983,32 +1980,39 @@ body {
 
 
 #portrait-bar {
-    width: 100%;
+    position: fixed;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 110px;
+    height: auto;
+    max-height: 80vh;
     pointer-events: auto;
+    z-index: 500;
+    /* Combat HUD layer */
 }
 
 /* --- Building Grid (Retro Miniature) --- */
 #building-grid {
-    position: relative;
+    position: fixed;
+    bottom: 0;
+    left: 0;
     width: 100%;
-    height: 28px;
+    height: 32px;
     display: none;
-    /* Hidden by default, managed by UIManager */
     flex-wrap: nowrap;
     align-items: center;
     justify-content: center;
-    gap: 1px;
+    gap: 2px;
     padding: 0 4px;
-    background: rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    border-top: 1px solid var(--retro-border);
-    border-bottom: 1px solid rgba(0, 0, 0, 0.4);
-    z-index: 20002;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-top: 2px solid var(--retro-amber);
+    z-index: 20001;
     pointer-events: auto;
     overflow-x: hidden;
-    scrollbar-width: none;
-    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.5);
 }
 
 #building-grid::-webkit-scrollbar {
@@ -2341,17 +2345,13 @@ body {
 #hud-top {
     padding: 8px 12px;
     display: flex;
-    justify-content: space-between;
+    gap: 15px;
     align-items: center;
     pointer-events: auto;
-    /* Retro Dark Velvet — CRT Inset */
-    background:
-        linear-gradient(135deg, #1e0a0a 0%, #120606 50%, #0a0505 100%);
-    border-bottom: 3px solid var(--retro-amber);
-    box-shadow:
-        0 4px 0px rgba(0, 0, 0, 0.8),
-        inset 0 0 20px rgba(0, 0, 0, 0.6),
-        inset 0 -1px 0 rgba(255, 176, 0, 0.08);
+    flex: 0 0 auto;
+    background: transparent;
+    border-bottom: none;
+    box-shadow: none;
     position: relative;
     z-index: 10;
 }
@@ -2377,19 +2377,6 @@ body {
 }
 
 /* Pixel corner accents — ■ ■ at edges */
-#hud-top::after {
-    content: "";
-    position: absolute;
-    bottom: -3px;
-    left: 0;
-    right: 0;
-    height: 3px;
-    background:
-        linear-gradient(to right,
-            var(--retro-amber) 6px, transparent 6px, transparent calc(100% - 6px), var(--retro-amber) calc(100% - 6px));
-    pointer-events: none;
-}
-
 .hud-stat {
     display: flex;
     align-items: center;
@@ -2414,6 +2401,8 @@ body {
 #hud-menu-btns {
     display: flex;
     gap: 5px;
+    padding: 8px 12px;
+    flex: 0 0 auto;
 }
 
 #hud-menu-btns button {
@@ -2470,20 +2459,18 @@ body {
 
 #portrait-bar {
     display: none !important;
-    /* 疫꿸퀡????덈군 */
-    grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
-    /* 6??1??揶쏅벡??*/
+    grid-template-columns: 1fr !important;
     grid-auto-rows: auto !important;
-    gap: 3px !important;
-    background: linear-gradient(to top, rgba(5, 5, 8, 0.98), rgba(12, 12, 18, 0.94));
-    padding: 3px !important;
+    gap: 8px !important;
+    background: linear-gradient(to right, rgba(5, 5, 8, 0.98), rgba(12, 12, 18, 0.94));
+    padding: 12px 6px !important;
     border: 2px solid var(--retro-border2);
-    border-bottom: none;
-    width: 100% !important;
-    max-width: 960px !important;
+    border-left: none;
+    width: 110px !important;
     box-sizing: border-box;
-    box-shadow: -2px -2px 0px var(--retro-border), 2px 0px 0px var(--retro-border);
-    margin: 0 auto;
+    box-shadow: 4px 0px 15px rgba(0, 0, 0, 0.8);
+    margin: 0;
+    border-radius: 0 8px 8px 0;
 }
 
 #portrait-bar.active {
@@ -2494,6 +2481,15 @@ body {
     display: none !important;
 }
 
+/* --- Z-Index Standardization Overrides --- */
+#popup-overlay {
+    z-index: 15000 !important;
+}
+
+.status-popup-tab {
+    z-index: 18000 !important;
+}
+
 /* 揶??怨몄뜏 燁삳?諭? grid cell????筌?쑴?숋쭪?*/
 .unit-portrait {
     display: flex;
@@ -2502,8 +2498,8 @@ body {
     align-items: center;
     justify-content: space-between;
     gap: 3px;
-    width: 100%;
-    height: 100%;
+    width: 90px;
+    height: 100px;
     /* ?봔筌?域밸챶?????????筌△몿苡?*/
     border-radius: 0px;
     background: rgba(10, 10, 15, 0.9);
@@ -2829,6 +2825,12 @@ body {
     flex-direction: column;
     overflow: hidden;
     animation: popupIn 0.15s ease-out;
+    transition: max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#popup-content.wide {
+    max-width: 1000px;
+    width: 90vw;
 }
 
 @keyframes popupIn {
@@ -3639,14 +3641,12 @@ input:checked+.slider-toggle:before {
     gap: 3px;
     padding: 5px 6px 8px;
     pointer-events: auto;
-    background: #0a0505;
-    border-top: 1px solid rgba(255, 176, 0, 0.15);
-    border-bottom: 3px solid var(--retro-amber);
-    box-shadow:
-        0 4px 0px rgba(0, 0, 0, 0.8),
-        inset 0 0 15px rgba(0, 0, 0, 0.5);
+    background: transparent;
+    border-top: none;
+    border-bottom: none;
+    box-shadow: none;
     position: relative;
-    width: 100%;
+    flex: 1;
     box-sizing: border-box;
 }
 
@@ -3843,13 +3843,16 @@ input:checked+.slider-toggle:before {
 #hud-header {
     pointer-events: auto;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
+    align-items: center;
     width: 100%;
+    background: linear-gradient(135deg, #1e0a0a 0%, #120606 50%, #0a0505 100%);
+    border-bottom: 3px solid var(--retro-amber);
+    box-shadow: 0 4px 0px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(0, 0, 0, 0.6);
 }
 
-
 #hud-scene-nav {
-    border-top: 1px solid rgba(255, 100, 100, 0.15);
+    border-top: none;
 }
 
 /* --- Confirmation Modal Styling --- */
@@ -4038,10 +4041,10 @@ input:checked+.slider-toggle:before {
 }
 
 #territory-banner-inner {
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-    padding-bottom: 20px;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+    padding: 20px;
 }
 
 /* ─── Individual Banner — Retro Enhanced ──────────────────────── */
@@ -4240,10 +4243,9 @@ input:checked+.slider-toggle:before {
 
 #territory-patch-notes {
     position: absolute;
-    bottom: 12px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: min(92vw, 400px);
+    bottom: 20px;
+    right: 20px;
+    width: 350px;
     z-index: 1200;
     border-radius: 0px;
     overflow: hidden;
@@ -4723,8 +4725,8 @@ input:checked+.slider-toggle:before {
 /* --- Combat HUD Container & Layering --- */
 #combat-hud-container {
     position: absolute;
-    top: 100px;
-    /* Neatly below nav-bar */
+    top: 48px;
+    /* Neatly below unified nav-bar */
     left: 50%;
     transform: translateX(-50%);
     display: flex;
@@ -5589,6 +5591,7 @@ input:checked+.slider:before {
         box-shadow: 0 0 20px rgba(167, 139, 250, 0.7);
     }
 }
+
 /* --- Dungeon Best Round Badges (Difficulty Specific) --- */
 .best-round-badge {
     font-family: 'Press Start 2P', cursive;
@@ -5625,4 +5628,3 @@ input:checked+.slider:before {
     border-color: rgba(239, 68, 68, 0.4);
     text-shadow: 0 0 5px rgba(239, 68, 68, 0.5);
 }
-
