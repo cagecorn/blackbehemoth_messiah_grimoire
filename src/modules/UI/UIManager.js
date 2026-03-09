@@ -3120,6 +3120,16 @@ export default class UIManager {
                 badge.remove();
             }
         });
+
+        // Clean up sidebar-attached class if present
+        if (this.popupOverlay) {
+            this.popupOverlay.classList.remove('sidebar-attached');
+        }
+        const content = document.getElementById('popup-content');
+        if (content) {
+            content.classList.remove('wide');
+            content.classList.remove('sidebar-attached');
+        }
     }
 
     updateMobileHUD() {
@@ -3599,6 +3609,15 @@ export default class UIManager {
         if (!this.popupOverlay || !this.popupInner) return;
         this.detailChannel = channel;
         this.clearPopupSafe();
+
+        const content = document.getElementById('popup-content');
+        if (content) {
+            content.classList.add('sidebar-attached');
+        }
+        if (this.popupOverlay) {
+            this.popupOverlay.classList.add('sidebar-attached');
+        }
+
         this.popupInner.appendChild(channel.element);
         channel.element.style.display = 'flex';
         channel.element.style.height = '100%';
@@ -4774,14 +4793,16 @@ export default class UIManager {
                 sprite.style.cssText = `
                     position: absolute;
                     bottom: 120px;
-                    left: -300px;
-                    width: 500px;
-                    height: 500px;
+                    left: 50%;
+                    transform: translateX(-50%) scale(0.8);
+                    width: 600px;
+                    height: 600px;
                     background-size: contain;
                     background-repeat: no-repeat;
                     background-position: bottom;
-                    transition: left 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.4s;
                     filter: drop-shadow(0 0 10px rgba(255, 204, 0, 0.5));
+                    opacity: 0;
                 `;
 
                 const text = document.createElement('div');
@@ -4789,7 +4810,10 @@ export default class UIManager {
                 text.style.cssText = `
                     position: absolute;
                     bottom: 450px;
-                    left: 30px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    width: 100%;
+                    text-align: center;
                     font-family: 'Arial Black', sans-serif;
                     font-size: 48px;
                     font-weight: 900;
@@ -4838,7 +4862,8 @@ export default class UIManager {
             ui.sprite.style.backgroundSize = 'contain';
             ui.sprite.style.backgroundRepeat = 'no-repeat';
             ui.sprite.style.backgroundPosition = 'bottom';
-            ui.sprite.style.left = '-300px';
+            ui.sprite.style.opacity = '0';
+            ui.sprite.style.transform = 'translateX(-50%) scale(0.8)';
 
             ui.text.innerText = `[ ${skillName} ]`;
             ui.text.style.opacity = '0';
@@ -4852,7 +4877,8 @@ export default class UIManager {
             // Phase 1: Fade In & Slide In
             requestAnimationFrame(() => {
                 ui.container.style.opacity = '1';
-                ui.sprite.style.left = '50px';
+                ui.sprite.style.opacity = '1';
+                ui.sprite.style.transform = 'translateX(-50%) scale(1)';
                 ui.text.style.opacity = '1';
             });
 

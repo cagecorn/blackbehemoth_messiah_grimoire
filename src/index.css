@@ -2812,6 +2812,11 @@ body {
     box-sizing: border-box;
 }
 
+#popup-overlay.sidebar-attached {
+    justify-content: flex-start;
+    padding-left: 20px;
+}
+
 #popup-content {
     background: var(--retro-panel);
     border: 2px solid var(--retro-border2);
@@ -2826,6 +2831,25 @@ body {
     overflow: hidden;
     animation: popupIn 0.15s ease-out;
     transition: max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#popup-content.sidebar-attached {
+    margin-left: 120px;
+    max-width: 400px;
+    height: 85vh;
+    animation: popupSlideInLeft 0.2s ease-out;
+}
+
+@keyframes popupSlideInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
 }
 
 #popup-content.wide {
