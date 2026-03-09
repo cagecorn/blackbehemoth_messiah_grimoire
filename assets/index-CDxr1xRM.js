@@ -6428,9 +6428,10 @@ return new `+this.key+`();
             </div>
             <div id="territory-patch-body">
                 <div class="patch-entry" style="border: 2px solid #3a7fc0; background: rgba(58, 127, 192, 0.1); padding: 10px; margin-bottom: 10px; border-radius: 8px;">
-                    <div class="patch-item" style="color: #ffffff; line-height: 1.5; font-size: 13px; text-align: center;">
-                        앞으로 패치노트는 공식 카페에 기재됩니다. 이곳을 이용해주세요~<br>
-                        <a href="https://cafe.naver.com/blackbehemothmessiah" target="_blank" style="color: #60a5fa; text-decoration: underline; font-weight: bold; display: inline-block; margin-top: 5px;">https://cafe.naver.com/blackbehemothmessiah</a>
+                    <div class="patch-item" style="color: #ffffff; line-height: 1.6; font-size: 13px; text-align: left; padding: 5px;">
+                        공식 카페가 개설되었습니다. 여러분의 많은 피드백 부탁드립니다.<br>
+                        패치노트는 편의성을 위해서 카페, 인게임 내 모두 갱신됩니다.<br>
+                        <a href="https://cafe.naver.com/blackbehemothmessiah" target="_blank" style="color: #60a5fa; text-decoration: underline; font-weight: bold; display: inline-block; margin-top: 8px;">[🔗 공식 카페 바로가기]</a>
                     </div>
                 </div>
                 <div class="patch-entry" style="border: 2px solid #ff4444; background: rgba(255, 68, 68, 0.1); padding: 5px;">
