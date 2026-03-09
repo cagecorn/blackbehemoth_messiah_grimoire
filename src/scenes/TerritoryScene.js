@@ -136,7 +136,7 @@ export default class TerritoryScene extends Phaser.Scene {
         wrap = document.createElement('div');
         wrap.id = 'territory-banner-wrap';
         wrap.innerHTML = `
-            <div id="territory-banner-inner">
+            <div id="territory-banner-inner" style="margin-right: 420px;">
                 ${TERRITORY_BANNERS.map((b, i) => this._buildBannerHTML(b, i)).join('')}
             </div>
         `;
