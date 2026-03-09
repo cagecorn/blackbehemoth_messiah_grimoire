@@ -2810,55 +2810,13 @@ export default class UIManager {
                 card.onclick = () => {
                     const id = card.dataset.id;
                     if (this.partyViewState === 'MERCE') {
-                        // Remove any existing menu
-                        const existingMenu = overlay.querySelector('.merc-context-menu');
-                        if (existingMenu) existingMenu.remove();
-
-                        // Create Context Menu
-                        const menu = document.createElement('div');
-                        menu.className = 'merc-context-menu';
-                        menu.style.position = 'absolute';
-                        menu.style.zIndex = '50000';
-                        menu.style.background = 'rgba(10, 10, 15, 0.95)';
-                        menu.style.border = '2px solid var(--retro-amber)';
-                        menu.style.borderRadius = '8px';
-                        menu.style.padding = '8px';
-                        menu.style.display = 'flex';
-                        menu.style.flexDirection = 'column';
-                        menu.style.gap = '8px';
-                        menu.style.boxShadow = '0 4px 8px rgba(0,0,0,0.5)';
-
-                        const btnStyle = "background: rgba(0,0,0,0.5); border: 1px solid var(--retro-amber); color: #fff; padding: 6px 12px; font-family: var(--font-pixel); font-size: 10px; cursor: pointer; border-radius: 4px; text-align: center;";
-
-                        const detailBtn = document.createElement('button');
-                        detailBtn.innerText = '상세 정보 보기';
-                        detailBtn.style.cssText = btnStyle;
-                        detailBtn.onclick = (e) => {
-                            e.stopPropagation();
-                            menu.remove();
-                            this.showCharacterDetailFromParty(id);
-                        };
-
-                        const equipBtn = document.createElement('button');
-                        equipBtn.innerText = '파티 편성';
-                        equipBtn.style.cssText = btnStyle;
-                        equipBtn.onclick = (e) => {
-                            e.stopPropagation();
-                            menu.remove();
-                            if (currentSlots.includes(id)) return;
-                            let emptyIndex = currentSlots.indexOf(null);
-                            if (emptyIndex !== -1) {
-                                currentSlots[emptyIndex] = id;
-                                updateSlotUI(emptyIndex);
-                                updateUI();
-                            }
-                        };
-
-                        menu.appendChild(detailBtn);
-                        menu.appendChild(equipBtn);
-
-                        card.appendChild(menu);
-
+                        if (currentSlots.includes(id)) return;
+                        let emptyIndex = currentSlots.indexOf(null);
+                        if (emptyIndex !== -1) {
+                            currentSlots[emptyIndex] = id;
+                            updateSlotUI(emptyIndex);
+                            updateUI();
+                        }
                     } else {
                         // Switch Pet
                         currentPet = id;
@@ -2871,14 +2829,6 @@ export default class UIManager {
             // Update Toggle Style
             overlay.querySelector('#btn-toggle-merce').classList.toggle('active', this.partyViewState === 'MERCE');
             overlay.querySelector('#btn-toggle-pet').classList.toggle('active', this.partyViewState === 'PET');
-        };
-
-        // Global click handler to close context menu
-        overlay.onclick = (e) => {
-            if (!e.target.closest('.mercenary-card') && !e.target.closest('.merc-context-menu')) {
-                const menus = overlay.querySelectorAll('.merc-context-menu');
-                menus.forEach(menu => menu.remove());
-            }
         };
 
         overlay.innerHTML = `
@@ -3799,60 +3749,6 @@ export default class UIManager {
         }
 
         this.addLog('slot0', 'Messiah Grimoire에 오신 것을 환영합니다!', '#00ffcc');
-    }
-
-
-    async showCharacterDetailFromParty(characterId) {
-        const charConfig = Characters[characterId.toUpperCase()];
-        if (!charConfig) return;
-
-        const partyManager = this.scene?.game?.partyManager;
-        if (!partyManager) return;
-
-        let channel = this.channels.find(c => c.characterId === characterId);
-
-        if (!channel) {
-            channel = new ChatChannel(
-                `temp_${characterId}`,
-                charConfig.classId,
-                [],
-                charConfig.name,
-                `assets/characters/party/${charConfig.sprite}.png`,
-                this.chatContainer,
-                (text) => {},
-                () => {},
-                this
-            );
-
-            channel.bindUnit(
-                `temp_unit_${characterId}`,
-                charConfig.name,
-                `assets/characters/party/${charConfig.sprite}.png`,
-                {
-                    name: charConfig.skillName,
-                    emoji: charConfig.skillEmoji,
-                    description: charConfig.skillDescription,
-                    passiveName: charConfig.passiveName,
-                    passiveEmoji: charConfig.passiveEmoji,
-                    passiveDescription: charConfig.passiveDescription,
-                    ultimateName: charConfig.ultimateName,
-                    ultimateDescription: charConfig.ultimateDescription
-                },
-                charConfig.narrativeUnlocks,
-                characterId
-            );
-
-            this.channels.push(channel);
-        }
-
-        // Always sync state from PartyManager before showing
-        const state = partyManager.getState(characterId);
-        if (state) {
-            channel.updateStats({ hp: state.hp || 100, maxHp: state.maxHp || 100, level: state.level || 1, ...state });
-            channel.updateEquipment(state.equipment || null, state.grimoire || null);
-        }
-
-        this.showCharacterDetail(channel);
     }
 
     async handlePlayerCommand(agentId, text) {
