@@ -154,7 +154,7 @@ export default class GachaScene extends Phaser.Scene {
         // --- Gold Pull Button (Single) ---
         this.goldPullBtn = document.createElement('button');
         this.goldPullBtn.innerHTML = `
-            <div style="font-size: 18px; color: #fffbeb;">모험가 영입 (1마리)</div>
+            <div style="font-size: 18px; color: #fffbeb;">용병 영입 (1명)</div>
             <div style="font-size: 14px; color: #fbbf24; display: flex; align-items: center; gap: 4px;">
                 <span style="filter: drop-shadow(0 0 2px rgba(0,0,0,0.8));">💰</span> 10,000 골드
             </div>
