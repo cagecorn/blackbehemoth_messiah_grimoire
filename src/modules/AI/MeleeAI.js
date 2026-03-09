@@ -18,6 +18,30 @@ export default function applyMeleeAI(agent, targetListGetter, initialState = 'AG
 
     // Behavior Tree Nodes
 
+    // 0. Leash Logic (Return to Leader if too far)
+    const checkLeash = new Condition((a, bb) => {
+        // Only leash player-team mercenaries who have a leader reference
+        if (a.team !== 'player' || !a.warrior || a === a.warrior) return false;
+
+        const dist = Phaser.Math.Distance.Between(a.x, a.y, a.warrior.x, a.warrior.y);
+        return dist > 600; // Leash distance: 600px
+    }, "Too far from leader?");
+
+    const returnToLeader = new Action((a, bb) => {
+        if (!a.warrior || !a.warrior.active) return 2;
+
+        const dist = Phaser.Math.Distance.Between(a.x, a.y, a.warrior.x, a.warrior.y);
+        if (dist > 150) {
+            a.scene.physics.moveToObject(a, a.warrior, a.getTotalSpeed ? a.getTotalSpeed() : a.speed);
+            return 1; // RUNNING
+        } else {
+            if (a.body) a.body.setVelocity(0, 0);
+            return 0; // SUCCESS
+        }
+    }, "Returning to Leader");
+
+    const leashSequence = new Sequence([checkLeash, returnToLeader], "Leash Logic");
+
     // 1. Check AI State
     const checkStateAggressive = new Condition((a, bb) => bb.get('ai_state') === 'AGGRESSIVE', "Aggressive?");
 
@@ -176,6 +200,7 @@ export default function applyMeleeAI(agent, targetListGetter, initialState = 'AG
 
     // Root Selector — falls back to idle if no targets
     const rootSelector = new Selector([
+        leashSequence,
         ...nodeCharmBehaviors,
         huntSequence,
         stopAction

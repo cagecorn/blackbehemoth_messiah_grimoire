@@ -21,6 +21,12 @@ export default function applyHealerAI(unit, getAllyGroup, getEnemyGroup) {
 
     // 1. Conditions
 
+    const checkLeash = new Condition(() => {
+        if (unit.team !== 'player' || !unit.warrior || unit === unit.warrior) return false;
+        const dist = Phaser.Math.Distance.Between(unit.x, unit.y, unit.warrior.x, unit.warrior.y);
+        return dist > 700; // Leash distance for healer
+    }, "Too far from leader?");
+
     // Check if any ally needs healing
     const needsHeal = new Condition(() => {
         const allies = typeof getAllyGroup === 'function' ? getAllyGroup(unit) : getAllyGroup;
@@ -111,6 +117,20 @@ export default function applyHealerAI(unit, getAllyGroup, getEnemyGroup) {
         }
     }, "Healing Ally");
 
+    const returnToLeader = new Action(() => {
+        if (!unit.warrior || !unit.warrior.active) return 2;
+        const dist = Phaser.Math.Distance.Between(unit.x, unit.y, unit.warrior.x, unit.warrior.y);
+        if (dist > 300) {
+            unit.scene.physics.moveToObject(unit, unit.warrior, unit.getTotalSpeed ? unit.getTotalSpeed() : unit.speed);
+            return 1; // RUNNING
+        } else {
+            if (unit.body) unit.body.setVelocity(0, 0);
+            return 0; // SUCCESS
+        }
+    }, "Returning to Leader");
+
+    const leashSequence = new Sequence([checkLeash, returnToLeader], "Leash Logic");
+
     const fleeFromTarget = new Action(() => {
         const targetObj = unit.blackboard.get('target');
         if (!targetObj || !targetObj.active) return 2; // FAILED
@@ -178,6 +198,7 @@ export default function applyHealerAI(unit, getAllyGroup, getEnemyGroup) {
     const nodeCharmBehaviors = NodeCharmManager.getBehaviors(unit, moveToAttackRange, attackAction);
 
     const root = new Selector([
+        leashSequence,
         ...nodeCharmBehaviors,
         fleeSequence, // Survival first
         healSequence,

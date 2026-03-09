@@ -1152,12 +1152,19 @@ export default class DungeonScene extends Phaser.Scene {
         let totalX = 0;
         let totalY = 0;
         let count = 0;
+        let minX = Infinity, maxX = -Infinity;
+        let minY = Infinity, maxY = -Infinity;
 
         this.mercenaries.getChildren().forEach(merc => {
-            if (merc.active && merc.hp > 0) {
+            if (merc.active && merc.hp > 0 && !merc.isSummoned) {
                 totalX += merc.x;
                 totalY += merc.y;
                 count++;
+
+                if (merc.x < minX) minX = merc.x;
+                if (merc.x > maxX) maxX = merc.x;
+                if (merc.y < minY) minY = merc.y;
+                if (merc.y > maxY) maxY = merc.y;
             }
         });
 
@@ -1167,6 +1174,22 @@ export default class DungeonScene extends Phaser.Scene {
 
             // Smoothly lerp camera target or set directly (Phaser's startFollow handles smoothing)
             this.cameraTarget.setPosition(avgX, avgY);
+
+            // Calculate Dynamic Zoom based on spread
+            const spreadX = maxX - minX;
+            const spreadY = maxY - minY;
+            const maxSpread = Math.max(spreadX, spreadY);
+
+            // Zoom out as spread increases, clamped between 0.6 and 1.2
+            // 200px spread -> 1.2 zoom, 1200px spread -> 0.6 zoom
+            let targetZoom = 1.2;
+            if (maxSpread > 200) {
+                targetZoom = Math.max(0.6, 1.2 - ((maxSpread - 200) / 1600));
+            }
+
+            if (this.dynamicCamera) {
+                this.dynamicCamera.targetZoom = targetZoom;
+            }
         }
     }
 

@@ -18,6 +18,26 @@ export default function applyRangedAI(unit, skillNode = null) {
 
     // 1. Behavior Tree Nodes
 
+    const checkLeash = new Condition(() => {
+        if (unit.team !== 'player' || !unit.warrior || unit === unit.warrior) return false;
+        const dist = Phaser.Math.Distance.Between(unit.x, unit.y, unit.warrior.x, unit.warrior.y);
+        return dist > 700; // Leash distance for ranged
+    }, "Too far from leader?");
+
+    const returnToLeader = new Action(() => {
+        if (!unit.warrior || !unit.warrior.active) return 2;
+        const dist = Phaser.Math.Distance.Between(unit.x, unit.y, unit.warrior.x, unit.warrior.y);
+        if (dist > 300) {
+            unit.scene.physics.moveToObject(unit, unit.warrior, unit.getTotalSpeed ? unit.getTotalSpeed() : unit.speed);
+            return 1; // RUNNING
+        } else {
+            if (unit.body) unit.body.setVelocity(0, 0);
+            return 0; // SUCCESS
+        }
+    }, "Returning to Leader");
+
+    const leashSequence = new Sequence([checkLeash, returnToLeader], "Leash Logic");
+
     const hasTarget = new Condition(() => unit.blackboard.get('target') != null, "Has Target?");
 
     const isEvasiveActive = new Condition(() => unit.isEvasiveManeuversActive, "Evasive Active?");
@@ -167,6 +187,7 @@ export default function applyRangedAI(unit, skillNode = null) {
     const nodeCharmBehaviors = NodeCharmManager.getBehaviors(unit, approachSequence, attackAction);
 
     const root = new Selector([
+        leashSequence,
         ...nodeCharmBehaviors,
         new Sequence([hasTarget, autoBehavior], "Main Loop"),
         stopAction
