@@ -299,12 +299,12 @@ export default class BootScene extends Phaser.Scene {
             if (Object.keys(existingRoster).length === 0) {
                 console.log('[BootScene] Initializing default roster: [Aren, Ella, Sera, Merlin, Lute, Silvi]');
                 const defaultRoster = {
-                    'aren': { '1': 1 },
-                    'ella': { '1': 1 },
-                    'sera': { '1': 1 },
-                    'merlin': { '1': 1 },
-                    'lute': { '1': 1 },
-                    'silvi': { '1': 1 }
+                    'AREN': { '1': 1 },
+                    'ELLA': { '1': 1 },
+                    'SERA': { '1': 1 },
+                    'MERLIN': { '1': 1 },
+                    'LUTE': { '1': 1 },
+                    'SILVI': { '1': 1 }
                 };
                 await DBManager.saveMercenaryRoster(defaultRoster);
             }

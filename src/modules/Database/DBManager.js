@@ -327,10 +327,12 @@ export default class DBManager {
         if (!this.db) await this.initDB();
         const tx = this.db.transaction('mercenary_roster', 'readwrite');
         for (const [charId, data] of Object.entries(rosterObj)) {
+            // Normalize ID to Uppercase for IndexedDB key consistency
+            const normalizedId = charId.toUpperCase();
             // data can be either the stars object (legacy) or the new { stars, total } structure
             const stars = data.stars || data;
             const total = data.total || 0;
-            tx.store.put({ charId, stars, total });
+            tx.store.put({ charId: normalizedId, stars, total });
         }
         await tx.done;
     }

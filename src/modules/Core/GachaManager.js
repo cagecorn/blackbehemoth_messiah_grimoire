@@ -60,6 +60,9 @@ export default class GachaManager {
             roster[charId].total = (roster[charId].total || 0) + 1;
         });
 
+        console.log(`[GachaManager] Pulled: ${pulled.join(', ')}`);
+        console.log('[GachaManager] Roster before merges:', JSON.parse(JSON.stringify(roster)));
+
         // 4. 재귀적 3-Merge 룰 적용
         const distinctPulledIds = [...new Set(pulled)];
         for (const charId of distinctPulledIds) {
@@ -93,6 +96,8 @@ export default class GachaManager {
                     const mergesToMake = Math.floor(starData[star] / 3);
                     const remainder = starData[star] % 3;
 
+                    console.log(`[GachaManager] MERGE: ${charId} ${star}★ x${starData[star]} -> ${star + 1}★ x${mergesToMake} (Remainder: ${remainder})`);
+
                     starData[star] = remainder;
                     const nextStar = star + 1;
                     starData[nextStar] = (starData[nextStar] || 0) + mergesToMake;
@@ -112,6 +117,7 @@ export default class GachaManager {
                 }
             }
         }
+        console.log(`[GachaManager] Final star data for ${charId}:`, starData);
     }
 
     /**
