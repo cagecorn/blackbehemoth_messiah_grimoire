@@ -1459,10 +1459,19 @@ export default class UIManager {
                         </div>
                     </div>
                     
-                    <div class="owned-equipment-area">
-                        <div style="font-size: 14px; font-weight: bold; margin-bottom: 12px; color: #a78bfa;">[보유 중인 성장 장비]</div>
-                        <div id="owned-equip-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px; max-height: 400px; overflow-y: auto; padding: 5px;">
+                    <div class="owned-equipment-area" style="display: flex; flex-direction: column; gap: 10px;">
+                        <div style="font-size: 14px; font-weight: bold; color: #a78bfa;">[보유 중인 성장 장비]</div>
+                        <div id="owned-equip-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px; max-height: 280px; overflow-y: auto; padding: 5px; background: rgba(0,0,0,0.2); border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
                             <!-- Owned instances go here -->
+                        </div>
+                        
+                        <!-- NEW: Selection Control Area -->
+                        <div id="selected-equip-controls" style="margin-top: 5px; padding: 12px; background: rgba(124, 58, 237, 0.1); border: 1px dashed #7c3aed; border-radius: 8px; display: none; flex-direction: column; gap: 10px;">
+                            <div id="selected-equip-info" style="font-size: 12px; color: #fff; font-weight: bold;">선택된 장비 없음</div>
+                            <div style="display: flex; gap: 10px;">
+                                <button id="btn-equip-detail" class="shop-buy-btn" style="flex: 1; height: 32px; font-size: 11px; background: #4f46e5;">상세 정보 보기</button>
+                                <button id="btn-equip-destroy" class="shop-buy-btn" style="flex: 1; height: 32px; font-size: 11px; background: #dc2626; border-color: #ef4444;">장비 파괴</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1855,8 +1864,13 @@ export default class UIManager {
                     `<div style="font-size: 8px; color: #fbbf24; margin-top: 2px; font-weight: bold; border: 1px solid rgba(251, 191, 36, 0.5); padding: 1px 3px; border-radius: 3px; background: rgba(0,0,0,0.3); display: inline-block;">장착 중: ${inst.ownerId}</div>` :
                     `<div style="font-size: 8px; color: #10b981; margin-top: 2px; font-weight: bold;">[보유 중]</div>`;
 
+                const isSelected = this.currentEquipSelection === inst.id;
                 ownedHtml += `
-                    <div class="owned-equip-card" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(167, 139, 250, 0.3); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: help; position: relative;" title="${base.name} LV.${inst.level}">
+                    <div class="owned-equip-card ${isSelected ? 'selected' : ''}" data-instance-id="${inst.id}" 
+                        style="background: ${isSelected ? 'rgba(124, 58, 237, 0.3)' : 'rgba(255,255,255,0.05)'}; 
+                               border: ${isSelected ? '2px solid #fbbf24' : '1px solid rgba(167, 139, 250, 0.3)'}; 
+                               box-shadow: ${isSelected ? '0 0 10px rgba(251, 191, 36, 0.3)' : 'none'};
+                               border-radius: 8px; padding: 10px; display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer; position: relative;" title="${base.name} LV.${inst.level}">
                         <div style="position: absolute; top: -5px; right: -5px; background: #7c3aed; color: #fff; font-size: 8px; font-weight: bold; padding: 2px 5px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.3);">LV.${inst.level}</div>
                         <img src="${iconUrl}" style="width: 32px; height: 32px; object-fit: contain; image-rendering: pixelated; filter: drop-shadow(0 0 5px rgba(124, 58, 237, 0.5));">
                         <div style="font-size: 9px; color: #fff; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; font-weight: bold;">${base.name}</div>
@@ -1866,6 +1880,94 @@ export default class UIManager {
             }
         }
         ownedList.innerHTML = ownedHtml;
+
+        // 4. Bind Selection & Controls
+        const controlArea = document.getElementById('selected-equip-controls');
+        const infoDisplay = document.getElementById('selected-equip-info');
+        const detailBtn = document.getElementById('btn-equip-detail');
+        const destroyBtn = document.getElementById('btn-equip-destroy');
+
+        // Handle selection clicks
+        ownedList.querySelectorAll('.owned-equip-card').forEach(card => {
+            card.onclick = () => {
+                const instId = card.dataset.instanceId;
+                if (this.currentEquipSelection === instId) {
+                    this.currentEquipSelection = null;
+                } else {
+                    this.currentEquipSelection = instId;
+                }
+                this.refreshEquipmentCrafting();
+            };
+        });
+
+        // Update control area visibility
+        if (this.currentEquipSelection) {
+            const selectedInst = instances.find(inst => inst.id === this.currentEquipSelection);
+            if (selectedInst) {
+                const base = ItemManager.getItem(selectedInst.itemId);
+                controlArea.style.display = 'flex';
+                infoDisplay.innerHTML = `[선택됨] ${base.name} (LV.${selectedInst.level})`;
+
+                // Detail Button
+                detailBtn.onclick = () => {
+                    const info = equipmentManager.getDisplayInfo(selectedInst);
+                    const iconUrl = base.customAsset || 'assets/emojis/' + ItemManager.getSVGFilename(selectedInst.itemId);
+
+                    const html = `
+                        <div class="item-detail-popup" style="padding: 25px; color: #fff; font-family: 'VT323', monospace;">
+                            <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 20px; border-bottom: 2px solid rgba(124, 58, 237, 0.4); padding-bottom: 15px;">
+                                <img src="${iconUrl}" style="width: 64px; height: 64px; image-rendering: pixelated; background: rgba(0,0,0,0.3); border-radius: 12px; padding: 10px; border: 2px solid #7c3aed;">
+                                <div>
+                                    <div style="font-size: 24px; color: #fbbf24; text-shadow: 0 0 10px rgba(251, 191, 36, 0.5);">${info.name}</div>
+                                    <div style="font-size: 14px; color: #a78bfa; opacity: 0.8;">Unique Growth Equipment</div>
+                                </div>
+                            </div>
+                            <div style="font-size: 16px; line-height: 1.6; white-space: pre-wrap; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">${info.description}</div>
+                            <div style="margin-top: 20px; text-align: center; font-size: 12px; color: #666;">* 이 장비는 전투를 통해 성장하며 추가 옵션이 개방됩니다.</div>
+                        </div>
+                    `;
+                    this.showPopup(html);
+                };
+
+                // Destroy Button
+                destroyBtn.onclick = () => {
+                    this.showConfirm(`장비 [${base.name} LV.${selectedInst.level}]을 파괴하시겠습니까?<br><span style="color: #ef4444; font-size: 11px;">* 이 작업은 되돌릴 수 없습니다.</span>`, async () => {
+                        // 1. Unequip if needed
+                        if (selectedInst.ownerId) {
+                            const ownerId = selectedInst.ownerId;
+                            // Find which slot it occupies in the owner's state
+                            const ownerState = partyManager.getState(ownerId);
+                            if (ownerState && ownerState.equipment) {
+                                let foundSlot = null;
+                                for (const [slot, item] of Object.entries(ownerState.equipment)) {
+                                    if (item && item.instanceId === selectedInst.id) {
+                                        foundSlot = slot;
+                                        break;
+                                    }
+                                }
+                                if (foundSlot) {
+                                    console.log(`[UIManager] Auto-unequipping ${selectedInst.id} from ${ownerId} slot ${foundSlot}`);
+                                    await partyManager.unequipItem(ownerId, foundSlot);
+                                }
+                            }
+                        }
+
+                        // 2. Delete from DB
+                        await DBManager.deleteEquipmentInstance(selectedInst.id);
+                        this.showToast(`${base.name} 파괴 완료. 💥`);
+
+                        // 3. Reset selection and refresh
+                        this.currentEquipSelection = null;
+                        this.refreshEquipmentCrafting();
+                    });
+                };
+            } else {
+                this.currentEquipSelection = null;
+                controlArea.style.display = 'none';
+            }
+        } else {
+            controlArea.style.display = 'none';
+        }
     }
 
     async showNPCHire() {
