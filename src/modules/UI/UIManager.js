@@ -2746,6 +2746,18 @@ export default class UIManager {
                     const level = state ? state.level : 1;
                     const starHtml = `<div style="position:absolute; top:4px; right:4px; font-size:10px; font-weight:bold; color:#fbbf24; text-shadow:0 1px 2px #000;">★${star}</div>`;
                     const levelHtml = `<div style="position:absolute; top:4px; left:4px; font-size:10px; font-weight:bold; color:#fff; text-shadow:0 1px 2px #000; background:rgba(0,0,0,0.5); padding:0 2px; border-radius:2px;">Lv.${level}</div>`;
+
+                    // Class Emoji Icon
+                    const classIcons = {
+                        'warrior': '2694.svg',
+                        'wizard': '1fa84.svg',
+                        'archer': '1f3f9.svg',
+                        'healer': '1f496.svg',
+                        'bard': '1f3b6.svg'
+                    };
+                    const classSvg = classIcons[char.classId];
+                    const classHtml = classSvg ? `<div style="position:absolute; bottom:24px; right:4px; width:16px; height:16px; background:rgba(0,0,0,0.6); border-radius:3px; display:flex; justify-content:center; align-items:center; border:1px solid rgba(255,255,255,0.2);"><img src="assets/emojis/${classSvg}" style="width:12px; height:12px;"></div>` : '';
+
                     const skinData = partyManager.getMercenarySkin(char.id) || { equippedSkin: null };
                     let spriteSrc = `assets/characters/party/${char.sprite}.png`;
                     if (skinData.equippedSkin) {
@@ -2756,6 +2768,7 @@ export default class UIManager {
                         <div class="mercenary-card ${isSelected ? 'selected' : ''}" draggable="true" data-id="${char.id}" style="position:relative;">
                             ${starHtml}
                             ${levelHtml}
+                            ${classHtml}
                             <img src="${spriteSrc}" alt="${char.name}">
                             <div class="merc-name">${char.name.split(' (')[0]}</div>
                         </div>

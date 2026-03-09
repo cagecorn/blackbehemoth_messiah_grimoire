@@ -130,6 +130,13 @@ export default class BootScene extends Phaser.Scene {
         this.load.svg('emoji_musical_note', 'assets/emojis/1f3b6.svg', { width: 64, height: 64 }); // 🎶
         this.load.svg('emoji_candle', 'assets/emojis/1f56f.svg', { width: 64, height: 64 });
 
+        // Formation UI Class Emojis
+        this.load.svg('class_warrior', 'assets/emojis/2694.svg', { width: 32, height: 32 });
+        this.load.svg('class_wizard', 'assets/emojis/1fa84.svg', { width: 32, height: 32 });
+        this.load.svg('class_archer', 'assets/emojis/1f3f9.svg', { width: 32, height: 32 });
+        this.load.svg('class_healer', 'assets/emojis/1f496.svg', { width: 32, height: 32 });
+        this.load.svg('class_bard', 'assets/emojis/1f3b6.svg', { width: 32, height: 32 });
+
         this.load.on('loaderror', (file) => {
             console.error(`[BootScene] Error loading asset: ${file.key} from ${file.src}`);
         });
