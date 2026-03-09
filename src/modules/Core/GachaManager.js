@@ -47,7 +47,8 @@ export default class GachaManager {
         const roster = await DBManager.getMercenaryRoster();
         const mergeResults = [];
 
-        pulled.forEach(charId => {
+        pulled.forEach(id => {
+            const charId = id.toUpperCase();
             if (!roster[charId]) {
                 roster[charId] = { stars: {}, total: 0 };
             }
@@ -60,12 +61,13 @@ export default class GachaManager {
             roster[charId].total = (roster[charId].total || 0) + 1;
         });
 
-        console.log(`[GachaManager] Pulled: ${pulled.join(', ')}`);
+        console.log(`[GachaManager] Pulled (Normalized): ${pulled.map(id => id.toUpperCase()).join(', ')}`);
         console.log('[GachaManager] Roster before merges:', JSON.parse(JSON.stringify(roster)));
 
         // 4. 재귀적 3-Merge 룰 적용
-        const distinctPulledIds = [...new Set(pulled)];
+        const distinctPulledIds = [...new Set(pulled.map(id => id.toUpperCase()))];
         for (const charId of distinctPulledIds) {
+            console.log(`[GachaManager] Processing merges for: ${charId}`);
             this.processMergesForChar(charId, roster[charId].stars, mergeResults);
         }
 
@@ -86,19 +88,24 @@ export default class GachaManager {
      */
     static processMergesForChar(charId, starData, mergeResults) {
         let isMerging = true;
+        let iteration = 0;
         while (isMerging) {
+            iteration++;
             isMerging = false;
             // 보유중인 성급 레벨 오름차순
             const starLevels = Object.keys(starData).map(Number).sort((a, b) => a - b);
+            console.log(`[GachaManager] [${charId}] Loop ${iteration}, starLevels:`, starLevels, "data:", JSON.parse(JSON.stringify(starData)));
 
             for (const star of starLevels) {
                 if (starData[star] >= 3) {
                     const mergesToMake = Math.floor(starData[star] / 3);
                     const remainder = starData[star] % 3;
 
-                    console.log(`[GachaManager] MERGE: ${charId} ${star}★ x${starData[star]} -> ${star + 1}★ x${mergesToMake} (Remainder: ${remainder})`);
+                    console.log(`[GachaManager] !!! MERGE DETECTED !!! ${charId} ${star}★ x${starData[star]} -> ${star + 1}★ x${mergesToMake} (Remainder: ${remainder})`);
 
                     starData[star] = remainder;
+                    if (starData[star] === 0) delete starData[star];
+
                     const nextStar = star + 1;
                     starData[nextStar] = (starData[nextStar] || 0) + mergesToMake;
 
@@ -117,7 +124,7 @@ export default class GachaManager {
                 }
             }
         }
-        console.log(`[GachaManager] Final star data for ${charId}:`, starData);
+        console.log(`[GachaManager] Final star data for ${charId}:`, JSON.parse(JSON.stringify(starData)));
     }
 
     /**

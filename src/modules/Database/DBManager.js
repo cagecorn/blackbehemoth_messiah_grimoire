@@ -296,26 +296,56 @@ export default class DBManager {
         if (!this.db) await this.initDB();
         try {
             const all = await this.db.getAll('mercenary_roster');
-            // Convert list to structured Object: { "nickle": { stars: {"1": 2}, total: 3 } }
             const roster = {};
+            const keysToDelete = [];
+
             all.forEach(item => {
-                const charId = item.charId.toUpperCase(); // Normalize to Uppercase
+                const rawId = item.charId;
+                const charId = rawId.toUpperCase();
+
+                // If it's a lowercase key, mark for cleanup
+                if (rawId !== charId) {
+                    keysToDelete.push(rawId);
+                }
+
                 const stars = item.stars || {};
                 let total = item.total || 0;
 
                 // --- Legacy Data Support ---
-                // If total is 0 but we have stars, infer the minimum total pulls
                 if (total === 0 && Object.keys(stars).length > 0) {
                     for (const [star, count] of Object.entries(stars)) {
                         const starLevel = parseInt(star);
-                        // 1-star = 1, 2-star = 3, 3-star = 9, etc. (3-merge logic)
                         total += count * Math.pow(3, starLevel - 1);
                     }
                 }
 
-                roster[charId] = { stars, total };
+                if (!roster[charId]) {
+                    roster[charId] = { stars: {}, total: 0 };
+                }
+
+                // Merge stars and total if we encounter duplicates (e.g. 'lute' and 'LUTE')
+                for (const [star, count] of Object.entries(stars)) {
+                    roster[charId].stars[star] = (roster[charId].stars[star] || 0) + count;
+                }
+                roster[charId].total += total;
             });
-            console.log('[DBManager] Mercenary Roster Loaded:', roster);
+
+            // Cleanup lowercase duplicates in DB
+            if (keysToDelete.length > 0) {
+                console.warn('[DBManager] Deleting duplicate lowercase roster keys:', keysToDelete);
+                const tx = this.db.transaction('mercenary_roster', 'readwrite');
+                for (const key of keysToDelete) {
+                    tx.store.delete(key);
+                }
+                // Also ensure the merged uppercase version is saved back
+                for (const key of keysToDelete) {
+                    const normalized = key.toUpperCase();
+                    tx.store.put({ charId: normalized, ...roster[normalized] });
+                }
+                await tx.done;
+            }
+
+            console.log('[DBManager] Mercenary Roster Loaded (Normalized \u0026 Merged):', JSON.parse(JSON.stringify(roster)));
             return roster;
         } catch (err) {
             console.error('[DBManager] getMercenaryRoster error', err);
@@ -325,13 +355,13 @@ export default class DBManager {
 
     static async saveMercenaryRoster(rosterObj) {
         if (!this.db) await this.initDB();
+        console.log('[DBManager] Saving Mercenary Roster:', JSON.parse(JSON.stringify(rosterObj)));
         const tx = this.db.transaction('mercenary_roster', 'readwrite');
         for (const [charId, data] of Object.entries(rosterObj)) {
-            // Normalize ID to Uppercase for IndexedDB key consistency
             const normalizedId = charId.toUpperCase();
-            // data can be either the stars object (legacy) or the new { stars, total } structure
             const stars = data.stars || data;
             const total = data.total || 0;
+            console.log(`[DBManager] ROSTER_PUT: ${normalizedId}`, { stars, total });
             tx.store.put({ charId: normalizedId, stars, total });
         }
         await tx.done;

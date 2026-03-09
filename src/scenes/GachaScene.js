@@ -186,7 +186,9 @@ export default class GachaScene extends Phaser.Scene {
             this.resultModal = null;
         }
 
+        console.log('[GachaScene] Executing 5-pull Gacha...');
         const result = await GachaManager.performGacha(5);
+        console.log('[GachaScene] Gacha Result:', result);
 
         if (!result.success) {
             alert(result.message);
@@ -208,7 +210,9 @@ export default class GachaScene extends Phaser.Scene {
         this.petPullBtn.disabled = true;
         this.petPullBtn.style.opacity = '0.5';
 
+        console.log('[GachaScene] Executing Pet Gacha...');
         const result = await GachaManager.performPetGacha();
+        console.log('[GachaScene] Pet Gacha Result:', result);
 
         if (!result.success) {
             this.game.uiManager?.showToast(result.message);
