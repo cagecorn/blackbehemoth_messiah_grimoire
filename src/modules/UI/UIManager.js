@@ -2870,11 +2870,11 @@ export default class UIManager {
                 </div>
                 <div style="display: flex; flex-direction: column; align-items: center; gap: 5px;">
                     <div style="font-family: var(--font-pixel); font-size: 7px; color: #fbbf24;">NPC</div>
-                    <div class="party-slot npc-slot" id="formation-npc-slot" style="width: 60px; height: 60px; border-style: solid; border-color: #fbbf24;">N</div>
+                    <div class="party-slot npc-slot" id="formation-npc-slot" style="width: 60px; height: 60px; border-style: solid; border-color: #fbbf24; cursor: pointer;">N</div>
                 </div>
                 <div style="display: flex; flex-direction: column; align-items: center; gap: 5px;">
                     <div style="font-family: var(--font-pixel); font-size: 7px; color: #fff;">MESSIAH</div>
-                    <div class="party-slot messiah-slot" id="formation-messiah-slot" style="width: 60px; height: 60px; border-style: solid; border-color: #fff;">M</div>
+                    <div class="party-slot messiah-slot" id="formation-messiah-slot" style="width: 60px; height: 60px; border-style: solid; border-color: #fff; cursor: pointer;">M</div>
                 </div>
             </div>
 
@@ -2890,7 +2890,7 @@ export default class UIManager {
 
         document.body.appendChild(overlay);
 
-        const slotEls = overlay.querySelectorAll('.party-slot:not(.pet-slot)');
+        const slotEls = overlay.querySelectorAll('.party-slots .party-slot');
         const petSlotEl = overlay.querySelector('.pet-slot');
 
         const updateSlotUI = (index) => {
@@ -2949,6 +2949,14 @@ export default class UIManager {
             }
             petSlotEl.innerHTML = 'P';
             petSlotEl.classList.remove('filled');
+        };
+
+        // Support Slot Click Handlers
+        overlay.querySelector('#formation-npc-slot').onclick = () => {
+            this.showNPCHire();
+        };
+        overlay.querySelector('#formation-messiah-slot').onclick = () => {
+            this.showMessiahManagement();
         };
 
         // Toggle Listeners
