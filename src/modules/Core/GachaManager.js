@@ -5,6 +5,66 @@ import partyManager from './PartyManager.js';
 export default class GachaManager {
     static COST_PER_PULL = 100; // 5회 뽑기 총 500 다이아
     static COST_PET_PULL = 1000; // 펫 1회 뽑기 1000 다이아
+    static COST_GOLD_PULL = 10000; // 골드 1회 뽑기 10000 골드
+
+    /**
+     * 골드를 소모하여 1회 가챠를 수행합니다.
+     */
+    static async performGoldGacha(pullCount = 1) {
+        // 1. 골드 확인 및 차감
+        const goldData = await DBManager.getInventoryItem('emoji_coin');
+        const currentGold = goldData ? goldData.amount : 0;
+        const totalCost = this.COST_GOLD_PULL * pullCount;
+
+        if (currentGold < totalCost) {
+            return { success: false, message: '골드가 부족합니다. (10,000 골드 필요)' };
+        }
+
+        await DBManager.saveInventoryItem('emoji_coin', currentGold - totalCost);
+
+        // 2. 가챠 결과 도출 (performGacha와 동일 로직)
+        const allCharIds = Object.keys(Characters);
+        const normalChars = allCharIds.filter(id => Characters[id].rarity !== 'BLACK_BEHEMOTH');
+        const behemothChars = allCharIds.filter(id => Characters[id].rarity === 'BLACK_BEHEMOTH');
+
+        const pulled = [];
+        for (let i = 0; i < pullCount; i++) {
+            const roll = Math.random() * 100;
+            let selectedCharId;
+            if (roll < 2 && behemothChars.length > 0) {
+                selectedCharId = behemothChars[Math.floor(Math.random() * behemothChars.length)];
+            } else {
+                selectedCharId = normalChars[Math.floor(Math.random() * normalChars.length)];
+            }
+            pulled.push(selectedCharId);
+        }
+
+        // 3. 로스터 업데이트 및 병합
+        const roster = await DBManager.getMercenaryRoster();
+        const mergeResults = [];
+
+        pulled.forEach(id => {
+            const charId = id.toUpperCase();
+            if (!roster[charId]) roster[charId] = { stars: {}, total: 0 };
+            roster[charId].stars['1'] = (roster[charId].stars['1'] || 0) + 1;
+            roster[charId].total = (roster[charId].total || 0) + 1;
+        });
+
+        const distinctPulledIds = [...new Set(pulled.map(id => id.toUpperCase()))];
+        for (const charId of distinctPulledIds) {
+            this.processMergesForChar(charId, roster[charId].stars, mergeResults);
+        }
+
+        await DBManager.saveMercenaryRoster(roster);
+        await partyManager.reloadRoster();
+
+        return {
+            success: true,
+            message: '골드 영입 완료!',
+            pulled: pulled.map(id => Characters[id]),
+            mergeResults: mergeResults
+        };
+    }
 
     /**
      * 다이아를 소모하여 가챠를 수행하고, 로스터를 자동 변합(Merge)합니다.

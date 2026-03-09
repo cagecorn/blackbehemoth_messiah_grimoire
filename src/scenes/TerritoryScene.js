@@ -275,7 +275,7 @@ export default class TerritoryScene extends Phaser.Scene {
                 </div>
                 <div class="patch-entry" style="border: 2px solid #ff4444; background: rgba(255, 68, 68, 0.1); padding: 5px;">
                     <div class="patch-date" style="color: #ff4444;">📢 **필독 공지**</div>
-                    <div class="patch-item" style="color: #ffffff; line-height: 1.4;">- 그동안 용병의 레벨과 별 등급이 올라도, 실제 스탯에는 반영이 되지 않는 어처구니 없는 실수를 방치하고 있었습니다. 게임의 핵심적인 요소를 놓쳐 플레이어분들의 핵심 재미를 상실하게 만든 점, 깊이 죄송합니다. -</div>
+                    <div class="patch-item" style="color: #ffffff; line-height: 1.4;">저의 부주의로 인해 여러분의 소중한 게임 진행 데이터가 초기화되는 불상사가 일어났습니다. 죄송합니다. 더 열심히 개발하여 보상해드리겠습니다.</div>
                 </div>
                 <div class="patch-entry">
                     <div class="patch-date">▶ 2026-03-08 (Latest)</div>

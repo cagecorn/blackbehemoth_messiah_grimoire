@@ -151,8 +151,50 @@ export default class GachaScene extends Phaser.Scene {
         };
         this.petPullBtn.onclick = () => this.executePetGacha();
 
+        // --- Gold Pull Button (Single) ---
+        this.goldPullBtn = document.createElement('button');
+        this.goldPullBtn.innerHTML = `
+            <div style="font-size: 18px; color: #fffbeb;">모험가 영입 (1마리)</div>
+            <div style="font-size: 14px; color: #fbbf24; display: flex; align-items: center; gap: 4px;">
+                <span style="filter: drop-shadow(0 0 2px rgba(0,0,0,0.8));">💰</span> 10,000 골드
+            </div>
+        `;
+        this.goldPullBtn.style.cssText = `
+            padding: 10px 30px;
+            background: linear-gradient(to bottom, #d97706 0%, #b45309 100%);
+            color: #fffbeb;
+            border: 4px solid #fbbf24;
+            border-style: double;
+            border-radius: 4px;
+            cursor: pointer;
+            box-shadow: 0 6px 0 #78350f, 0 10px 20px rgba(0,0,0,0.5);
+            transition: all 0.1s;
+            text-shadow: 2px 2px 0px rgba(0,0,0,0.8);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        `;
+        this.goldPullBtn.onmouseover = () => {
+            this.goldPullBtn.style.transform = 'translateY(-2px)';
+            this.goldPullBtn.style.background = 'linear-gradient(to bottom, #f59e0b 0%, #d97706 100%)';
+            this.goldPullBtn.style.boxShadow = '0 8px 0 #78350f, 0 12px 25px rgba(0,0,0,0.6)';
+        };
+        this.goldPullBtn.onmouseout = () => {
+            this.goldPullBtn.style.transform = 'translateY(0)';
+            this.goldPullBtn.style.background = 'linear-gradient(to bottom, #d97706 0%, #b45309 100%)';
+            this.goldPullBtn.style.boxShadow = '0 6px 0 #78350f, 0 10px 20px rgba(0,0,0,0.5)';
+        };
+        this.goldPullBtn.onmousedown = () => {
+            this.goldPullBtn.style.transform = 'translateY(4px)';
+            this.goldPullBtn.style.boxShadow = '0 2px 0 #78350f, 0 4px 10px rgba(0,0,0,0.5)';
+        };
+        this.goldPullBtn.onmouseup = () => {
+            this.goldPullBtn.style.transform = 'translateY(-2px)';
+            this.goldPullBtn.style.boxShadow = '0 8px 0 #78350f, 0 12px 25px rgba(0,0,0,0.6)';
+        };
+        this.goldPullBtn.onclick = () => this.executeGoldGacha();
+
         bottomArea.appendChild(this.pullBtn);
         bottomArea.appendChild(this.petPullBtn);
+        bottomArea.appendChild(this.goldPullBtn);
         this.uiContainer.appendChild(bottomArea);
 
         document.body.appendChild(this.uiContainer);
@@ -297,29 +339,68 @@ export default class GachaScene extends Phaser.Scene {
     async executePetGacha() {
         this.petPullBtn.disabled = true;
         this.petPullBtn.style.opacity = '0.5';
+        this.petPullBtn.style.pointerEvents = 'none';
+
+        if (this.titleArea) this.titleArea.style.opacity = '0';
+
+        this.cardsContainer.removeAll(true);
+        if (this.resultModal) {
+            this.resultModal.remove();
+            this.resultModal = null;
+        }
 
         console.log('[GachaScene] Executing Pet Gacha...');
         const result = await GachaManager.performPetGacha();
-        console.log('[GachaScene] Pet Gacha Result:', result);
 
         if (!result.success) {
-            this.game.uiManager?.showToast(result.message);
-            this.petPullBtn.disabled = false;
-            this.petPullBtn.style.opacity = '1';
+            alert(result.message);
+            this.resetPullButton();
+            return;
+        }
+
+        await this.updateGemsDisplay();
+        SoundEffects.play('pet_gacha_start'); // Assuming there's a pet specific sound or reuse
+
+        // Animation for pet is simpler (1 card)
+        await this.playGachaAnimation([result.pulled], result.mergeResult ? [result.mergeResult] : []);
+        await this.refreshOwnershipUI();
+        this.resetPullButton();
+        this.petPullBtn.disabled = false;
+        this.petPullBtn.style.opacity = '1';
+        this.petPullBtn.style.pointerEvents = 'auto';
+    }
+
+    async executeGoldGacha() {
+        this.goldPullBtn.disabled = true;
+        this.goldPullBtn.style.opacity = '0.5';
+        this.goldPullBtn.style.pointerEvents = 'none';
+
+        if (this.titleArea) this.titleArea.style.opacity = '0';
+
+        this.cardsContainer.removeAll(true);
+        if (this.resultModal) {
+            this.resultModal.remove();
+            this.resultModal = null;
+        }
+
+        console.log('[GachaScene] Executing Gold Gacha (1-pull)...');
+        const result = await GachaManager.performGoldGacha(1);
+
+        if (!result.success) {
+            alert(result.message);
+            this.resetPullButton();
             return;
         }
 
         await this.updateGemsDisplay();
         SoundEffects.playGachaSound();
 
-        // Simplified Pet Animation (Single Card)
-        await this.playGachaAnimation([result.pulled], result.mergeResult ? [result.mergeResult] : []);
-
-        // Refresh ownership counts
+        await this.playGachaAnimation(result.pulled, result.mergeResults);
         await this.refreshOwnershipUI();
-
-        this.petPullBtn.disabled = false;
-        this.petPullBtn.style.opacity = '1';
+        this.resetPullButton();
+        this.goldPullBtn.disabled = false;
+        this.goldPullBtn.style.opacity = '1';
+        this.goldPullBtn.style.pointerEvents = 'auto';
     }
 
     resetPullButton() {
