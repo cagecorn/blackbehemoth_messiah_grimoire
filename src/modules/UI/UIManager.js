@@ -4,7 +4,7 @@ import EventBus from '../Events/EventBus.js';
 import intentRouter from '../AI/IntentRouter.js';
 import localLLM from '../AI/LocalLLM.js';
 import embeddingGemma from '../AI/EmbeddingGemma.js';
-import { MercenaryClasses, Characters, PetStats, scaleStats, StructureStats, Skins, MonsterClasses, StageConfigs } from '../Core/EntityStats.js';
+import { MercenaryClasses, Characters, PetStats, scaleStats, StructureStats, Skins, MonsterClasses, StageConfigs, calculateExpToNextLevel, calculateTotalStats } from '../Core/EntityStats.js';
 // partyManager will be accessed via this.scene.game.partyManager
 import ItemManager, { ITEM_TYPES } from '../Core/ItemManager.js';
 import CharmManager from '../Core/CharmManager.js';
@@ -626,6 +626,18 @@ export default class UIManager {
             if (this.difficultyMenu && !this.roundDisplay.contains(e.target)) {
                 this.difficultyMenu.classList.add('difficulty-menu-hidden');
                 this.difficultyMenu.classList.remove('difficulty-menu-visible');
+            }
+        });
+
+        EventBus.on('EQUIPMENT_CHANGED', (payload) => {
+            console.log('[UIManager] EQUIPMENT_CHANGED received:', payload);
+            // 1. Refresh Formation Detail Card if open for this character
+            if (this._formationDetailChannel && this._formationDetailChannel.characterId === payload.charId) {
+                const charId = payload.charId;
+                const charConfig = Object.values(Characters).find(c => c && (c.id === charId || c.id === charId.toLowerCase()));
+                if (charConfig) {
+                    this.showFormationUnitDetail(charConfig);
+                }
             }
         });
     }
@@ -2807,18 +2819,22 @@ export default class UIManager {
             const cards = container.querySelectorAll('.mercenary-card');
             cards.forEach(card => {
                 card.addEventListener('dragstart', (e) => e.dataTransfer.setData('sourceId', card.dataset.id));
-                card.onclick = () => {
+                card.onclick = (e) => {
                     const id = card.dataset.id;
                     if (this.partyViewState === 'MERCE') {
-                        if (currentSlots.includes(id)) return;
-                        let emptyIndex = currentSlots.indexOf(null);
-                        if (emptyIndex !== -1) {
-                            currentSlots[emptyIndex] = id;
-                            updateSlotUI(emptyIndex);
-                            updateUI();
-                        }
+                        // Show retro context menu instead of immediately deploying
+                        const deployAction = () => {
+                            if (currentSlots.includes(id)) return;
+                            let emptyIndex = currentSlots.indexOf(null);
+                            if (emptyIndex !== -1) {
+                                currentSlots[emptyIndex] = id;
+                                updateSlotUI(emptyIndex);
+                                updateUI();
+                            }
+                        };
+                        this.showFormationUnitContext(id, card, currentSlots, deployAction);
                     } else {
-                        // Switch Pet
+                        // Switch Pet (keep original behavior)
                         currentPet = id;
                         updatePetSlotUI();
                         updateUI();
@@ -3046,7 +3062,239 @@ export default class UIManager {
         slotEl.classList.add('filled');
     }
 
+    /**
+     * 편성 탭 유닛 카드 클릭 시 레트로 컨텍스트 팝업 표시.
+     * "상세 정보 보기"와 "파티 편성" 두 버튼을 제공.
+     */
+    showFormationUnitContext(charId, cardEl, currentSlots, deployAction) {
+        // 기존 컨텍스트 팝업 제거
+        document.querySelectorAll('.formation-unit-ctx').forEach(e => e.remove());
+
+        const charConfig = Characters[charId.toUpperCase()];
+        if (!charConfig) return;
+
+        const isInParty = currentSlots.includes(charId);
+        const charName = charConfig.name.split(' (')[0];
+
+        const ctx = document.createElement('div');
+        ctx.className = 'formation-unit-ctx';
+
+        // 카드 위치 기반 배치
+        const rect = cardEl.getBoundingClientRect();
+        const scrollY = window.scrollY || 0;
+        const scrollX = window.scrollX || 0;
+        ctx.style.top = (rect.bottom + scrollY + 4) + 'px';
+        ctx.style.left = (rect.left + scrollX) + 'px';
+
+        ctx.innerHTML = `
+            <div class="fuc-title">${charName}</div>
+            <button class="fuc-btn fuc-detail">[ 상세 정보 보기 ]</button>
+            <button class="fuc-btn fuc-deploy${isInParty ? ' fuc-disabled' : ''}">[ 파티 편성 ]</button>
+        `;
+
+        document.body.appendChild(ctx);
+        console.log(`[UIManager] showFormationUnitContext: ${charId}, inParty=${isInParty}`);
+
+        // 상세 정보 버튼
+        ctx.querySelector('.fuc-detail').onclick = (e) => {
+            e.stopPropagation();
+            ctx.remove();
+            this.showFormationUnitDetail(charId);
+        };
+
+        // 파티 편성 버튼
+        const deployBtn = ctx.querySelector('.fuc-deploy');
+        if (!isInParty) {
+            deployBtn.onclick = (e) => {
+                e.stopPropagation();
+                ctx.remove();
+                deployAction();
+            };
+        }
+
+        // 외부 클릭 시 팝업 닫기
+        const closeHandler = (e) => {
+            if (!ctx.contains(e.target)) {
+                ctx.remove();
+                document.removeEventListener('click', closeHandler, true);
+            }
+        };
+        // 다음 tick에 등록 (현재 클릭 이벤트 버블링 방지)
+        setTimeout(() => document.addEventListener('click', closeHandler, true), 0);
+    }
+
+    /**
+     * 편성 탭에서 특정 용병의 ChatChannel 상세 패널을 팝업으로 표시.
+     * PartyManager에서 현재 레벨/장비/그리모어를 가져와 완전히 동기화.
+     */
+    async showFormationUnitDetail(charId) {
+        console.log(`[UIManager] showFormationUnitDetail: ${charId}`);
+
+        const charConfig = Characters[charId.toUpperCase()];
+        if (!charConfig) {
+            console.warn(`[UIManager] showFormationUnitDetail: charConfig not found for ${charId}`);
+            return;
+        }
+
+        const game = this.scene?.game || (this.scene?.scene && this.scene.scene.game);
+        const partyManager = game?.partyManager;
+        if (!partyManager) {
+            console.error('[UIManager] showFormationUnitDetail: partyManager not found');
+            return;
+        }
+
+        const state = partyManager.getState(charId) || partyManager.getState(charId.toLowerCase());
+        const level = state?.level || 1;
+        const exp = state?.exp || 0;
+        const expToNextLevel = calculateExpToNextLevel(level);
+        const star = partyManager.getHighestStar(charId) || partyManager.getHighestStar(charId.toLowerCase()) || 1;
+
+        // scaleStats로 기초 성장 스탯 계산
+        const classConfig = MercenaryClasses[charConfig.classId?.toUpperCase()];
+        const baseConfig = {
+            ...(classConfig || {}),
+            ...charConfig,
+            star,
+            level
+        };
+        const scaled = scaleStats(baseConfig, level, 'NORMAL');
+
+        // 현재 장비/그리모어 (state에서 직접)
+        const equipment = state?.equipment || { weapon: null, armor: null, necklace: null, ring: null };
+        const grimoire = state?.grimoire || null;
+
+        // 펫 보너스 가져오기
+        const petAtkMult = partyManager.getGlobalPetBonus ? partyManager.getGlobalPetBonus('atkMult') : 0;
+        const petMAtkMult = partyManager.getGlobalPetBonus ? partyManager.getGlobalPetBonus('mAtkMult') : 0;
+        const petBonuses = { atkMult: petAtkMult, mAtkMult: petMAtkMult };
+
+        // 중앙화된 함수로 장비/그리모어/펫이 합산된 최종 스탯 계산
+        const totalStats = calculateTotalStats(scaled, equipment, grimoire, petBonuses);
+
+        // 스킨 처리
+        const skinData = partyManager.getMercenarySkin(charId) || partyManager.getMercenarySkin(charId.toLowerCase()) || { equippedSkin: null };
+        let spriteSrc = `assets/characters/party/${charConfig.sprite}.png`;
+        if (skinData.equippedSkin) {
+            const skin = Object.values(Skins).find(s => s.id === skinData.equippedSkin);
+            if (skin) spriteSrc = `assets/characters/skin/${skin.sprite}.png`;
+        }
+
+        // 임시 채널 생성 또는 재활용
+        if (!this._formationDetailChannel) {
+            const tempContainer = document.createElement('div');
+            tempContainer.style.display = 'none';
+            document.body.appendChild(tempContainer);
+            this._formationDetailChannel = new ChatChannel(
+                'formation-detail',
+                charConfig.classId,
+                [],
+                charConfig.name.split(' (')[0],
+                spriteSrc,
+                tempContainer,
+                () => { },
+                () => { },
+                this
+            );
+        }
+
+        const channel = this._formationDetailChannel;
+
+        // 캐릭터 변경 시 캐시 초기화 (다른 캐릭터로 전환 시 dirty 블록 방지)
+        if (channel.characterId !== charId) {
+            channel.lastState = { stats: {}, equipment: {}, statuses: '', ultProgress: -1, narrativeKey: '' };
+            channel.domCache = { stats: {}, gear: {}, perks: null, skill: {} };
+        }
+
+
+        // 캐릭터 데이터 바인딩
+        channel.bindUnit(
+            `preview-${charId}`,
+            charConfig.name.split(' (')[0],
+            spriteSrc,
+            {
+                name: charConfig.skillName,
+                emoji: charConfig.skillEmoji,
+                description: charConfig.skillDescription,
+                passiveName: charConfig.passiveName,
+                passiveEmoji: charConfig.passiveEmoji,
+                passiveDescription: charConfig.passiveDescription,
+                ultimateName: charConfig.ultimateName,
+                ultimateDescription: charConfig.ultimateDescription
+            },
+            charConfig.narrativeUnlocks,
+            charId
+        );
+
+        // 서사: 실제 레벨로 덮어씌움
+        if (charConfig.narrativeUnlocks) {
+            channel.updateNarrative(charConfig.narrativeUnlocks, level);
+        }
+
+        // 현재 스탯 주입 (합산된 totalStats 사용)
+        channel.updateStats({
+            level,
+            exp,
+            expToNextLevel,
+            hp: totalStats.hp,
+            maxHp: totalStats.maxHp,
+            atk: totalStats.atk,
+            mAtk: totalStats.mAtk,
+            def: totalStats.def,
+            mDef: totalStats.mDef,
+            speed: totalStats.speed,
+            atkSpd: totalStats.atkSpd,
+            atkRange: totalStats.atkRange,
+            rangeMin: totalStats.rangeMin,
+            rangeMax: totalStats.rangeMax,
+            castSpd: totalStats.castSpd,
+            acc: totalStats.acc,
+            eva: totalStats.eva,
+            crit: totalStats.crit,
+            ultChargeSpeed: totalStats.ultChargeSpeed || 1.0,
+            fireRes: totalStats.fireRes || 0,
+            iceRes: totalStats.iceRes || 0,
+            lightningRes: totalStats.lightningRes || 0,
+            classId: charConfig.classId,
+            characterId: charId
+        });
+
+        // 장비/그리모어 주입
+        channel.updateEquipment(equipment, grimoire);
+        console.log(`[UIManager] showFormationUnitDetail equipment:`, equipment, 'grimoire:', grimoire ? 'exists' : 'null');
+
+        // 모든 pendingData를 channel.update()로 한 번에 flush
+        // (stats, equipment, skill, narrative 전부 처리)
+        channel.dirty = true;
+        channel.update();
+
+        // 그리모어 그리드(차트)는 update()에 포함되어 있지 않으므로 별도 호출
+        if (grimoire) channel.updateGrimoireGrid(grimoire);
+
+        console.log(`[UIManager] showFormationUnitDetail loaded: ${charId} Lv.${level} ★${star}, atk=${scaled.atk}, maxHp=${scaled.maxHp}`);
+
+        // 편성 탭에서 열었다는 플래그 설정 → hidePopup이 partyFormationOverlay를 삭제하지 않음
+        // popupOverlay 배경을 투명하게 설정 → 뒤에 편성 오버레이가 보이도록
+        this._fromFormation = true;
+        if (this.popupOverlay) this.popupOverlay.style.background = 'transparent';
+        this.showCharacterDetail(channel);
+    }
+
+
     hidePopup() {
+        // 편성 탭에서 열린 ChatChannel 패널을 닫을 때:
+        // partyFormationOverlay를 삭제하지 않고 팝업만 숨긴다.
+        if (this._fromFormation && this.partyFormationOverlay) {
+            console.log('[UIManager] hidePopup: Returning to formation overlay (not destroying it)');
+            this._fromFormation = false;
+            this.detailChannel = null;
+            this.clearPopupSafe();
+            this.hideTooltip();
+            this.popupOverlay.style.display = 'none';
+            this.popupOverlay.style.background = ''; // 배경 복원
+            // partyFormationOverlay는 살아있으므로 그냥 둠
+            return;
+        }
+
         if (this.partyFormationOverlay) {
             this.partyFormationOverlay.remove();
             this.partyFormationOverlay = null;

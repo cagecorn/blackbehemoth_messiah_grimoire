@@ -10,7 +10,7 @@ import GrimoireManager from '../Core/GrimoireManager.js';
 import DBManager from '../Database/DBManager.js';
 import soundEffects from '../Core/SoundEffects.js';
 import equipmentManager from '../Core/EquipmentManager.js';
-import { MercenaryClasses, Characters, Skins } from '../Core/EntityStats.js';
+import { MercenaryClasses, Characters, Skins, calculateExpToNextLevel, calculateTotalStats } from '../Core/EntityStats.js';
 
 
 /**
@@ -384,46 +384,13 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         };
         EventBus.on('PERK_LEARN', this.handlePerkLearn);
 
-        this.handleEquipRequest = async (payload) => {
-            if (payload.unitId === this.id) {
-                console.log(`[Mercenary] handleEquipRequest received for ${this.unitName} (${this.id})`, payload);
-                let item;
-                if (!payload.itemId && payload.slot) {
-                    await this.unequipItem(payload.slot);
-                    console.log(`[Mercenary] Unequipped slot ${payload.slot} via request`);
-                    return;
-                }
-
-                if (payload.itemId && payload.itemId.startsWith('eq_')) {
-                    const inst = await DBManager.getEquipmentInstance(payload.itemId);
-                    if (inst) {
-                        const baseItem = ItemManager.getItem(inst.itemId);
-                        item = { ...baseItem, ...inst, instanceId: inst.id };
-                        // Ensure random options are active
-                        item.stats = equipmentManager.getEffectiveStats(item, baseItem);
-                    }
-                } else {
-                    item = ItemManager.getItem(payload.itemId);
-                }
-
-                if (item && item.type === 'equipment') {
-                    // --- Toggle Unequip Logic ---
-                    const currentEquipped = this.equipment[item.slot];
-                    const isSameItem = currentEquipped && (
-                        (item.instanceId && currentEquipped.instanceId === item.instanceId) ||
-                        (!item.instanceId && currentEquipped.id === item.id)
-                    );
-
-                    if (isSameItem) {
-                        await this.unequipItem(item.slot);
-                        console.log(`[Mercenary] Unequipped ${item.id || item.instanceId} from ${item.slot}`);
-                    } else {
-                        await this.equipItem(item.slot, item);
-                    }
-                }
+        EventBus.on('EQUIPMENT_CHANGED', (payload) => {
+            if (payload.charId === this.characterId || payload.charId === this.id) {
+                console.log(`[Mercenary] EQUIPMENT_CHANGED syncing for ${this.unitName}`, payload);
+                this.equipment[payload.slot] = payload.itemData;
+                this.syncStatusUI();
             }
-        };
-        EventBus.on(EventBus.EVENTS.EQUIP_REQUEST, this.handleEquipRequest);
+        });
 
         this.handleGrimoireRequest = async (payload) => {
             if (payload.unitId === this.id) {
@@ -681,56 +648,17 @@ export default class Mercenary extends Phaser.GameObjects.Container {
     }
 
     async equipItem(slot, itemData) {
-        if (this.equipment.hasOwnProperty(slot)) {
-            const oldItem = this.equipment[slot];
-
-            // 1. If there was an old growth instance, clear its owner
-            if (oldItem && oldItem.instanceId) {
-                const oldInst = await DBManager.getEquipmentInstance(oldItem.instanceId);
-                if (oldInst) {
-                    oldInst.ownerId = null;
-                    await DBManager.saveEquipmentInstance(oldInst);
-                }
-            }
-
-            // 2. Set new equipment
-            this.equipment[slot] = itemData;
-
-            // 3. If new item is a growth instance, set its owner
-            const newId = (typeof itemData === 'string') ? itemData : (itemData.instanceId || itemData.id);
-            if (newId && typeof newId === 'string' && newId.startsWith('eq_')) {
-                const newInst = await DBManager.getEquipmentInstance(newId);
-                if (newInst) {
-                    newInst.ownerId = this.id;
-                    await DBManager.saveEquipmentInstance(newInst);
-                }
-            }
-
-            this.syncStatusUI();
-            EventBus.emit(EventBus.EVENTS.INVENTORY_UPDATED); // Refresh UI to hide equipped item
-            return true;
+        const partyManager = this.scene?.game?.partyManager;
+        if (partyManager) {
+            return await partyManager.equipItem(this.characterId || this.id, slot, itemData);
         }
         return false;
     }
 
     async unequipItem(slot) {
-        if (this.equipment.hasOwnProperty(slot)) {
-            const oldItem = this.equipment[slot];
-
-            // If it was a growth instance, clear its owner in DB
-            const oldId = (typeof oldItem === 'string') ? oldItem : (oldItem.instanceId || oldItem.id);
-            if (oldId && typeof oldId === 'string' && oldId.startsWith('eq_')) {
-                const inst = await DBManager.getEquipmentInstance(oldId);
-                if (inst) {
-                    inst.ownerId = null;
-                    await DBManager.saveEquipmentInstance(inst);
-                }
-            }
-
-            this.equipment[slot] = null;
-            this.syncStatusUI();
-            EventBus.emit(EventBus.EVENTS.INVENTORY_UPDATED); // Refresh UI to show unequipped item
-            return true;
+        const partyManager = this.scene?.game?.partyManager;
+        if (partyManager) {
+            return await partyManager.unequipItem(this.characterId || this.id, slot);
         }
         return false;
     }
@@ -1144,8 +1072,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
     }
 
     calculateExpToNextLevel(level) {
-        // Simple scaling: 100, 250, 450, 700... (Level^2 * 50 + 50)
-        return (level * level * 50) + 50;
+        return calculateExpToNextLevel(level);
     }
 
     /**

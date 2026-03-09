@@ -1719,3 +1719,80 @@ export function scaleStats(config, level, type = 'NORMAL') {
     return newConfig;
 }
 
+/**
+ * Centralized EXP formula.
+ * @param {number} level 
+ * @returns {number}
+ */
+export function calculateExpToNextLevel(level) {
+    // Simple scaling: 100, 250, 450, 700... (Level^2 * 50 + 50)
+    return (level * level * 50) + 50;
+}
+
+/**
+ * Centralized Stat Summation logic.
+ * Combines base scaled stats with equipment, grimoire, and pet bonuses.
+ * @param {Object} baseStats The stats from scaleStats()
+ * @param {Object} equipment Current equipment objects
+ * @param {Object} grimoire Current grimoire bonuses object { chapter_a: [...] } 
+ * @param {Object} petBonuses Global pet multipliers { atkMult: 0.1, ... }
+ * @returns {Object} Total calculated stats
+ */
+export function calculateTotalStats(baseStats, equipment = {}, grimoire = null, petBonuses = {}) {
+    const total = { ...baseStats };
+
+    // --- 1. Sum Equipment Bonuses ---
+    const eqAdditive = {};
+    const eqMults = {};
+
+    for (const slot in equipment) {
+        const item = equipment[slot];
+        if (!item || !item.stats) continue;
+
+        for (const stat in item.stats) {
+            const val = item.stats[stat];
+            if (stat.endsWith('Mult')) {
+                eqMults[stat] = (eqMults[stat] || 0) + val;
+            } else {
+                eqAdditive[stat] = (eqAdditive[stat] || 0) + val;
+            }
+        }
+    }
+
+    // --- 2. Grimoire Bonuses (Simplified Chapter A parsing for UI) ---
+    // In live play, this is pre-calculated by GrimoireManager.
+    // Here we might receive either the raw grimoire object or the pre-calculated bonuses object.
+    let gBonuses = grimoire?.grimoireBonuses || grimoire || {};
+    let transMult = grimoire?.grimoire_transmult || 1.0;
+
+    // --- 3. Apply HP / ATK / DEF (The Core 5) ---
+    const applyCore = (stat, baseVal, bonusKey) => {
+        const additive = (eqAdditive[stat] || 0);
+        const mult = (eqMults[stat + 'Mult'] || 0) + (gBonuses[bonusKey + 'Mult'] || 0) + (petBonuses[stat + 'Mult'] || 0);
+        return Math.floor((baseVal + additive) * (1 + mult) * transMult);
+    };
+
+    total.maxHp = applyCore('maxHp', total.maxHp, 'maxHp');
+    total.hp = total.maxHp;
+    total.atk = applyCore('atk', total.atk, 'atk');
+    total.mAtk = applyCore('mAtk', total.mAtk, 'mAtk');
+    total.def = applyCore('def', total.def, 'def');
+    total.mDef = applyCore('mDef', total.mDef, 'mDef');
+
+    // --- 4. Other Stats ---
+    total.speed = Math.floor(((total.speed || 100) + (eqAdditive.speed || 0) + (gBonuses.speedAdd || 0)) * (1 + (petBonuses.speedMult || 0)) * transMult);
+    total.atkSpd = Math.max(100, Math.floor(((total.atkSpd || 1500) + (eqAdditive.atkSpd || 0)) * (1 - (eqMults.atkSpdMult || 0))));
+    total.castSpd = Math.max(100, Math.floor(((total.castSpd || 1000) + (eqAdditive.castSpd || 0))));
+
+    total.acc = Math.floor(((total.acc || 0) + (eqAdditive.acc || 0)) * (1 + (eqMults.accMult || 0)));
+    total.eva = Math.floor(((total.eva || 0) + (eqAdditive.eva || 0)) * (1 + (eqMults.evaMult || 0)));
+    total.crit = Math.min(100, Math.floor(((total.crit || 0) + (eqAdditive.crit || 0) + (gBonuses.critAdd || 0)) * (1 + (eqMults.critMult || 0))));
+
+    // --- 5. Resistances ---
+    total.fireRes = (total.fireRes || 0) + (eqAdditive.fireRes || 0) + (gBonuses.fireResAdd || 0);
+    total.iceRes = (total.iceRes || 0) + (eqAdditive.iceRes || 0) + (gBonuses.iceResAdd || 0);
+    total.lightningRes = (total.lightningRes || 0) + (eqAdditive.lightningRes || 0) + (gBonuses.lightningResAdd || 0);
+
+    return total;
+}
+

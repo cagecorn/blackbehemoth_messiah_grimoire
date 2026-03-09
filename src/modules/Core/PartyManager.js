@@ -6,6 +6,8 @@
 import DBManager from '../Database/DBManager.js';
 import { PetStats, Skins } from './EntityStats.js';
 import EventBus from '../Events/EventBus.js';
+import ItemManager from './ItemManager.js';
+import equipmentManager from './EquipmentManager.js';
 
 class PartyManager {
     constructor() {
@@ -17,6 +19,114 @@ class PartyManager {
         this.playerPetRoster = {}; // Map of petId -> { star: count } similar to mercenaries
         this.mercenarySkins = {}; // Map of charId -> skin data { equippedSkin, ownedSkins }
         this.CHARM_GRID_SIZE = 9;
+
+        // --- Centralized Event Listeners ---
+        this.setupEventListeners();
+    }
+
+    setupEventListeners() {
+        EventBus.on(EventBus.EVENTS.EQUIP_REQUEST, this.handleEquipRequest.bind(this));
+    }
+
+    async handleEquipRequest(payload) {
+        // payload: { unitId, itemId, slot }
+        // unitId can be 'preview-sera' or a real unit.id
+        const charId = payload.unitId.startsWith('preview-') ?
+            payload.unitId.replace('preview-', '') :
+            window._sceneContext?.findCharacterIdByUnitId?.(payload.unitId) || payload.unitId;
+
+        console.log(`[PartyManager] EQUIP_REQUEST for ${charId}:`, payload);
+
+        if (!payload.itemId && payload.slot) {
+            await this.unequipItem(charId, payload.slot);
+            return;
+        }
+
+        let item;
+        if (payload.itemId && payload.itemId.startsWith('eq_')) {
+            const inst = await DBManager.getEquipmentInstance(payload.itemId);
+            if (inst) {
+                const baseItem = ItemManager.getItem(inst.itemId);
+                item = { ...baseItem, ...inst, instanceId: inst.id };
+                item.stats = equipmentManager.getEffectiveStats(item, baseItem);
+            }
+        } else {
+            item = ItemManager.getItem(payload.itemId);
+        }
+
+        if (item && item.type === 'equipment') {
+            const state = this.getState(charId);
+            if (!state) return;
+
+            const currentEquipped = state.equipment ? state.equipment[item.slot] : null;
+            const isSameItem = currentEquipped && (
+                (item.instanceId && currentEquipped.instanceId === item.instanceId) ||
+                (!item.instanceId && currentEquipped.id === item.id)
+            );
+
+            if (isSameItem) {
+                await this.unequipItem(charId, item.slot);
+            } else {
+                await this.equipItem(charId, item.slot, item);
+            }
+        }
+    }
+
+    async equipItem(charId, slot, itemData) {
+        const state = this.getState(charId);
+        if (!state) return;
+        if (!state.equipment) state.equipment = { weapon: null, armor: null, necklace: null, ring: null };
+
+        const oldItem = state.equipment[slot];
+        if (oldItem && oldItem.instanceId) {
+            const oldInst = await DBManager.getEquipmentInstance(oldItem.instanceId);
+            if (oldInst) {
+                oldInst.ownerId = null;
+                await DBManager.saveEquipmentInstance(oldInst);
+            }
+        }
+
+        state.equipment[slot] = itemData;
+
+        const newId = (typeof itemData === 'string') ? itemData : (itemData.instanceId || itemData.id);
+        if (newId && typeof newId === 'string' && newId.startsWith('eq_')) {
+            const newInst = await DBManager.getEquipmentInstance(newId);
+            if (newInst) {
+                newInst.ownerId = charId; // Link to characterId
+                await DBManager.saveEquipmentInstance(newInst);
+            }
+        }
+
+        await this.saveState(charId, state);
+        console.log(`[PartyManager] ${charId} equipped ${itemData.id} to ${slot}`);
+
+        // Broadcast change for UI and live units
+        EventBus.emit('EQUIPMENT_CHANGED', { charId, slot, itemData });
+        EventBus.emit(EventBus.EVENTS.INVENTORY_UPDATED);
+    }
+
+    async unequipItem(charId, slot) {
+        const state = this.getState(charId);
+        if (!state || !state.equipment) return;
+
+        const oldItem = state.equipment[slot];
+        if (oldItem) {
+            const oldId = (typeof oldItem === 'string') ? oldItem : (oldItem.instanceId || oldItem.id);
+            if (oldId && typeof oldId === 'string' && oldId.startsWith('eq_')) {
+                const inst = await DBManager.getEquipmentInstance(oldId);
+                if (inst) {
+                    inst.ownerId = null;
+                    await DBManager.saveEquipmentInstance(inst);
+                }
+            }
+        }
+
+        state.equipment[slot] = null;
+        await this.saveState(charId, state);
+        console.log(`[PartyManager] ${charId} unequipped ${slot}`);
+
+        EventBus.emit('EQUIPMENT_CHANGED', { charId, slot, itemData: null });
+        EventBus.emit(EventBus.EVENTS.INVENTORY_UPDATED);
     }
 
     async init(allCharacters) {
