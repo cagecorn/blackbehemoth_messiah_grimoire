@@ -150,8 +150,7 @@ export default class MusicManager {
         // Pause other sounds if not already paused by focus or previous preview
         if (this.game && this.game.sound && this._pausedSoundsByPreview.length === 0) {
             this.game.sound.sounds.forEach(s => {
-                const isMusicTrack = MUSIC_TRACKS.some(t => t.id === s.key);
-                if (!isMusicTrack && s.isPlaying) {
+                if (s.isPlaying) {
                     s.pause();
                     s._pausedByPreview = true;
                     this._pausedSoundsByPreview.push(s);

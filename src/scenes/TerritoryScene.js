@@ -315,7 +315,29 @@ export default class TerritoryScene extends Phaser.Scene {
                     <div class="patch-item" style="color: #ffffff; line-height: 1.4;">저의 부주의로 인해 여러분의 소중한 게임 진행 데이터가 초기화되는 불상사가 일어났습니다. 죄송합니다. 더 열심히 개발하여 보상해드리겠습니다.</div>
                 </div>
                 <div class="patch-entry">
-                    <div class="patch-date">▶ 2026-03-08 (Latest)</div>
+                    <div class="patch-date">▶ 2026/3/10 (Latest)</div>
+                    <div class="patch-item"><span class="patch-item-icon">🎵</span>50종 신곡이 게임 전반적으로 추가되었습니다. 이제 다양한 배경음으로 게임을 즐겨보세요. 해당 음원들은 [집중 모드 & 음반 구입] 배너에서 구입할 수 있습니다.</div>
+                    <div class="patch-item"><span class="patch-item-icon">⏳</span>던전 씬에서 [집중 모드]를 활성화할 수 있습니다. 구입한 음원들을 들으실 수 있으며, 화면에 강한 흐리기 효과가 적용되고 타이머가 설정되어 여러분의 집중을 돕습니다.</div>
+                    <div class="patch-item"><span class="patch-item-icon">⚗️</span>[연금술 관리]로 이제 던전의 용병들에게 다양한 버프를 제공할 수 있습니다.</div>
+                    <div class="patch-item"><span class="patch-item-icon">🎣</span>[낚시 관리]로 이제 던전의 몬스터들에게 다양한 효과를 줄 수 있습니다.</div>
+                    <div class="patch-item"><span class="patch-item-icon">🍳</span>[요리하기]로 이제 다양한 경험치 버프를 얻을 수 있습니다. 해당 음식은 상점에서도 구매 가능합니다.</div>
+                    <div class="patch-item"><span class="patch-item-icon">🔨</span>장비창에서 선택한 장비를 파괴할 수 있습니다. 버그로 무용지물이 된 장비들을 제거해주세요.</div>
+                    <div class="patch-item"><span class="patch-item-icon">📹</span>던전에서 이제 용병들을 전체적으로 비추는 카메라 워크가 향상되었습니다.</div>
+                    <div class="patch-item"><span class="patch-item-icon">🎰</span>뽑기 씬에서 골드를 지불해 용병을 뽑을 수 있습니다.</div>
+                </div>
+                <div class="patch-entry">
+                    <div class="patch-date">▶ 2026/3/9</div>
+                    <div class="patch-item"><span class="patch-item-icon">🔄</span>편성 씬에서 바로 npc, 메시아 권능을 교체할 수 있습니다.</div>
+                    <div class="patch-item"><span class="patch-item-icon">👥</span>뽑기 씬에서 보유중인 용병의 갯수가 확인 가능합니다.</div>
+                    <div class="patch-item"><span class="patch-item-icon">📊</span>편성 씬에서 바로 용병의 스테이터스를 확인할 수 있습니다.</div>
+                    <div class="patch-item"><span class="patch-item-icon">🛡️</span>편성 씬에서 용병의 역할군을 뱃지를 통해 확인할 수 있습니다.</div>
+                    <div class="patch-item"><span class="patch-item-icon">💀</span>저주받은 숲에 [나이트메어] 난이도가 추가되었습니다.</div>
+                    <div class="patch-item"><span class="patch-item-icon">🏅</span>업적 배너를 통해 업적을 깨고 보상을 받으세요. 메시아의 레벨이 올라가고 그의 권능이 강해집니다.</div>
+                    <div class="patch-item"><span class="patch-item-icon">📖</span>몬스터 도감이 추가되었습니다.</div>
+                    <div class="patch-item"><span class="patch-item-icon">🖥️</span>모바일 해상도에서 컴퓨터 해상도로 전환되었습니다.</div>
+                </div>
+                <div class="patch-entry">
+                    <div class="patch-date">▶ 2026-03-08</div>
                     <div class="patch-item"><span class="patch-item-icon">❄️</span>[던전] 다섯 번째 던전 **[겨울의 나라]** 업데이트! 극한의 추위 속 새로운 모험이 시작됩니다.</div>
                     <div class="patch-item"><span class="patch-item-icon">🧊</span>[몬스터] 얼음 정령 전사, 마법사, 힐러 3종 등장. 처치 시 **[영원한 얼음]** 획득 가능.</div>
                     <div class="patch-item"><span class="patch-item-icon">🥶</span>[상태이상] 신규 효과 **[빙결]** 도입! 몬스터의 공격 시 일정 확률로 이동/공격 속도가 50% 감소합니다.</div>
@@ -392,6 +414,6 @@ export default class TerritoryScene extends Phaser.Scene {
             console.log('[Territory] Battery Saver toggled:', enabled);
         });
 
-        console.log('[PatchNotes] 2026-03-08 패치 내역이 업데이트되었습니다.');
+        console.log('[PatchNotes] 2026/3/10 패치 내역이 업데이트되었습니다.');
     }
 }
