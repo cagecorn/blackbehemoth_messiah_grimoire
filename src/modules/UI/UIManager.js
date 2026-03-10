@@ -590,6 +590,13 @@ export default class UIManager {
         // Listen for scene changes to show/hide NPC HUD
         EventBus.on(EventBus.EVENTS.SCENE_CHANGED, (sceneKey) => {
             console.log(`[UIManager] SCENE_CHANGED: ${sceneKey}`);
+            
+            // Auto-end Focus Mode when leaving DungeonScene
+            if (sceneKey !== 'DungeonScene' && this.game && this.game.focusManager && this.game.focusManager.isFocusModeActive) {
+                console.log('[UIManager] Auto-ending Focus Mode as we left DungeonScene');
+                this.game.focusManager.toggleFocusMode(false);
+            }
+
             const isCombat = (sceneKey === 'DungeonScene' || sceneKey === 'RaidScene' || sceneKey === 'ArenaScene');
             const isArena = (sceneKey === 'ArenaScene');
 
