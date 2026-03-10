@@ -81,13 +81,21 @@ export default class RaidScene extends Phaser.Scene {
         }
         console.log('RaidScene started');
 
-        // Play Random Raid BGM
-        this.sound.stopAll();
+        // Play Random Raid BGM (Continuity Check)
         const raidBgms = Array.from({ length: 11 }, (_, i) => `raid_battle_bgm_${i + 1}`);
-        const randomBgm = Phaser.Utils.Array.GetRandom(raidBgms);
-        this.bgm = this.sound.add(randomBgm, { volume: 0.3, loop: true });
-        this.bgm.play();
-        console.log(`[Raid] Selected Random BGM: ${randomBgm}`);
+        const currentBgm = this.sound.sounds.find(s => s.isPlaying && raidBgms.includes(s.key));
+
+        if (!currentBgm) {
+            console.log('[Raid] No Raid BGM playing, starting new track.');
+            this.sound.stopAll();
+            const randomBgm = Phaser.Utils.Array.GetRandom(raidBgms);
+            this.bgm = this.sound.add(randomBgm, { volume: 0.3, loop: true });
+            this.bgm.play();
+            console.log(`[Raid] Selected Random BGM: ${randomBgm}`);
+        } else {
+            console.log(`[Raid] Continuing current BGM: ${currentBgm.key}`);
+            this.bgm = currentBgm;
+        }
 
         EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, `[레이드] 레이드가 시작되었습니다! 원정대 출격! 🏰`);
 

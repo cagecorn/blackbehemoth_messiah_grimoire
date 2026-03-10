@@ -66,13 +66,21 @@ export default class ArenaScene extends Phaser.Scene {
         }
         console.log('ArenaScene started');
 
-        // Play Random Arena BGM
-        this.sound.stopAll();
+        // Play Random Arena BGM (Continuity Check)
         const arenaBgms = Array.from({ length: 10 }, (_, i) => `arena_battle_bgm_${i + 1}`);
-        const randomBgm = Phaser.Utils.Array.GetRandom(arenaBgms);
-        this.bgm = this.sound.add(randomBgm, { volume: 0.3, loop: true });
-        this.bgm.play();
-        console.log(`[Arena] Selected Random BGM: ${randomBgm}`);
+        const currentBgm = this.sound.sounds.find(s => s.isPlaying && arenaBgms.includes(s.key));
+
+        if (!currentBgm) {
+            console.log('[Arena] No Arena BGM playing, starting new track.');
+            this.sound.stopAll();
+            const randomBgm = Phaser.Utils.Array.GetRandom(arenaBgms);
+            this.bgm = this.sound.add(randomBgm, { volume: 0.3, loop: true });
+            this.bgm.play();
+            console.log(`[Arena] Selected Random BGM: ${randomBgm}`);
+        } else {
+            console.log(`[Arena] Continuing current BGM: ${currentBgm.key}`);
+            this.bgm = currentBgm;
+        }
 
         // Fixed Arena Dimensions (matching background asset 1536x1024)
         const worldWidth = 1536;
