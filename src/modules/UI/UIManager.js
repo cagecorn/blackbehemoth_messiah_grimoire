@@ -6723,6 +6723,13 @@ export default class UIManager {
                         border-bottom: 2px solid #333; justify-content: space-between;
                     }
                     .music-header-title { color: #8b5cf6; font-weight: bold; font-size: 26px; letter-spacing: 2px; }
+                    .header-right { display: flex; align-items: center; gap: 30px; }
+                    .music-close-btn {
+                        background: none; border: none; color: #666; font-size: 32px;
+                        cursor: pointer; line-height: 1; transition: 0.2s;
+                        padding: 10px; margin-right: -10px;
+                    }
+                    .music-close-btn:hover { color: #fff; transform: scale(1.1); }
                     .music-tabs { display: flex; gap: 20px; height: 60px; background: #0a0a0a; padding: 5px 40px; }
                     .music-tab-btn {
                         background: none; border: none; color: #666; cursor: pointer;
@@ -6817,7 +6824,10 @@ export default class UIManager {
                 </style>
                 <div class="music-header">
                     <span class="music-header-title">Ω FOCUS & MUSIC SHOP</span>
-                    <div class="gold-display" id="header-gold">💰 0</div>
+                    <div class="header-right">
+                        <div class="gold-display" id="header-gold">💰 0</div>
+                        <button class="music-close-btn" id="music-shop-close">&times;</button>
+                    </div>
                 </div>
                 <div class="music-tabs">
                     <button class="music-tab-btn active" data-tab="SETTINGS">SETTINGS</button>
@@ -6830,6 +6840,12 @@ export default class UIManager {
 
         this.popupOverlay.style.display = 'flex';
         renderTab();
+
+        // Bind custom close button
+        const shopCloseBtn = this.popupInner.querySelector('#music-shop-close');
+        if (shopCloseBtn) {
+            shopCloseBtn.onclick = () => this.popupClose.click();
+        }
 
         // Cleanup on close to avoid affecting other popups
         const originalClose = this.popupClose.onclick;
