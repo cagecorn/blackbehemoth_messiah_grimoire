@@ -143,17 +143,27 @@ export default class Wrinkle extends Archer {
         }
 
         // Sound effect
-        if (this.scene && this.scene.soundEffects) {
+        if (this.scene && this.scene.soundEffects && this.scene.soundEffects.playWhipSound) {
             this.scene.soundEffects.playWhipSound();
         }
 
         // 3. Dash back to original position
-        this.scene.time.delayedCall(100, () => {
+        if (this.scene && this.scene.time) {
+            this.scene.time.delayedCall(100, () => {
+                this.dashBack(originalX, originalY);
+            });
+        } else {
             this.dashBack(originalX, originalY);
-        });
+        }
     }
 
     dashBack(targetX, targetY) {
+        // Safety guard: Ensure the entity and scene are still active
+        if (!this.active || !this.scene || !this.scene.tweens) {
+            this.isDashing = false;
+            return;
+        }
+
         // Final guard: if CC'd during impact, don't dash back, just reset state
         if (this.isAirborne || this.isStunned || this.isKnockedBack) {
             this.isDashing = false;

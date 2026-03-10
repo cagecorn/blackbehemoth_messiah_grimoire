@@ -6620,3 +6620,11 @@ body.blur-active #mobile-hud {
     font-family: var(--font-pixel);
     z-index: 15;
 }
+
+/* --- Z-index Hotfix --- */
+/* Z-Index Hierarchy Standard */
+#mobile-hud { z-index: 20001 !important; }
+.status-popup-tab { z-index: 18000 !important; }
+#popup-overlay { z-index: 15000 !important; }
+#hud-round-display { z-index: 1000 !important; }
+#npc-hud, #messiah-hud, #defense-hud, #portrait-bar, #hud-bottom, #combat-hud-container { z-index: 500 !important; }
