@@ -94,6 +94,14 @@ const TERRITORY_BANNERS = [
         action: function () { if (this.game && this.game.uiManager) this.game.uiManager.showFishingManagement(); },
     },
     {
+        id: 'alchemy',
+        label: '연금술 관리',
+        sublabel: 'ALCHEMY',
+        cutscene: 'assets/npc/rabbit.png',
+        accentColor: '#a78bfa',
+        action: function () { if (this.game && this.game.uiManager) this.game.uiManager.showAlchemyManagement(); },
+    },
+    {
         id: 'focus-music',
         label: '집중 모드 & 음반 구입',
         sublabel: 'FOCUS & MUSIC',

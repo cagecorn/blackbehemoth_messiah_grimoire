@@ -572,6 +572,62 @@ export default class FXManager {
         });
     }
     /**
+     * 포션 적중 시 물방울 스플래시(Splash) 효과
+     * @param {Phaser.GameObjects.Sprite} target 적중 대상 용병
+     * @param {string} potionId 포션 ID (atk_potion, def_potion 등)
+     */
+    showPotionSplash(target, potionId) {
+        if (!target || !target.active || !this.scene) return;
+
+        // 포션 속성에 따른 색상 매핑
+        const colorMap = {
+            'atk_potion': 0xff4444,   // Red (Attack)
+            'def_potion': 0x4444ff,   // Blue (Defense)
+            'mAtk_potion': 0xee44ee,  // Purple (Magic Attack)
+            'mDef_potion': 0xffffff   // White (Magic Defense)
+        };
+
+        const color = colorMap[potionId] || 0x00ff00; // Default: Green
+        const particlesCount = 8;
+        const radius = 60;
+
+        // 1. 퍼져나가는 물방울 파티클 (Arcade-retro style pixel blobs)
+        for (let i = 0; i < particlesCount; i++) {
+            const angle = (i / particlesCount) * Math.PI * 2;
+            const drop = this.scene.add.circle(target.x, target.y - 20, 6, color);
+            drop.setDepth(target.depth + 10);
+            drop.setBlendMode(this._isBatterySaver ? Phaser.BlendModes.NORMAL : Phaser.BlendModes.ADD);
+
+            this.scene.tweens.add({
+                targets: drop,
+                x: target.x + Math.cos(angle) * (radius * Phaser.Math.FloatBetween(0.8, 1.2)),
+                y: target.y - 20 + Math.sin(angle) * (radius * Phaser.Math.FloatBetween(0.8, 1.2)),
+                scale: 0.1, // 점점 작아짐
+                alpha: 0,
+                duration: 400 + Phaser.Math.Between(0, 200),
+                ease: 'Quad.easeOut',
+                onComplete: () => drop.destroy()
+            });
+        }
+
+        // 2. 중심부 플래시 (임팩트)
+        const flash = this.scene.add.circle(target.x, target.y - 20, 25, color, 0.6);
+        flash.setDepth(target.depth + 11);
+        flash.setBlendMode(this._isBatterySaver ? Phaser.BlendModes.NORMAL : Phaser.BlendModes.ADD);
+        this.scene.tweens.add({
+            targets: flash,
+            scale: 2.5,
+            alpha: 0,
+            duration: 300,
+            ease: 'Expo.easeOut',
+            onComplete: () => flash.destroy()
+        });
+        
+        // --- Play Liquid Splat Sound (Optional) ---
+        soundEffects.play8BitHitSound(false, 0); // Reuse low pitch hit as splat
+    }
+
+    /**
      * 원소별 노바 시각 효과 통합 (Fire, Ice, Spark)
      */
     showElementalNovaEffect(target, element = 'fire') {

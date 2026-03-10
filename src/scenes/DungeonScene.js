@@ -56,6 +56,7 @@ import GrimoireManager from '../modules/Core/GrimoireManager.js';
 import equipmentManager from '../modules/Core/EquipmentManager.js';
 import StructureManager from '../modules/Core/StructureManager.js';
 import fishingManager from '../modules/Core/FishingManager.js';
+import alchemyManager from '../modules/Core/AlchemyManager.js';
 
 // partyManager will be accessed via this.game.partyManager
 
@@ -311,6 +312,7 @@ export default class DungeonScene extends Phaser.Scene {
             await fishingManager.processAutoConsume(this.currentRound);
 
             fishingManager.lastTurnTime = 0; // Tracking for periodic fishing
+            alchemyManager.lastTurnTime = 0; // Tracking for periodic alchemy
 
             // Initialize Managers
             this.dungeonManager = new DungeonManager(this);
@@ -787,8 +789,8 @@ export default class DungeonScene extends Phaser.Scene {
             this.structureManager.update(time, delta);
         }
 
-        // --- 1.4 Fishing Turn Update ---
         if (!this.isResting && !this.isInitializing && !this.isResetting) {
+            // --- 1.4 Fishing Turn Update ---
             if (time - (fishingManager.lastTurnTime || 0) > 5000) { // Every 5 seconds
                 fishingManager.lastTurnTime = time;
                 fishingManager.performFishingTurn().then(result => {
@@ -796,6 +798,26 @@ export default class DungeonScene extends Phaser.Scene {
                         this.game.uiManager.showFishingResultNotification(result);
                         this.game.uiManager.updateFishingHUDStatus();
                         if (result.success) this.game.uiManager.updateFishHUD();
+                    }
+                });
+            }
+
+            // --- 1.5 Alchemy Turn Update ---
+            if (time - (alchemyManager.lastTurnTime || 0) > 6000) { // Every 6 seconds
+                alchemyManager.lastTurnTime = time;
+                alchemyManager.performAlchemyTurn().then(result => {
+                    if (result && this.game.uiManager) {
+                        this.game.uiManager.showAlchemyResultNotification(result);
+                        this.game.uiManager.updateAlchemyHUDStatus();
+                        
+                        if (result.success) {
+                            // Pick a random target from party
+                            const activeMercs = this.mercenaries.getChildren().filter(m => m.active && m.hp > 0 && !m.config.hideInUI);
+                            if (activeMercs.length > 0) {
+                                const target = Phaser.Utils.Array.GetRandom(activeMercs);
+                                this.launchPotionProjectile(result.potionId, target);
+                            }
+                        }
                     }
                 });
             }
@@ -1245,6 +1267,13 @@ export default class DungeonScene extends Phaser.Scene {
 
     spawnWave() {
         if (this.isResetting) return;
+
+        // Reset alchemy potion buffs for all mercenaries at the start of a wave
+        if (this.mercenaries) {
+            this.mercenaries.getChildren().forEach(m => {
+                if (m.resetPotionBuffs) m.resetPotionBuffs();
+            });
+        }
 
         const stageConfig = StageConfigs[this.dungeonType] || StageConfigs.CURSED_FOREST;
         // Base pool for normal/elite should EXCLUDE epic variants (which are handled separately)
@@ -1924,5 +1953,109 @@ export default class DungeonScene extends Phaser.Scene {
         } else {
             console.log(`[Dungeon] Spawning skipped. activeNPC: ${activeNPC?.id}, stacks: ${activeNPC?.stacks}`);
         }
+    }
+
+    /**
+     * Launch a potion projectile from off-screen right toward a target mercenary.
+     * @param {string} potionId - ID of the potion (e.g., 'atk_potion')
+     * @param {Mercenary} target - Target mercenary unit
+     */
+    launchPotionProjectile(potionId, target) {
+        if (!target || !target.active) return;
+
+        const potionInfo = alchemyManager.potionData[potionId];
+        if (!potionInfo) return;
+
+        // Start from off-screen right
+        const startX = this.cameras.main.worldView.right + 100;
+        const startY = Phaser.Math.Between(100, 900);
+        
+        const potionSprite = this.add.image(startX, startY, potionId);
+        potionSprite.setDepth(25000); // Above most things
+        potionSprite.setDisplaySize(32, 32);
+
+        // --- 1. Potion Trail Particle Effect ---
+        const trailColors = {
+            'atk_potion': 0xff4444,
+            'def_potion': 0x4444ff,
+            'mAtk_potion': 0xee44ee,
+            'mDef_potion': 0xffffff
+        };
+        const trailColor = trailColors[potionId] || 0xffffff;
+
+        // Generate particle texture dynamically if it doesn't exist
+        if (!this.textures.exists('potion_trail_particle')) {
+            const graphics = this.add.graphics();
+            graphics.fillStyle(0xffffff, 1);
+            graphics.fillCircle(8, 8, 8); // 16x16 circle
+            graphics.generateTexture('potion_trail_particle', 16, 16);
+            graphics.destroy();
+        }
+
+        // Use the generated circular texture
+        const trailEmitter = this.add.particles(0, 0, 'potion_trail_particle', {
+            speed: { min: 20, max: 40 },
+            scale: { start: 0.6, end: 0 },
+            alpha: { start: 0.8, end: 0 },
+            tint: trailColor,
+            lifespan: 500,
+            blendMode: 'ADD',
+            frequency: 30
+        });
+        trailEmitter.setDepth(24999);
+        trailEmitter.startFollow(potionSprite);
+
+        // Parabolic arc calculation
+        const duration = 1200;
+        const peakY = Math.min(startY, target.y) - 150;
+
+        // X movement
+        this.tweens.add({
+            targets: potionSprite,
+            x: target.x,
+            rotation: 10, // Rotate as it flies
+            duration: duration,
+            ease: 'Linear',
+            onComplete: () => {
+                // Ignore if trail is already cleaned up
+                if (trailEmitter) {
+                    trailEmitter.stop();
+                    // Destroy emitter after particles fade
+                    this.time.delayedCall(500, () => trailEmitter.destroy());
+                }
+
+                // Impact Logic
+                if (target.active && target.hp > 0) {
+                    // --- 2. Splash Particle Effect ---
+                    if (this.fxManager) {
+                        this.fxManager.showPotionSplash(target, potionId);
+                    }
+                    
+                    // Apply Potion Buff
+                    const statTypeMap = {
+                        'atk_potion': 'atk',
+                        'def_potion': 'def',
+                        'mAtk_potion': 'mAtk',
+                        'mDef_potion': 'mDef'
+                    };
+                    const statType = statTypeMap[potionId];
+                    if (statType) {
+                        target.applyPotionBuff(statType);
+                    }
+                }
+                potionSprite.destroy();
+            }
+        });
+
+        // Y movement (Parabolic Arc)
+        this.tweens.add({
+            targets: potionSprite,
+            y: peakY,
+            duration: duration / 2,
+            ease: 'Quad.easeOut',
+            yoyo: true
+        });
+        
+        console.log(`[Alchemy] Launched ${potionId} toward ${target.unitName}`);
     }
 }

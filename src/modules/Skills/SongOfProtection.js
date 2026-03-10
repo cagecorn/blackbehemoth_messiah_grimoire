@@ -53,7 +53,7 @@ export default class SongOfProtection {
         // Determine the allied group dynamically
         const alliedGroup = caster.allyGroup;
 
-        const totalMAtk = caster.getTotalMAtk ? caster.getTotalMAtk() : caster.mAtk;
+        const totalMAtk = caster.getTotalMAtk();
         const shieldAmount = totalMAtk * this.shieldMultiplier;
 
         // if (caster.showSpeechBubble) {

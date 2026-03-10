@@ -28,6 +28,9 @@ export default class ShopManager {
             ],
             fishing: [
                 { id: 'bamboo_fishing_rod', price: 20000, currency: 'emoji_coin', label: '대나무 낚시대', icon: 'bamboo_fishing_rod' }
+            ],
+            alchemy: [
+                { id: 'alchemy_tool_basic', price: 90000, currency: 'emoji_coin', label: '평범한 연금도구', icon: 'alchemy_tool' }
             ]
         };
     }
@@ -53,6 +56,7 @@ export default class ShopManager {
                         <button class="shop-tab" data-category="charms">✨ 부적</button>
                         <button class="shop-tab" data-category="food">🍰 음식</button>
                         <button class="shop-tab" data-category="fishing">🎣 낚시</button>
+                        <button class="shop-tab" data-category="alchemy">⚗️ 연금</button>
                         <button class="shop-tab disabled" title="준비 중">🌿 재료</button>
                     </div>
                     

@@ -84,6 +84,46 @@ const ITEM_DATABASE = {
         description: '평범한 대나무로 만든 낚시대입니다. 내구도 500.',
         price: 20000
     },
+    'alchemy_tool_basic': {
+        name: '평범한 연금도구',
+        type: ITEM_TYPES.MATERIAL,
+        icon: 'alchemy_tool',
+        customAsset: 'assets/item/alchemi_tool.png',
+        description: '평범한 연금도구입니다. 내구도 500. (50% 확률로 내구도 추가 소모)',
+        price: 90000
+    },
+    'atk_potion': {
+        name: '공격력 포션',
+        type: ITEM_TYPES.MATERIAL,
+        icon: 'potion_atk',
+        customAsset: 'assets/potion/atk_potion.png',
+        description: '공격력이 4% 일시적으로 증가하는 포션입니다.',
+        price: 5000
+    },
+    'def_potion': {
+        name: '방어력 포션',
+        type: ITEM_TYPES.MATERIAL,
+        icon: 'potion_def',
+        customAsset: 'assets/potion/def_potion.png',
+        description: '방어력이 4% 일시적으로 증가하는 포션입니다.',
+        price: 5000
+    },
+    'mAtk_potion': {
+        name: '마법공격력 포션',
+        type: ITEM_TYPES.MATERIAL,
+        icon: 'potion_matk',
+        customAsset: 'assets/potion/mAtk_potion.png',
+        description: '마법공격력이 4% 일시적으로 증가하는 포션입니다.',
+        price: 5000
+    },
+    'mDef_potion': {
+        name: '마법방어력 포션',
+        type: ITEM_TYPES.MATERIAL,
+        icon: 'potion_mdef',
+        customAsset: 'assets/potion/mDef_potion.png',
+        description: '마법방어력이 4% 일시적으로 증가하는 포션입니다.',
+        price: 5000
+    },
     'mackerel': {
         name: '고등어',
         type: ITEM_TYPES.MATERIAL,

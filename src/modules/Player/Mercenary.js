@@ -154,24 +154,49 @@ export default class Mercenary extends Phaser.GameObjects.Container {
             critAdd: 0
         };
 
-        // Standard Bonus Properties
+        // Standard Bonus Properties (Additive & Multiplicative)
         this.bonusAtk = 0;
+        this.bonusAtkMult = 0;
         this.bonusMAtk = 0;
+        this.bonusMAtkMult = 0;
         this.bonusCrit = 0;
+        this.bonusCritMult = 0;
         this.bonusEva = 0;
+        this.bonusEvaMult = 0;
         this.bonusSpeed = 0;
+        this.bonusSpeedMult = 0;
         this.bonusDef = 0;
+        this.bonusDefMult = 0;
         this.bonusMDef = 0;
+        this.bonusMDefMult = 0;
         this.bonusAtkSpd = 0;
+        this.bonusAtkSpdMult = 0;
         this.bonusAcc = 0;
+        this.bonusAccMult = 0;
         this.bonusDR = 0;
+        this.bonusDRMult = 0;
         this.bonusCastSpd = 0;
+        this.bonusCastSpdMult = 0;
         this.bonusRangeMin = 0;
         this.bonusRangeMax = 0;
         this.bonusAtkRange = 0;
         this.bonusUltChargeSpeed = 0;
-        this.bonusMaxHpMult = 0;
+        this.bonusUltChargeSpeedMult = 0;
         this.bonusMaxHp = 0;
+        this.bonusMaxHpMult = 0;
+
+        // Elemental Resistances Bonuses
+        this.bonusFireRes = 0;
+        this.bonusIceRes = 0;
+        this.bonusLightningRes = 0;
+
+        // --- Alchemy Potion Stacks (Max 3 each) ---
+        this.potionStacks = {
+            atk: 0,
+            def: 0,
+            mAtk: 0,
+            mDef: 0
+        };
 
         this.acc = config.acc || 100;
         this.eva = config.eva || 0;
@@ -488,7 +513,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
     // --- Standardized 16 Stats Getters ---
     getTotalMaxHp() {
         const base = (this.maxHp || 100) + this.bonusMaxHp;
-        // Additive stacking for multipliers: (1 + sum of bonuses)
+        // Calculation: (Base + BonusAdd) * (1 + sum(Multipliers))
         const multipliers = (this.maxHpMult - 1) + (this.bonusMaxHpMult || 0) + (this.grimoireBonuses?.maxHpMult || 0);
         const petBonus = this.scene?.game?.partyManager?.getGlobalPetBonus('maxHpMult') || 0;
         const transMult = this.grimoire_transmult || 1.0;
@@ -497,12 +522,15 @@ export default class Mercenary extends Phaser.GameObjects.Container {
 
     getTotalAtk() {
         const base = (this.atk || 0) + this.getEquipmentBonus('atk') + (this.bonusAtk || 0);
-        let multipliers = (this.getEquipmentBonus('atkMult') || 0) + (this.grimoireBonuses?.atkMult || 0);
+        let multipliers = (this.getEquipmentBonus('atkMult') || 0) + (this.bonusAtkMult || 0) + (this.grimoireBonuses?.atkMult || 0);
 
         if (this.blackboard && this.blackboard.get('enraged_active')) {
             const missingHpRatio = 1 - (this.hp / this.getTotalMaxHp());
             multipliers += missingHpRatio * 0.15;
         }
+
+        // Alchemy Potion Buff (4% per stack, max 3)
+        multipliers += (this.potionStacks.atk * 0.04);
 
         const transMult = this.grimoire_transmult || 1.0;
         const petBonus = this.scene?.game?.partyManager?.getGlobalPetBonus('atkMult') || 0;
@@ -511,9 +539,11 @@ export default class Mercenary extends Phaser.GameObjects.Container {
 
     getTotalMAtk() {
         const base = (this.mAtk || 0) + this.getEquipmentBonus('mAtk') + (this.bonusMAtk || 0);
-        let multipliers = (this.getEquipmentBonus('mAtkMult') || 0) + (this.grimoireBonuses?.mAtkMult || 0);
+        let multipliers = (this.getEquipmentBonus('mAtkMult') || 0) + (this.bonusMAtkMult || 0) + (this.grimoireBonuses?.mAtkMult || 0);
 
         if (this.isTacticalCommandActive) multipliers += 0.5;
+
+        multipliers += (this.potionStacks.mAtk * 0.04);
 
         const transMult = this.grimoire_transmult || 1.0;
         const petBonus = this.scene?.game?.partyManager?.getGlobalPetBonus('mAtkMult') || 0;
@@ -522,22 +552,29 @@ export default class Mercenary extends Phaser.GameObjects.Container {
 
     getTotalDef() {
         const base = (this.def || 0) + this.getEquipmentBonus('def') + (this.bonusDef || 0);
-        let multipliers = (this.getEquipmentBonus('defMult') || 0) + (this.grimoireBonuses?.defMult || 0);
+        let multipliers = (this.getEquipmentBonus('defMult') || 0) + (this.bonusDefMult || 0) + (this.grimoireBonuses?.defMult || 0);
 
         if (this.blackboard && this.blackboard.get('guard_active')) multipliers += 0.1;
+
+        // Alchemy Potion Buff (4% per stack, max 3)
+        multipliers += (this.potionStacks.def * 0.04);
 
         return Math.floor(base * (1 + multipliers));
     }
 
     getTotalMDef() {
         const base = (this.mDef || 0) + this.getEquipmentBonus('mDef') + (this.bonusMDef || 0);
-        let multipliers = (this.getEquipmentBonus('mDefMult') || 0) + (this.grimoireBonuses?.mDefMult || 0);
+        let multipliers = (this.getEquipmentBonus('mDefMult') || 0) + (this.bonusMDefMult || 0) + (this.grimoireBonuses?.mDefMult || 0);
+        
+        // Alchemy Potion Buff (4% per stack, max 3)
+        multipliers += (this.potionStacks.mDef * 0.04);
+
         return Math.floor(base * (1 + multipliers));
     }
 
     getTotalSpeed() {
         const base = (this.speed || 100) + (this.bonusSpeed || 0) + (this.grimoireBonuses?.speedAdd || 0);
-        let multipliers = 0;
+        let multipliers = (this.bonusSpeedMult || 0);
         if (this.grimoire_transmult) multipliers += (this.grimoire_transmult - 1);
         const petBonus = this.scene?.game?.partyManager?.getGlobalPetBonus('speedMult') || 0;
         const result = base * (1 + multipliers + petBonus);
@@ -545,27 +582,28 @@ export default class Mercenary extends Phaser.GameObjects.Container {
     }
 
     getTotalAtkSpd() {
+        // AtkSpd is Delay (ms), so Additive Bonus should decrease it, Multiplier should decrease it (1 - mult)
         const base = Math.max(100, (this.atkSpd || 1000) + this.getEquipmentBonus('atkSpd') - (this.bonusAtkSpd || 0));
-        const multipliers = this.getEquipmentBonus('atkSpdMult') || 0;
+        const multipliers = (this.getEquipmentBonus('atkSpdMult') || 0) + (this.bonusAtkSpdMult || 0);
         const result = base * (1 - multipliers);
         return this.isFrozen ? result * 2 : result;
     }
 
     getTotalCrit() {
         const base = (this.crit || 0) + this.getEquipmentBonus('crit') + (this.bonusCrit || 0) + (this.grimoireBonuses?.critAdd || 0);
-        const multipliers = this.getEquipmentBonus('critMult') || 0;
+        const multipliers = (this.getEquipmentBonus('critMult') || 0) + (this.bonusCritMult || 0);
         return Math.min(100, base * (1 + multipliers));
     }
 
     getTotalAcc() {
         const base = (this.acc || 100) + this.getEquipmentBonus('acc') + (this.bonusAcc || 0);
-        const multipliers = this.getEquipmentBonus('accMult') || 0;
+        const multipliers = (this.getEquipmentBonus('accMult') || 0) + (this.bonusAccMult || 0);
         return base * (1 + multipliers);
     }
 
     getTotalEva() {
         const base = (this.eva || 0) + this.getEquipmentBonus('eva') + (this.bonusEva || 0);
-        const multipliers = (this.getEquipmentBonus('evaMult') || 0);
+        const multipliers = (this.getEquipmentBonus('evaMult') || 0) + (this.bonusEvaMult || 0);
         return base * (1 + multipliers);
     }
 
@@ -581,36 +619,68 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         return Math.max(0, (this.rangeMax || 100) + (this.bonusRangeMax || 0));
     }
 
+    /**
+     * Applies an alchemy potion buff (stacks up to 3)
+     * @param {string} statType - 'atk', 'def', 'mAtk', 'mDef'
+     */
+    applyPotionBuff(statType) {
+        if (this.potionStacks[statType] !== undefined) {
+            this.potionStacks[statType] = Math.min(3, this.potionStacks[statType] + 1);
+            
+            // Visual feedback (optional but recommended)
+            if (this.scene && this.scene.fxManager) {
+                const colorStr = statType.includes('atk') ? '#ff4444' : '#4444ff';
+                this.scene.fxManager.showHealText(this, `Alchemy ${statType.toUpperCase()}+!`, colorStr);
+            }
+            
+            this.syncStatusUI();
+            
+            console.log(`[Alchemy] ${this.unitName} applied ${statType} potion. New stack: ${this.potionStacks[statType]}`);
+        }
+    }
+
+    /**
+     * Resets alchemy buffs (e.g., end of round)
+     */
+    resetPotionBuffs() {
+        this.potionStacks = { atk: 0, def: 0, mAtk: 0, mDef: 0 };
+        this.syncStatusUI();
+    }
+
     getTotalCastSpd() {
+        // CastSpd is Delay (ms)
         const base = Math.max(100, (this.castSpd || 1000) + this.getEquipmentBonus('castSpd') - (this.bonusCastSpd || 0));
         const multipliers = (this.castSpdMult - 1) + (this.bonusCastSpdMult || 0) + (this.getEquipmentBonus('castSpdMult') || 0) + (this.grimoireBonuses?.castSpdMult || 0);
         const result = base / (1 + multipliers);
         return this.isFrozen ? result * 2 : result;
     }
 
+    getTotalUltChargeSpeed() {
+        const base = (this.ultChargeSpeed || 1.0) + this.getEquipmentBonus('ultChargeSpeed') + (this.bonusUltChargeSpeed || 0);
+        const multipliers = (this.getEquipmentBonus('ultChargeSpeedMult') || 0) + (this.bonusUltChargeSpeedMult || 0) + (this.grimoireBonuses?.ultChargeSpeedMult || 0);
+        return base * (1 + multipliers);
+    }
+
     getTotalFireRes() {
         const total = (this.fireRes || 0) + (this.getEquipmentBonus('fireRes') || 0) + (this.bonusFireRes || 0) + (this.grimoireBonuses?.fireResAdd || 0);
-        return Math.min(75, total);
+        return Math.min(90, total); // Cap at 90%
     }
 
     getTotalIceRes() {
         const total = (this.iceRes || 0) + (this.getEquipmentBonus('iceRes') || 0) + (this.bonusIceRes || 0) + (this.grimoireBonuses?.iceResAdd || 0);
-        return Math.min(75, total);
+        return Math.min(90, total);
     }
 
     getTotalLightningRes() {
         const total = (this.lightningRes || 0) + (this.getEquipmentBonus('lightningRes') || 0) + (this.bonusLightningRes || 0) + (this.grimoireBonuses?.lightningResAdd || 0);
-        return Math.min(75, total);
-    }
-
-    getTotalUltChargeSpeed() {
-        const base = (this.ultChargeSpeed || 1.0) + this.getEquipmentBonus('ultChargeSpeed') + (this.bonusUltChargeSpeed || 0);
-        const multipliers = (this.getEquipmentBonus('ultChargeSpeedMult') || 0) + (this.grimoireBonuses?.ultChargeSpeedMult || 0);
-        return base * (1 + multipliers);
+        return Math.min(90, total);
     }
 
     getTotalDR() {
-        return (this.dr || 0) + (this.bonusDR || 0);
+        // Damage Reduction is a decimal (0.0 - 1.0)
+        const base = (this.dr || 0) + (this.getEquipmentBonus('dr') || 0) + (this.bonusDR || 0);
+        const multipliers = (this.bonusDRMult || 0);
+        return Math.min(0.95, base * (1 + multipliers));
     }
 
     /**
@@ -796,9 +866,10 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         }
 
         // --- 0. Accuracy vs Evasion Check ---
-        const myEva = this.getTotalEva ? this.getTotalEva() : (this.eva || 0);
-        if (attacker && typeof attacker === 'object' && attacker.acc !== undefined) {
-            const hitChance = Math.max(0.05, Math.min(1.0, (attacker.acc - myEva) / 100.0));
+        const myEva = this.getTotalEva();
+        if (attacker && typeof attacker === 'object' && (attacker.getTotalAcc || attacker.acc !== undefined)) {
+            const attackerAcc = attacker.getTotalAcc ? attacker.getTotalAcc() : attacker.acc;
+            const hitChance = Math.max(0.05, Math.min(1.0, (attackerAcc - myEva) / 100.0));
             if (Math.random() > hitChance) {
                 // MISS!
                 if (this.scene.fxManager) {
@@ -829,8 +900,8 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         }
 
         // 1.5 Damage Reduction Buff
-        if (this.bonusDR > 0) {
-            finalDamage = finalDamage * (1 - this.bonusDR);
+        if (this.getTotalDR() > 0) {
+            finalDamage = finalDamage * (1 - this.getTotalDR());
         }
 
         // 2. Intercept with Shield
@@ -958,8 +1029,8 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         }
 
         // 1.5 Damage Reduction Buff
-        if (this.bonusDR > 0) {
-            finalDamage = finalDamage * (1 - this.bonusDR);
+        if (this.getTotalDR() > 0) {
+            finalDamage = finalDamage * (1 - this.getTotalDR());
         }
 
         // 2. Intercept with Shield
@@ -1741,6 +1812,29 @@ export default class Mercenary extends Phaser.GameObjects.Container {
                 emoji: '✨',
                 category: 'buff'
             });
+        }
+
+        // 4. Alchemy Potion Buffs
+        if (this.potionStacks) {
+            const potionNames = {
+                atk: { name: '공격력 포션', emoji: '🔴', desc: '공격력' },
+                def: { name: '방어력 포션', emoji: '🔵', desc: '방어력' },
+                mAtk: { name: '마력 포션', emoji: '🟣', desc: '마법 공격력' },
+                mDef: { name: '마법 방어력 포션', emoji: '⚪', desc: '마법 방어력' }
+            };
+
+            for (const [key, stacks] of Object.entries(this.potionStacks)) {
+                if (stacks > 0) {
+                    const info = potionNames[key];
+                    statuses.push({
+                        name: `${info.name} (${stacks} 중첩)`,
+                        description: `${info.desc}이 ${stacks * 4}% 증가한 상태입니다. (최대 3중첩)`,
+                        emoji: info.emoji,
+                        category: 'buff',
+                        stacks: stacks
+                    });
+                }
+            }
         }
 
         return statuses;

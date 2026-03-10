@@ -38,7 +38,7 @@ export default function applyHealerAI(unit, getAllyGroup, getEnemyGroup) {
 
         for (const ally of children) {
             if (!ally.active || ally.hp <= 0) continue;
-            const ratio = ally.hp / ally.maxHp;
+            const ratio = ally.hp / ally.getTotalMaxHp();
             if (ratio < lowestHpRatio) {
                 lowestHpRatio = ratio;
                 wounded = ally;
@@ -81,7 +81,7 @@ export default function applyHealerAI(unit, getAllyGroup, getEnemyGroup) {
         const dist = Phaser.Math.Distance.Between(unit.x, unit.y, targetObj.x, targetObj.y);
 
         // [Standardization Fix] Use center-to-center distance to match perk triggers
-        const rangeMin = unit.getTotalRangeMin ? unit.getTotalRangeMin() : (unit.config.rangeMin || 180);
+        const rangeMin = unit.getTotalRangeMin();
         return dist < rangeMin;
     }, "Enemy Too Close?");
 
@@ -90,7 +90,7 @@ export default function applyHealerAI(unit, getAllyGroup, getEnemyGroup) {
         if (!targetObj || !targetObj.active) return false;
         const dist = Phaser.Math.Distance.Between(unit.x, unit.y, targetObj.x, targetObj.y);
 
-        const atkRange = unit.getTotalAtkRange ? unit.getTotalAtkRange() : (unit.config.atkRange || 200);
+        const atkRange = unit.getTotalAtkRange();
         return dist <= atkRange;
     }, "In Attack Range?");
 
@@ -102,9 +102,9 @@ export default function applyHealerAI(unit, getAllyGroup, getEnemyGroup) {
 
         const dist = Phaser.Math.Distance.Between(unit.x, unit.y, target.x, target.y);
         // Move to heal range if too far
-        const atkRange = unit.getTotalAtkRange ? unit.getTotalAtkRange() : (unit.config.atkRange || 200);
+        const atkRange = unit.getTotalAtkRange();
         if (dist > atkRange) {
-            const currentSpeed = unit.getTotalSpeed ? unit.getTotalSpeed() : unit.speed;
+            const currentSpeed = unit.getTotalSpeed();
             unit.scene.physics.moveToObject(unit, target, currentSpeed);
             return 1; // RUNNING
         } else {
@@ -121,7 +121,7 @@ export default function applyHealerAI(unit, getAllyGroup, getEnemyGroup) {
         if (!unit.warrior || !unit.warrior.active) return 2;
         const dist = Phaser.Math.Distance.Between(unit.x, unit.y, unit.warrior.x, unit.warrior.y);
         if (dist > 300) {
-            unit.scene.physics.moveToObject(unit, unit.warrior, unit.getTotalSpeed ? unit.getTotalSpeed() : unit.speed);
+            unit.scene.physics.moveToObject(unit, unit.warrior, unit.getTotalSpeed());
             return 1; // RUNNING
         } else {
             if (unit.body) unit.body.setVelocity(0, 0);
@@ -136,7 +136,7 @@ export default function applyHealerAI(unit, getAllyGroup, getEnemyGroup) {
         if (!targetObj || !targetObj.active) return 2; // FAILED
 
         const angle = Phaser.Math.Angle.Between(targetObj.x, targetObj.y, unit.x, unit.y);
-        const currentSpeed = unit.getTotalSpeed ? unit.getTotalSpeed() : unit.speed;
+        const currentSpeed = unit.getTotalSpeed();
         const vx = Math.cos(angle) * currentSpeed;
         const vy = Math.sin(angle) * currentSpeed;
 
@@ -153,10 +153,10 @@ export default function applyHealerAI(unit, getAllyGroup, getEnemyGroup) {
         if (!targetObj || !targetObj.active) return 2; // FAILED
 
         const dist = Phaser.Math.Distance.Between(unit.x, unit.y, targetObj.x, targetObj.y);
-        const atkRange = unit.getTotalAtkRange ? unit.getTotalAtkRange() : (unit.config.atkRange || 200);
+        const atkRange = unit.getTotalAtkRange();
 
         if (dist > atkRange) {
-            const currentSpeed = unit.getTotalSpeed ? unit.getTotalSpeed() : unit.speed;
+            const currentSpeed = unit.getTotalSpeed();
             unit.scene.physics.moveToObject(unit, targetObj, currentSpeed);
             return 1; // RUNNING
         } else {

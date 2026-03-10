@@ -58,6 +58,42 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
         this.isAsleep = false; // Sleep CC
         this.isFrozen = false; // Freeze CC
 
+        // Standard Bonus Properties (Additive & Multiplicative)
+        this.bonusAtk = 0;
+        this.bonusAtkMult = 0;
+        this.bonusMAtk = 0;
+        this.bonusMAtkMult = 0;
+        this.bonusCrit = 0;
+        this.bonusCritMult = 0;
+        this.bonusEva = 0;
+        this.bonusEvaMult = 0;
+        this.bonusSpeed = 0;
+        this.bonusSpeedMult = 0;
+        this.bonusDef = 0;
+        this.bonusDefMult = 0;
+        this.bonusMDef = 0;
+        this.bonusMDefMult = 0;
+        this.bonusAtkSpd = 0;
+        this.bonusAtkSpdMult = 0;
+        this.bonusAcc = 0;
+        this.bonusAccMult = 0;
+        this.bonusDR = 0;
+        this.bonusDRMult = 0;
+        this.bonusCastSpd = 0;
+        this.bonusCastSpdMult = 0;
+        this.bonusRangeMin = 0;
+        this.bonusRangeMax = 0;
+        this.bonusAtkRange = 0;
+        this.bonusUltChargeSpeed = 0;
+        this.bonusUltChargeSpeedMult = 0;
+        this.bonusMaxHp = 0;
+        this.bonusMaxHpMult = 0;
+
+        // Elemental Resistances Bonuses
+        this.bonusFireRes = 0;
+        this.bonusIceRes = 0;
+        this.bonusLightningRes = 0;
+
         // Elite & Epic System
         this.isElite = config.isElite || false;
         this.isEpic = config.type === 'EPIC' || false;
@@ -195,6 +231,21 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
         this.isAsleep = false;
         this.isFrozen = false;
 
+        // Reset Bonuses
+        this.bonusAtk = 0; this.bonusAtkMult = 0;
+        this.bonusMAtk = 0; this.bonusMAtkMult = 0;
+        this.bonusCrit = 0; this.bonusCritMult = 0;
+        this.bonusEva = 0; this.bonusEvaMult = 0;
+        this.bonusSpeed = 0; this.bonusSpeedMult = 0;
+        this.bonusDef = 0; this.bonusDefMult = 0;
+        this.bonusMDef = 0; this.bonusMDefMult = 0;
+        this.bonusAtkSpd = 0; this.bonusAtkSpdMult = 0;
+        this.bonusAcc = 0; this.bonusAccMult = 0;
+        this.bonusDR = 0; this.bonusDRMult = 0;
+        this.bonusCastSpd = 0; this.bonusCastSpdMult = 0;
+        this.bonusMaxHp = 0; this.bonusMaxHpMult = 0;
+        this.bonusFireRes = 0; this.bonusIceRes = 0; this.bonusLightningRes = 0;
+
         // Reset Grimoire/Charms
         this.isElite = config.isElite || false;
         this.isEpic = config.type === 'EPIC' || false;
@@ -326,8 +377,10 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
 
         // --- 0. Accuracy vs Evasion Check ---
         const myEva = this.getTotalEva();
-        if (attacker && typeof attacker === 'object' && attacker.acc !== undefined) {
-            const hitChance = Math.max(0.05, Math.min(1.0, (attacker.acc - myEva) / 100.0));
+        if (attacker && typeof attacker === 'object' && (attacker.getTotalAcc || attacker.acc !== undefined)) {
+            const attackerAcc = attacker.getTotalAcc ? attacker.getTotalAcc() : attacker.acc;
+            const myEva = this.getTotalEva();
+            const hitChance = Math.max(0.05, Math.min(1.0, (attackerAcc - myEva) / 100.0));
             if (Math.random() > hitChance) {
                 // MISS!
                 if (this.scene.fxManager) {
@@ -409,7 +462,7 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
             // Calculate and show Elemental Bonus Damage (Prefix)
             if (element) {
                 // For synergistic hits (amount = 0), we use a base percentage of the attacker's power
-                const basePower = (attacker && attacker.getTotalAtk) ? attacker.getTotalAtk() : (this.atk || 100);
+                const basePower = (attacker && attacker.getTotalAtk) ? attacker.getTotalAtk() : (this.getTotalAtk() || 100);
                 const synergyDmg = (amount === 0) ? (basePower * 0.3) : finalDamage;
                 const extraDmg = synergyDmg * (0.1 + Math.random() * 0.4); // 10% - 50% bonus
                 const elementColor = this.scene.fxManager.getElementColor(element) || '#ffffff';
@@ -446,63 +499,111 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
 
     // --- Standardized 16 Stats Getters ---
     getTotalMaxHp() {
-        return Math.floor((this.maxHp + (this.bonusMaxHp || 0)) * (1 + (this.grimoireBonuses?.maxHpMult || 0)));
+        const base = (this.maxHp || 100) + (this.bonusMaxHp || 0);
+        const multipliers = (this.bonusMaxHpMult || 0) + (this.grimoireBonuses?.maxHpMult || 0);
+        return Math.floor(base * (1 + multipliers));
     }
 
     getTotalAtk() {
-        return Math.floor(((this.atk || 0) + (this.bonusAtk || 0)) * (1 + (this.grimoireBonuses?.atkMult || 0)));
+        const base = (this.atk || 0) + (this.bonusAtk || 0);
+        const multipliers = (this.bonusAtkMult || 0) + (this.grimoireBonuses?.atkMult || 0);
+        return Math.floor(base * (1 + multipliers));
     }
 
     getTotalMAtk() {
-        return Math.floor(((this.mAtk || 0) + (this.bonusMAtk || 0)) * (1 + (this.grimoireBonuses?.mAtkMult || 0)));
+        const base = (this.mAtk || 0) + (this.bonusMAtk || 0);
+        const multipliers = (this.bonusMAtkMult || 0) + (this.grimoireBonuses?.mAtkMult || 0);
+        return Math.floor(base * (1 + multipliers));
     }
 
     getTotalDef() {
         const base = (this.def || 0) + (this.bonusDef || 0);
-        return Math.floor(base * (1 + (this.grimoireBonuses?.defMult || 0)));
+        const multipliers = (this.bonusDefMult || 0) + (this.grimoireBonuses?.defMult || 0);
+        return Math.floor(base * (1 + multipliers));
     }
 
     getTotalMDef() {
         const base = (this.mDef || 0) + (this.bonusMDef || 0);
-        return Math.floor(base * (1 + (this.grimoireBonuses?.mDefMult || 0)));
+        const multipliers = (this.bonusMDefMult || 0) + (this.grimoireBonuses?.mDefMult || 0);
+        return Math.floor(base * (1 + multipliers));
     }
 
     getTotalSpeed() {
         const base = (this.speed || 50) + (this.bonusSpeed || 0) + (this.grimoireBonuses?.speedAdd || 0);
-        return base;
+        const multipliers = (this.bonusSpeedMult || 0);
+        const result = base * (1 + multipliers);
+        return Math.floor(this.isFrozen ? result * 0.5 : result);
     }
 
     getTotalAtkSpd() {
-        const base = (this.atkSpd || 1500);
-        return Math.max(200, base - (this.bonusAtkSpd || 0));
+        const base = (this.atkSpd || 1500) - (this.bonusAtkSpd || 0);
+        const multipliers = (this.bonusAtkSpdMult || 0);
+        const result = base * (1 - multipliers);
+        return Math.max(200, this.isFrozen ? result * 2 : result);
     }
 
     getTotalCrit() {
-        return Math.min(100, (this.crit || 0) + (this.bonusCrit || 0) + (this.grimoireBonuses?.critAdd || 0));
+        const base = (this.crit || 0) + (this.bonusCrit || 0) + (this.grimoireBonuses?.critAdd || 0);
+        const multipliers = (this.bonusCritMult || 0);
+        return Math.min(100, base * (1 + multipliers));
     }
 
     getTotalAcc() {
-        return (this.acc || 100) + (this.bonusAcc || 0);
+        const base = (this.acc || 100) + (this.bonusAcc || 0);
+        const multipliers = (this.bonusAccMult || 0);
+        return base * (1 + multipliers);
     }
 
     getTotalEva() {
-        return (this.eva || 0) + (this.bonusEva || 0);
+        const base = (this.eva || 0) + (this.bonusEva || 0);
+        const multipliers = (this.bonusEvaMult || 0);
+        return base * (1 + multipliers);
+    }
+
+    getTotalAtkRange() {
+        return (this.atkRange || 100) + (this.bonusAtkRange || 0);
+    }
+
+    getTotalRangeMin() {
+        return Math.max(0, (this.rangeMin || 0) + (this.bonusRangeMin || 0));
+    }
+
+    getTotalRangeMax() {
+        return Math.max(0, (this.rangeMax || 100) + (this.bonusRangeMax || 0));
+    }
+
+    getTotalCastSpd() {
+        const base = Math.max(100, (this.castSpd || 1000) - (this.bonusCastSpd || 0));
+        const multipliers = (this.bonusCastSpdMult || 0);
+        const result = base / (1 + multipliers);
+        return this.isFrozen ? result * 2 : result;
+    }
+
+    getTotalUltChargeSpeed() {
+        const base = (this.ultChargeSpeed || 1.0) + (this.bonusUltChargeSpeed || 0);
+        const multipliers = (this.bonusUltChargeSpeedMult || 0);
+        return base * (1 + multipliers);
     }
 
     getTotalFireRes() {
-        return Math.min(90, (this.fireRes || 0) + (this.bonusFireRes || 0) + (this.grimoireBonuses?.fireResAdd || 0));
+        const total = (this.fireRes || 0) + (this.bonusFireRes || 0) + (this.grimoireBonuses?.fireResAdd || 0);
+        return Math.min(90, total);
     }
 
     getTotalIceRes() {
-        return Math.min(90, (this.iceRes || 0) + (this.bonusIceRes || 0) + (this.grimoireBonuses?.iceResAdd || 0));
+        const total = (this.iceRes || 0) + (this.bonusIceRes || 0) + (this.grimoireBonuses?.iceResAdd || 0);
+        return Math.min(90, total);
     }
 
     getTotalLightningRes() {
-        return Math.min(90, (this.lightningRes || 0) + (this.bonusLightningRes || 0) + (this.grimoireBonuses?.lightningResAdd || 0));
+        const total = (this.lightningRes || 0) + (this.bonusLightningRes || 0) + (this.grimoireBonuses?.lightningResAdd || 0);
+        return Math.min(90, total);
     }
 
     getTotalDR() {
-        return (this.dr || 0) + (this.bonusDR || 0);
+        const base = (this.dr || 0) + (this.bonusDR || 0);
+        const multipliers = (this.bonusDRMult || 0);
+        return Math.min(0.95, base * (1 + multipliers));
     }
 
     takeMagicDamage(amount, attacker = null, isUltimate = false, element = null, isCritical = false, delay = 0) {
@@ -580,7 +681,7 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
             // Calculate and show Elemental Bonus Damage (Prefix)
             if (element) {
                 // For synergistic hits (amount = 0), use attacker power as baseline
-                const basePower = (attacker && attacker.getTotalMAtk) ? attacker.getTotalMAtk() : (this.mAtk || 100);
+                const basePower = (attacker && attacker.getTotalMAtk) ? attacker.getTotalMAtk() : (this.getTotalMAtk() || 100);
                 const synergyDmg = (amount === 0) ? (basePower * 0.3) : finalDamage;
                 const extraDmg = synergyDmg * (0.1 + Math.random() * 0.4); // 10% - 50% bonus
                 const elementColor = this.scene.fxManager.getElementColor(element) || '#ffffff';
@@ -676,7 +777,7 @@ export default class BaseMonster extends Phaser.GameObjects.Container {
 
     fireProjectile() {
         const now = this.scene.time.now;
-        if (now - this.lastAttackTime < this.atkSpd) return false;
+        if (now - this.lastAttackTime < this.getTotalAtkSpd()) return false;
 
         const target = this.blackboard.get('target');
         if (!target || !target.active || target.hp <= 0) return false;

@@ -74,7 +74,7 @@ export default function applyBardAI(unit, getAllyGroup, getEnemyGroup) {
         if (!buffTarget) return false;
 
         const dist = Phaser.Math.Distance.Between(unit.x, unit.y, buffTarget.x, buffTarget.y);
-        const atkRange = unit.getTotalAtkRange ? unit.getTotalAtkRange() : (unit.config.atkRange || 200);
+        const atkRange = unit.getTotalAtkRange();
 
         return dist <= atkRange;
     }, "In Buff Range?");
@@ -84,19 +84,16 @@ export default function applyBardAI(unit, getAllyGroup, getEnemyGroup) {
         if (!enemyTarget) return false;
 
         const dist = Phaser.Math.Distance.Between(unit.x, unit.y, enemyTarget.x, enemyTarget.y);
-        const atkRange = unit.getTotalAtkRange ? unit.getTotalAtkRange() : (unit.config.atkRange || 200);
+        const atkRange = unit.getTotalAtkRange();
 
         return dist <= atkRange;
     }, "In Attack Range?");
 
-    const isEnemyTooClose = new Condition(() => {
         const targetObj = unit.blackboard.get('target');
         if (!targetObj || !targetObj.active) return false;
         const dist = Phaser.Math.Distance.Between(unit.x, unit.y, targetObj.x, targetObj.y);
-
-        const rangeMin = unit.getTotalRangeMin ? unit.getTotalRangeMin() : (unit.config.rangeMin || 150);
+        const rangeMin = unit.getTotalRangeMin();
         return dist < rangeMin;
-    }, "Enemy Too Close?");
 
     // 2. Actions
 
@@ -108,7 +105,7 @@ export default function applyBardAI(unit, getAllyGroup, getEnemyGroup) {
         const atkRange = unit.getTotalAtkRange ? unit.getTotalAtkRange() : (unit.config.atkRange || 200);
 
         if (dist > atkRange) {
-            const currentSpeed = unit.getTotalSpeed ? unit.getTotalSpeed() : unit.speed;
+            const currentSpeed = unit.getTotalSpeed();
             unit.scene.physics.moveToObject(unit, target, currentSpeed);
             return 1; // RUNNING
         } else {
@@ -126,7 +123,7 @@ export default function applyBardAI(unit, getAllyGroup, getEnemyGroup) {
         if (!targetObj || !targetObj.active) return 2; // FAILED
 
         const angle = Phaser.Math.Angle.Between(targetObj.x, targetObj.y, unit.x, unit.y);
-        const currentSpeed = unit.getTotalSpeed ? unit.getTotalSpeed() : unit.speed;
+        const currentSpeed = unit.getTotalSpeed();
         unit.body.setVelocity(
             Math.cos(angle) * currentSpeed,
             Math.sin(angle) * currentSpeed
@@ -142,7 +139,7 @@ export default function applyBardAI(unit, getAllyGroup, getEnemyGroup) {
         const atkRange = unit.getTotalAtkRange ? unit.getTotalAtkRange() : (unit.config.atkRange || 200);
 
         if (dist > atkRange) {
-            const currentSpeed = unit.getTotalSpeed ? unit.getTotalSpeed() : unit.speed;
+            const currentSpeed = unit.getTotalSpeed();
             unit.scene.physics.moveToObject(unit, target, currentSpeed);
             return 1; // RUNNING
         } else {

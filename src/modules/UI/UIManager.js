@@ -14,6 +14,7 @@ import buildingManager, { BUILDING_TYPES } from '../Core/BuildingManager.js';
 import equipmentManager from '../Core/EquipmentManager.js';
 import foodManager, { FOOD_RECIPES } from '../Core/FoodManager.js';
 import fishingManager from '../Core/FishingManager.js';
+import alchemyManager from '../Core/AlchemyManager.js';
 import { MUSIC_TRACKS } from '../Core/MusicManager.js';
 
 
@@ -1240,7 +1241,16 @@ export default class UIManager {
             // Toggle Food HUD: Only on DungeonScene
             const foodHud = document.getElementById('food-hud');
             if (foodHud) {
-                foodHud.style.display = (currentSceneKey === 'DungeonScene') ? 'flex' : 'none';
+                const isDungeon = currentSceneKey === 'DungeonScene';
+                foodHud.style.display = isDungeon ? 'flex' : 'none';
+                
+                // Also handle Right NPC HUD initialization
+                if (isDungeon) {
+                    this.initRightNPCHUD();
+                } else {
+                    const rightHud = document.getElementById('right-npc-hud');
+                    if (rightHud) rightHud.style.display = 'none';
+                }
             }
         };
     }
@@ -2475,6 +2485,220 @@ export default class UIManager {
         }
     }
 
+    async showAlchemyManagement() {
+        if (this.alchemyOverlay) return;
+
+        const overlay = document.createElement('div');
+        overlay.id = 'alchemy-overlay';
+        overlay.className = 'shop-overlay retro-scanline-overlay alchemy-overlay';
+        this.alchemyOverlay = overlay;
+
+        overlay.innerHTML = `
+            <div class="shop-container alchemy-container" style="max-width: 900px; width: 95vw; background: #0f172a; border: 3px solid #a78bfa; box-shadow: 0 0 20px rgba(167, 139, 250, 0.4); border-radius: 0;">
+                <div class="shop-header" style="background: #1e293b; border-bottom: 3px solid #a78bfa; padding: 15px 20px;">
+                    <div class="shop-title" style="font-family: var(--font-pixel); color: #c4b5fd; text-shadow: 0 0 10px #a78bfa; font-size: 14px;">⚗️ ALCHEMY MANAGEMENT</div>
+                    <button class="shop-close-btn" id="alchemy-close" style="background: #1e293b; border: 2px solid #a78bfa; color: #a78bfa; font-family: var(--font-pixel); cursor: pointer;">✕</button>
+                </div>
+                
+                <div style="display: flex; background: #0f172a; padding: 10px; gap: 10px; border-bottom: 1px solid #1e293b;">
+                    <button class="alchemy-tab-btn active" data-tab="alchemist" style="flex: 1; padding: 12px; font-family: var(--font-pixel); font-size: 10px; background: #1e293b; border: 2px solid #a78bfa; color: #a78bfa; cursor: pointer; transition: all 0.2s;">👤 연금술사</button>
+                    <button class="alchemy-tab-btn" data-tab="tool" style="flex: 1; padding: 12px; font-family: var(--font-pixel); font-size: 10px; background: #1e293b; border: 2px solid #1e293b; color: #64748b; cursor: pointer; transition: all 0.2s;">⚒️ 연금도구</button>
+                    <button class="alchemy-tab-btn" data-tab="recipe" style="flex: 1; padding: 12px; font-family: var(--font-pixel); font-size: 10px; background: #1e293b; border: 2px solid #1e293b; color: #64748b; cursor: pointer; transition: all 0.2s;">📜 레시피</button>
+                </div>
+
+                <div class="shop-body" id="alchemy-content" style="padding: 25px; min-height: 400px; max-height: 70vh; overflow-y: auto; background: radial-gradient(circle at center, #2e1065 0%, #0f172a 100%);">
+                    <!-- Content dynamic -->
+                </div>
+            </div>
+        `;
+
+        document.getElementById('app-container').appendChild(overlay);
+
+        document.getElementById('alchemy-close').onclick = () => this.hideAlchemyManagement();
+        overlay.onclick = (e) => { if (e.target === overlay) this.hideAlchemyManagement(); };
+
+        const tabs = overlay.querySelectorAll('.alchemy-tab-btn');
+        tabs.forEach(tab => {
+            tab.onclick = () => {
+                tabs.forEach(t => {
+                    t.classList.remove('active');
+                    t.style.borderColor = '#1e293b';
+                    t.style.color = '#64748b';
+                });
+                tab.classList.add('active');
+                tab.style.borderColor = '#a78bfa';
+                tab.style.color = '#a78bfa';
+                this.renderAlchemyTab(tab.dataset.tab);
+            };
+        });
+
+        await this.renderAlchemyTab('alchemist');
+    }
+
+    hideAlchemyManagement() {
+        if (!this.alchemyOverlay) return;
+        this.alchemyOverlay.classList.add('fade-out');
+        setTimeout(() => {
+            if (this.alchemyOverlay) {
+                this.alchemyOverlay.remove();
+                this.alchemyOverlay = null;
+            }
+        }, 300);
+    }
+
+    async renderAlchemyTab(tabId) {
+        const content = document.getElementById('alchemy-content');
+        if (!content) return;
+
+        if (tabId === 'alchemist') {
+            const stats = alchemyManager.getStats();
+            const aData = alchemyManager.alchemists[alchemyManager.state.activeAlchemistId];
+            const expPercent = Math.min(100, (stats.exp / stats.nextLevelExp) * 100);
+            const staminaPercent = Math.min(100, (stats.currentStamina / stats.maxStamina) * 100);
+
+            content.innerHTML = `
+                <div style="display: flex; gap: 30px; align-items: flex-start; animation: slideInUp 0.3s ease-out;">
+                    <div style="width: 250px; text-align: center; background: rgba(0,0,0,0.3); padding: 20px; border-radius: 15px; border: 1px solid rgba(167, 139, 250, 0.2);">
+                        <div style="width: 210px; height: 210px; background: #0f172a; border: 2px solid #a78bfa; border-radius: 10px; display: flex; align-items: center; justify-content: center; overflow: hidden; margin: 0 auto 15px auto; box-shadow: inset 0 0 20px rgba(167, 139, 250, 0.3);">
+                            <img src="${aData.icon}" style="width: 180px; height: 180px; object-fit: contain; image-rendering: pixelated;">
+                        </div>
+                        <div style="font-family: var(--font-pixel); font-size: 16px; color: #fff; margin-bottom: 10px;">Lv.${stats.level} ${aData.name}</div>
+                        <div style="font-family: var(--font-vt); font-size: 18px; color: #d8b4fe; line-height: 1.4;">${aData.description}</div>
+                    </div>
+
+                    <div style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+                        <div style="background: rgba(15, 23, 42, 0.6); padding: 20px; border-radius: 12px; border: 1px solid rgba(167, 139, 250, 0.3);">
+                            <div style="margin-bottom: 20px;">
+                                <div style="display: flex; justify-content: space-between; font-family: var(--font-pixel); font-size: 10px; margin-bottom: 8px;">
+                                    <span style="color: #a78bfa;">⚡ STAMINA</span>
+                                    <span style="color: #fff;">${Math.floor(stats.currentStamina)} / ${stats.maxStamina}</span>
+                                </div>
+                                <div style="width: 100%; height: 12px; background: #0f172a; border: 1px solid #a78bfa; overflow: hidden;">
+                                    <div id="alchemy-stamina-bar" style="width: ${staminaPercent}%; height: 100%; background: linear-gradient(90deg, #8b5cf6, #a78bfa); box-shadow: 0 0 10px #a78bfa;"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div style="display: flex; justify-content: space-between; font-family: var(--font-pixel); font-size: 10px; margin-bottom: 8px;">
+                                    <span style="color: #d8b4fe;">✨ EXPERIENCE</span>
+                                    <span style="color: #fff;">${stats.exp} / ${stats.nextLevelExp}</span>
+                                </div>
+                                <div style="width: 100%; height: 12px; background: #0f172a; border: 1px solid #7c3aed; overflow: hidden;">
+                                    <div style="width: ${expPercent}%; height: 100%; background: linear-gradient(90deg, #7c3aed, #d8b4fe); box-shadow: 0 0 10px #7c3aed;"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                            <div class="fishing-stat-row" style="border: 1px solid rgba(167, 139, 250, 0.2);">
+                                <span style="font-family: var(--font-pixel); font-size: 9px; color: #a78bfa;">⚗️ ALCHEMY SPEED</span>
+                                <span style="font-family: var(--font-pixel); font-size: 11px; color: #fff;">${stats.stats.alchemySpeed.toFixed(1)}/s</span>
+                            </div>
+                            <div class="fishing-stat-row" style="border: 1px solid rgba(167, 139, 250, 0.2);">
+                                <span style="font-family: var(--font-pixel); font-size: 9px; color: #a78bfa;">🎯 SUCCESS RATE</span>
+                                <span style="font-family: var(--font-pixel); font-size: 11px; color: #fff;">${(stats.stats.alchemySuccessRate * 100).toFixed(0)}%</span>
+                            </div>
+                            <div class="fishing-stat-row" style="border: 1px solid rgba(167, 139, 250, 0.2);">
+                                <span style="font-family: var(--font-pixel); font-size: 9px; color: #a78bfa;">🧪 POTION MULT</span>
+                                <span style="font-family: var(--font-pixel); font-size: 11px; color: #fff;">x${stats.stats.productionCount.toFixed(1)}</span>
+                            </div>
+                            <div class="fishing-stat-row" style="border: 1px solid rgba(167, 139, 250, 0.2);">
+                                <span style="font-family: var(--font-pixel); font-size: 9px; color: #a78bfa;">❤️ RECOVERY (H/m)</span>
+                                <span style="font-family: var(--font-pixel); font-size: 11px; color: #fff;">${(stats.stats.health * 0.05).toFixed(1)}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        } else if (tabId === 'tool') {
+            const toolId = 'alchemy_tool_basic';
+            const toolData = ItemManager.getItem(toolId);
+            const candle = await DBManager.getInventoryItem('emoji_candle');
+            const ice = await DBManager.getInventoryItem('eternal_ice');
+            const ownedTool = await DBManager.getInventoryItem(toolId);
+            const ownedCount = ownedTool ? ownedTool.amount : 0;
+
+            const canCraft = (candle && candle.amount >= 5000) && (ice && ice.amount >= 3000);
+
+            content.innerHTML = `
+                <div style="display: flex; flex-direction: column; gap: 20px; animation: slideInUp 0.3s ease-out;">
+                    <div style="background: rgba(15, 23, 42, 0.6); padding: 25px; border-radius: 12px; border: 2px solid #a78bfa; display: flex; gap: 25px; align-items: center;">
+                        <div style="width: 120px; height: 120px; background: #0f172a; border: 2px solid #a78bfa; border-radius: 10px; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 15px rgba(167, 139, 250, 0.2);">
+                            <img src="${toolData.customAsset}" style="width: 90px; height: 90px; object-fit: contain;">
+                        </div>
+                        <div style="flex: 1;">
+                            <div style="font-family: var(--font-pixel); font-size: 18px; color: #fff; margin-bottom: 8px;">${toolData.name}</div>
+                            <div style="font-family: var(--font-vt); font-size: 18px; color: #d8b4fe; margin-bottom: 15px;">
+                                ${toolData.description}<br>
+                                <span style="color: #a78bfa;">내구도: 500</span> | <span style="color: #fbbf24;">확률적 추가 소모 (50%)</span>
+                            </div>
+                            <div style="display: flex; gap: 15px; align-items: center;">
+                                <div style="display: flex; gap: 15px; font-family: var(--font-pixel); font-size: 10px;">
+                                    <span style="color: #94a3b8; display: flex; align-items: center; gap: 4px;"><img src="assets/emojis/1f56f.svg" style="width:14px;"> ${candle ? candle.amount : 0}/5000</span>
+                                    <span style="color: #94a3b8; display: flex; align-items: center; gap: 4px;"><img src="assets/emojis/1f9ca.svg" style="width:14px;"> ${ice ? ice.amount : 0}/3000</span>
+                                </div>
+                                <button class="alchemy-craft-tool-btn" data-id="${toolId}" ${!canCraft ? 'disabled' : ''} style="padding: 10px 20px; background: #a78bfa; border: none; border-radius: 5px; color: #fff; font-family: var(--font-pixel); font-size: 10px; cursor: pointer; opacity: ${canCraft ? 1 : 0.5};">제작하기</button>
+                            </div>
+                        </div>
+                        <div style="text-align: center; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 10px; min-width: 100px;">
+                            <div style="font-family: var(--font-pixel); font-size: 9px; color: #a78bfa; margin-bottom: 5px;">현재 보유</div>
+                            <div style="font-family: var(--font-pixel); font-size: 20px; color: #fff;">${ownedCount}</div>
+                        </div>
+                    </div>
+                    
+                    <div style="background: rgba(15, 23, 42, 0.4); padding: 15px; border-radius: 10px; font-family: var(--font-vt); font-size: 16px; color: #d8b4fe; border-left: 4px solid #a78bfa;">
+                        ℹ️ 연금도구는 로얄 상점에서도 90,000 골드로 구매할 수 있습니다.
+                    </div>
+                </div>
+            `;
+
+            content.querySelector('.alchemy-craft-tool-btn').onclick = async () => {
+                const result = await alchemyManager.craftTool(toolId);
+                this.showToast(result.message);
+                if (result.success) {
+                    this.renderAlchemyTab('tool');
+                }
+            };
+
+        } else if (tabId === 'recipe') {
+            const recipe = alchemyManager.recipes['basic_recipe'];
+            
+            content.innerHTML = `
+                <div style="display: flex; flex-direction: column; gap: 20px; animation: slideInUp 0.3s ease-out;">
+                    <div style="background: rgba(15, 23, 42, 0.6); padding: 20px; border-radius: 15px; border: 2px solid #a78bfa; display: flex; align-items: center; gap: 20px;">
+                         <div style="width: 60px; height: 60px; background: rgba(167, 139, 250, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 30px;">📜</div>
+                         <div>
+                            <div style="font-family: var(--font-pixel); font-size: 16px; color: #fff;">${recipe.name}</div>
+                            <div style="font-family: var(--font-vt); font-size: 16px; color: #d8b4fe;">${recipe.description}</div>
+                         </div>
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <div style="font-family: var(--font-pixel); font-size: 10px; color: #a78bfa; padding-left: 5px;">🧪 제작 가능한 포션</div>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                            ${recipe.potions.map(pId => {
+                                const pData = alchemyManager.potionData[pId];
+                                return `
+                                    <div style="background: rgba(15, 23, 42, 0.5); padding: 15px; border-radius: 12px; border: 1px solid rgba(167, 139, 250, 0.2); display: flex; align-items: center; gap: 15px;">
+                                        <img src="${pData.asset}" style="width: 50px; height: 50px; object-fit: contain;">
+                                        <div>
+                                            <div style="font-family: var(--font-pixel); font-size: 11px; color: #fff; margin-bottom: 4px;">${pData.name}</div>
+                                            <div style="font-family: var(--font-vt); font-size: 14px; color: #a78bfa;">${pData.description}</div>
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                    
+                    <div style="background: rgba(15, 23, 42, 0.4); padding: 12px; border-radius: 8px; font-family: var(--font-vt); font-size: 14px; color: #94a3b8; text-align: center;">
+                        ※ 포션은 던전 탐험 중 연금술사가 자동으로 제작합니다.
+                    </div>
+                </div>
+            `;
+        }
+    }
+
     /**
      * Initializes the Right NPC HUD in Dungeon Scene.
      */
@@ -2486,9 +2710,13 @@ export default class UIManager {
             container.className = 'right-npc-hud';
             document.getElementById('app-container').appendChild(container);
         }
+        container.style.display = 'flex';
         this.updateRightNPCHUD();
     }
 
+    /**
+     * Updates the content of the Right NPC HUD.
+     */
     /**
      * Updates the content of the Right NPC HUD.
      */
@@ -2496,51 +2724,93 @@ export default class UIManager {
         const container = document.getElementById('right-npc-hud');
         if (!container) return;
 
-        const stats = fishingManager.getStats();
+        // --- 1. Fishing HUD Section ---
+        const fStats = fishingManager.getStats();
         const fData = fishingManager.fishermen[fishingManager.state.activeFishermanId];
-        const staminaPercent = Math.min(100, (stats.currentStamina / stats.maxStamina) * 100);
-        const durabilityPercent = Math.min(100, (fishingManager.state.rodDurability / 500) * 100);
-        const isAuto = fishingManager.state.autoConsume;
+        const fStaminaPercent = Math.min(100, (fStats.currentStamina / fStats.maxStamina) * 100);
+        const fDurabilityPercent = Math.min(100, (fishingManager.state.rodDurability / 500) * 100);
+        const fIsAuto = fishingManager.state.autoConsume;
+
+        // --- 2. Alchemy HUD Section ---
+        const aStats = alchemyManager.getStats();
+        const aData = alchemyManager.alchemists[alchemyManager.state.activeAlchemistId];
+        const aStaminaPercent = Math.min(100, (aStats.currentStamina / aStats.maxStamina) * 100);
+        const aDurabilityPercent = Math.min(100, (alchemyManager.state.toolDurability / 500) * 100);
+        const aIsAuto = alchemyManager.state.autoConsume;
 
         container.innerHTML = `
+            <!-- Fishing HUD -->
             <div class="npc-hud-item fishing-hud" id="fishing-hud-item">
                 <div class="npc-hud-portrait" id="fishing-hud-portrait" style="cursor: pointer;" title="낚시통 열기">
                     <img src="${fData.icon}" alt="fisherman">
-                    <div class="npc-hud-level">Lv.${stats.level}</div>
+                    <div class="npc-hud-level">Lv.${fStats.level}</div>
                 </div>
                 <div class="npc-hud-bars">
                     <div class="npc-hud-bar-wrap">
-                        <div class="npc-hud-bar-fill stamina" style="width: ${staminaPercent}%" title="STAMINA: ${Math.floor(stats.currentStamina)}/${stats.maxStamina}"></div>
+                        <div class="npc-hud-bar-fill stamina" id="f-stamina-bar" style="width: ${fStaminaPercent}%" title="STAMINA: ${Math.floor(fStats.currentStamina)}/${fStats.maxStamina}"></div>
                     </div>
                     <div class="npc-hud-bar-wrap">
-                        <div class="npc-hud-bar-fill durability" style="width: ${durabilityPercent}%" title="ROD DURABILITY: ${fishingManager.state.rodDurability}/500"></div>
+                        <div class="npc-hud-bar-fill durability" id="f-durability-bar" style="width: ${fDurabilityPercent}%" title="ROD DURABILITY: ${fishingManager.state.rodDurability}/500"></div>
                     </div>
                 </div>
-                <button class="npc-hud-toggle ${isAuto ? 'active' : ''}" id="fishing-auto-toggle">
-                    ${isAuto ? 'AUTO' : 'MANU'}
+                <button class="npc-hud-toggle ${fIsAuto ? 'active' : ''}" id="fishing-auto-toggle">
+                    ${fIsAuto ? 'AUTO' : 'MANU'}
                 </button>
-                <div class="fishing-bubble" id="fishing-bubble"></div>
+                <div class="npc-bubble" id="fishing-bubble"></div>
+            </div>
+
+            <!-- Alchemy HUD -->
+            <div class="npc-hud-item alchemy-hud" id="alchemy-hud-item" style="border-color: #a78bfa;">
+                <div class="npc-hud-portrait" id="alchemy-hud-portrait" style="cursor: pointer;" title="연금술 제작 현황">
+                    <img src="${aData.icon}" alt="alchemist">
+                    <div class="npc-hud-level" style="background: rgba(167, 139, 250, 0.9);">Lv.${aStats.level}</div>
+                </div>
+                <div class="npc-hud-bars">
+                    <div class="npc-hud-bar-wrap">
+                        <div class="npc-hud-bar-fill stamina" id="a-stamina-bar" style="width: ${aStaminaPercent}%" title="STAMINA: ${Math.floor(aStats.currentStamina)}/${aStats.maxStamina}"></div>
+                    </div>
+                    <div class="npc-hud-bar-wrap">
+                        <div class="npc-hud-bar-fill durability" id="a-durability-bar" style="width: ${aDurabilityPercent}%" title="TOOL DURABILITY: ${alchemyManager.state.toolDurability}/500" style="background: #f59e0b;"></div>
+                    </div>
+                </div>
+                <button class="npc-hud-toggle ${aIsAuto ? 'active' : ''}" id="alchemy-auto-toggle" style="background: #1e1b4b; border-color: #4338ca;">
+                    ${aIsAuto ? 'AUTO' : 'MANU'}
+                </button>
+                <div class="npc-bubble" id="alchemy-bubble"></div>
             </div>
         `;
 
-        const toggleBtn = document.getElementById('fishing-auto-toggle');
-        if (toggleBtn) {
-            toggleBtn.onclick = (e) => {
+        // --- Listeners: Fishing ---
+        const fToggleBtn = document.getElementById('fishing-auto-toggle');
+        if (fToggleBtn) {
+            fToggleBtn.onclick = (e) => {
                 e.stopPropagation();
                 const newState = fishingManager.toggleAutoConsume();
-                toggleBtn.classList.toggle('active', newState);
-                toggleBtn.innerText = newState ? 'AUTO' : 'MANU';
-                this.showToast(`자동 소모: ${newState ? 'ON' : 'OFF'}`);
-                this.updateFishHUD(); // Immediately update top HUD
+                fToggleBtn.classList.toggle('active', newState);
+                fToggleBtn.innerText = newState ? 'AUTO' : 'MANU';
+                this.showToast(`자동 낚시: ${newState ? 'ON' : 'OFF'}`);
+                this.updateFishHUD();
             };
         }
+        const fPortrait = document.getElementById('fishing-hud-portrait');
+        if (fPortrait) fPortrait.onclick = () => this.showFishingBucket();
 
-        const portrait = document.getElementById('fishing-hud-portrait');
-        if (portrait) {
-            portrait.onclick = () => this.showFishingBucket();
+        // --- Listeners: Alchemy ---
+        const aToggleBtn = document.getElementById('alchemy-auto-toggle');
+        if (aToggleBtn) {
+            aToggleBtn.onclick = (e) => {
+                e.stopPropagation();
+                const newState = alchemyManager.toggleAutoConsume();
+                aToggleBtn.classList.toggle('active', newState);
+                aToggleBtn.innerText = newState ? 'AUTO' : 'MANU';
+                this.showToast(`자동 연금: ${newState ? 'ON' : 'OFF'}`);
+            };
         }
     }
 
+    /**
+     * Shows a floating animation for fishing results.
+     */
     /**
      * Shows a floating animation for fishing results.
      */
@@ -2549,7 +2819,7 @@ export default class UIManager {
         if (!bubble) return;
 
         bubble.innerHTML = '';
-        bubble.className = 'fishing-bubble active';
+        bubble.className = 'npc-bubble active';
 
         if (result.success) {
             bubble.innerHTML = `
@@ -2562,10 +2832,31 @@ export default class UIManager {
             bubble.style.color = '#94a3b8';
         }
 
-        // Auto remove class after animation
-        setTimeout(() => {
-            bubble.classList.remove('active');
-        }, 2000);
+        setTimeout(() => bubble.classList.remove('active'), 2000);
+    }
+
+    /**
+     * Shows a floating animation for alchemy results.
+     */
+    showAlchemyResultNotification(result) {
+        const bubble = document.getElementById('alchemy-bubble');
+        if (!bubble) return;
+
+        bubble.innerHTML = '';
+        bubble.className = 'npc-bubble active';
+
+        if (result.success) {
+            bubble.innerHTML = `
+                <img src="${result.asset}" style="width: 20px; height: 20px;">
+                <span>+${result.amount}</span>
+            `;
+            bubble.style.color = '#a78bfa';
+        } else {
+            bubble.innerHTML = `<span>MISS</span>`;
+            bubble.style.color = '#94a3b8';
+        }
+
+        setTimeout(() => bubble.classList.remove('active'), 2000);
     }
 
     /**
@@ -2573,8 +2864,8 @@ export default class UIManager {
     */
     updateFishingHUDStatus() {
         const stats = fishingManager.getStats();
-        const staminaBar = document.querySelector('.npc-hud-bar-fill.stamina');
-        const durabilityBar = document.querySelector('.npc-hud-bar-fill.durability');
+        const staminaBar = document.getElementById('f-stamina-bar');
+        const durabilityBar = document.getElementById('f-durability-bar');
 
         if (staminaBar) {
             const staminaPercent = Math.min(100, (stats.currentStamina / stats.maxStamina) * 100);
@@ -2582,6 +2873,24 @@ export default class UIManager {
         }
         if (durabilityBar) {
             const durabilityPercent = Math.min(100, (fishingManager.state.rodDurability / 500) * 100);
+            durabilityBar.style.width = `${durabilityPercent}%`;
+        }
+    }
+
+    /**
+    * Updates the status of the alchemy HUD during dungeon combat.
+    */
+    updateAlchemyHUDStatus() {
+        const stats = alchemyManager.getStats();
+        const staminaBar = document.getElementById('a-stamina-bar');
+        const durabilityBar = document.getElementById('a-durability-bar');
+
+        if (staminaBar) {
+            const staminaPercent = Math.min(100, (stats.currentStamina / stats.maxStamina) * 100);
+            staminaBar.style.width = `${staminaPercent}%`;
+        }
+        if (durabilityBar) {
+            const durabilityPercent = Math.min(100, (alchemyManager.state.toolDurability / 500) * 100);
             durabilityBar.style.width = `${durabilityPercent}%`;
         }
     }
@@ -4655,7 +4964,14 @@ export default class UIManager {
                 statuses.forEach((status) => {
                     const iconEl = document.createElement('span');
                     iconEl.className = 'portrait-status-mini';
-                    iconEl.textContent = status.emoji;
+                    
+                    // Add stack count if applicable
+                    if (status.stacks > 1) {
+                        iconEl.innerHTML = `${status.emoji}<span class="status-stack-count">${status.stacks}</span>`;
+                    } else {
+                        iconEl.textContent = status.emoji;
+                    }
+
                     iconEl.title = status.name || '';
                     iconEl.onclick = (e) => {
                         e.stopPropagation();

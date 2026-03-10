@@ -111,7 +111,7 @@ export default function applyProtectAI(agent, allyGroupGetter, enemyGroupGetter)
         const dist = Phaser.Math.Distance.Between(a.x, a.y, target.x, target.y);
 
         if (dist > 60) {
-            const currentSpeed = a.getTotalSpeed ? a.getTotalSpeed() : a.speed;
+            const currentSpeed = a.getTotalSpeed();
             a.scene.physics.moveToObject(a, target, currentSpeed);
             return 1; // RUNNING
         } else {
@@ -129,10 +129,10 @@ export default function applyProtectAI(agent, allyGroupGetter, enemyGroupGetter)
         }
 
         const dist = Phaser.Math.Distance.Between(a.x, a.y, threat.x, threat.y);
-        const range = a.getTotalAtkRange ? a.getTotalAtkRange() : (a.atkRange || 50);
+        const range = a.getTotalAtkRange();
 
         if (dist > range) {
-            const currentSpeed = a.getTotalSpeed ? a.getTotalSpeed() : a.speed;
+            const currentSpeed = a.getTotalSpeed();
             a.scene.physics.moveToObject(a, threat, currentSpeed);
             return 1;
         } else {
@@ -161,7 +161,7 @@ export default function applyProtectAI(agent, allyGroupGetter, enemyGroupGetter)
                 yoyo: true
             });
 
-            let damage = a.getTotalAtk ? a.getTotalAtk() : a.atk;
+            let damage = a.getTotalAtk();
             if (threat.takeDamage) {
                 threat.takeDamage(damage, a);
             }

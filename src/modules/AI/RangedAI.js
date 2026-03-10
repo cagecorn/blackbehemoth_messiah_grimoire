@@ -28,7 +28,7 @@ export default function applyRangedAI(unit, skillNode = null) {
         if (!unit.warrior || !unit.warrior.active) return 2;
         const dist = Phaser.Math.Distance.Between(unit.x, unit.y, unit.warrior.x, unit.warrior.y);
         if (dist > 300) {
-            unit.scene.physics.moveToObject(unit, unit.warrior, unit.getTotalSpeed ? unit.getTotalSpeed() : unit.speed);
+            unit.scene.physics.moveToObject(unit, unit.warrior, unit.getTotalSpeed());
             return 1; // RUNNING
         } else {
             if (unit.body) unit.body.setVelocity(0, 0);
@@ -49,7 +49,7 @@ export default function applyRangedAI(unit, skillNode = null) {
 
         // [Standardization Fix] Use center-to-center distance to match perk triggers 
         // and prevent "approach too close" bug where radius subtraction made reachDist too small.
-        const rangeMin = unit.getTotalRangeMin ? unit.getTotalRangeMin() : (unit.rangeMin !== undefined ? unit.rangeMin : 150);
+        const rangeMin = unit.getTotalRangeMin();
         return dist < rangeMin;
     }, "Enemy Too Close?");
 
@@ -58,8 +58,8 @@ export default function applyRangedAI(unit, skillNode = null) {
         if (!targetObj) return false;
         const dist = Phaser.Math.Distance.Between(unit.x, unit.y, targetObj.x, targetObj.y);
 
-        const rangeMin = unit.getTotalRangeMin ? unit.getTotalRangeMin() : (unit.rangeMin !== undefined ? unit.rangeMin : 150);
-        const rangeMax = unit.getTotalRangeMax ? unit.getTotalRangeMax() : (unit.rangeMax !== undefined ? unit.rangeMax : 300);
+        const rangeMin = unit.getTotalRangeMin();
+        const rangeMax = unit.getTotalRangeMax();
         return dist >= rangeMin && dist <= rangeMax;
     }, "In Ideal Range?");
 
@@ -68,7 +68,7 @@ export default function applyRangedAI(unit, skillNode = null) {
         if (!targetObj) return 2; // FAILED
 
         const angle = Phaser.Math.Angle.Between(targetObj.x, targetObj.y, unit.x, unit.y);
-        const currentSpeed = unit.getTotalSpeed ? unit.getTotalSpeed() : unit.speed;
+        const currentSpeed = unit.getTotalSpeed();
         unit.body.setVelocity(
             Math.cos(angle) * currentSpeed,
             Math.sin(angle) * currentSpeed
@@ -102,7 +102,7 @@ export default function applyRangedAI(unit, skillNode = null) {
             avgX /= count;
             avgY /= count;
             const angle = Phaser.Math.Angle.Between(avgX, avgY, unit.x, unit.y);
-            const currentSpeed = unit.getTotalSpeed ? unit.getTotalSpeed() : unit.speed;
+            const currentSpeed = unit.getTotalSpeed();
             unit.body.setVelocity(
                 Math.cos(angle) * currentSpeed,
                 Math.sin(angle) * currentSpeed
@@ -112,7 +112,7 @@ export default function applyRangedAI(unit, skillNode = null) {
             const targetObj = unit.blackboard.get('target');
             if (targetObj) {
                 const angle = Phaser.Math.Angle.Between(targetObj.x, targetObj.y, unit.x, unit.y);
-                const currentSpeed = unit.getTotalSpeed ? unit.getTotalSpeed() : unit.speed;
+                const currentSpeed = unit.getTotalSpeed();
                 unit.body.setVelocity(Math.cos(angle) * currentSpeed, Math.sin(angle) * currentSpeed);
             }
         }
@@ -128,7 +128,7 @@ export default function applyRangedAI(unit, skillNode = null) {
 
         if (dist > rangeMax) {
             const angle = Phaser.Math.Angle.Between(unit.x, unit.y, targetObj.x, targetObj.y);
-            const currentSpeed = unit.getTotalSpeed ? unit.getTotalSpeed() : unit.speed;
+            const currentSpeed = unit.getTotalSpeed();
             unit.body.setVelocity(
                 Math.cos(angle) * currentSpeed,
                 Math.sin(angle) * currentSpeed

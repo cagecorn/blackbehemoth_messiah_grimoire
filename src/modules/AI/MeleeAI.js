@@ -32,7 +32,7 @@ export default function applyMeleeAI(agent, targetListGetter, initialState = 'AG
 
         const dist = Phaser.Math.Distance.Between(a.x, a.y, a.warrior.x, a.warrior.y);
         if (dist > 150) {
-            a.scene.physics.moveToObject(a, a.warrior, a.getTotalSpeed ? a.getTotalSpeed() : a.speed);
+            a.scene.physics.moveToObject(a, a.warrior, a.getTotalSpeed());
             return 1; // RUNNING
         } else {
             if (a.body) a.body.setVelocity(0, 0);
@@ -122,10 +122,10 @@ export default function applyMeleeAI(agent, targetListGetter, initialState = 'AG
 
         // Physics move toward target if not close enough
         const dist = Phaser.Math.Distance.Between(a.x, a.y, target.x, target.y);
-        const atkRange = a.getTotalAtkRange ? a.getTotalAtkRange() : (a.config.atkRange || 50);
+        const atkRange = a.getTotalAtkRange();
 
         if (dist > atkRange) {
-            agent.scene.physics.moveToObject(agent, target, agent.getTotalSpeed ? agent.getTotalSpeed() : agent.speed);
+            agent.scene.physics.moveToObject(agent, target, agent.getTotalSpeed());
             return 1; // RUNNING
         } else {
             // Reached target, stop moving
@@ -144,7 +144,7 @@ export default function applyMeleeAI(agent, targetListGetter, initialState = 'AG
 
         const now = a.scene.time.now;
         if (!a.lastAttackTime) a.lastAttackTime = 0;
-        const currentAtkSpd = agent.getTotalAtkSpd ? agent.getTotalAtkSpd() : (agent.atkSpd || 1000);
+        const currentAtkSpd = agent.getTotalAtkSpd();
         if (now - agent.lastAttackTime >= currentAtkSpd) {
             agent.lastAttackTime = now;
 
@@ -159,8 +159,8 @@ export default function applyMeleeAI(agent, targetListGetter, initialState = 'AG
             });
 
             // Calculate and Apply Damage
-            let damage = a.getTotalAtk ? a.getTotalAtk() : (a.atk || 10);
-            const currentCrit = a.getTotalCrit ? a.getTotalCrit() : (a.crit || 0);
+            let damage = a.getTotalAtk() || 10;
+            const currentCrit = a.getTotalCrit();
             const isCritical = Math.random() * 100 < currentCrit;
             if (isCritical) {
                 damage *= 1.5;

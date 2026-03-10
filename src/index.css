@@ -6601,3 +6601,22 @@ body.blur-active #mobile-hud {
     outline: none !important;
     pointer-events: auto !important;
 }
+
+/* [ALCHEMY] Status Stack Count Badge */
+.status-stack-count {
+    position: absolute;
+    bottom: -2px;
+    right: -4px;
+    background: #ef4444;
+    color: white;
+    font-size: 8px;
+    font-weight: bold;
+    padding: 0 3px;
+    border-radius: 4px;
+    border: 1px solid #7f1d1d;
+    line-height: normal;
+    pointer-events: none;
+    text-shadow: none;
+    font-family: var(--font-pixel);
+    z-index: 15;
+}

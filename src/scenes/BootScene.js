@@ -261,6 +261,12 @@ export default class BootScene extends Phaser.Scene {
         this.load.image('logo_icon', 'assets/icon/logo_icon.png');
         this.load.image('title_icon', 'assets/icon/title_icon.png');
 
+        // Potion Projectile Assets
+        this.load.image('atk_potion', 'assets/potion/atk_potion.png');
+        this.load.image('def_potion', 'assets/potion/def_potion.png');
+        this.load.image('mAtk_potion', 'assets/potion/mAtk_potion.png');
+        this.load.image('mDef_potion', 'assets/potion/mDef_potion.png');
+
         // Load BGM
         this.load.audio('main_battle_bgm_1', 'assets/BGM/main_battle_bgm_1.mp3');
         this.load.audio('main_battle_bgm_2', 'assets/BGM/main_battle_bgm_2.mp3');
