@@ -315,7 +315,8 @@ class FishingManager {
                     expiresAtRound: currentRound + 1 // Lasts for 1 round
                 };
 
-                console.log(`%c[낚시 버프] ${fishData.name} 자동 소모! (라운드 ${currentRound} 버프 활성화)`, "color: #60a5fa; font-weight: bold;");
+                console.log(`%c[낚시 버프 활성화] ${fishData.name} 자동 소모 (라운드 ${currentRound})`, "background: #10b981; color: #fff; padding: 2px 5px; font-weight: bold;");
+                console.log(` - 효과: ${fishData.buffDescription}`);
                 EventBus.emit(EventBus.EVENTS.INVENTORY_UPDATED);
                 EventBus.emit('FISHING_BUFF_APPLIED', fishData);
             }

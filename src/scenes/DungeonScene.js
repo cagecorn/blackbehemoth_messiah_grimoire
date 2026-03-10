@@ -1258,12 +1258,14 @@ export default class DungeonScene extends Phaser.Scene {
         }
 
         const startPos = this.dungeonManager.getPlayerStartPosition();
-        // Monster scaling: Increases every 5 rounds + Difficulty Level Offset
         const levelOffset = this.difficultyCfg ? this.difficultyCfg.levelOffset : 0;
-        const monsterLevel = Math.floor((this.currentRound - 1) / 5) + 1 + levelOffset + (fishingManager.state.activeFishBuffs.MONSTER_LEVEL?.value || 0);
+        const fishLevelBuff = fishingManager.getBuffValue('MONSTER_LEVEL');
+        const monsterLevel = Math.floor((this.currentRound - 1) / 5) + 1 + levelOffset + fishLevelBuff;
 
         // Elite Settings
-        const eliteChance = Math.min(0.5, 0.1 + (this.currentRound - 1) * 0.05 + (fishingManager.state.activeFishBuffs.ELITE_RATE?.value || 0));
+        const fishEliteBuff = fishingManager.getBuffValue('ELITE_RATE');
+        const baseEliteChance = 0.1 + (this.currentRound - 1) * 0.05;
+        const eliteChance = Math.min(0.5, baseEliteChance + fishEliteBuff);
         const novaCharms = ['emoji_fireworks', 'emoji_sparkler', 'emoji_koinobori'];
         const nodeCharmsList = ['emoji_pouting_face', 'emoji_enraged_face', 'emoji_smiling_face_with_sunglasses'];
 
@@ -1309,7 +1311,14 @@ export default class DungeonScene extends Phaser.Scene {
 
         // Total spawn count increases with rounds * Difficulty Multiplier
         const spawnMult = this.difficultyCfg ? this.difficultyCfg.spawnMult : 1;
-        const spawnCount = Math.floor((18 + (this.currentRound - 1) * 2) * spawnMult * (1 + (fishingManager.state.activeFishBuffs.SPAWN_RATE?.value || 0)));
+        const fishSpawnBuff = fishingManager.getBuffValue('SPAWN_RATE');
+        const baseSpawnCount = 18 + (this.currentRound - 1) * 2;
+        const spawnCount = Math.floor(baseSpawnCount * spawnMult * (1 + fishSpawnBuff));
+
+        console.log(`%c[낚시 버프 검증] 라운드 ${this.currentRound} 스폰 정보`, "background: #2563eb; color: #fff; padding: 2px 5px; font-weight: bold;");
+        console.log(` - 몬스터 레벨: ${monsterLevel} (기록: ${monsterLevel - fishLevelBuff} + 버프: ${fishLevelBuff})`);
+        console.log(` - 엘리트 확률: ${(eliteChance * 100).toFixed(1)}% (기본: ${(baseEliteChance * 100).toFixed(1)}% + 버프: ${(fishEliteBuff * 100).toFixed(1)}%)`);
+        console.log(` - 스폰 수: ${spawnCount}마리 (기본: ${Math.floor(baseSpawnCount * spawnMult)} + 버프: +${(fishSpawnBuff * 100).toFixed(0)}%)`);
 
         const epicChance = (this.difficultyCfg && this.difficultyCfg.epicChanceBase)
             ? Math.min(0.6, this.difficultyCfg.epicChanceBase + (this.currentRound - 1) * 0.02)

@@ -143,6 +143,7 @@ export default class UIManager {
         EventBus.on(EventBus.EVENTS.ITEM_COLLECTED, this.handleItemCollected, this);
         EventBus.on(EventBus.EVENTS.INVENTORY_UPDATED, () => {
             this.inventoryDirty = true;
+            if (this.fishingBucketOverlay) this.updateFishingBucketGrid();
         });
         EventBus.on(EventBus.EVENTS.STATUS_UPDATED, (payload) => {
             // Signal portraits update
@@ -2640,6 +2641,36 @@ export default class UIManager {
         overlay.className = 'shop-overlay fishing-bucket-overlay retro-scanline-overlay';
         this.fishingBucketOverlay = overlay;
 
+        overlay.innerHTML = `
+            <div class="shop-container" style="max-width: 500px; width: 90vw; border-color: #3b82f6;">
+                <div class="shop-header" style="background: #1e3a8a;">
+                    <div class="shop-title">📦 FISHING BUCKET (낚시통)</div>
+                    <button class="shop-close-btn" id="bucket-close">✕</button>
+                </div>
+                <div class="fishing-bucket-container">
+                    <div class="fishing-bucket-grid" id="fishing-bucket-grid">
+                        <!-- Grid content will be injected here -->
+                    </div>
+                    <div style="margin-top: 15px; font-family: var(--font-vt); color: #94a3b8; font-size: 14px; text-align: center;">
+                        * 낚시로 획득한 물고기 보관함입니다. 자동 소모 시 여기서 1개씩 사라집니다.
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('app-container').appendChild(overlay);
+
+        // Initial render
+        await this.updateFishingBucketGrid();
+
+        document.getElementById('bucket-close').onclick = () => this.hideFishingBucket();
+        overlay.onclick = (e) => { if (e.target === overlay) this.hideFishingBucket(); };
+    }
+
+    async updateFishingBucketGrid() {
+        const grid = document.getElementById('fishing-bucket-grid');
+        if (!grid) return;
+
         const fishList = Object.keys(fishingManager.fishData || {});
         let gridHtml = '';
 
@@ -2658,28 +2689,7 @@ export default class UIManager {
                 </div>
             `;
         }
-
-        overlay.innerHTML = `
-            <div class="shop-container" style="max-width: 500px; width: 90vw; border-color: #3b82f6;">
-                <div class="shop-header" style="background: #1e3a8a;">
-                    <div class="shop-title">📦 FISHING BUCKET (낚시통)</div>
-                    <button class="shop-close-btn" id="bucket-close">✕</button>
-                </div>
-                <div class="fishing-bucket-container">
-                    <div class="fishing-bucket-grid">
-                        ${gridHtml}
-                    </div>
-                    <div style="margin-top: 15px; font-family: var(--font-vt); color: #94a3b8; font-size: 14px; text-align: center;">
-                        * 낚시로 획득한 물고기 보관함입니다. 자동 소모 시 여기서 1개씩 사라집니다.
-                    </div>
-                </div>
-            </div>
-        `;
-
-        document.getElementById('app-container').appendChild(overlay);
-
-        document.getElementById('bucket-close').onclick = () => this.hideFishingBucket();
-        overlay.onclick = (e) => { if (e.target === overlay) this.hideFishingBucket(); };
+        grid.innerHTML = gridHtml;
     }
 
     hideFishingBucket() {
