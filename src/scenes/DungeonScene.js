@@ -859,6 +859,10 @@ export default class DungeonScene extends Phaser.Scene {
             this.time.delayedCall(5000, async () => {
                 // --- Food & Fish Buff Consumption (Next Rounds) ---
                 this.activeFoodBuffs = await foodManager.consumeForRound();
+                
+                // 1. Clear expired fish buffs first
+                fishingManager.clearExpiredBuffs(this.currentRound + 1);
+                // 2. Process new fish buffs
                 await fishingManager.processAutoConsume(this.currentRound + 1);
 
                 if (this.game.uiManager) {

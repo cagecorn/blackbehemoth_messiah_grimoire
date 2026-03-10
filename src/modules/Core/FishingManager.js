@@ -359,6 +359,7 @@ class FishingManager {
         let changed = false;
         for (const [type, buff] of Object.entries(this.state.activeFishBuffs)) {
             if (currentRound >= buff.expiresAtRound) {
+                console.log(`%c[낚시 버프 만료] ${buff.name} (${type}) 효과가 종료되었습니다. (라운드 ${currentRound})`, "background: #475569; color: #fff; padding: 2px 5px;");
                 delete this.state.activeFishBuffs[type];
                 changed = true;
             }
