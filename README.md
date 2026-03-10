@@ -19,6 +19,10 @@
 - `crocodile_warrior_sprite`, `crocodile_archer_sprite`, `crocodile_healer_sprite`: 늪지대 악어 3종 스프라이트
 - `fire_spirit_warrior_sprite`, `fire_spirit_archer_sprite`, `fire_spirit_wizard_sprite`: 용암 지대 화염 정령 3종 스프라이트
 - `bow_turret_sprite`, `healing_turret_sprite`: 방어 시설 터렛 2종 스프라이트
+- **Fishing Bucket (낚시통)**: 낚시로 획득한 물고기를 보관하고 던전에서 자동 소모하는 인벤토리 시스템.
+- `mackerel` (고등어): 던전 라운드당 1마리 소모. 몬스터 출현 양 30% 상승
+- `herring` (청어): 던전 라운드당 1마리 소모. 몬스터 레벨 1 상승
+- `squid` (오징어): 던전 라운드당 1마리 소모. 엘리트 출현율 30% 상승
 - **Monster Codex (몬스터 도감)**: 저주받은 숲을 시작으로 각 던전에 출현하는 몬스터들의 상세 기본 능력치(레벨 1 기준)를 확인할 수 있는 시스템.
 - **Star-up (★ 승급)**: 동일 성급의 용병 3명을 모으면 자동으로 상위 성급으로 진화하는 시스템 (TFT 방식).
 - **Star Scaling (성급 스케일링)**: 성급이 오를 때마다 기초 스탯에 강력한 곡선 배수(`1.5 ^ (별 - 1)`)가 적용되는 성장 공식.

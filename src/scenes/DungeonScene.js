@@ -55,6 +55,7 @@ import foodManager from '../modules/Core/FoodManager.js';
 import GrimoireManager from '../modules/Core/GrimoireManager.js';
 import equipmentManager from '../modules/Core/EquipmentManager.js';
 import StructureManager from '../modules/Core/StructureManager.js';
+import fishingManager from '../modules/Core/FishingManager.js';
 
 // partyManager will be accessed via this.game.partyManager
 
@@ -299,6 +300,17 @@ export default class DungeonScene extends Phaser.Scene {
                     console.warn('[Audio] Failed to apply BGM Bitcrusher:', e);
                 }
             }
+
+            // --- Fishing System Integration ---
+            if (this.game.uiManager) {
+                this.game.uiManager.initRightNPCHUD();
+            }
+
+            // --- Initial Food & Fish Buff Consumption ---
+            this.activeFoodBuffs = await foodManager.consumeForRound();
+            await fishingManager.processAutoConsume(this.currentRound);
+
+            fishingManager.lastTurnTime = 0; // Tracking for periodic fishing
 
             // Initialize Managers
             this.dungeonManager = new DungeonManager(this);
@@ -771,9 +783,22 @@ export default class DungeonScene extends Phaser.Scene {
             buildingManager.update(delta);
         }
 
-        // --- 1.3 Defense Structures Update ---
         if (this.structureManager) {
             this.structureManager.update(time, delta);
+        }
+
+        // --- 1.4 Fishing Turn Update ---
+        if (!this.isResting && !this.isInitializing && !this.isResetting) {
+            if (time - (fishingManager.lastTurnTime || 0) > 5000) { // Every 5 seconds
+                fishingManager.lastTurnTime = time;
+                fishingManager.performFishingTurn().then(result => {
+                    if (result && this.game.uiManager) {
+                        this.game.uiManager.showFishingResultNotification(result);
+                        this.game.uiManager.updateFishingHUDStatus();
+                        if (result.success) this.game.uiManager.updateFishHUD();
+                    }
+                });
+            }
         }
 
         // --- 1.4 Construction Mode Camera ---
@@ -810,9 +835,14 @@ export default class DungeonScene extends Phaser.Scene {
             EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, `[시스템] 라운드 ${this.currentRound} 클리어! 5초 뒤 다음 라운드가 시작됩니다. ⛺`);
 
             this.time.delayedCall(5000, async () => {
-                // --- Food Buff Consumption (Next Rounds) ---
+                // --- Food & Fish Buff Consumption (Next Rounds) ---
                 this.activeFoodBuffs = await foodManager.consumeForRound();
-                if (this.game.uiManager) this.game.uiManager.updateFoodHUD();
+                await fishingManager.processAutoConsume(this.currentRound + 1);
+
+                if (this.game.uiManager) {
+                    this.game.uiManager.updateFoodHUD();
+                    this.game.uiManager.updateFishingHUDStatus();
+                }
 
                 // Sync Equipment Multiplier
                 equipmentManager.expMultiplier = 1.0 + (this.activeFoodBuffs.EQUIP_EXP_BONUS || 0);
@@ -1230,10 +1260,10 @@ export default class DungeonScene extends Phaser.Scene {
         const startPos = this.dungeonManager.getPlayerStartPosition();
         // Monster scaling: Increases every 5 rounds + Difficulty Level Offset
         const levelOffset = this.difficultyCfg ? this.difficultyCfg.levelOffset : 0;
-        const monsterLevel = Math.floor((this.currentRound - 1) / 5) + 1 + levelOffset;
+        const monsterLevel = Math.floor((this.currentRound - 1) / 5) + 1 + levelOffset + (fishingManager.state.activeFishBuffs.MONSTER_LEVEL?.value || 0);
 
         // Elite Settings
-        const eliteChance = Math.min(0.5, 0.1 + (this.currentRound - 1) * 0.05);
+        const eliteChance = Math.min(0.5, 0.1 + (this.currentRound - 1) * 0.05 + (fishingManager.state.activeFishBuffs.ELITE_RATE?.value || 0));
         const novaCharms = ['emoji_fireworks', 'emoji_sparkler', 'emoji_koinobori'];
         const nodeCharmsList = ['emoji_pouting_face', 'emoji_enraged_face', 'emoji_smiling_face_with_sunglasses'];
 
@@ -1279,7 +1309,7 @@ export default class DungeonScene extends Phaser.Scene {
 
         // Total spawn count increases with rounds * Difficulty Multiplier
         const spawnMult = this.difficultyCfg ? this.difficultyCfg.spawnMult : 1;
-        const spawnCount = Math.floor((18 + (this.currentRound - 1) * 2) * spawnMult);
+        const spawnCount = Math.floor((18 + (this.currentRound - 1) * 2) * spawnMult * (1 + (fishingManager.state.activeFishBuffs.SPAWN_RATE?.value || 0)));
 
         const epicChance = (this.difficultyCfg && this.difficultyCfg.epicChanceBase)
             ? Math.min(0.6, this.difficultyCfg.epicChanceBase + (this.currentRound - 1) * 0.02)

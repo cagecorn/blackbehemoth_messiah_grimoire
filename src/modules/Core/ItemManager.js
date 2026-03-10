@@ -84,21 +84,21 @@ const ITEM_DATABASE = {
         description: '평범한 대나무로 만든 낚시대입니다. 내구도 500.',
         price: 20000
     },
-    'fish_mackerel': {
+    'mackerel': {
         name: '고등어',
         type: ITEM_TYPES.MATERIAL,
         icon: 'fish_mackerel',
         customAsset: 'assets/fish/mackerel.png',
-        description: '싱싱한 고등어입니다. 던전 몬스터 출현율 +30%.'
+        description: '싱싱한 고등어입니다. 던전 몬스터 출현 양 30% 상승.'
     },
-    'fish_herring': {
+    'herring': {
         name: '청어',
         type: ITEM_TYPES.MATERIAL,
         icon: 'fish_herring',
         customAsset: 'assets/fish/herring.png',
         description: '빛나는 청어입니다. 던전 몬스터 레벨 +1.'
     },
-    'fish_squid': {
+    'squid': {
         name: '오징어',
         type: ITEM_TYPES.MATERIAL,
         icon: 'fish_squid',
@@ -222,9 +222,9 @@ export default class ItemManager {
             'emoji_church': '26ea.svg',
             'emoji_camp': '1f3d5.svg',
             'emoji_tree': '1f333.svg',
-            'fish_mackerel': '1f41f.svg', // generic fish
-            'fish_herring': '1f41f.svg',
-            'fish_squid': '1f991.svg'   // squid
+            'mackerel': '1f41f.svg',
+            'herring': '1f41f.svg',
+            'squid': '1f991.svg'
         };
         return map[id] || '2753.svg'; // Default question mark
     }

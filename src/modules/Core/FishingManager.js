@@ -36,7 +36,7 @@ export const FISHING_SPOTS = {
         name: '호숫가',
         description: '고요한 호숫가입니다. 다양한 물고기가 서식합니다.',
         asset: 'assets/location/lake.png',
-        fishList: ['fish_mackerel', 'fish_herring', 'fish_squid']
+        fishList: ['mackerel', 'herring', 'squid']
     }
 };
 
@@ -44,26 +44,29 @@ export const FISHING_SPOTS = {
  * Fish Data & Buffs
  */
 export const FISH_DATA = {
-    'fish_mackerel': {
-        id: 'fish_mackerel',
+    'mackerel': {
+        id: 'mackerel',
         name: '고등어',
-        description: '싱싱한 고등어입니다. 던전 라운드당 1마리 소모하여 몬스터 출현율을 30% 상승시킵니다.',
+        description: '싱싱한 고등어입니다.',
+        buffDescription: '몬스터 출현 양 30% 상승',
         asset: 'assets/fish/mackerel.png',
         buffType: 'SPAWN_RATE',
         buffValue: 0.3
     },
-    'fish_herring': {
-        id: 'fish_herring',
+    'herring': {
+        id: 'herring',
         name: '청어',
-        description: '빛나는 청어입니다. 던전 라운드당 1마리 소모하여 몬스터 레벨을 1 상승시킵니다.',
+        description: '빛나는 청어입니다.',
+        buffDescription: '몬스터 레벨 1 상승',
         asset: 'assets/fish/herring.png',
         buffType: 'MONSTER_LEVEL',
         buffValue: 1
     },
-    'fish_squid': {
-        id: 'fish_squid',
+    'squid': {
+        id: 'squid',
         name: '오징어',
-        description: '쫄깃한 오징어입니다. 던전 라운드당 1마리 소모하여 엘리트 출현율을 30% 상승시킵니다.',
+        description: '쫄깃한 오징어입니다.',
+        buffDescription: '엘리트 출현율 30% 상승',
         asset: 'assets/fish/squid.png',
         buffType: 'ELITE_RATE',
         buffValue: 0.3
@@ -101,13 +104,21 @@ class FishingManager {
             exp: { 'POLAR_BEAR': 0 },
             currentStamina: 100,
             activeRodId: 'bamboo_fishing_rod',
+            rodDurability: 500, // Current active rod durability
             activeSpotId: 'lake',
             lastStaminaUpdate: Date.now(),
-            unlockedFishermen: ['POLAR_BEAR']
+            unlockedFishermen: ['POLAR_BEAR'],
+            autoConsume: true, // Auto consume fish for buffs in dungeon
+            activeFishBuffs: {} // { buffType: { value: 0.3, expiresAtRound: 5 } }
         };
 
         this.isFishing = false;
         this.lastAttemptTime = 0;
+
+        // Bind data constants to instance for UI access
+        this.fishData = FISH_DATA;
+        this.spots = FISHING_SPOTS;
+        this.rods = FISHING_RODS;
     }
 
     async init() {
@@ -196,6 +207,142 @@ class FishingManager {
             EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, `[낚시] ${this.fishermen[fishermanId].name}의 레벨이 ${this.state.levels[fishermanId]}이 되었습니다! 🎣`);
         }
         await this.save();
+    }
+
+    /**
+     * Toggles auto-consumption of caught fish in dungeon.
+     */
+    toggleAutoConsume() {
+        this.state.autoConsume = !this.state.autoConsume;
+        this.save();
+        EventBus.emit('FISHING_AUTO_CONSUME_TOGGLED', this.state.autoConsume);
+        return this.state.autoConsume;
+    }
+
+    /**
+     * Performs a fishing attempt during dungeon combat.
+     * Consumes 1 stamina and 1-2 rod durability.
+     */
+    async performFishingTurn() {
+        if (this.isFishing) return null;
+        this.isFishing = true;
+
+        const stats = this.getStats();
+
+        // 1. Check Requirements
+        if (this.state.currentStamina < 1) {
+            this.isFishing = false;
+            return { success: false, reason: 'STAMINA', message: '스테미나 부족!' };
+        }
+        if (this.state.rodDurability <= 0) {
+            this.isFishing = false;
+            return { success: false, reason: 'DURABILITY', message: '낚시대 파손!' };
+        }
+
+        // 2. Consume Resources
+        this.state.currentStamina -= 1;
+
+        // Rod durability consumption logic
+        let durabilityLoss = 1;
+        if (Math.random() < 0.3) durabilityLoss = 2; // 30% chance for double loss
+        this.state.rodDurability = Math.max(0, this.state.rodDurability - durabilityLoss);
+
+        // 3. Roll for success
+        const roll = Math.random();
+        const isSuccess = roll < stats.stats.fishingSuccessRate;
+
+        // 4. Calculate EXP
+        await this.addExp(this.state.activeFishermanId, isSuccess ? 10 : 2);
+
+        let result = null;
+        if (isSuccess) {
+            // Pick a random fish from the current spot
+            const spot = FISHING_SPOTS[this.state.activeSpotId] || FISHING_SPOTS['lake'];
+            const fishId = spot.fishList[Math.floor(Math.random() * spot.fishList.length)];
+            const fishData = FISH_DATA[fishId];
+
+            // Calculate catch amount
+            const catchRate = stats.stats.fishingCatchRate;
+            const amount = Math.floor(catchRate + (Math.random() < (catchRate % 1) ? 1 : 0));
+
+            // Save to inventory
+            const existing = await DBManager.getInventoryItem(fishId);
+            const newAmount = (existing ? existing.amount : 0) + amount;
+            await DBManager.saveInventoryItem(fishId, newAmount);
+
+            console.log(`%c[낚시 성공] ${fishData.name} x${amount} 획득! (현재 총계: ${newAmount})`, "color: #4ade80; font-weight: bold;");
+
+            result = {
+                success: true,
+                fishId,
+                fishName: fishData.name,
+                amount,
+                asset: fishData.asset
+            };
+
+            EventBus.emit(EventBus.EVENTS.INVENTORY_UPDATED);
+        } else {
+            result = { success: false, reason: 'MISS', message: '허탕쳤습니다...' };
+        }
+
+        this.save();
+        this.isFishing = false;
+
+        EventBus.emit('FISHING_TURN_COMPLETED', result);
+        return result;
+    }
+
+    /**
+     * Applies fish buffs if auto-consume is enabled.
+     * Called at the start of a dungeon round.
+     */
+    async processAutoConsume(currentRound) {
+        if (!this.state.autoConsume) return;
+
+        const spot = FISHING_SPOTS[this.state.activeSpotId] || FISHING_SPOTS['lake'];
+        for (const fishId of spot.fishList) {
+            const inventory = await DBManager.getInventoryItem(fishId);
+            if (inventory && inventory.amount > 0) {
+                // Consume 1 fish
+                await DBManager.saveInventoryItem(fishId, inventory.amount - 1);
+
+                // Apply buff
+                const fishData = FISH_DATA[fishId];
+                this.state.activeFishBuffs[fishData.buffType] = {
+                    id: fishId,
+                    name: fishData.name,
+                    value: fishData.buffValue,
+                    expiresAtRound: currentRound + 1 // Lasts for 1 round
+                };
+
+                console.log(`%c[낚시 버프] ${fishData.name} 자동 소모! (라운드 ${currentRound} 버프 활성화)`, "color: #60a5fa; font-weight: bold;");
+                EventBus.emit(EventBus.EVENTS.INVENTORY_UPDATED);
+                EventBus.emit('FISHING_BUFF_APPLIED', fishData);
+            }
+        }
+    }
+
+    /**
+     * Clears expired buffs.
+     */
+    clearExpiredBuffs(currentRound) {
+        let changed = false;
+        for (const [type, buff] of Object.entries(this.state.activeFishBuffs)) {
+            if (currentRound >= buff.expiresAtRound) {
+                delete this.state.activeFishBuffs[type];
+                changed = true;
+            }
+        }
+        if (changed) {
+            EventBus.emit('FISHING_BUFF_EXPIRED');
+        }
+    }
+
+    /**
+     * Get active buffs for external systems (e.g., DungeonScene spawn logic)
+     */
+    getBuffValue(buffType) {
+        return this.state.activeFishBuffs[buffType]?.value || 0;
     }
 
     async attemptFishing() {

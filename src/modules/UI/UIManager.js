@@ -2389,7 +2389,6 @@ export default class UIManager {
                         <img src="assets/location/lake.png" style="width: 100%; height: 200px; object-fit: cover; opacity: 0.7;">
                         <div style="position: absolute; bottom: 0; left: 0; right: 0; padding: 20px; background: linear-gradient(to top, rgba(15, 23, 42, 0.9), transparent);">
                             <div style="font-family: var(--font-pixel); font-size: 18px; color: #fff;">호숫가 (Lakeside)</div>
-                            <div style="font-family: var(--font-vt); font-size: 16px; color: #94a3b8;">고요한 호숫가입니다. 평화로운 분위기 속에서 낚시를 즐길 수 있습니다.</div>
                         </div>
                     </div>
 
@@ -2416,6 +2415,117 @@ export default class UIManager {
                     </div>
                 </div>
             `;
+        }
+    }
+
+    /**
+     * Initializes the Right NPC HUD in Dungeon Scene.
+     */
+    initRightNPCHUD() {
+        let container = document.getElementById('right-npc-hud');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'right-npc-hud';
+            container.className = 'right-npc-hud';
+            document.getElementById('app-container').appendChild(container);
+        }
+        this.updateRightNPCHUD();
+    }
+
+    /**
+     * Updates the content of the Right NPC HUD.
+     */
+    async updateRightNPCHUD() {
+        const container = document.getElementById('right-npc-hud');
+        if (!container) return;
+
+        const stats = fishingManager.getStats();
+        const fData = fishingManager.fishermen[fishingManager.state.activeFishermanId];
+        const staminaPercent = Math.min(100, (stats.currentStamina / stats.maxStamina) * 100);
+        const durabilityPercent = Math.min(100, (fishingManager.state.rodDurability / 500) * 100);
+        const isAuto = fishingManager.state.autoConsume;
+
+        container.innerHTML = `
+            <div class="npc-hud-item fishing-hud" id="fishing-hud-item">
+                <div class="npc-hud-portrait" id="fishing-hud-portrait" style="cursor: pointer;" title="낚시통 열기">
+                    <img src="${fData.icon}" alt="fisherman">
+                    <div class="npc-hud-level">Lv.${stats.level}</div>
+                </div>
+                <div class="npc-hud-bars">
+                    <div class="npc-hud-bar-wrap">
+                        <div class="npc-hud-bar-fill stamina" style="width: ${staminaPercent}%" title="STAMINA: ${Math.floor(stats.currentStamina)}/${stats.maxStamina}"></div>
+                    </div>
+                    <div class="npc-hud-bar-wrap">
+                        <div class="npc-hud-bar-fill durability" style="width: ${durabilityPercent}%" title="ROD DURABILITY: ${fishingManager.state.rodDurability}/500"></div>
+                    </div>
+                </div>
+                <button class="npc-hud-toggle ${isAuto ? 'active' : ''}" id="fishing-auto-toggle">
+                    ${isAuto ? 'AUTO' : 'MANU'}
+                </button>
+                <div class="fishing-bubble" id="fishing-bubble"></div>
+            </div>
+        `;
+
+        const toggleBtn = document.getElementById('fishing-auto-toggle');
+        if (toggleBtn) {
+            toggleBtn.onclick = (e) => {
+                e.stopPropagation();
+                const newState = fishingManager.toggleAutoConsume();
+                toggleBtn.classList.toggle('active', newState);
+                toggleBtn.innerText = newState ? 'AUTO' : 'MANU';
+                this.showToast(`자동 소모: ${newState ? 'ON' : 'OFF'}`);
+                this.updateFishHUD(); // Immediately update top HUD
+            };
+        }
+
+        const portrait = document.getElementById('fishing-hud-portrait');
+        if (portrait) {
+            portrait.onclick = () => this.showFishingBucket();
+        }
+    }
+
+    /**
+     * Shows a floating animation for fishing results.
+     */
+    showFishingResultNotification(result) {
+        const bubble = document.getElementById('fishing-bubble');
+        if (!bubble) return;
+
+        bubble.innerHTML = '';
+        bubble.className = 'fishing-bubble active';
+
+        if (result.success) {
+            bubble.innerHTML = `
+                <img src="${result.asset}" style="width: 20px; height: 20px;">
+                <span>+${result.amount}</span>
+            `;
+            bubble.style.color = '#60a5fa';
+        } else {
+            bubble.innerHTML = `<span>MISS</span>`;
+            bubble.style.color = '#94a3b8';
+        }
+
+        // Auto remove class after animation
+        setTimeout(() => {
+            bubble.classList.remove('active');
+        }, 2000);
+    }
+
+    /**
+    * Updates the status of the fishing HUD during dungeon combat.
+    */
+    updateFishingHUDStatus() {
+        const stats = fishingManager.getStats();
+        const staminaBar = document.querySelector('.npc-hud-bar-fill.stamina');
+        const durabilityBar = document.querySelector('.npc-hud-bar-fill.durability');
+
+        if (staminaBar) {
+            const staminaPercent = Math.min(100, (stats.currentStamina / stats.maxStamina) * 100);
+            staminaBar.style.width = `${staminaPercent}%`;
+        }
+        if (durabilityBar) {
+            const durabilityPercent = Math.min(100, (fishingManager.state.rodDurability / 500) * 100);
+            durabilityBar.style.width = `${durabilityPercent}%`;
         }
     }
 
@@ -2474,6 +2584,109 @@ export default class UIManager {
 
         hud.innerHTML = html;
         hud.style.display = html ? 'flex' : 'none';
+
+        // Also update fish HUD if present
+        this.updateFishHUD();
+    }
+
+    async updateFishHUD() {
+        let fishHud = document.getElementById('fish-hud');
+        if (!fishHud) {
+            fishHud = document.createElement('div');
+            fishHud.id = 'fish-hud';
+            fishHud.className = 'fish-hud';
+            document.getElementById('food-hud')?.parentElement?.appendChild(fishHud);
+        }
+
+        const currentSceneKey = this.scene?.scene?.key;
+        if (currentSceneKey !== 'DungeonScene') {
+            fishHud.style.display = 'none';
+            return;
+        }
+
+        const spot = fishingManager.state.activeSpotId || 'lake';
+        const spotData = fishingManager.spots ? fishingManager.spots[spot] : { fishList: ['mackerel', 'herring', 'squid'] }; // Fallback
+
+        let html = '';
+        const fishList = Object.keys(fishingManager.fishData || {});
+
+        for (const fishId of fishList) {
+            const inventory = await DBManager.getInventoryItem(fishId);
+            if (inventory && inventory.amount > 0) {
+                const fishData = fishingManager.fishData ? fishingManager.fishData[fishId] : null;
+                const asset = `assets/fish/${fishId}.png`;
+                const name = fishId.toUpperCase();
+                const isActive = fishingManager.state.activeFishBuffs[fishData?.buffType]?.id === fishId;
+                const activeClass = isActive ? 'active' : '';
+
+                html += `
+                    <div class="fish-icon ${activeClass}" title="${name}: ${fishData?.buffDescription || ''}">
+                        <img src="${asset}" alt="${fishId}">
+                        <div class="fish-count">${inventory.amount}</div>
+                    </div>
+                `;
+            }
+        }
+
+        fishHud.innerHTML = html;
+        fishHud.style.display = html ? 'flex' : 'none';
+    }
+
+    async showFishingBucket() {
+        if (this.fishingBucketOverlay) return;
+
+        const overlay = document.createElement('div');
+        overlay.id = 'fishing-bucket-overlay';
+        overlay.className = 'shop-overlay fishing-bucket-overlay retro-scanline-overlay';
+        this.fishingBucketOverlay = overlay;
+
+        const fishList = Object.keys(fishingManager.fishData || {});
+        let gridHtml = '';
+
+        for (const fishId of fishList) {
+            const inventory = await DBManager.getInventoryItem(fishId);
+            const count = inventory ? inventory.amount : 0;
+            const fishData = fishingManager.fishData ? fishingManager.fishData[fishId] : { name: fishId, buffDescription: '미지의 물고기' };
+            const asset = `assets/fish/${fishId}.png`;
+
+            gridHtml += `
+                <div class="fishing-bucket-item">
+                    <div class="count">${count}</div>
+                    <img src="${asset}" alt="${fishId}">
+                    <div class="name">${fishData.name || fishId.toUpperCase()}</div>
+                    <div class="buff">${fishData.buffDescription || ''}</div>
+                </div>
+            `;
+        }
+
+        overlay.innerHTML = `
+            <div class="shop-container" style="max-width: 500px; width: 90vw; border-color: #3b82f6;">
+                <div class="shop-header" style="background: #1e3a8a;">
+                    <div class="shop-title">📦 FISHING BUCKET (낚시통)</div>
+                    <button class="shop-close-btn" id="bucket-close">✕</button>
+                </div>
+                <div class="fishing-bucket-container">
+                    <div class="fishing-bucket-grid">
+                        ${gridHtml}
+                    </div>
+                    <div style="margin-top: 15px; font-family: var(--font-vt); color: #94a3b8; font-size: 14px; text-align: center;">
+                        * 낚시로 획득한 물고기 보관함입니다. 자동 소모 시 여기서 1개씩 사라집니다.
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('app-container').appendChild(overlay);
+
+        document.getElementById('bucket-close').onclick = () => this.hideFishingBucket();
+        overlay.onclick = (e) => { if (e.target === overlay) this.hideFishingBucket(); };
+    }
+
+    hideFishingBucket() {
+        if (this.fishingBucketOverlay) {
+            this.fishingBucketOverlay.remove();
+            this.fishingBucketOverlay = null;
+        }
     }
 
 

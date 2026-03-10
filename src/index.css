@@ -3533,6 +3533,309 @@ body {
     /* 2x3 for Class Charms */
 }
 
+/* Right NPC HUD Styling */
+.right-npc-hud {
+    position: absolute;
+    right: 20px;
+    top: 100px;
+    /* Adjust to stay below top tabs */
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    z-index: 100;
+}
+
+.npc-hud-item {
+    background: rgba(15, 23, 42, 0.85);
+    border: 2px solid #3b82f6;
+    border-radius: 12px;
+    width: 60px;
+    padding: 8px 5px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+    animation: slideInRight 0.3s ease-out;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(50px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.npc-hud-portrait {
+    width: 50px;
+    height: 50px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+    position: relative;
+    overflow: hidden;
+}
+
+.npc-hud-portrait img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.npc-hud-level {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(59, 130, 246, 0.9);
+    color: #fff;
+    font-family: var(--font-pixel);
+    font-size: 8px;
+    text-align: center;
+    padding: 1px 0;
+}
+
+.npc-hud-info {
+    width: 100%;
+}
+
+.npc-hud-name {
+    display: none;
+}
+
+.npc-hud-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    width: 100%;
+    /* Ensure bars take full width of container */
+}
+
+.npc-hud-bar-wrap {
+    height: 6px;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 3px;
+    overflow: hidden;
+    width: 100%;
+}
+
+.npc-hud-bar-fill {
+    height: 100%;
+    width: 0%;
+    transition: width 0.3s ease;
+}
+
+.npc-hud-bar-fill.stamina {
+    background: #10b981;
+}
+
+/* Green for Stamina */
+.npc-hud-bar-fill.durability {
+    background: #f59e0b;
+}
+
+/* Orange for Durability */
+
+.npc-hud-toggle {
+    background: #1e293b;
+    border: 1px solid #475569;
+    border-radius: 4px;
+    color: #94a3b8;
+    font-family: var(--font-pixel);
+    font-size: 8px;
+    padding: 3px;
+    cursor: pointer;
+    transition: all 0.2s;
+    width: 100%;
+    text-align: center;
+}
+
+.npc-hud-toggle.active {
+    background: #3b82f6;
+    color: #fff;
+    border-color: #60a5fa;
+}
+
+/* Fishing Bubble Animation */
+.fishing-bubble {
+    position: absolute;
+    top: -30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(15, 23, 42, 0.9);
+    border: 1px solid #3b82f6;
+    padding: 5px 10px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-family: var(--font-pixel);
+    font-size: 10px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.5s;
+    z-index: 10;
+}
+
+.fish-hud {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-left: 15px;
+}
+
+.fish-icon {
+    position: relative;
+    width: 32px;
+    height: 32px;
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s;
+}
+
+.fish-icon.active {
+    border-color: #60a5fa;
+    box-shadow: 0 0 10px rgba(96, 165, 250, 0.5);
+    background: rgba(59, 130, 246, 0.2);
+}
+
+.fish-icon img {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+}
+
+.fish-count {
+    position: absolute;
+    bottom: -4px;
+    right: -4px;
+    background: #3b82f6;
+    color: white;
+    font-family: var(--font-pixel);
+    font-size: 8px;
+    padding: 1px 3px;
+    border-radius: 4px;
+    border: 1px solid #1e293b;
+    pointer-events: none;
+}
+
+/* Fishing Bucket (Bucket Inventory) Styles */
+.fishing-bucket-container {
+    padding: 20px;
+}
+
+.fishing-bucket-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 15px;
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 10px;
+    border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.fishing-bucket-grid::-webkit-scrollbar {
+    width: 6px;
+}
+
+.fishing-bucket-grid::-webkit-scrollbar-track {
+    background: rgba(15, 23, 42, 0.6);
+}
+
+.fishing-bucket-grid::-webkit-scrollbar-thumb {
+    background: #3b82f6;
+    border-radius: 3px;
+}
+
+.fishing-bucket-item {
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    border-radius: 10px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+    position: relative;
+}
+
+.fishing-bucket-item:hover {
+    border-color: #3b82f6;
+    background: rgba(59, 130, 246, 0.1);
+    transform: translateY(-2px);
+}
+
+.fishing-bucket-item img {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+}
+
+.fishing-bucket-item .name {
+    font-family: var(--font-pixel);
+    font-size: 8px;
+    color: #fff;
+    text-align: center;
+}
+
+.fishing-bucket-item .count {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: #3b82f6;
+    color: white;
+    font-family: var(--font-pixel);
+    font-size: 7px;
+    padding: 1px 3px;
+    border-radius: 4px;
+}
+
+.fishing-bucket-item .buff {
+    font-family: var(--font-vt);
+    font-size: 10px;
+    color: #60a5fa;
+    text-align: center;
+}
+
+.fishing-bubble.active {
+    animation: floatUpFade 2s forwards;
+}
+
+@keyframes floatUpFade {
+    0% {
+        transform: translate(-50%, 0);
+        opacity: 0;
+    }
+
+    20% {
+        transform: translate(-50%, -15px);
+        opacity: 1;
+    }
+
+    80% {
+        transform: translate(-50%, -15px);
+        opacity: 1;
+    }
+
+    100% {
+        transform: translate(-50%, -30px);
+        opacity: 0;
+    }
+}
+
 .trans-charm-slot {
     width: 50px;
     height: 50px;
