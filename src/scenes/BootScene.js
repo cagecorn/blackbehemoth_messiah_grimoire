@@ -267,11 +267,8 @@ export default class BootScene extends Phaser.Scene {
         this.load.image('mAtk_potion', 'assets/potion/mAtk_potion.png');
         this.load.image('mDef_potion', 'assets/potion/mDef_potion.png');
 
-        // Load BGM
-        this.load.audio('main_battle_bgm_1', 'assets/BGM/main_battle_bgm_1.mp3');
-        this.load.audio('main_battle_bgm_2', 'assets/BGM/main_battle_bgm_2.mp3');
-        this.load.audio('main_battle_bgm_3', 'assets/BGM/main_battle_bgm_3.mp3');
-        this.load.audio('territory_bgm', 'assets/BGM/terretory_bgm.mp3');
+        // --- Background Music (Legacy/Reference) ---
+        // (Now mostly handled by MUSIC_TRACKS below)
 
         // --- Focus & Music Shop Tracks ---
         MUSIC_TRACKS.forEach(track => {

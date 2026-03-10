@@ -128,9 +128,14 @@ export default class TerritoryScene extends Phaser.Scene {
 
         const { width, height } = this.scale;
 
-        // Play Territory BGM
+        // Play Random Territory BGM
         this.sound.stopAll();
-        this.bgm = this.sound.add('territory_bgm', { volume: 0.4, loop: true });
+        const territoryBgms = [
+            'terretory_bgm', 'terretory_bgm_2', 'terretory_bgm_3', 'terretory_bgm_4',
+            'terretory_bgm_5', 'terretory_bgm_6', 'terretory_bgm_7'
+        ];
+        const randomBgm = territoryBgms[Math.floor(Math.random() * territoryBgms.length)];
+        this.bgm = this.sound.add(randomBgm, { volume: 0.4, loop: true });
         this.bgm.play();
 
         // Solid dark background (canvas) — banners cover the viewport via DOM

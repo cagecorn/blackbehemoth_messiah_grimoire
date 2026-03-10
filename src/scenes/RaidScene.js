@@ -80,6 +80,15 @@ export default class RaidScene extends Phaser.Scene {
             this.game.uiManager.scene = this;
         }
         console.log('RaidScene started');
+
+        // Play Random Raid BGM
+        this.sound.stopAll();
+        const raidBgms = Array.from({ length: 11 }, (_, i) => `raid_battle_bgm_${i + 1}`);
+        const randomBgm = Phaser.Utils.Array.GetRandom(raidBgms);
+        this.bgm = this.sound.add(randomBgm, { volume: 0.3, loop: true });
+        this.bgm.play();
+        console.log(`[Raid] Selected Random BGM: ${randomBgm}`);
+
         EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, `[레이드] 레이드가 시작되었습니다! 원정대 출격! 🏰`);
 
         // Fixed Raid Dimensions (matching background asset 1536x1024)

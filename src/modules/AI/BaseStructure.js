@@ -46,6 +46,14 @@ export default class BaseStructure extends Phaser.GameObjects.Container {
         this.iceRes = config.iceRes || 0;
         this.lightningRes = config.lightningRes || 0;
 
+        // --- Alchemy Potion Stacks (Max 3 each) ---
+        this.potionStacks = {
+            atk: 0,
+            def: 0,
+            mAtk: 0,
+            mDef: 0
+        };
+
         // --- Standardized Bonus Stats (for BuffManager & Skills) ---
         this.bonusAtk = 0;
         this.bonusMAtk = 0;
@@ -268,19 +276,27 @@ export default class BaseStructure extends Phaser.GameObjects.Container {
     // --- Unit Interface Implementations (Fixes target.getTotalCrit is not a function) ---
 
     getTotalAtk() {
-        return (this.atk || 0) + (this.bonusAtk || 0);
+        const base = (this.atk || 0) + (this.bonusAtk || 0);
+        const multipliers = (this.potionStacks.atk * 0.04);
+        return Math.floor(base * (1 + multipliers));
     }
 
     getTotalMAtk() {
-        return (this.mAtk || 0) + (this.bonusMAtk || 0);
+        const base = (this.mAtk || 0) + (this.bonusMAtk || 0);
+        const multipliers = (this.potionStacks.mAtk * 0.04);
+        return Math.floor(base * (1 + multipliers));
     }
 
     getTotalDef() {
-        return (this.def || 0) + (this.bonusDef || 0);
+        const base = (this.def || 0) + (this.bonusDef || 0);
+        const multipliers = (this.potionStacks.def * 0.04);
+        return Math.floor(base * (1 + multipliers));
     }
 
     getTotalMDef() {
-        return (this.mDef || 0) + (this.bonusMDef || 0);
+        const base = (this.mDef || 0) + (this.bonusMDef || 0);
+        const multipliers = (this.potionStacks.mDef * 0.04);
+        return Math.floor(base * (1 + multipliers));
     }
 
     getTotalCrit() {
@@ -367,6 +383,36 @@ export default class BaseStructure extends Phaser.GameObjects.Container {
 
     syncStatusUI() {
         // Dummy for interface compatibility
+    }
+
+    /**
+     * Applies an alchemy potion buff (stacks up to 3)
+     * @param {string} statType - 'atk', 'def', 'mAtk', 'mDef'
+     */
+    applyPotionBuff(statType) {
+        if (this.potionStacks[statType] !== undefined) {
+            this.potionStacks[statType] = Math.min(3, this.potionStacks[statType] + 1);
+            
+            // Visual feedback
+            if (this.scene && this.scene.fxManager) {
+                const colors = {
+                    'atk': '#ff4444',
+                    'def': '#4444ff',
+                    'mAtk': '#ee44ee',
+                    'mDef': '#ffffff'
+                };
+                this.scene.fxManager.showHealText(this, `Alchemy ${statType.toUpperCase()}+!`, colors[statType] || '#ffffff');
+            }
+            
+            console.log(`[Alchemy] Structure ${this.unitName} applied ${statType} potion. New stack: ${this.potionStacks[statType]}`);
+        }
+    }
+
+    /**
+     * Resets alchemy buffs (e.g., end of round)
+     */
+    resetPotionBuffs() {
+        this.potionStacks = { atk: 0, def: 0, mAtk: 0, mDef: 0 };
     }
 
     restoreSpriteTint() {

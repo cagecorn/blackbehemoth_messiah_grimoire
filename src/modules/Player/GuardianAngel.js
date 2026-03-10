@@ -91,17 +91,22 @@ export default class GuardianAngel extends Mercenary {
     getTotalAtk() {
         if (!this.master || !this.master.active) return super.getTotalAtk();
         const base = (this.master.getTotalMAtk() * 1.5) + (this.bonusAtk || 0);
-        return Math.floor(base * this.stageMultiplier);
+        const multipliers = (this.potionStacks.atk * 0.04);
+        return Math.floor(base * this.stageMultiplier * (1 + multipliers));
     }
 
     getTotalDef() {
         if (!this.master || !this.master.active) return super.getTotalDef();
-        return Math.floor(this.master.getTotalMDef() + (this.bonusDef || 0));
+        const base = this.master.getTotalMDef() + (this.bonusDef || 0);
+        const multipliers = (this.potionStacks.def * 0.04);
+        return Math.floor(base * (1 + multipliers));
     }
 
     getTotalMDef() {
         if (!this.master || !this.master.active) return super.getTotalMDef();
-        return Math.floor(this.master.getTotalMDef() + (this.bonusMDef || 0));
+        const base = this.master.getTotalMDef() + (this.bonusMDef || 0);
+        const multipliers = (this.potionStacks.mDef * 0.04);
+        return Math.floor(base * (1 + multipliers));
     }
 
     die() {

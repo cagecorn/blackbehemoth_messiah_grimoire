@@ -66,6 +66,14 @@ export default class ArenaScene extends Phaser.Scene {
         }
         console.log('ArenaScene started');
 
+        // Play Random Arena BGM
+        this.sound.stopAll();
+        const arenaBgms = Array.from({ length: 10 }, (_, i) => `arena_battle_bgm_${i + 1}`);
+        const randomBgm = Phaser.Utils.Array.GetRandom(arenaBgms);
+        this.bgm = this.sound.add(randomBgm, { volume: 0.3, loop: true });
+        this.bgm.play();
+        console.log(`[Arena] Selected Random BGM: ${randomBgm}`);
+
         // Fixed Arena Dimensions (matching background asset 1536x1024)
         const worldWidth = 1536;
         const worldHeight = 1024;

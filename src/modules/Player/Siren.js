@@ -145,17 +145,23 @@ export default class Siren extends Mercenary {
 
     getTotalMAtk() {
         if (!this.master || !this.master.active) return super.getTotalMAtk();
-        return Math.floor((this.master.getTotalMAtk() * 1.2) + (this.bonusMAtk || 0));
+        const base = (this.master.getTotalMAtk() * 1.2) + (this.bonusMAtk || 0);
+        const multipliers = (this.potionStacks.mAtk * 0.04);
+        return Math.floor(base * (1 + multipliers));
     }
 
     getTotalDef() {
         if (!this.master || !this.master.active) return super.getTotalDef();
-        return Math.floor((this.master.getTotalMDef() * 0.8) + (this.bonusDef || 0));
+        const base = (this.master.getTotalMDef() * 0.8) + (this.bonusDef || 0);
+        const multipliers = (this.potionStacks.def * 0.04);
+        return Math.floor(base * (1 + multipliers));
     }
 
     getTotalMDef() {
         if (!this.master || !this.master.active) return super.getTotalMDef();
-        return Math.floor((this.master.getTotalMDef() * 1.2) + (this.bonusMDef || 0));
+        const base = (this.master.getTotalMDef() * 1.2) + (this.bonusMDef || 0);
+        const multipliers = (this.potionStacks.mDef * 0.04);
+        return Math.floor(base * (1 + multipliers));
     }
 
     die() {

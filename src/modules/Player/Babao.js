@@ -101,17 +101,23 @@ export default class Babao extends Mercenary {
 
     getTotalAtk() {
         if (!this.master || !this.master.active) return super.getTotalAtk();
-        return Math.floor((this.master.getTotalMAtk() * SummonStats.BABAO.atkMult) + (this.bonusAtk || 0));
+        const base = (this.master.getTotalMAtk() * SummonStats.BABAO.atkMult) + (this.bonusAtk || 0);
+        const multipliers = (this.potionStacks.atk * 0.04);
+        return Math.floor(base * (1 + multipliers));
     }
 
     getTotalDef() {
         if (!this.master || !this.master.active) return super.getTotalDef();
-        return Math.floor((this.master.getTotalMDef() * SummonStats.BABAO.defMult) + (this.bonusDef || 0));
+        const base = (this.master.getTotalMDef() * SummonStats.BABAO.defMult) + (this.bonusDef || 0);
+        const multipliers = (this.potionStacks.def * 0.04);
+        return Math.floor(base * (1 + multipliers));
     }
 
     getTotalMDef() {
         if (!this.master || !this.master.active) return super.getTotalMDef();
-        return Math.floor((this.master.getTotalMDef() * SummonStats.BABAO.defMult) + (this.bonusMDef || 0));
+        const base = (this.master.getTotalMDef() * SummonStats.BABAO.defMult) + (this.bonusMDef || 0);
+        const multipliers = (this.potionStacks.mDef * 0.04);
+        return Math.floor(base * (1 + multipliers));
     }
 
     /**

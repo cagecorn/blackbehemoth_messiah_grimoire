@@ -249,8 +249,14 @@ export default class DungeonScene extends Phaser.Scene {
             this.input.on('pointerdown', this.handleMessiahTouch, this);
 
             // Play Random BGM
-            const bgms = ['main_battle_bgm_1', 'main_battle_bgm_2', 'main_battle_bgm_3'];
+            // Play Random BGM
+            const bgms = [
+                'main_battle_bgm_1', 'main_battle_bgm_2', 'main_battle_bgm_3', 'main_battle_bgm_4',
+                'main_battle_bgm_5', 'main_battle_bgm_6', 'main_battle_bgm_7', 'main_battle_bgm_8',
+                'main_battle_bgm_9', 'main_battle_bgm_10', 'main_battle_bgm_11'
+            ];
             const randomBgm = Phaser.Utils.Array.GetRandom(bgms);
+            console.log(`[Dungeon] Selected Random BGM: ${randomBgm}`);
             if (this.sound.get(randomBgm)) {
                 // Already initialized
             }
@@ -864,6 +870,15 @@ export default class DungeonScene extends Phaser.Scene {
                 fishingManager.clearExpiredBuffs(this.currentRound + 1);
                 // 2. Process new fish buffs
                 await fishingManager.processAutoConsume(this.currentRound + 1);
+
+                // 3. Reset Alchemy Potion Buffs for all allies
+                [this.mercenaries, this.structureManager?.structures].forEach(group => {
+                    if (group && group.getChildren) {
+                        group.getChildren().forEach(unit => {
+                            if (unit.active && unit.resetPotionBuffs) unit.resetPotionBuffs();
+                        });
+                    }
+                });
 
                 if (this.game.uiManager) {
                     this.game.uiManager.updateFoodHUD();

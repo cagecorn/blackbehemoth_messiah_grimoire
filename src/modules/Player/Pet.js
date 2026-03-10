@@ -39,6 +39,14 @@ export default class Pet extends Phaser.GameObjects.Container {
         this.eva = config.eva || 0;
         this.crit = config.crit || 0;
 
+        // --- Alchemy Potion Stacks (Max 3 each) ---
+        this.potionStacks = {
+            atk: 0,
+            def: 0,
+            mAtk: 0,
+            mDef: 0
+        };
+
         console.log(`[Pet] ${this.unitName} stats: ATK=${this.atk}, ACC=${this.acc}, CRIT=${this.crit}, Range=${this.atkRange}`);
         this.lastAtkTime = 0;
         this.isAttacking = false;
@@ -210,11 +218,78 @@ export default class Pet extends Phaser.GameObjects.Container {
         // Move toward enemy
         const angle = Phaser.Math.Angle.Between(this.x, this.y, this.targetEnemy.x, this.targetEnemy.y);
         this.body.setVelocity(
-            Math.cos(angle) * this.speed,
-            Math.sin(angle) * this.speed
+            Math.cos(angle) * this.getTotalSpeed(),
+            Math.sin(angle) * this.getTotalSpeed()
         );
         this.sprite.flipX = this.body.velocity.x < 0;
         this.startWaddle();
+    }
+
+    // --- Standardized Stat Getters (Potion Support) ---
+    getTotalAtk() {
+        const base = (this.atk || 0);
+        const multipliers = (this.potionStacks.atk * 0.04);
+        return Math.floor(base * (1 + multipliers));
+    }
+
+    getTotalMAtk() {
+        const base = (this.mAtk || 0);
+        const multipliers = (this.potionStacks.mAtk * 0.04);
+        return Math.floor(base * (1 + multipliers));
+    }
+
+    getTotalDef() {
+        const base = (this.def || 0);
+        const multipliers = (this.potionStacks.def * 0.04);
+        return Math.floor(base * (1 + multipliers));
+    }
+
+    getTotalMDef() {
+        const base = (this.mDef || 0);
+        const multipliers = (this.potionStacks.mDef * 0.04);
+        return Math.floor(base * (1 + multipliers));
+    }
+
+    getTotalSpeed() {
+        return this.speed || 150;
+    }
+
+    getTotalCrit() {
+        return this.crit || 0;
+    }
+
+    /**
+     * Applies an alchemy potion buff (stacks up to 3)
+     * @param {string} statType - 'atk', 'def', 'mAtk', 'mDef'
+     */
+    applyPotionBuff(statType) {
+        if (this.potionStacks[statType] !== undefined) {
+            this.potionStacks[statType] = Math.min(3, this.potionStacks[statType] + 1);
+            
+            // Visual feedback
+            if (this.scene && this.scene.fxManager) {
+                const colors = {
+                    'atk': '#ff4444',
+                    'def': '#4444ff',
+                    'mAtk': '#ee44ee',
+                    'mDef': '#ffffff'
+                };
+                this.scene.fxManager.showHealText(this, `Alchemy ${statType.toUpperCase()}+!`, colors[statType] || '#ffffff');
+            }
+            
+            console.log(`[Alchemy] Pet ${this.unitName} applied ${statType} potion. New stack: ${this.potionStacks[statType]}`);
+        }
+    }
+
+    /**
+     * Resets alchemy buffs (e.g., end of round)
+     */
+    resetPotionBuffs() {
+        this.potionStacks = { atk: 0, def: 0, mAtk: 0, mDef: 0 };
+    }
+
+    syncStatusUI() {
+        // Dummy for interface compatibility
     }
 
     tryAttack() {
@@ -255,7 +330,7 @@ export default class Pet extends Phaser.GameObjects.Container {
                 }
 
                 // Fire Laser (Wizard style)
-                const damage = this.mAtk || 5;
+                const damage = this.getTotalMAtk();
                 const isCritical = Math.random() < 0.05;
 
                 console.log(`[Pet] ${this.unitName} ranged attack at ${target.id} (Damage: ${damage})`);
@@ -319,8 +394,8 @@ export default class Pet extends Phaser.GameObjects.Container {
             onComplete: () => {
                 // Apply Damage
                 if (target.active && target.takeDamage) {
-                    const damage = this.atk || 5;
-                    const isCritical = Math.random() * 100 < (this.crit || 5);
+                    const damage = this.getTotalAtk();
+                    const isCritical = Math.random() * 100 < (this.getTotalCrit());
 
                     console.log(`[Pet] ${this.unitName} dash attack at ${target.id} (Damage: ${damage})`);
                     target.takeDamage(damage, this, false, null, isCritical);

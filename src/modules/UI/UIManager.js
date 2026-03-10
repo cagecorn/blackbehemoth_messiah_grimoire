@@ -6835,9 +6835,10 @@ export default class UIManager {
         const musicManager = this.game.musicManager;
         await focusManager.init();
 
-        const categories = ['LOFI', 'MEDITATION', 'FANTASY'];
+        const categories = ['LOFI', 'MEDITATION', 'FANTASY', 'TERRITORY', 'DUNGEON', 'ARENA', 'RAID'];
         let currentTab = 'SETTINGS'; // SETTINGS, STORE, PLAYLIST
         let storeCategory = 'LOFI';
+        let previewingTrackId = null;
 
         const renderTab = () => {
             const inner = document.getElementById('music-manager-inner');
@@ -6885,15 +6886,6 @@ export default class UIManager {
                 });
 
             } else if (currentTab === 'STORE') {
-                const MUSIC_TRACKS = [
-                    { id: 'lo_fi_track_1', category: 'LOFI', name: 'Lofi Track 1', path: 'assets/BGM/lo_fi_track_1.mp3', cost: 50000 },
-                    { id: 'lo_fi_track_2', category: 'LOFI', name: 'Lofi Track 2', path: 'assets/BGM/lo_fi_track_2.mp3', cost: 50000 },
-                    { id: 'meditation_track_1', category: 'MEDITATION', name: 'Meditation 1', path: 'assets/BGM/meditation_track_1.mp3', cost: 50000 },
-                    { id: 'meditation_track_2', category: 'MEDITATION', name: 'Meditation 2', path: 'assets/BGM/meditation_track_2.mp3', cost: 50000 },
-                    { id: 'fantasy_track_1', category: 'FANTASY', name: 'Fantasy 1', path: 'assets/BGM/fantasy_track_1.mp3', cost: 50000 },
-                    { id: 'fantasy_track_2', category: 'FANTASY', name: 'Fantasy 2', path: 'assets/BGM/fantasy_track_2.mp3', cost: 50000 }
-                ];
-
                 const currentTracks = MUSIC_TRACKS.filter(t => t.category === storeCategory);
 
                 inner.innerHTML = `
@@ -6902,7 +6894,6 @@ export default class UIManager {
                             <div class="category-tabs">
                                 ${categories.map(c => `<button class="category-btn ${storeCategory === c ? 'active' : ''}" data-cat="${c}">${c}</button>`).join('')}
                             </div>
-                            <div class="gold-display">💰 <span id="store-gold-count">0</span></div>
                         </div>
                         <div class="music-grid scroll-v">
                             ${currentTracks.map(t => {
@@ -6914,6 +6905,9 @@ export default class UIManager {
                                             <div class="music-cost">${owned ? 'OWNED' : '🪙 ' + t.cost.toLocaleString()}</div>
                                         </div>
                                         ${owned ? '<div class="owned-badge">✓</div>' : `<button class="buy-music-btn" data-id="${t.id}" data-cost="${t.cost}">BUY</button>`}
+                                        <button class="preview-btn ${previewingTrackId === t.id ? 'playing' : ''}" data-id="${t.id}" title="Preview">
+                                            ${previewingTrackId === t.id ? '⏹' : '▶'}
+                                        </button>
                                     </div>
                                 `;
                 }).join('')}
@@ -6946,16 +6940,22 @@ export default class UIManager {
                     });
                 });
 
-            } else if (currentTab === 'PLAYLIST') {
-                const MUSIC_TRACKS = [
-                    { id: 'lo_fi_track_1', category: 'LOFI', name: 'Lofi Track 1', path: 'assets/BGM/lo_fi_track_1.mp3', cost: 50000 },
-                    { id: 'lo_fi_track_2', category: 'LOFI', name: 'Lofi Track 2', path: 'assets/BGM/lo_fi_track_2.mp3', cost: 50000 },
-                    { id: 'meditation_track_1', category: 'MEDITATION', name: 'Meditation 1', path: 'assets/BGM/meditation_track_1.mp3', cost: 50000 },
-                    { id: 'meditation_track_2', category: 'MEDITATION', name: 'Meditation 2', path: 'assets/BGM/meditation_track_2.mp3', cost: 50000 },
-                    { id: 'fantasy_track_1', category: 'FANTASY', name: 'Fantasy 1', path: 'assets/BGM/fantasy_track_1.mp3', cost: 50000 },
-                    { id: 'fantasy_track_2', category: 'FANTASY', name: 'Fantasy 2', path: 'assets/BGM/fantasy_track_2.mp3', cost: 50000 }
-                ];
+                inner.querySelectorAll('.preview-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const id = btn.dataset.id;
+                        if (previewingTrackId === id) {
+                            musicManager.stopPreview();
+                            previewingTrackId = null;
+                        } else {
+                            musicManager.playPreview(id);
+                            previewingTrackId = id;
+                        }
+                        renderTab();
+                    });
+                });
 
+            } else if (currentTab === 'PLAYLIST') {
                 const owned = MUSIC_TRACKS.filter(t => focusManager.ownedTracks.includes(t.id));
                 const playlistIds = focusManager.currentPlaylist;
 
@@ -6969,6 +6969,9 @@ export default class UIManager {
                                         <div class="music-node" draggable="true" data-id="${t.id}">
                                             <span class="node-icon">🎵</span>
                                             <span class="node-name">${t.name}</span>
+                                            <button class="node-play-btn ${previewingTrackId === t.id ? 'playing' : ''}" data-id="${t.id}">
+                                                ${previewingTrackId === t.id ? '⏹' : '▶'}
+                                            </button>
                                         </div>
                                     `).join('')}
                                 </div>
@@ -7002,6 +7005,22 @@ export default class UIManager {
                     node.addEventListener('dragstart', (e) => {
                         e.dataTransfer.setData('trackId', node.dataset.id);
                     });
+                    
+                    const playBtn = node.querySelector('.node-play-btn');
+                    if (playBtn) {
+                        playBtn.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            const id = playBtn.dataset.id;
+                            if (previewingTrackId === id) {
+                                musicManager.stopPreview();
+                                previewingTrackId = null;
+                            } else {
+                                musicManager.playPreview(id);
+                                previewingTrackId = id;
+                            }
+                            renderTab();
+                        });
+                    }
                 });
 
                 dropzone.addEventListener('dragover', (e) => e.preventDefault());
@@ -7121,6 +7140,20 @@ export default class UIManager {
                     }
                     .buy-music-btn:hover { background: #8b5cf6; border-color: #a78bfc; }
                     .owned-badge { position: absolute; top: 20px; right: 20px; color: #8b5cf6; font-weight: bold; font-size: 22px; }
+                    .preview-btn {
+                        position: absolute; top: 15px; right: 15px;
+                        background: rgba(0,0,0,0.5); border: 1px solid #444; color: #fff;
+                        width: 32px; height: 32px; border-radius: 50%; cursor: pointer;
+                        display: flex; align-items: center; justify-content: center;
+                        transition: 0.2s; font-size: 14px;
+                    }
+                    .preview-btn:hover { background: #8b5cf6; border-color: #a78bfc; }
+                    .preview-btn.playing { background: #ff4444; border-color: #ff6b6b; animation: pulse 1.5s infinite; }
+                    @keyframes pulse {
+                        0% { box-shadow: 0 0 0 0 rgba(255, 68, 68, 0.4); }
+                        70% { box-shadow: 0 0 0 10px rgba(255, 68, 68, 0); }
+                        100% { box-shadow: 0 0 0 0 rgba(255, 68, 68, 0); }
+                    }
 
                     /* Playlist Styles */
                     .playlist-manager { display: flex; gap: 40px; height: 100%; }
@@ -7137,7 +7170,15 @@ export default class UIManager {
                     .music-node:hover { background: #252525; border-color: #444; }
                     .music-node:active { cursor: grabbing; opacity: 0.5; }
                     .node-icon { color: #8b5cf6; font-size: 18px; }
-                    .node-name { font-size: 16px; color: #ccc; }
+                    .node-name { font-size: 16px; color: #ccc; flex: 1; }
+                    .node-play-btn {
+                        background: none; border: 1px solid #444; color: #888;
+                        width: 28px; height: 28px; border-radius: 50%;
+                        cursor: pointer; display: flex; align-items: center; justify-content: center;
+                        font-size: 12px; transition: 0.2s;
+                    }
+                    .node-play-btn:hover { color: #8b5cf6; border-color: #8b5cf6; }
+                    .node-play-btn.playing { color: #fff; background: #8b5cf6; border-color: #a78bfc; }
                     .playlist-dropzone { border: 2px dashed #444; min-height: 300px; display: flex; flex-direction: column; gap: 10px; }
                     .empty-drop-hint { margin: auto; font-size: 16px; color: #555; text-align: center; }
                     .playlist-item {
@@ -7194,6 +7235,9 @@ export default class UIManager {
                 this.popupInner.style.width = '';
             }
             this.popupOverlay.style.display = 'none';
+            if (this.game && this.game.musicManager) {
+                this.game.musicManager.stopPreview();
+            }
             if (originalClose) originalClose();
             this.popupClose.onclick = originalClose;
         };
