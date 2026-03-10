@@ -1176,8 +1176,13 @@ export default class UIManager {
             if (this.buildingGrid) {
                 const showScenes = ['TerritoryScene', 'DungeonScene', 'RaidScene'];
                 const showGrid = showScenes.includes(currentSceneKey);
-                console.log(`[UIManager] updateActiveNav toggle visibility. Current: ${currentSceneKey}, showGrid: ${showGrid}`);
                 this.buildingGrid.style.display = showGrid ? 'flex' : 'none';
+            }
+
+            // Toggle Food HUD: Only on DungeonScene
+            const foodHud = document.getElementById('food-hud');
+            if (foodHud) {
+                foodHud.style.display = (currentSceneKey === 'DungeonScene') ? 'flex' : 'none';
             }
         };
     }
@@ -2234,6 +2239,13 @@ export default class UIManager {
     async updateFoodHUD() {
         const hud = document.getElementById('food-hud');
         if (!hud) return;
+
+        // Only show if we are in DungeonScene
+        const currentSceneKey = this.scene?.scene?.key;
+        if (currentSceneKey !== 'DungeonScene') {
+            hud.style.display = 'none';
+            return;
+        }
 
         const ownedFood = await foodManager.getOwnedFood();
         let html = '';
