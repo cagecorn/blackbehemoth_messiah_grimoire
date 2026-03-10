@@ -29,7 +29,9 @@ export default class Execution {
         caster.isStunned = true; // Prevent player from breaking the animation
         const originalX = caster.x;
         const originalY = caster.y;
-        const originalScaleX = Math.abs(caster.sprite.scaleX); // Use magnitude to avoid flip issues
+        
+        // Fix: Capture actual scale (including sign) to preserve direction
+        const originalScaleX = caster.sprite.scaleX; 
         const originalScaleY = caster.sprite.scaleY;
 
         // Darken screen for drama
@@ -37,64 +39,66 @@ export default class Execution {
             .setDepth(15000).setScrollFactor(0);
 
         // 2. Perform strike sequence
-        for (let i = 0; i < this.numStrikes; i++) {
-            const targets = caster.targetGroup.getChildren().filter(e => e.active && e.hp > 0);
-            const target = targets.length > 0 ? Phaser.Utils.Array.GetRandom(targets) : null;
+        try {
+            for (let i = 0; i < this.numStrikes; i++) {
+                const targets = caster.targetGroup.getChildren().filter(e => e.active && e.hp > 0);
+                const target = targets.length > 0 ? Phaser.Utils.Array.GetRandom(targets) : null;
 
-            // Determine target points: pick a point slightly past the target to "slash through"
-            let tx, ty;
-            if (target) {
-                const angle = Phaser.Math.Angle.Between(caster.x, caster.y, target.x, target.y);
-                const dashPastDistance = 150;
-                tx = target.x + Math.cos(angle) * dashPastDistance;
-                ty = target.y + Math.sin(angle) * dashPastDistance;
-            } else {
-                // Random fallback if no targets left
-                tx = Phaser.Math.Between(100, scene.game.config.width - 100);
-                ty = Phaser.Math.Between(100, scene.game.config.height - 100);
+                // Determine target points: pick a point slightly past the target to "slash through"
+                let tx, ty;
+                if (target) {
+                    const angle = Phaser.Math.Angle.Between(caster.x, caster.y, target.x, target.y);
+                    const dashPastDistance = 150;
+                    tx = target.x + Math.cos(angle) * dashPastDistance;
+                    ty = target.y + Math.sin(angle) * dashPastDistance;
+                } else {
+                    // Random fallback if no targets left
+                    tx = Phaser.Math.Between(100, scene.game.config.width - 100);
+                    ty = Phaser.Math.Between(100, scene.game.config.height - 100);
+                }
+
+                await this.performStrike(scene, caster, tx, ty, originalScaleX, originalScaleY);
+
+                // Small pause between strikes if needed, but the user wants "quick"
+                if (i < this.numStrikes - 1) {
+                    await new Promise(resolve => scene.time.delayedCall(40, resolve));
+                }
             }
+        } finally {
+            // 3. Return to origin (always clean up, even if caster died during the loop)
+            const doCleanup = () => {
+                if (darken && darken.active) darken.destroy();
+                if (caster && caster.sprite) {
+                    caster.sprite.setScale(originalScaleX, originalScaleY);
+                    caster.sprite.setRotation(0);
+                    caster.sprite.clearTint();
+                }
+                if (caster) caster.isStunned = false;
+                console.log('[Execution] Ultimate finished — sprite restored.');
+            };
 
-            await this.performStrike(scene, caster, tx, ty, originalScaleX, originalScaleY);
-
-            // Small pause between strikes if needed, but the user wants "quick"
-            if (i < this.numStrikes - 1) {
-                await new Promise(resolve => scene.time.delayedCall(40, resolve));
-            }
-        }
-
-        // 3. Return to origin (always clean up, even if caster died during the loop)
-        const doCleanup = () => {
-            if (darken && darken.active) darken.destroy();
-            if (caster && caster.sprite) {
-                caster.sprite.setScale(originalScaleX, originalScaleY);
-                caster.sprite.setRotation(0);
-                caster.sprite.clearTint();
-            }
-            if (caster) caster.isStunned = false;
-            console.log('[Execution] Ultimate finished — sprite restored.');
-        };
-
-        if (!caster.active || !scene) {
-            doCleanup();
-            return;
-        }
-
-        scene.tweens.add({
-            targets: caster,
-            x: originalX,
-            y: originalY,
-            duration: 250,
-            ease: 'Cubic.easeOut',
-            onComplete: doCleanup
-        });
-
-        // Safety net: if the return tween is also killed, clean up after 400ms
-        scene.time.delayedCall(400, () => {
-            if (caster && caster.isStunned) {
-                console.warn('[Execution] Safety timeout fired — forcing cleanup.');
+            if (!caster.active || !scene) {
                 doCleanup();
+                return;
             }
-        });
+
+            scene.tweens.add({
+                targets: caster,
+                x: originalX,
+                y: originalY,
+                duration: 250,
+                ease: 'Cubic.easeOut',
+                onComplete: doCleanup
+            });
+
+            // Safety net: if the return tween is also killed, clean up after 400ms
+            scene.time.delayedCall(400, () => {
+                if (caster && caster.isStunned) {
+                    console.warn('[Execution] Safety timeout fired — forcing cleanup.');
+                    doCleanup();
+                }
+            });
+        }
     }
 
     async performStrike(scene, caster, tx, ty, originalScaleX, originalScaleY) {
