@@ -71,6 +71,7 @@ export default class MusicManager {
         this.volume = 0.4;
         this.isCustomPlaylistMode = false;
         this._pausedSoundsByPreview = [];
+        this._pausedSoundsByFocus = [];
     }
 
     setPlaylist(trackIds) {
@@ -84,6 +85,18 @@ export default class MusicManager {
             console.warn('[MusicManager] Cannot start empty playlist.');
             return;
         }
+
+        // Pause other sounds for Focus Mode
+        if (this.game && this.game.sound && this._pausedSoundsByFocus.length === 0) {
+            this.game.sound.sounds.forEach(s => {
+                if (s.isPlaying) {
+                    s.pause();
+                    s._pausedByFocus = true;
+                    this._pausedSoundsByFocus.push(s);
+                }
+            });
+        }
+
         this.isCustomPlaylistMode = true;
         this.playTrack(0);
     }
@@ -93,6 +106,15 @@ export default class MusicManager {
         if (this.currentSound) {
             this.currentSound.stop();
         }
+
+        // Resume sounds paused by Focus Mode
+        this._pausedSoundsByFocus.forEach(s => {
+            if (s && s._pausedByFocus) {
+                s.resume();
+                delete s._pausedByFocus;
+            }
+        });
+        this._pausedSoundsByFocus = [];
     }
 
     playTrack(index) {
