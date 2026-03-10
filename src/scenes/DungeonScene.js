@@ -264,49 +264,6 @@ export default class DungeonScene extends Phaser.Scene {
             this.bgm = this.sound.add(randomBgm, { volume: 0.3, loop: true });
             this.bgm.play();
 
-            // --- Retro Bitcrusher & Lowpass Filter for BGM ---
-            if (this.sound.context && this.bgm.gainNode) {
-                try {
-                    const ctx = this.sound.context;
-                    const bitCrusher = ctx.createWaveShaper();
-                    const bitDepth = 4;
-                    const step = Math.pow(0.5, bitDepth);
-                    const size = 4096;
-                    const curve = new Float32Array(size);
-                    for (let i = 0; i < size; i++) {
-                        const x = (i * 2 / size) - 1;
-                        curve[i] = Math.round(x / step) * step;
-                    }
-                    bitCrusher.curve = curve;
-
-                    const lowpass = ctx.createBiquadFilter();
-                    lowpass.type = 'lowpass';
-                    lowpass.frequency.value = 2000;
-
-                    const distNode = ctx.createWaveShaper();
-                    function makeDistortionCurve(amount) {
-                        let k = typeof amount === 'number' ? amount : 50;
-                        let n_samples = 44100;
-                        let c = new Float32Array(n_samples);
-                        let deg = Math.PI / 180;
-                        for (let i = 0; i < n_samples; ++i) {
-                            let x = i * 2 / n_samples - 1;
-                            c[i] = (3 + k) * x * 20 * deg / (Math.PI + k * Math.abs(x));
-                        }
-                        return c;
-                    }
-                    distNode.curve = makeDistortionCurve(20);
-                    distNode.oversample = '4x';
-
-                    this.bgm.gainNode.disconnect();
-                    this.bgm.gainNode.connect(bitCrusher);
-                    bitCrusher.connect(distNode);
-                    distNode.connect(lowpass);
-                    lowpass.connect(this.sound.destination);
-                } catch (e) {
-                    console.warn('[Audio] Failed to apply BGM Bitcrusher:', e);
-                }
-            }
 
             // --- Fishing System Integration ---
             if (this.game.uiManager) {
