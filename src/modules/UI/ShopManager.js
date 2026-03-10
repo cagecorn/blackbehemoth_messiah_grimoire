@@ -25,6 +25,9 @@ export default class ShopManager {
             food: [
                 { id: 'food_choco_parfait', price: 2000, currency: 'emoji_coin', label: '초코 파르페', icon: 'choco_parfait' },
                 { id: 'food_strawberry_cake', price: 2000, currency: 'emoji_coin', label: '딸기 케이크', icon: 'strawberry_cake' }
+            ],
+            fishing: [
+                { id: 'bamboo_fishing_rod', price: 20000, currency: 'emoji_coin', label: '대나무 낚시대', icon: 'bamboo_fishing_rod' }
             ]
         };
     }
@@ -49,6 +52,7 @@ export default class ShopManager {
                         <button class="shop-tab active" data-category="tickets">🎫 입장권</button>
                         <button class="shop-tab" data-category="charms">✨ 부적</button>
                         <button class="shop-tab" data-category="food">🍰 음식</button>
+                        <button class="shop-tab" data-category="fishing">🎣 낚시</button>
                         <button class="shop-tab disabled" title="준비 중">🌿 재료</button>
                     </div>
                     

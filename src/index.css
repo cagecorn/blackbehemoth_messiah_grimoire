@@ -6084,3 +6084,39 @@ input:checked+.slider:before {
     border-radius: 3px;
     border: 1px solid rgba(0, 0, 0, 0.5);
 }
+
+/* --- Fishing System --- */
+.fishing-overlay {
+    z-index: 1001;
+}
+
+.fishing-container {
+    border-color: #3b82f6 !important;
+}
+
+#fishing-stamina-bar {
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+}
+
+.fishing-stat-row {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 10px 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.2s ease;
+}
+
+.fishing-stat-row:hover {
+    background: rgba(59, 130, 246, 0.1);
+    border-color: rgba(59, 130, 246, 0.3);
+}
+
+.fishing-tab-btn.active {
+    background: rgba(59, 130, 246, 0.2) !important;
+    border-color: #3b82f6 !important;
+    color: #fff !important;
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+}

@@ -13,6 +13,7 @@ import npcManager from '../Core/NPCManager.js';
 import buildingManager, { BUILDING_TYPES } from '../Core/BuildingManager.js';
 import equipmentManager from '../Core/EquipmentManager.js';
 import foodManager, { FOOD_RECIPES } from '../Core/FoodManager.js';
+import fishingManager from '../Core/FishingManager.js';
 
 
 export default class UIManager {
@@ -2148,81 +2149,290 @@ export default class UIManager {
 
     async refreshCooking() {
         const listContainer = document.getElementById('food-recipe-list');
-        const materialDisplay = document.getElementById('cooking-material-display');
         if (!listContainer) return;
 
-        // 1. Materials
+        const ownedFood = await foodManager.getOwnedFood();
+        const materialDisplay = document.getElementById('cooking-material-display');
+
+        // Update Materials
         const meat = await DBManager.getInventoryItem('emoji_meat');
         const herb = await DBManager.getInventoryItem('emoji_herb');
 
         if (materialDisplay) {
             materialDisplay.innerHTML = `
-                <div style="display:flex; align-items:center; gap:8px; color: #fff; font-weight: bold; font-size: 14px;">
-                    <img src="assets/emojis/1f356.svg" style="width:24px; height:24px;"> ${meat ? meat.amount.toLocaleString() : 0}
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:20px;">🍖</span>
+                    <span style="color:#fff; font-weight:bold;">${meat ? meat.amount : 0}</span>
                 </div>
-                <div style="display:flex; align-items:center; gap:8px; color: #6ee7b7; font-weight: bold; font-size: 14px;">
-                    <img src="assets/emojis/1f33f.svg" style="width:24px; height:24px;"> ${herb ? herb.amount.toLocaleString() : 0}
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:20px;">🌿</span>
+                    <span style="color:#fff; font-weight:bold;">${herb ? herb.amount : 0}</span>
                 </div>
             `;
         }
 
-        // 2. Recipes
         let html = '';
-        for (const recipe of Object.values(FOOD_RECIPES)) {
-            const owned = await DBManager.getInventoryItem(recipe.id);
-            const amount = owned ? owned.amount : 0;
-
-            // Craft conditions
-            let canCraft1 = true;
-            for (const [matId, req] of Object.entries(recipe.requirements)) {
-                const item = await DBManager.getInventoryItem(matId);
-                if (!item || item.amount < req) canCraft1 = false;
-            }
+        for (const [id, recipe] of Object.entries(FOOD_RECIPES)) {
+            const count = ownedFood[id] || 0;
+            const canCraft = (meat && meat.amount >= recipe.requirements.emoji_meat) &&
+                (herb && herb.amount >= recipe.requirements.emoji_herb);
 
             html += `
-                <div class="food-recipe-card" style="background: rgba(0,0,0,0.3); border: 2px solid rgba(251, 113, 133, 0.4); border-radius: 12px; padding: 15px; display: flex; gap: 15px; align-items: center; position: relative;">
-                    <div style="background: rgba(255,255,255,0.05); padding: 5px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
-                        <img src="${recipe.asset}" style="width: 60px; height: 60px; object-fit: contain;">
+                <div class="shop-item-row" style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(251, 113, 133, 0.3); border-radius: 12px; padding: 15px; display: flex; align-items: center; gap: 15px;">
+                    <div style="width: 60px; height: 60px; background: rgba(0,0,0,0.3); border-radius: 10px; display: flex; align-items: center; justify-content: center; position: relative;">
+                        <img src="${recipe.asset}" style="width: 45px; height: 45px; object-fit: contain;">
+                        <div style="position: absolute; bottom: -5px; right: -5px; background: #fb7185; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; font-weight: bold; border: 1px solid #fff;">보유: ${count}</div>
                     </div>
                     <div style="flex: 1;">
-                        <div style="display: flex; justify-content: space-between; align-items: start;">
-                            <div style="font-size: 16px; font-weight: bold; color: #fb7185;">${recipe.name}</div>
-                            <div style="font-size: 11px; background: #e11d48; color: #fff; padding: 2px 6px; border-radius: 4px; font-weight: bold;">보유: ${amount}</div>
+                        <div style="font-size: 16px; font-weight: bold; color: #fff;">${recipe.name}</div>
+                        <div style="font-size: 12px; color: #fecdd3; margin-top: 4px;">${recipe.description}</div>
+                        <div style="font-size: 11px; color: #fb7185; margin-top: 6px; display: flex; gap: 10px;">
+                            <span>🍖 ${recipe.requirements.emoji_meat}</span>
+                            <span>🌿 ${recipe.requirements.emoji_herb}</span>
                         </div>
-                        <div style="font-size: 11px; color: #d1d5db; margin: 4px 0;">${recipe.description}</div>
-                        <div style="display: flex; gap: 10px; font-size: 10px; color: #fb7185; opacity: 0.9; margin-bottom: 8px;">
-                            ${Object.entries(recipe.requirements).map(([id, req]) => `
-                                <span style="display:flex; align-items:center; gap:3px;">
-                                    <img src="assets/emojis/${ItemManager.getSVGFilename(id)}" style="width:12px; height:12px;"> ${req}
-                                </span>
-                            `).join('')}
-                        </div>
-                        
-                        <div style="display: flex; gap: 8px;">
-                            <button class="shop-buy-btn craft-food-btn" data-id="${recipe.id}" data-amount="1" ${canCraft1 ? '' : 'disabled'} style="font-size: 10px; padding: 5px 10px;">x1 제작</button>
-                            <button class="shop-buy-btn craft-food-btn" data-id="${recipe.id}" data-amount="10" ${canCraft1 ? '' : 'disabled'} style="font-size: 10px; padding: 5px 10px; background: #be123c;">x10 제작</button>
-                            <button class="shop-buy-btn craft-food-btn" data-id="${recipe.id}" data-amount="100" ${canCraft1 ? '' : 'disabled'} style="font-size: 10px; padding: 5px 10px; background: #9f1239;">x100 제작</button>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 5px;">
+                        <button class="craft-btn" data-id="${id}" data-amount="1" ${!canCraft ? 'disabled' : ''} style="padding: 6px 15px; background: #fb7185; border: none; border-radius: 6px; color: #fff; font-weight: bold; cursor: ${canCraft ? 'pointer' : 'not-allowed'}; opacity: ${canCraft ? 1 : 0.5}; font-size: 12px;">제작</button>
+                        <div style="display: flex; gap: 4px;">
+                            <button class="craft-btn" data-id="${id}" data-amount="10" ${!canCraft ? 'disabled' : ''} style="padding: 4px 8px; background: #e11d48; border: none; border-radius: 4px; color: #fff; font-size: 10px; cursor: pointer; opacity: 0.9;">x10</button>
+                            <button class="craft-btn" data-id="${id}" data-amount="100" ${!canCraft ? 'disabled' : ''} style="padding: 4px 8px; background: #9f1239; border: none; border-radius: 4px; color: #fff; font-size: 10px; cursor: pointer; opacity: 0.9;">x100</button>
                         </div>
                     </div>
                 </div>
             `;
         }
-
         listContainer.innerHTML = html;
 
-        // Bind events
-        listContainer.querySelectorAll('.craft-food-btn').forEach(btn => {
+        // Attach events
+        listContainer.querySelectorAll('.craft-btn').forEach(btn => {
             btn.onclick = async () => {
                 const id = btn.dataset.id;
-                const count = parseInt(btn.dataset.amount);
-                const result = await foodManager.craftFood(id, count);
-                this.showToast(result.message || `${result.name} ${count}개 제작 완료! ✨`);
+                const amount = parseInt(btn.dataset.amount);
+                const result = await foodManager.craftFood(id, amount);
                 if (result.success) {
+                    this.showToast(result.message);
                     this.refreshCooking();
-                    this.updateFoodHUD();
+                } else {
+                    this.showToast(result.message);
                 }
             };
         });
+    }
+
+    async showFishingManagement() {
+        if (this.fishingOverlay) return;
+
+        const overlay = document.createElement('div');
+        overlay.id = 'fishing-overlay';
+        overlay.className = 'shop-overlay retro-scanline-overlay fishing-overlay';
+        this.fishingOverlay = overlay;
+
+        overlay.innerHTML = `
+            <div class="shop-container fishing-container" style="max-width: 900px; width: 95vw; background: #0f172a; border: 3px solid #3b82f6; box-shadow: 0 0 20px rgba(59, 130, 246, 0.4); border-radius: 0;">
+                <div class="shop-header" style="background: #1e293b; border-bottom: 3px solid #3b82f6; padding: 15px 20px;">
+                    <div class="shop-title" style="font-family: var(--font-pixel); color: #60a5fa; text-shadow: 0 0 10px #3b82f6; font-size: 14px;">🎣 FISHING MANAGEMENT</div>
+                    <button class="shop-close-btn" id="fishing-close" style="background: #1e293b; border: 2px solid #3b82f6; color: #3b82f6; font-family: var(--font-pixel); cursor: pointer;">✕</button>
+                </div>
+                
+                <div style="display: flex; background: #0f172a; padding: 10px; gap: 10px; border-bottom: 1px solid #1e293b;">
+                    <button class="fishing-tab-btn active" data-tab="fisherman" style="flex: 1; padding: 12px; font-family: var(--font-pixel); font-size: 10px; background: #1e293b; border: 2px solid #3b82f6; color: #3b82f6; cursor: pointer; transition: all 0.2s;">👤 낚시꾼</button>
+                    <button class="fishing-tab-btn" data-tab="rod" style="flex: 1; padding: 12px; font-family: var(--font-pixel); font-size: 10px; background: #1e293b; border: 2px solid #1e293b; color: #64748b; cursor: pointer; transition: all 0.2s;">🎣 낚시대</button>
+                    <button class="fishing-tab-btn" data-tab="spot" style="flex: 1; padding: 12px; font-family: var(--font-pixel); font-size: 10px; background: #1e293b; border: 2px solid #1e293b; color: #64748b; cursor: pointer; transition: all 0.2s;">🌊 낚시터</button>
+                </div>
+
+                <div class="shop-body" id="fishing-content" style="padding: 25px; min-height: 400px; max-height: 70vh; overflow-y: auto; background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);">
+                    <!-- Content dynamic -->
+                </div>
+            </div>
+        `;
+
+        document.getElementById('app-container').appendChild(overlay);
+
+        document.getElementById('fishing-close').onclick = () => this.hideFishingManagement();
+        overlay.onclick = (e) => { if (e.target === overlay) this.hideFishingManagement(); };
+
+        const tabs = overlay.querySelectorAll('.fishing-tab-btn');
+        tabs.forEach(tab => {
+            tab.onclick = () => {
+                tabs.forEach(t => {
+                    t.classList.remove('active');
+                    t.style.borderColor = '#1e293b';
+                    t.style.color = '#64748b';
+                });
+                tab.classList.add('active');
+                tab.style.borderColor = '#3b82f6';
+                tab.style.color = '#3b82f6';
+                this.renderFishingTab(tab.dataset.tab);
+            };
+        });
+
+        await this.renderFishingTab('fisherman');
+    }
+
+    async renderFishingTab(tabId) {
+        const content = document.getElementById('fishing-content');
+        if (!content) return;
+
+        if (tabId === 'fisherman') {
+            const stats = fishingManager.getStats();
+            const fData = fishingManager.fishermen[fishingManager.state.activeFishermanId];
+            const expPercent = Math.min(100, (stats.exp / stats.nextLevelExp) * 100);
+            const staminaPercent = Math.min(100, (stats.currentStamina / stats.maxStamina) * 100);
+
+            content.innerHTML = `
+                <div style="display: flex; gap: 30px; align-items: flex-start; animation: slideInUp 0.3s ease-out;">
+                    <div style="width: 250px; text-align: center; background: rgba(0,0,0,0.3); padding: 20px; border-radius: 15px; border: 1px solid rgba(59, 130, 246, 0.2);">
+                        <div style="width: 210px; height: 210px; background: #0f172a; border: 2px solid #3b82f6; border-radius: 10px; display: flex; align-items: center; justify-content: center; overflow: hidden; margin: 0 auto 15px auto; box-shadow: inset 0 0 20px rgba(59, 130, 246, 0.3);">
+                            <img src="${fData.icon}" style="width: 180px; height: 180px; object-fit: contain; image-rendering: pixelated;">
+                        </div>
+                        <div style="font-family: var(--font-pixel); font-size: 16px; color: #fff; margin-bottom: 10px;">Lv.${stats.level} ${fData.name}</div>
+                        <div style="font-family: var(--font-vt); font-size: 18px; color: #94a3b8; line-height: 1.4;">${fData.description}</div>
+                    </div>
+
+                    <div style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+                        <div style="background: rgba(15, 23, 42, 0.6); padding: 20px; border-radius: 12px; border: 1px solid rgba(59, 130, 246, 0.3);">
+                            <div style="margin-bottom: 20px;">
+                                <div style="display: flex; justify-content: space-between; font-family: var(--font-pixel); font-size: 10px; margin-bottom: 8px;">
+                                    <span style="color: #60a5fa;">⚡ STAMINA</span>
+                                    <span style="color: #fff;">${Math.floor(stats.currentStamina)} / ${stats.maxStamina}</span>
+                                </div>
+                                <div style="width: 100%; height: 12px; background: #0f172a; border: 1px solid #3b82f6; overflow: hidden;">
+                                    <div id="fishing-stamina-bar" style="width: ${staminaPercent}%; height: 100%; background: linear-gradient(90deg, #3b82f6, #60a5fa); box-shadow: 0 0 10px #3b82f6;"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div style="display: flex; justify-content: space-between; font-family: var(--font-pixel); font-size: 10px; margin-bottom: 8px;">
+                                    <span style="color: #a78bfa;">✨ EXPERIENCE</span>
+                                    <span style="color: #fff;">${stats.exp} / ${stats.nextLevelExp}</span>
+                                </div>
+                                <div style="width: 100%; height: 12px; background: #0f172a; border: 1px solid #7c3aed; overflow: hidden;">
+                                    <div style="width: ${expPercent}%; height: 100%; background: linear-gradient(90deg, #7c3aed, #a78bfa); box-shadow: 0 0 10px #7c3aed;"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                            <div class="fishing-stat-row">
+                                <span style="font-family: var(--font-pixel); font-size: 9px; color: #94a3b8;">🎣 FISHING SPEED</span>
+                                <span style="font-family: var(--font-pixel); font-size: 11px; color: #fff;">${stats.stats.fishingSpeed.toFixed(1)}/s</span>
+                            </div>
+                            <div class="fishing-stat-row">
+                                <span style="font-family: var(--font-pixel); font-size: 9px; color: #94a3b8;">🎯 SUCCESS RATE</span>
+                                <span style="font-family: var(--font-pixel); font-size: 11px; color: #fff;">${(stats.stats.fishingSuccessRate * 100).toFixed(0)}%</span>
+                            </div>
+                            <div class="fishing-stat-row">
+                                <span style="font-family: var(--font-pixel); font-size: 9px; color: #94a3b8;">🐟 CATCH RATE</span>
+                                <span style="font-family: var(--font-pixel); font-size: 11px; color: #fff;">x${stats.stats.fishingCatchRate.toFixed(1)}</span>
+                            </div>
+                            <div class="fishing-stat-row">
+                                <span style="font-family: var(--font-pixel); font-size: 9px; color: #94a3b8;">❤️ RECOVERY (H/m)</span>
+                                <span style="font-family: var(--font-pixel); font-size: 11px; color: #fff;">${(stats.stats.health * 0.05).toFixed(1)}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        } else if (tabId === 'rod') {
+            const rodId = 'bamboo_fishing_rod';
+            const rodData = ItemManager.getItem(rodId);
+            const wood = await DBManager.getInventoryItem('emoji_wood');
+            const clover = await DBManager.getInventoryItem('emoji_clover');
+            const ownedRod = await DBManager.getInventoryItem(rodId);
+            const ownedCount = ownedRod ? ownedRod.amount : 0;
+
+            const canCraft = (wood && wood.amount >= 3000) && (clover && clover.amount >= 1000);
+
+            content.innerHTML = `
+                <div style="display: flex; flex-direction: column; gap: 20px; animation: slideInUp 0.3s ease-out;">
+                    <div style="background: rgba(15, 23, 42, 0.6); padding: 25px; border-radius: 12px; border: 2px solid #3b82f6; display: flex; gap: 25px; align-items: center;">
+                        <div style="width: 120px; height: 120px; background: #0f172a; border: 2px solid #3b82f6; border-radius: 10px; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 15px rgba(59, 130, 246, 0.2);">
+                            <img src="assets/item/bamboo_fishing_rod.png" style="width: 90px; height: 90px; object-fit: contain;">
+                        </div>
+                        <div style="flex: 1;">
+                            <div style="font-family: var(--font-pixel); font-size: 18px; color: #fff; margin-bottom: 8px;">${rodData.name}</div>
+                            <div style="font-family: var(--font-vt); font-size: 18px; color: #94a3b8; margin-bottom: 15px;">
+                                ${rodData.description}<br>
+                                <span style="color: #60a5fa;">내구도: 500</span> | <span style="color: #fbbf24;">확률적 추가 소모 (30%)</span>
+                            </div>
+                            <div style="display: flex; gap: 15px; align-items: center;">
+                                <div style="display: flex; gap: 8px; font-family: var(--font-pixel); font-size: 10px;">
+                                    <span style="color: #94a3b8;">🪵 ${wood ? wood.amount : 0}/3000</span>
+                                    <span style="color: #94a3b8;">☘️ ${clover ? clover.amount : 0}/1000</span>
+                                </div>
+                                <button class="fishing-craft-rod-btn" data-id="${rodId}" ${!canCraft ? 'disabled' : ''} style="padding: 10px 20px; background: #3b82f6; border: none; border-radius: 5px; color: #fff; font-family: var(--font-pixel); font-size: 10px; cursor: pointer; opacity: ${canCraft ? 1 : 0.5};">제작하기</button>
+                            </div>
+                        </div>
+                        <div style="text-align: center; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 10px; min-width: 100px;">
+                            <div style="font-family: var(--font-pixel); font-size: 9px; color: #60a5fa; margin-bottom: 5px;">현재 보유</div>
+                            <div style="font-family: var(--font-pixel); font-size: 20px; color: #fff;">${ownedCount}</div>
+                        </div>
+                    </div>
+                    
+                    <div style="background: rgba(15, 23, 42, 0.4); padding: 15px; border-radius: 10px; font-family: var(--font-vt); font-size: 16px; color: #64748b; border-left: 4px solid #3b82f6;">
+                        ℹ️ 낚시대는 로얄 상점에서도 20,000 골드로 구매할 수 있습니다.
+                    </div>
+                </div>
+            `;
+
+            content.querySelector('.fishing-craft-rod-btn').onclick = async () => {
+                const result = await fishingManager.craftRod(rodId);
+                this.showToast(result.message);
+                if (result.success) {
+                    this.renderFishingTab('rod');
+                }
+            };
+
+        } else if (tabId === 'spot') {
+            content.innerHTML = `
+                <div style="display: flex; flex-direction: column; gap: 20px; animation: slideInUp 0.3s ease-out;">
+                    <div style="background: rgba(15, 23, 42, 0.6); padding: 0; border-radius: 15px; border: 2px solid #3b82f6; overflow: hidden; position: relative;">
+                        <img src="assets/location/lake.png" style="width: 100%; height: 200px; object-fit: cover; opacity: 0.7;">
+                        <div style="position: absolute; bottom: 0; left: 0; right: 0; padding: 20px; background: linear-gradient(to top, rgba(15, 23, 42, 0.9), transparent);">
+                            <div style="font-family: var(--font-pixel); font-size: 18px; color: #fff;">호숫가 (Lakeside)</div>
+                            <div style="font-family: var(--font-vt); font-size: 16px; color: #94a3b8;">고요한 호숫가입니다. 평화로운 분위기 속에서 낚시를 즐길 수 있습니다.</div>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <div style="font-family: var(--font-pixel); font-size: 10px; color: #60a5fa; padding-left: 5px;">🐟 획득 가능 물고기</div>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
+                            <div style="background: rgba(15, 23, 42, 0.5); padding: 15px; border-radius: 12px; border: 1px solid rgba(59, 130, 246, 0.2); text-align: center;">
+                                <img src="assets/fish/mackerel.png" style="width: 60px; height: 60px; object-fit: contain; margin-bottom: 10px;">
+                                <div style="font-family: var(--font-pixel); font-size: 11px; color: #fff; margin-bottom: 5px;">고등어</div>
+                                <div style="font-family: var(--font-vt); font-size: 14px; color: #60a5fa;">몬스터 출현량 +30%</div>
+                            </div>
+                            <div style="background: rgba(15, 23, 42, 0.5); padding: 15px; border-radius: 12px; border: 1px solid rgba(59, 130, 246, 0.2); text-align: center;">
+                                <img src="assets/fish/herring.png" style="width: 60px; height: 60px; object-fit: contain; margin-bottom: 10px;">
+                                <div style="font-family: var(--font-pixel); font-size: 11px; color: #fff; margin-bottom: 5px;">청어</div>
+                                <div style="font-family: var(--font-vt); font-size: 14px; color: #60a5fa;">몬스터 레벨 +1</div>
+                            </div>
+                            <div style="background: rgba(15, 23, 42, 0.5); padding: 15px; border-radius: 12px; border: 1px solid rgba(59, 130, 246, 0.2); text-align: center;">
+                                <img src="assets/fish/squid.png" style="width: 60px; height: 60px; object-fit: contain; margin-bottom: 10px;">
+                                <div style="font-family: var(--font-pixel); font-size: 11px; color: #fff; margin-bottom: 5px;">오징어</div>
+                                <div style="font-family: var(--font-vt); font-size: 14px; color: #60a5fa;">엘리트 출현율 +30%</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    _renderFishingStat(label, value, color) {
+        return `
+            <div style="background: rgba(0,0,0,0.3); padding: 10px 15px; border-radius: 8px; border-left: 3px solid ${color}; display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 12px; color: #94a3b8;">${label}</span>
+                <span style="font-size: 14px; font-weight: bold; color: ${color};">${value}</span>
+            </div>
+        `;
+    }
+
+    hideFishingManagement() {
+        if (this.fishingOverlay) {
+            this.fishingOverlay.remove();
+            this.fishingOverlay = null;
+        }
     }
 
     hideCooking() {

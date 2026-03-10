@@ -85,6 +85,14 @@ const TERRITORY_BANNERS = [
         accentColor: '#fb7185',
         action: function () { if (this.game && this.game.uiManager) this.game.uiManager.showCooking(); },
     },
+    {
+        id: 'fishing',
+        label: '낚시 관리',
+        sublabel: 'FISHING',
+        cutscene: 'assets/npc/polar_bear.png',
+        accentColor: '#3b82f6',
+        action: function () { if (this.game && this.game.uiManager) this.game.uiManager.showFishingManagement(); },
+    },
 ];
 
 export default class TerritoryScene extends Phaser.Scene {

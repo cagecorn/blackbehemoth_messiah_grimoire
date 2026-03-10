@@ -76,6 +76,35 @@ const ITEM_DATABASE = {
         description: '상큼한 딸기 케이크입니다. 한 라운드 동안 장비 획득 경험치가 10% 상승합니다.',
         price: 2000
     },
+    'bamboo_fishing_rod': {
+        name: '대나무 낚시대',
+        type: ITEM_TYPES.MATERIAL,
+        icon: 'bamboo_fishing_rod',
+        customAsset: 'assets/item/bamboo_fishing_rod.png',
+        description: '평범한 대나무로 만든 낚시대입니다. 내구도 500.',
+        price: 20000
+    },
+    'fish_mackerel': {
+        name: '고등어',
+        type: ITEM_TYPES.MATERIAL,
+        icon: 'fish_mackerel',
+        customAsset: 'assets/fish/mackerel.png',
+        description: '싱싱한 고등어입니다. 던전 몬스터 출현율 +30%.'
+    },
+    'fish_herring': {
+        name: '청어',
+        type: ITEM_TYPES.MATERIAL,
+        icon: 'fish_herring',
+        customAsset: 'assets/fish/herring.png',
+        description: '빛나는 청어입니다. 던전 몬스터 레벨 +1.'
+    },
+    'fish_squid': {
+        name: '오징어',
+        type: ITEM_TYPES.MATERIAL,
+        icon: 'fish_squid',
+        customAsset: 'assets/fish/squid.png',
+        description: '쫄깃한 오징어입니다. 던전 엘리트 출현율 +30%.'
+    },
 
     // --- Tactical Node Charms ---
     'emoji_pouting_face': { name: '분노 (Enraged 😠)', type: 'node_charm', icon: 'emoji_pouting_face', description: '적의 서포터(힐러/바드)를 최우선으로 추적하며, 자신의 잃은 체력에 비례해 공격력이 최대 15%까지 상승합니다.' },
@@ -192,7 +221,10 @@ export default class ItemManager {
             'emoji_factory': '1f3ed.svg',
             'emoji_church': '26ea.svg',
             'emoji_camp': '1f3d5.svg',
-            'emoji_tree': '1f333.svg'
+            'emoji_tree': '1f333.svg',
+            'fish_mackerel': '1f41f.svg', // generic fish
+            'fish_herring': '1f41f.svg',
+            'fish_squid': '1f991.svg'   // squid
         };
         return map[id] || '2753.svg'; // Default question mark
     }

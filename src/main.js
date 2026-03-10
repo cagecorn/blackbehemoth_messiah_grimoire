@@ -18,6 +18,7 @@ import EventBus from './modules/Events/EventBus.js';
 import combatTracker from './modules/Core/CombatTracker.js';
 import npcManager from './modules/Core/NPCManager.js';
 import messiahManager from './modules/Core/MessiahManager.js';
+import fishingManager from './modules/Core/FishingManager.js';
 
 
 const config = {
@@ -73,6 +74,7 @@ const logManagerInstance = logManager; // renamed to instance to avoid confusion
     await partyManager.init(Object.values(Characters));
     await npcManager.init();
     await messiahManager.init();
+    await fishingManager.init();
 
     // Start the game after managers are ready
     const game = new Phaser.Game(config);
@@ -83,6 +85,7 @@ const logManagerInstance = logManager; // renamed to instance to avoid confusion
     game.partyManager = partyManager;
     game.npcManager = npcManager;
     game.messiahManager = messiahManager;
+    game.fishingManager = fishingManager;
     game.dbManager = DBManager;
 
     // --- Developer Debug Commands ---
