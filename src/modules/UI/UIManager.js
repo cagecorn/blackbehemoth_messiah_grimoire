@@ -2727,15 +2727,23 @@ export default class UIManager {
         // --- 1. Fishing HUD Section ---
         const fStats = fishingManager.getStats();
         const fData = fishingManager.fishermen[fishingManager.state.activeFishermanId];
+        const fRodId = fishingManager.state.activeRodId || 'bamboo_fishing_rod';
+        const fRodData = fishingManager.rods[fRodId] || fishingManager.rods['bamboo_fishing_rod'];
+        const fMaxDurability = fRodData ? fRodData.maxDurability : 500;
+        
         const fStaminaPercent = Math.min(100, (fStats.currentStamina / fStats.maxStamina) * 100);
-        const fDurabilityPercent = Math.min(100, (fishingManager.state.rodDurability / 500) * 100);
+        const fDurabilityPercent = Math.min(100, (fishingManager.state.rodDurability / fMaxDurability) * 100);
         const fIsAuto = fishingManager.state.autoConsume;
 
         // --- 2. Alchemy HUD Section ---
         const aStats = alchemyManager.getStats();
         const aData = alchemyManager.alchemists[alchemyManager.state.activeAlchemistId];
+        const aToolId = alchemyManager.state.activeToolId || 'alchemy_tool_basic';
+        const aToolData = alchemyManager.tools[aToolId] || alchemyManager.tools['alchemy_tool_basic'];
+        const aMaxDurability = aToolData ? aToolData.maxDurability : 500;
+
         const aStaminaPercent = Math.min(100, (aStats.currentStamina / aStats.maxStamina) * 100);
-        const aDurabilityPercent = Math.min(100, (alchemyManager.state.toolDurability / 500) * 100);
+        const aDurabilityPercent = Math.min(100, (alchemyManager.state.toolDurability / aMaxDurability) * 100);
         const aIsAuto = alchemyManager.state.autoConsume;
 
         container.innerHTML = `
@@ -2750,7 +2758,7 @@ export default class UIManager {
                         <div class="npc-hud-bar-fill stamina" id="f-stamina-bar" style="width: ${fStaminaPercent}%" title="STAMINA: ${Math.floor(fStats.currentStamina)}/${fStats.maxStamina}"></div>
                     </div>
                     <div class="npc-hud-bar-wrap">
-                        <div class="npc-hud-bar-fill durability" id="f-durability-bar" style="width: ${fDurabilityPercent}%" title="ROD DURABILITY: ${fishingManager.state.rodDurability}/500"></div>
+                        <div class="npc-hud-bar-fill durability" id="f-durability-bar" style="width: ${fDurabilityPercent}%" title="ROD DURABILITY: ${Math.floor(fishingManager.state.rodDurability)}/${fMaxDurability}"></div>
                     </div>
                 </div>
                 <button class="npc-hud-toggle ${fIsAuto ? 'active' : ''}" id="fishing-auto-toggle">
@@ -2770,7 +2778,7 @@ export default class UIManager {
                         <div class="npc-hud-bar-fill stamina" id="a-stamina-bar" style="width: ${aStaminaPercent}%" title="STAMINA: ${Math.floor(aStats.currentStamina)}/${aStats.maxStamina}"></div>
                     </div>
                     <div class="npc-hud-bar-wrap">
-                        <div class="npc-hud-bar-fill durability" id="a-durability-bar" style="width: ${aDurabilityPercent}%" title="TOOL DURABILITY: ${alchemyManager.state.toolDurability}/500" style="background: #f59e0b;"></div>
+                        <div class="npc-hud-bar-fill durability" id="a-durability-bar" style="width: ${aDurabilityPercent}%" title="TOOL DURABILITY: ${Math.floor(alchemyManager.state.toolDurability)}/${aMaxDurability}" style="background: #f59e0b;"></div>
                     </div>
                 </div>
                 <button class="npc-hud-toggle ${aIsAuto ? 'active' : ''}" id="alchemy-auto-toggle" style="background: #1e1b4b; border-color: #4338ca;">
@@ -2872,8 +2880,12 @@ export default class UIManager {
             staminaBar.style.width = `${staminaPercent}%`;
         }
         if (durabilityBar) {
-            const durabilityPercent = Math.min(100, (fishingManager.state.rodDurability / 500) * 100);
+            const rodId = fishingManager.state.activeRodId || 'bamboo_fishing_rod';
+            const rodData = fishingManager.rods[rodId] || fishingManager.rods['bamboo_fishing_rod'];
+            const maxDurability = rodData ? rodData.maxDurability : 500;
+            const durabilityPercent = Math.min(100, (fishingManager.state.rodDurability / maxDurability) * 100);
             durabilityBar.style.width = `${durabilityPercent}%`;
+            durabilityBar.parentElement.title = `ROD DURABILITY: ${Math.floor(fishingManager.state.rodDurability)}/${maxDurability}`;
         }
     }
 
@@ -2890,8 +2902,12 @@ export default class UIManager {
             staminaBar.style.width = `${staminaPercent}%`;
         }
         if (durabilityBar) {
-            const durabilityPercent = Math.min(100, (alchemyManager.state.toolDurability / 500) * 100);
+            const toolId = alchemyManager.state.activeToolId || 'alchemy_tool_basic';
+            const toolData = alchemyManager.tools[toolId] || alchemyManager.tools['alchemy_tool_basic'];
+            const maxDurability = toolData ? toolData.maxDurability : 500;
+            const durabilityPercent = Math.min(100, (alchemyManager.state.toolDurability / maxDurability) * 100);
             durabilityBar.style.width = `${durabilityPercent}%`;
+            durabilityBar.parentElement.title = `TOOL DURABILITY: ${Math.floor(alchemyManager.state.toolDurability)}/${maxDurability}`;
         }
     }
 

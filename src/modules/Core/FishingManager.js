@@ -227,69 +227,98 @@ class FishingManager {
         if (this.isFishing) return null;
         this.isFishing = true;
 
-        const stats = this.getStats();
+        try {
+            const stats = this.getStats();
 
-        // 1. Check Requirements
-        if (this.state.currentStamina < 1) {
+            // 1. Check Requirements
+            if (this.state.currentStamina < 1) {
+                return { success: false, reason: 'STAMINA', message: '스테미나 부족!' };
+            }
+            
+            // Auto-equip rod from inventory if durability is 0
+            if (this.state.rodDurability <= 0) {
+                const rodId = this.state.activeRodId || 'bamboo_fishing_rod';
+                let rodInventory = await DBManager.getInventoryItem(rodId);
+                
+                // Fallback: If active rod not found, look for any bamboo rod
+                if ((!rodInventory || rodInventory.amount <= 0) && rodId !== 'bamboo_fishing_rod') {
+                    rodInventory = await DBManager.getInventoryItem('bamboo_fishing_rod');
+                }
+
+                if (rodInventory && rodInventory.amount > 0) {
+                    const actualRodId = rodInventory.id || 'bamboo_fishing_rod';
+                    // Consume 1 rod from inventory
+                    await DBManager.saveInventoryItem(actualRodId, rodInventory.amount - 1);
+                    
+                    // Refill durability
+                    const rodData = FISHING_RODS[actualRodId] || FISHING_RODS['bamboo_fishing_rod'];
+                    this.state.rodDurability = rodData.maxDurability;
+                    this.state.activeRodId = actualRodId;
+                    
+                    console.log(`[FishingManager] 낚시대 자동 교체 성공: ${rodData.name}. 남은 수량: ${rodInventory.amount - 1}`);
+                    EventBus.emit(EventBus.EVENTS.INVENTORY_UPDATED);
+                    EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, `[낚시] 낚시대를 자동으로 교체했습니다! 🎣`);
+                } else {
+                    return { success: false, reason: 'DURABILITY', message: '낚시대 파손!' };
+                }
+            }
+
+            // 2. Consume Resources
+            this.state.currentStamina -= 1;
+
+            // Rod durability consumption logic
+            let durabilityLoss = 1;
+            const rodData = FISHING_RODS[this.state.activeRodId] || FISHING_RODS['bamboo_fishing_rod'];
+            if (Math.random() < (rodData.doubleConsumeChance || 0.3)) durabilityLoss = 2;
+            this.state.rodDurability = Math.max(0, this.state.rodDurability - durabilityLoss);
+
+            // 3. Roll for success
+            const roll = Math.random();
+            const isSuccess = roll < stats.stats.fishingSuccessRate;
+
+            // 4. Calculate EXP
+            await this.addExp(this.state.activeFishermanId, isSuccess ? 10 : 2);
+
+            let result = null;
+            if (isSuccess) {
+                // Pick a random fish from the current spot
+                const spot = FISHING_SPOTS[this.state.activeSpotId] || FISHING_SPOTS['lake'];
+                const fishId = spot.fishList[Math.floor(Math.random() * spot.fishList.length)];
+                const fishData = FISH_DATA[fishId];
+
+                // Calculate catch amount
+                const catchRate = stats.stats.fishingCatchRate;
+                const amount = Math.floor(catchRate + (Math.random() < (catchRate % 1) ? 1 : 0));
+
+                // Save to inventory
+                const existing = await DBManager.getInventoryItem(fishId);
+                const newAmount = (existing ? existing.amount : 0) + amount;
+                await DBManager.saveInventoryItem(fishId, newAmount);
+
+                console.log(`%c[낚시 성공] ${fishData.name} x${amount} 획득!`, "color: #4ade80; font-weight: bold;");
+
+                result = {
+                    success: true,
+                    fishId,
+                    fishName: fishData.name,
+                    amount,
+                    asset: fishData.asset
+                };
+
+                EventBus.emit(EventBus.EVENTS.INVENTORY_UPDATED);
+            } else {
+                result = { success: false, reason: 'MISS', message: '허탕쳤습니다...' };
+            }
+
+            this.save();
+            EventBus.emit('FISHING_TURN_COMPLETED', result);
+            return result;
+        } catch (error) {
+            console.error(`[FishingManager] Fishing turn error:`, error);
+            return { success: false, reason: 'ERROR', message: '낚시 중 오류 발생' };
+        } finally {
             this.isFishing = false;
-            return { success: false, reason: 'STAMINA', message: '스테미나 부족!' };
         }
-        if (this.state.rodDurability <= 0) {
-            this.isFishing = false;
-            return { success: false, reason: 'DURABILITY', message: '낚시대 파손!' };
-        }
-
-        // 2. Consume Resources
-        this.state.currentStamina -= 1;
-
-        // Rod durability consumption logic
-        let durabilityLoss = 1;
-        if (Math.random() < 0.3) durabilityLoss = 2; // 30% chance for double loss
-        this.state.rodDurability = Math.max(0, this.state.rodDurability - durabilityLoss);
-
-        // 3. Roll for success
-        const roll = Math.random();
-        const isSuccess = roll < stats.stats.fishingSuccessRate;
-
-        // 4. Calculate EXP
-        await this.addExp(this.state.activeFishermanId, isSuccess ? 10 : 2);
-
-        let result = null;
-        if (isSuccess) {
-            // Pick a random fish from the current spot
-            const spot = FISHING_SPOTS[this.state.activeSpotId] || FISHING_SPOTS['lake'];
-            const fishId = spot.fishList[Math.floor(Math.random() * spot.fishList.length)];
-            const fishData = FISH_DATA[fishId];
-
-            // Calculate catch amount
-            const catchRate = stats.stats.fishingCatchRate;
-            const amount = Math.floor(catchRate + (Math.random() < (catchRate % 1) ? 1 : 0));
-
-            // Save to inventory
-            const existing = await DBManager.getInventoryItem(fishId);
-            const newAmount = (existing ? existing.amount : 0) + amount;
-            await DBManager.saveInventoryItem(fishId, newAmount);
-
-            console.log(`%c[낚시 성공] ${fishData.name} x${amount} 획득! (현재 총계: ${newAmount})`, "color: #4ade80; font-weight: bold;");
-
-            result = {
-                success: true,
-                fishId,
-                fishName: fishData.name,
-                amount,
-                asset: fishData.asset
-            };
-
-            EventBus.emit(EventBus.EVENTS.INVENTORY_UPDATED);
-        } else {
-            result = { success: false, reason: 'MISS', message: '허탕쳤습니다...' };
-        }
-
-        this.save();
-        this.isFishing = false;
-
-        EventBus.emit('FISHING_TURN_COMPLETED', result);
-        return result;
     }
 
     /**

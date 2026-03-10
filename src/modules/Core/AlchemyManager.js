@@ -225,62 +225,90 @@ class AlchemyManager {
         if (this.isCrafting) return null;
         this.isCrafting = true;
 
-        const stats = this.getStats();
+        try {
+            const stats = this.getStats();
 
-        if (this.state.currentStamina < 1) {
+            if (this.state.currentStamina < 1) {
+                return { success: false, reason: 'STAMINA', message: '스테미나 부족!' };
+            }
+
+            // Auto-equip tool from inventory if durability is 0
+            if (this.state.toolDurability <= 0) {
+                const toolId = this.state.activeToolId || 'alchemy_tool_basic';
+                let toolInventory = await DBManager.getInventoryItem(toolId);
+
+                // Fallback: If active tool not found, look for any basic tool
+                if ((!toolInventory || toolInventory.amount <= 0) && toolId !== 'alchemy_tool_basic') {
+                    toolInventory = await DBManager.getInventoryItem('alchemy_tool_basic');
+                }
+
+                if (toolInventory && toolInventory.amount > 0) {
+                    const actualToolId = toolInventory.id || 'alchemy_tool_basic';
+                    // Consume 1 tool from inventory
+                    await DBManager.saveInventoryItem(actualToolId, toolInventory.amount - 1);
+                    
+                    // Refill durability
+                    const toolData = ALCHEMY_TOOLS[actualToolId] || ALCHEMY_TOOLS['alchemy_tool_basic'];
+                    this.state.toolDurability = toolData.maxDurability;
+                    this.state.activeToolId = actualToolId;
+
+                    console.log(`[AlchemyManager] 연금도구 자동 교체 성공: ${toolData.name}. 남은 수량: ${toolInventory.amount - 1}`);
+                    EventBus.emit(EventBus.EVENTS.INVENTORY_UPDATED);
+                    EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, `[연금술] 연금도구를 자동으로 교체했습니다! 🐰`);
+                } else {
+                    return { success: false, reason: 'DURABILITY', message: '연금도구 파손!' };
+                }
+            }
+
+            this.state.currentStamina -= 1;
+
+            const tool = ALCHEMY_TOOLS[this.state.activeToolId] || ALCHEMY_TOOLS['alchemy_tool_basic'];
+            let durabilityLoss = 1;
+            if (Math.random() < (tool.doubleConsumeChance || 0.2)) durabilityLoss = 2;
+            this.state.toolDurability = Math.max(0, this.state.toolDurability - durabilityLoss);
+
+            const roll = Math.random();
+            const isSuccess = roll < stats.stats.alchemySuccessRate;
+
+            await this.addExp(this.state.activeAlchemistId, isSuccess ? 12 : 3);
+
+            let result = null;
+            if (isSuccess) {
+                const recipe = ALCHEMY_RECIPES[this.state.activeRecipeId] || ALCHEMY_RECIPES['basic_recipe'];
+                const potionId = recipe.potions[Math.floor(Math.random() * recipe.potions.length)];
+                const pData = POTION_DATA[potionId];
+
+                const prodRate = stats.stats.productionCount;
+                const amount = Math.floor(prodRate + (Math.random() < (prodRate % 1) ? 1 : 0));
+
+                const existing = await DBManager.getInventoryItem(potionId);
+                const newAmount = (existing ? existing.amount : 0) + amount;
+                await DBManager.saveInventoryItem(potionId, newAmount);
+
+                console.log(`%c[연금술 성공] ${pData.name} x${amount} 제작!`, "color: #a78bfa; font-weight: bold;");
+
+                result = {
+                    success: true,
+                    potionId,
+                    potionName: pData.name,
+                    amount,
+                    asset: pData.asset
+                };
+
+                EventBus.emit(EventBus.EVENTS.INVENTORY_UPDATED);
+            } else {
+                result = { success: false, reason: 'MISS', message: '제작에 실패했습니다...' };
+            }
+
+            this.save();
+            EventBus.emit('ALCHEMY_TURN_COMPLETED', result);
+            return result;
+        } catch (error) {
+            console.error(`[AlchemyManager] Alchemy turn error:`, error);
+            return { success: false, reason: 'ERROR', message: '연금술 중 오류 발생' };
+        } finally {
             this.isCrafting = false;
-            return { success: false, reason: 'STAMINA', message: '스테미나 부족!' };
         }
-        if (this.state.toolDurability <= 0) {
-            this.isCrafting = false;
-            return { success: false, reason: 'DURABILITY', message: '연금도구 파손!' };
-        }
-
-        this.state.currentStamina -= 1;
-
-        const tool = ALCHEMY_TOOLS[this.state.activeToolId] || ALCHEMY_TOOLS['alchemy_tool_basic'];
-        let durabilityLoss = 1;
-        if (Math.random() < tool.doubleConsumeChance) durabilityLoss = 2;
-        this.state.toolDurability = Math.max(0, this.state.toolDurability - durabilityLoss);
-
-        const roll = Math.random();
-        const isSuccess = roll < stats.stats.alchemySuccessRate;
-
-        await this.addExp(this.state.activeAlchemistId, isSuccess ? 12 : 3);
-
-        let result = null;
-        if (isSuccess) {
-            const recipe = ALCHEMY_RECIPES[this.state.activeRecipeId] || ALCHEMY_RECIPES['basic_recipe'];
-            const potionId = recipe.potions[Math.floor(Math.random() * recipe.potions.length)];
-            const pData = POTION_DATA[potionId];
-
-            const prodRate = stats.stats.productionCount;
-            const amount = Math.floor(prodRate + (Math.random() < (prodRate % 1) ? 1 : 0));
-
-            const existing = await DBManager.getInventoryItem(potionId);
-            const newAmount = (existing ? existing.amount : 0) + amount;
-            await DBManager.saveInventoryItem(potionId, newAmount);
-
-            console.log(`%c[연금술 성공] ${pData.name} x${amount} 제작!`, "color: #a78bfa; font-weight: bold;");
-
-            result = {
-                success: true,
-                potionId,
-                potionName: pData.name,
-                amount,
-                asset: pData.asset
-            };
-
-            EventBus.emit(EventBus.EVENTS.INVENTORY_UPDATED);
-        } else {
-            result = { success: false, reason: 'MISS', message: '제작에 실패했습니다...' };
-        }
-
-        this.save();
-        this.isCrafting = false;
-
-        EventBus.emit('ALCHEMY_TURN_COMPLETED', result);
-        return result;
     }
 
     /**
