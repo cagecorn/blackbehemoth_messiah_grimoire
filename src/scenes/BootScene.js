@@ -2,6 +2,8 @@ import intentRouter from '../modules/AI/IntentRouter.js';
 import embeddingGemma from '../modules/AI/EmbeddingGemma.js';
 import localLLM from '../modules/AI/LocalLLM.js';
 import EventBus from '../modules/Events/EventBus.js';
+import FocusManager from '../modules/Core/FocusManager.js';
+import MusicManager, { MUSIC_TRACKS } from '../modules/Core/MusicManager.js';
 
 export default class BootScene extends Phaser.Scene {
     constructor() {
@@ -264,6 +266,11 @@ export default class BootScene extends Phaser.Scene {
         this.load.audio('main_battle_bgm_2', 'assets/BGM/main_battle_bgm_2.mp3');
         this.load.audio('main_battle_bgm_3', 'assets/BGM/main_battle_bgm_3.mp3');
         this.load.audio('territory_bgm', 'assets/BGM/terretory_bgm.mp3');
+
+        // --- Focus & Music Shop Tracks ---
+        MUSIC_TRACKS.forEach(track => {
+            this.load.audio(track.id, track.path);
+        });
     }
 
     async create() {
@@ -335,11 +342,16 @@ export default class BootScene extends Phaser.Scene {
             // Important: We need to tell PartyManager to reload its data from DB after we seeded it.
             await partyManager.init(Object.values(Characters));
 
+            // --- Focus & Music Manager Initialization ---
+            this.game.musicManager = new MusicManager(this.game);
+            this.game.focusManager = new FocusManager(this.game);
+            await this.game.focusManager.init();
+
             // --- UI Sync ---
             // Ensure UIManager HUD reflects the newly added starter items/diamonds immediately
             EventBus.emit(EventBus.EVENTS.INVENTORY_UPDATED);
         } catch (e) {
-            console.error('[BootScene] Failed to initialize starter items', e);
+            console.error('[BootScene] Failed to initialize starter items or managers', e);
         }
 
         // Show UI Elements now that the game is ready

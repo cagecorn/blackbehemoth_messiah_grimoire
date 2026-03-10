@@ -14,6 +14,7 @@ import buildingManager, { BUILDING_TYPES } from '../Core/BuildingManager.js';
 import equipmentManager from '../Core/EquipmentManager.js';
 import foodManager, { FOOD_RECIPES } from '../Core/FoodManager.js';
 import fishingManager from '../Core/FishingManager.js';
+import { MUSIC_TRACKS } from '../Core/MusicManager.js';
 
 
 export default class UIManager {
@@ -80,6 +81,7 @@ export default class UIManager {
 
         // --- Popup / Overlay Management ---
         this.popupOverlay = document.getElementById('popup-overlay');
+        this.popupContent = document.getElementById('popup-content');
         this.popupInner = document.getElementById('popup-inner');
 
         // Confirm Modal Elements
@@ -121,6 +123,18 @@ export default class UIManager {
         this.showProductionAnim = true; // Default setting
     }
 
+    get game() {
+        return this.scene?.game;
+    }
+
+    set scene(scene) {
+        this._scene = scene;
+    }
+
+    get scene() {
+        return this._scene;
+    }
+
     init() {
         console.log('[UIManager] Initialized DOM Overlay');
 
@@ -129,6 +143,9 @@ export default class UIManager {
         this.setupMobileEvents();
         this.setupNavigationEvents();
         this.setupDefenseEvents();
+
+        // Load Settings
+        this.loadSettings();
 
         // Load Settings
         this.loadSettings();
@@ -312,6 +329,33 @@ export default class UIManager {
         // Real-time Equipment EXP
         EventBus.on('EQUIPMENT_EXP_UPDATED', (payload) => this.handleEquipmentExpUpdated(payload));
 
+        // --- Focus Mode Integration ---
+        EventBus.on('FOCUS_MODE_CHANGED', (data) => {
+            const { active, settings } = data;
+            const container = document.getElementById('game-container');
+            const timerEl = document.getElementById('focus-timer');
+
+            if (active) {
+                if (settings.blurEnabled) {
+                    container?.classList.add('focus-blur-active');
+                } else {
+                    container?.classList.remove('focus-blur-active');
+                }
+
+                if (settings.timerEnabled) {
+                    if (timerEl) {
+                        timerEl.style.display = 'block';
+                        this.focusModeStartTime = Date.now();
+                    }
+                } else {
+                    if (timerEl) timerEl.style.display = 'none';
+                }
+            } else {
+                container?.classList.remove('focus-blur-active');
+                if (timerEl) timerEl.style.display = 'none';
+                this.focusModeStartTime = null;
+            }
+        });
     }
 
     setupBuildingEvents() {
@@ -536,6 +580,11 @@ export default class UIManager {
                 slot.classList.add('activated');
                 setTimeout(() => slot.classList.remove('activated'), 600);
             }
+        });
+
+        // --- Focus Mode Event Integration ---
+        EventBus.on('FOCUS_MODE_CHANGED', (payload) => {
+            this.handleFocusModeChanged(payload);
         });
 
         // Listen for scene changes to show/hide NPC HUD
@@ -4099,10 +4148,25 @@ export default class UIManager {
         if (this.popupOverlay) {
             this.popupOverlay.classList.remove('sidebar-attached');
         }
-        const content = document.getElementById('popup-content');
+        const content = this.popupContent || document.getElementById('popup-content');
         if (content) {
             content.classList.remove('wide');
             content.classList.remove('sidebar-attached');
+            // Reset manual style overrides for focus mode
+            content.style.maxWidth = '';
+            content.style.height = '';
+            content.style.background = '';
+            content.style.border = '';
+            content.style.boxShadow = '';
+            content.style.display = '';
+            content.style.justifyContent = '';
+            content.style.alignItems = '';
+        }
+        if (this.popupInner) {
+            this.popupInner.style.maxWidth = '';
+            this.popupInner.style.width = '';
+            this.popupInner.style.display = '';
+            this.popupInner.style.justifyContent = '';
         }
     }
 
@@ -4264,6 +4328,36 @@ export default class UIManager {
     updatePortraitBar() {
         if (!this.portraitBar) return;
 
+        // --- Focus Mode Playlist Button Integration ---
+        const sceneKey = this.scene?.scene?.key || this.scene?.sys?.settings?.key;
+        const isCombat = (sceneKey === 'DungeonScene' || sceneKey === 'RaidScene' || sceneKey === 'ArenaScene');
+        
+        // Ensure Playlist button exists in combat
+        let playlistBtn = this.portraitBar.querySelector('.focus-playlist-btn');
+        if (isCombat && !playlistBtn) {
+            playlistBtn = document.createElement('button');
+            playlistBtn.className = 'focus-playlist-btn';
+            playlistBtn.innerHTML = '📀 PLAYLIST';
+            playlistBtn.onclick = () => {
+                if (this.game.focusManager) {
+                    // Toggle focus mode (which handles music start/stop)
+                    this.game.focusManager.toggleFocusMode();
+                } else {
+                    console.error('❌ [UIManager] focusManager not found on this.game');
+                }
+            };
+            this.portraitBar.prepend(playlistBtn);
+        } else if (!isCombat && playlistBtn) {
+            playlistBtn.remove();
+        }
+
+        // Apply focus pulsed state to the button if active
+        if (playlistBtn && this.game.focusManager?.isFocusModeActive) {
+            playlistBtn.classList.add('pulse');
+        } else if (playlistBtn) {
+            playlistBtn.classList.remove('pulse');
+        }
+
         let activeMercs = [];
         try {
             if (this.scene && this.scene.mercenaries && typeof this.scene.mercenaries.getChildren === 'function') {
@@ -4273,7 +4367,6 @@ export default class UIManager {
             console.warn('[UIManager] Error getting active mercenaries:', e);
         }
 
-        const sceneKey = this.scene?.scene?.key || this.scene?.sys?.settings?.key;
         const partyManager = this.scene?.game?.partyManager;
 
         // Clean up portraits for units no longer in the conceptual party 
@@ -4669,6 +4762,18 @@ export default class UIManager {
         // Batch update all channels at once per frame
         for (let i = 0; i < this.channels.length; i++) {
             this.channels[i].update();
+        }
+
+        // Focus Timer Update
+        if (this.focusModeStartTime) {
+            const timerEl = document.getElementById('focus-timer');
+            if (timerEl) {
+                const diff = Date.now() - this.focusModeStartTime;
+                const hh = Math.floor(diff / 3600000).toString().padStart(2, '0');
+                const mm = Math.floor((diff % 3600000) / 60000).toString().padStart(2, '0');
+                const ss = Math.floor((diff % 60000) / 1000).toString().padStart(2, '0');
+                timerEl.innerText = `Focus: ${hh}:${mm}:${ss}`;
+            }
         }
 
         // Only loop if not destroyed
@@ -6175,7 +6280,6 @@ export default class UIManager {
             document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('active'));
             const activeItem = document.getElementById(`roster-item-${id}`);
             if (activeItem) activeItem.classList.add('active');
-
             // Update content
             const container = document.getElementById('roster-detail-container');
             if (container) {
@@ -6269,5 +6373,507 @@ export default class UIManager {
         };
 
         this.showPopup(rosterHtml, true);
+    }
+    async updateStoreGold() {
+        if (!this.game.focusManager) return;
+        const countEl = document.getElementById('store-gold-count');
+        if (countEl) {
+            const goldData = await DBManager.getInventoryItem('emoji_coin');
+            countEl.innerText = (goldData ? goldData.amount : 0).toLocaleString();
+        }
+    }
+
+    handleFocusModeChanged(payload) {
+        try {
+            const { active, settings } = payload;
+            const timerEl = document.getElementById('focus-timer');
+            const body = document.body;
+
+            console.group('📀 [UIManager] Focus Mode Change');
+            console.log('Status:', active ? 'ON' : 'OFF');
+            console.log('Settings:', settings);
+            
+            // 1. Toggle Blur
+            if (active && settings.blurEnabled) {
+                body.classList.add('blur-active');
+                document.documentElement.classList.add('blur-active');
+                console.log('✅ Added blur-active class to body and html');
+            } else {
+                body.classList.remove('blur-active');
+                document.documentElement.classList.remove('blur-active');
+                console.log('❌ Removed blur-active class');
+            }
+
+            // 2. Toggle Timer
+            if (active && settings.timerEnabled) {
+                if (timerEl) {
+                    timerEl.style.display = 'block';
+                    this.startFocusTimer();
+                    console.log('⏱️ Focus Timer Enabled');
+                }
+            } else {
+                if (timerEl) {
+                    timerEl.style.display = 'none';
+                    this.stopFocusTimer();
+                    console.log('⏱️ Focus Timer Disabled');
+                }
+            }
+
+            // 3. Handle background music - PAUSE EVERYTHING ELSE
+            if (this.game && this.game.sound) {
+                const sounds = this.game.sound.sounds;
+                console.log(`🔊 Total Sounds in Manager: ${sounds.length}`);
+                
+                if (active) {
+                    sounds.forEach(s => {
+                        // Check if it's a focus track to skip pausing it
+                        const isFocusTrack = (typeof MUSIC_TRACKS !== 'undefined') && 
+                                            MUSIC_TRACKS.some(t => t.id === s.key);
+                        
+                        if (!isFocusTrack && (s.isPlaying || s.isPaused)) {
+                            // If it's already paused by us, don't double-pause
+                            if (!s._pausedByFocus) {
+                                s.pause();
+                                s._pausedByFocus = true;
+                                console.log(`⏸️ Paused Background BGM: ${s.key}`);
+                            }
+                        } else if (isFocusTrack) {
+                            console.log(`🎵 Focus Track Detected (Skipping Pause): ${s.key}`);
+                            if (!s.isPlaying) {
+                                console.warn(`⚠️ Focus track ${s.key} is NOT playing yet but detected.`);
+                            }
+                        }
+                    });
+                } else {
+                    sounds.forEach(s => {
+                        if (s._pausedByFocus) {
+                            s.resume();
+                            delete s._pausedByFocus;
+                            console.log(`▶️ Resumed Original BGM: ${s.key}`);
+                        }
+                    });
+                }
+            } else {
+                console.warn('⚠️ Phaser Sound Manager not found on this.game');
+            }
+
+            // 4. Update Playlist button pulse in portraits
+            this.updatePortraitBar(); 
+            console.groupEnd();
+        } catch (e) {
+            console.error('❌ [UIManager] Error in handleFocusModeChanged:', e);
+            console.groupEnd();
+        }
+    }
+
+    startFocusTimer() {
+        if (this.focusTimerInterval) clearInterval(this.focusTimerInterval);
+        
+        this.focusStartTime = this.focusStartTime || Date.now();
+        const timerEl = document.getElementById('focus-timer');
+        
+        this.focusTimerInterval = setInterval(() => {
+            if (!timerEl) return;
+            const elapsed = Date.now() - this.focusStartTime;
+            const h = Math.floor(elapsed / 3600000).toString().padStart(2, '0');
+            const m = Math.floor((elapsed % 3600000) / 60000).toString().padStart(2, '0');
+            const s = Math.floor((elapsed % 60000) / 1000).toString().padStart(2, '0');
+            timerEl.innerText = `⏱️ FOCUS: ${h}:${m}:${s}`;
+        }, 1000);
+    }
+
+    stopFocusTimer() {
+        if (this.focusTimerInterval) {
+            clearInterval(this.focusTimerInterval);
+            this.focusTimerInterval = null;
+        }
+        this.focusStartTime = null;
+    }
+
+    async showFocusMusicManager() {
+        if (!this.popupOverlay || !this.game.focusManager) return;
+        const focusManager = this.game.focusManager;
+        const musicManager = this.game.musicManager;
+        await focusManager.init();
+
+        const categories = ['LOFI', 'MEDITATION', 'FANTASY'];
+        let currentTab = 'SETTINGS'; // SETTINGS, STORE, PLAYLIST
+        let storeCategory = 'LOFI';
+
+        const renderTab = () => {
+            const inner = document.getElementById('music-manager-inner');
+            if (!inner) return;
+
+            if (currentTab === 'SETTINGS') {
+                inner.innerHTML = `
+                    <div class="music-tab-content">
+                        <div class="music-section-title">FOCUS MODE SETTINGS</div>
+                        <div class="focus-setting-item">
+                            <div class="setting-info">
+                                <span class="setting-name">강한 배경 블러 (Strong Blur)</span>
+                                <span class="setting-desc">집중 모드 진입 시 배경을 흐릿하게 처리하여 집중도를 높입니다.</span>
+                            </div>
+                            <button class="music-toggle-btn ${focusManager.settings.blurEnabled ? 'active' : ''}" id="toggle-blur">
+                                ${focusManager.settings.blurEnabled ? 'ON' : 'OFF'}
+                            </button>
+                        </div>
+                        <div class="focus-setting-item">
+                            <div class="setting-info">
+                                <span class="setting-name">집중 타이머 (Focus Timer)</span>
+                                <span class="setting-desc">현재 진행 중인 플레이 시간을 화면 상단에 표시합니다.</span>
+                            </div>
+                            <button class="music-toggle-btn ${focusManager.settings.timerEnabled ? 'active' : ''}" id="toggle-timer">
+                                ${focusManager.settings.timerEnabled ? 'ON' : 'OFF'}
+                            </button>
+                        </div>
+                        <div class="focus-setting-item disabled">
+                            <div class="setting-info">
+                                <span class="setting-name">효과음 (SFX) 토글</span>
+                                <span class="setting-desc">* 효과음 설정은 메인 설정(⚙️) 탭에서 변경 가능합니다.</span>
+                            </div>
+                            <span class="setting-status">설정에서 관리</span>
+                        </div>
+                        <div class="focus-hint">* 집중 모드는 던전 입장 후 [Playlist] 버튼을 누르면 활성화됩니다.</div>
+                    </div>
+                `;
+                document.getElementById('toggle-blur').addEventListener('click', () => {
+                    focusManager.updateSettings({ blurEnabled: !focusManager.settings.blurEnabled });
+                    renderTab();
+                });
+                document.getElementById('toggle-timer').addEventListener('click', () => {
+                    focusManager.updateSettings({ timerEnabled: !focusManager.settings.timerEnabled });
+                    renderTab();
+                });
+
+            } else if (currentTab === 'STORE') {
+                const MUSIC_TRACKS = [
+                    { id: 'lo_fi_track_1', category: 'LOFI', name: 'Lofi Track 1', path: 'assets/BGM/lo_fi_track_1.mp3', cost: 50000 },
+                    { id: 'lo_fi_track_2', category: 'LOFI', name: 'Lofi Track 2', path: 'assets/BGM/lo_fi_track_2.mp3', cost: 50000 },
+                    { id: 'meditation_track_1', category: 'MEDITATION', name: 'Meditation 1', path: 'assets/BGM/meditation_track_1.mp3', cost: 50000 },
+                    { id: 'meditation_track_2', category: 'MEDITATION', name: 'Meditation 2', path: 'assets/BGM/meditation_track_2.mp3', cost: 50000 },
+                    { id: 'fantasy_track_1', category: 'FANTASY', name: 'Fantasy 1', path: 'assets/BGM/fantasy_track_1.mp3', cost: 50000 },
+                    { id: 'fantasy_track_2', category: 'FANTASY', name: 'Fantasy 2', path: 'assets/BGM/fantasy_track_2.mp3', cost: 50000 }
+                ];
+
+                const currentTracks = MUSIC_TRACKS.filter(t => t.category === storeCategory);
+
+                inner.innerHTML = `
+                    <div class="music-tab-content">
+                        <div class="music-store-header">
+                            <div class="category-tabs">
+                                ${categories.map(c => `<button class="category-btn ${storeCategory === c ? 'active' : ''}" data-cat="${c}">${c}</button>`).join('')}
+                            </div>
+                            <div class="gold-display">💰 <span id="store-gold-count">0</span></div>
+                        </div>
+                        <div class="music-grid scroll-v">
+                            ${currentTracks.map(t => {
+                    const owned = focusManager.ownedTracks.includes(t.id);
+                    return `
+                                    <div class="music-card ${owned ? 'owned' : ''}">
+                                        <div class="music-card-info">
+                                            <div class="music-name">${t.name}</div>
+                                            <div class="music-cost">${owned ? 'OWNED' : '🪙 ' + t.cost.toLocaleString()}</div>
+                                        </div>
+                                        ${owned ? '<div class="owned-badge">✓</div>' : `<button class="buy-music-btn" data-id="${t.id}" data-cost="${t.cost}">BUY</button>`}
+                                    </div>
+                                `;
+                }).join('')}
+                        </div>
+                    </div>
+                `;
+
+                // Update Gold Display
+                DBManager.getInventoryItem('emoji_coin').then(g => {
+                    const el = document.getElementById('store-gold-count');
+                    if (el) el.innerText = (g ? g.amount : 0).toLocaleString();
+                });
+
+                inner.querySelectorAll('.category-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        storeCategory = btn.dataset.cat;
+                        renderTab();
+                    });
+                });
+
+                inner.querySelectorAll('.buy-music-btn').forEach(btn => {
+                    btn.addEventListener('click', async () => {
+                        const res = await focusManager.buyTrack(btn.dataset.id, parseInt(btn.dataset.cost));
+                        if (res.success) {
+                            this.showToast('음반 구입 완료! 🎵');
+                            renderTab();
+                        } else {
+                            this.showToast(res.message);
+                        }
+                    });
+                });
+
+            } else if (currentTab === 'PLAYLIST') {
+                const MUSIC_TRACKS = [
+                    { id: 'lo_fi_track_1', category: 'LOFI', name: 'Lofi Track 1', path: 'assets/BGM/lo_fi_track_1.mp3', cost: 50000 },
+                    { id: 'lo_fi_track_2', category: 'LOFI', name: 'Lofi Track 2', path: 'assets/BGM/lo_fi_track_2.mp3', cost: 50000 },
+                    { id: 'meditation_track_1', category: 'MEDITATION', name: 'Meditation 1', path: 'assets/BGM/meditation_track_1.mp3', cost: 50000 },
+                    { id: 'meditation_track_2', category: 'MEDITATION', name: 'Meditation 2', path: 'assets/BGM/meditation_track_2.mp3', cost: 50000 },
+                    { id: 'fantasy_track_1', category: 'FANTASY', name: 'Fantasy 1', path: 'assets/BGM/fantasy_track_1.mp3', cost: 50000 },
+                    { id: 'fantasy_track_2', category: 'FANTASY', name: 'Fantasy 2', path: 'assets/BGM/fantasy_track_2.mp3', cost: 50000 }
+                ];
+
+                const owned = MUSIC_TRACKS.filter(t => focusManager.ownedTracks.includes(t.id));
+                const playlistIds = focusManager.currentPlaylist;
+
+                inner.innerHTML = `
+                    <div class="music-tab-content">
+                        <div class="playlist-manager">
+                            <div class="playlist-left">
+                                <div class="music-section-title">OWNED TRACKS (Drag to Add)</div>
+                                <div class="owned-nodes scroll-v">
+                                    ${owned.map(t => `
+                                        <div class="music-node" draggable="true" data-id="${t.id}">
+                                            <span class="node-icon">🎵</span>
+                                            <span class="node-name">${t.name}</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                            <div class="playlist-right">
+                                <div class="music-section-title">CURRENT PLAYLIST</div>
+                                <div class="playlist-dropzone" id="playlist-dropzone">
+                                    ${playlistIds.length === 0 ? '<div class="empty-drop-hint">여기에 곡을 드래그하여 플레이리스트를 구성하세요</div>' : ''}
+                                    ${playlistIds.map((id, idx) => {
+                    const t = MUSIC_TRACKS.find(mt => mt.id === id);
+                    return t ? `
+                                            <div class="playlist-item" data-idx="${idx}">
+                                                <span class="playlist-idx">${idx + 1}</span>
+                                                <span class="playlist-name">${t.name}</span>
+                                                <button class="remove-playlist-btn" data-idx="${idx}">✕</button>
+                                            </div>
+                                        ` : '';
+                }).join('')}
+                                </div>
+                                <button class="save-playlist-btn" id="save-playlist">SAVE PLAYLIST</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                // Drag & Drop Handlers
+                const nodes = inner.querySelectorAll('.music-node');
+                const dropzone = document.getElementById('playlist-dropzone');
+
+                nodes.forEach(node => {
+                    node.addEventListener('dragstart', (e) => {
+                        e.dataTransfer.setData('trackId', node.dataset.id);
+                    });
+                });
+
+                dropzone.addEventListener('dragover', (e) => e.preventDefault());
+                dropzone.addEventListener('drop', (e) => {
+                    const id = e.dataTransfer.getData('trackId');
+                    if (id) {
+                        playlistIds.push(id);
+                        renderTab();
+                    }
+                });
+
+                inner.querySelectorAll('.remove-playlist-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        playlistIds.splice(parseInt(btn.dataset.idx), 1);
+                        renderTab();
+                    });
+                });
+
+                document.getElementById('save-playlist').addEventListener('click', async () => {
+                    await focusManager.updatePlaylist(playlistIds);
+                    this.showToast('플레이리스트 저장 완료! 📀');
+                });
+            }
+        };
+
+        // Override parent container width for desktop focus mode
+        if (this.popupContent) {
+            this.popupContent.style.maxWidth = 'none';
+            this.popupContent.style.height = 'auto';
+            this.popupContent.style.background = 'transparent';
+            this.popupContent.style.border = 'none';
+            this.popupContent.style.boxShadow = 'none';
+            this.popupContent.style.display = 'flex';
+            this.popupContent.style.justifyContent = 'center';
+            this.popupContent.style.alignItems = 'center';
+        }
+        if (this.popupInner) {
+            this.popupInner.style.maxWidth = 'none';
+            this.popupInner.style.width = 'auto';
+            this.popupInner.style.display = 'flex';
+            this.popupInner.style.justifyContent = 'center';
+        }
+
+        this.popupInner.innerHTML = `
+            <div class="focus-music-container">
+                <style>
+                    .focus-music-container {
+                        width: 960px; height: 640px;
+                        background: #111; border: 3px solid #8b5cf6;
+                        color: #ddd; font-family: 'Outfit', sans-serif;
+                        display: flex; flex-direction: column;
+                        overflow: hidden; box-shadow: 0 0 40px rgba(139, 92, 246, 0.5);
+                        image-rendering: auto;
+                    }
+                    .music-header {
+                        height: 70px; background: #1e1e1e;
+                        display: flex; align-items: center; padding: 0 40px;
+                        border-bottom: 2px solid #333; justify-content: space-between;
+                    }
+                    .music-header-title { color: #8b5cf6; font-weight: bold; font-size: 26px; letter-spacing: 2px; }
+                    .music-tabs { display: flex; gap: 20px; height: 60px; background: #0a0a0a; padding: 5px 40px; }
+                    .music-tab-btn {
+                        background: none; border: none; color: #666; cursor: pointer;
+                        padding: 0 25px; font-weight: 600; font-size: 18px;
+                        transition: all 0.2s; border-bottom: 4px solid transparent;
+                    }
+                    .music-tab-btn.active { color: #8b5cf6; border-bottom: 4px solid #8b5cf6; }
+                    #music-manager-inner { flex: 1; padding: 40px; overflow-y: auto; }
+
+                    /* Settings Styles */
+                    .music-section-title { font-size: 18px; color: #8b5cf6; margin-bottom: 25px; border-left: 5px solid #8b5cf6; padding-left: 20px; text-transform: uppercase; }
+                    .focus-setting-item {
+                        background: #1a1a1a; padding: 25px; border-radius: 12px;
+                        display: flex; justify-content: space-between; align-items: center;
+                        margin-bottom: 20px; border: 1px solid #333;
+                    }
+                    .focus-setting-item.disabled { opacity: 0.5; }
+                    .setting-name { display: block; font-weight: bold; font-size: 18px; color: #fff; margin-bottom: 8px; }
+                    .setting-desc { font-size: 15px; color: #888; }
+                    .music-toggle-btn {
+                        padding: 10px 25px; border: 1px solid #444; background: #222; color: #aaa;
+                        border-radius: 8px; font-weight: bold; cursor: pointer; min-width: 100px; font-size: 16px;
+                    }
+                    .music-toggle-btn.active { background: #8b5cf6; color: #fff; border-color: #a78bfc; }
+                    .setting-status { color: #8b5cf6; font-size: 16px; font-weight: bold; }
+                    .focus-hint { font-size: 14px; color: #666; margin-top: 40px; text-align: center; }
+
+                    /* Store Styles */
+                    .music-store-header { display: flex; justify-content: space-between; margin-bottom: 25px; align-items: center; }
+                    .category-tabs { display: flex; gap: 10px; }
+                    .category-btn {
+                        background: #222; border: 1px solid #333; color: #888;
+                        padding: 8px 20px; font-size: 14px; cursor: pointer;
+                        border-radius: 6px;
+                    }
+                    .category-btn.active { background: #333; color: #8b5cf6; border-color: #8b5cf6; }
+                    .music-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+                    .music-card {
+                        background: #1a1a1a; border: 1px solid #333; padding: 20px;
+                        border-radius: 10px; position: relative; transition: 0.2s;
+                    }
+                    .music-card.owned { border-color: #8b5cf644; background: #1a1420; }
+                    .music-name { font-weight: bold; font-size: 17px; color: #eee; margin-bottom: 10px; }
+                    .music-cost { font-size: 14px; color: #8b5cf6; font-weight: 600; }
+                    .buy-music-btn {
+                        margin-top: 20px; width: 100%; padding: 10px;
+                        background: #333; border: 1px solid #444; color: #fff;
+                        font-size: 14px; cursor: pointer; transition: 0.2s;
+                        border-radius: 6px;
+                    }
+                    .buy-music-btn:hover { background: #8b5cf6; border-color: #a78bfc; }
+                    .owned-badge { position: absolute; top: 20px; right: 20px; color: #8b5cf6; font-weight: bold; font-size: 22px; }
+
+                    /* Playlist Styles */
+                    .playlist-manager { display: flex; gap: 40px; height: 100%; }
+                    .playlist-left, .playlist-right { flex: 1; display: flex; flex-direction: column; }
+                    .owned-nodes, .playlist-dropzone {
+                        flex: 1; background: #0a0a0a; border: 1px solid #222;
+                        border-radius: 10px; padding: 20px;
+                    }
+                    .music-node {
+                        background: #1e1e1e; padding: 15px 22px; margin-bottom: 12px;
+                        border-radius: 8px; display: flex; align-items: center;
+                        gap: 15px; cursor: grab; border: 1px solid #333; transition: background 0.2s;
+                    }
+                    .music-node:hover { background: #252525; border-color: #444; }
+                    .music-node:active { cursor: grabbing; opacity: 0.5; }
+                    .node-icon { color: #8b5cf6; font-size: 18px; }
+                    .node-name { font-size: 16px; color: #ccc; }
+                    .playlist-dropzone { border: 2px dashed #444; min-height: 300px; display: flex; flex-direction: column; gap: 10px; }
+                    .empty-drop-hint { margin: auto; font-size: 16px; color: #555; text-align: center; }
+                    .playlist-item {
+                        background: #1a1a1a; padding: 12px 20px; display: flex; align-items: center;
+                        gap: 15px; border-radius: 8px; border-left: 5px solid #8b5cf6; margin-bottom: 8px;
+                    }
+                    .playlist-idx { font-size: 14px; color: #8b5cf6; font-weight: bold; width: 25px; }
+                    .playlist-name { font-size: 16px; color: #eee; flex: 1; }
+                    .remove-playlist-btn { background: none; border: none; color: #666; cursor: pointer; font-size: 14px; }
+                    .remove-playlist-btn:hover { color: #ff6b6b; }
+                    .save-playlist-btn {
+                        margin-top: 20px; width: 100%; padding: 18px;
+                        background: #8b5cf6; color: #fff; border: none;
+                        font-weight: bold; border-radius: 8px; cursor: pointer; font-size: 18px;
+                        transition: background 0.2s;
+                    }
+                    .save-playlist-btn:hover { background: #7c3aed; }
+                    .gold-display { font-weight: bold; color: #fbbf24; font-size: 18px; }
+                    .scroll-v { overflow-y: auto; }
+                    .scroll-v::-webkit-scrollbar { width: 8px; }
+                    .scroll-v::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
+                    .scroll-v::-webkit-scrollbar-thumb:hover { background: #444; }
+                </style>
+                <div class="music-header">
+                    <span class="music-header-title">Ω FOCUS & MUSIC SHOP</span>
+                    <div class="gold-display" id="header-gold">💰 0</div>
+                </div>
+                <div class="music-tabs">
+                    <button class="music-tab-btn active" data-tab="SETTINGS">SETTINGS</button>
+                    <button class="music-tab-btn" data-tab="STORE">MUSIC SHOP</button>
+                    <button class="music-tab-btn" data-tab="PLAYLIST">PLAYLIST</button>
+                </div>
+                <div id="music-manager-inner"></div>
+            </div>
+        `;
+
+        this.popupOverlay.style.display = 'flex';
+        renderTab();
+
+        // Cleanup on close to avoid affecting other popups
+        const originalClose = this.popupClose.onclick;
+        this.popupClose.onclick = () => {
+            if (this.popupInner) {
+                this.popupInner.style.maxWidth = '';
+                this.popupInner.style.width = '';
+            }
+            this.popupOverlay.style.display = 'none';
+            if (originalClose) originalClose();
+            this.popupClose.onclick = originalClose;
+        };
+
+        const updateAllGoldDiscounts = () => {
+            DBManager.getInventoryItem('emoji_coin').then(g => {
+                const amount = (g ? g.amount : 0).toLocaleString();
+                const hg = document.getElementById('header-gold');
+                if (hg) hg.innerText = '💰 ' + amount;
+                const sg = document.getElementById('store-gold-count');
+                if (sg) sg.innerText = amount;
+            });
+        };
+
+        // Tab Event Listeners
+        const tabBtns = this.popupInner.querySelectorAll('.music-tab-btn');
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                tabBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentTab = btn.dataset.tab;
+                renderTab();
+                if (currentTab === 'STORE') updateAllGoldDiscounts();
+            });
+        });
+
+        // Initial sync
+        updateAllGoldDiscounts();
+
+        // Listen for store clicks to update header gold
+        this.popupInner.addEventListener('click', (e) => {
+            if (e.target.classList.contains('buy-music-btn') || e.target.classList.contains('category-btn')) {
+                // Short delay to wait for purchase result if it was a buy click
+                setTimeout(updateAllGoldDiscounts, 100);
+            }
+        });
     }
 }

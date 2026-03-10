@@ -1,4 +1,4 @@
-﻿/* ================================================================
+/* ================================================================
    RETRO UI SYSTEM ??CSS Variables
    Palette: CRT Green + Amber + Dark Panel
    ================================================================ */
@@ -6422,4 +6422,182 @@ input:checked+.slider:before {
     border-color: #3b82f6 !important;
     color: #fff !important;
     box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+}
+/* ================================================================
+   FOCUS MODE PLAYLIST BUTTON (DUNGEON HUD)
+   ================================================================ */
+.focus-playlist-btn {
+    background: linear-gradient(135deg, #4c1d95 0%, #1e1b4b 100%) !important;
+    border: 2px solid #8b5cf6 !important;
+    color: #fff !important;
+    font-family: var(--font-pixel, 'Press Start 2P', monospace) !important;
+    font-size: 10px !important;
+    padding: 8px 12px !important;
+    cursor: pointer !important;
+    margin-bottom: 20px !important;
+    width: 90% !important;
+    margin-left: 5% !important;
+    text-align: center !important;
+    box-shadow: 0 4px 0px #2e1065, 0 0 10px rgba(139, 92, 246, 0.3) !important;
+    transition: all 0.1s steps(2) !important;
+    position: relative !important;
+    overflow: hidden !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    border-radius: 0 !important;
+    pointer-events: auto !important;
+    z-index: 1000 !important;
+}
+.focus-playlist-btn:hover {
+    background: linear-gradient(135deg, #6d28d9 0%, #312e81 100%) !important;
+    border-color: #a78bfa !important;
+    box-shadow: 0 4px 0px #4c1d95, 0 0 15px rgba(139, 92, 246, 0.6) !important;
+    transform: translateY(-2px) !important;
+}
+.focus-playlist-btn:active {
+    transform: translateY(2px) !important;
+    box-shadow: 0 0px 0px transparent !important;
+}
+.focus-playlist-btn::before {
+    content: '' !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: -100% !important;
+    width: 100% !important;
+    height: 100% !important;
+    background: linear-gradient(120deg, transparent, rgba(255, 255, 255, 0.1), transparent) !important;
+    transition: all 0.6s !important;
+}
+.focus-playlist-btn:hover::before {
+    left: 100% !important;
+}@keyframes pulse-purple {
+    0% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(139, 92, 246, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0); }
+}
+.focus-playlist-btn.pulse {
+    animation: pulse-purple 2s infinite !important;
+}
+
+/* 집중 모드 블러 및 타이머 스타일 */
+.blur-active #game-container,
+.blur-active #portrait-bar,
+.blur-active #sidebar-right,
+.blur-active #combat-hud-container {
+    filter: blur(8px);
+    transition: filter 0.5s ease;
+}
+
+.blur-active #popup-overlay,
+.blur-active #focus-timer {
+    filter: none !important;
+}
+
+#focus-timer {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.7);
+    color: #a78bfa;
+    padding: 10px 20px;
+    border: 2px solid #8b5cf6;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 14px;
+    z-index: 9999;
+    text-shadow: 0 0 5px #8b5cf6;
+    pointer-events: none;
+    display: none;
+}
+
+/* [FIX] 집중 모드 UI 최적화 및 계층 조정 */
+#app-container.blur-active #game-container,
+#app-container.blur-active #combat-hud-container,
+#app-container.blur-active #portrait-bar,
+#app-container.blur-active #sidebar-right,
+#app-container.blur-active #ultimate-cutscene-overlay {
+    filter: blur(12px) grayscale(0.3);
+    transition: filter 0.5s ease;
+    /* Border Debugging (확인 후 제거) */
+}
+
+#mobile-hud {
+    z-index: 20001;
+}
+
+#popup-overlay {
+    z-index: 15000;
+}
+
+#hud-round-display {
+    z-index: 1000;
+}
+
+#npc-hud, #messiah-hud {
+    z-index: 500;
+}
+
+#focus-timer {
+    position: fixed;
+    top: 85px; /* 네비게이션 바 아래로 이동 */
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 20002; /* 네비게이션보다 상단 */
+    background: rgba(15, 10, 20, 0.85);
+    color: #ffd700;
+    padding: 12px 24px;
+    border: 2px solid #aa77ff;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 16px;
+    box-shadow: 0 0 20px rgba(170, 119, 255, 0.4);
+    pointer-events: none;
+    display: none;
+    text-shadow: 2px 2px 0px #000;
+}
+
+/* [FINAL FIX] 집중 모드 시각 효과 및 레이어 최적화 */
+body.blur-active #game-container,
+body.blur-active #combat-hud-container,
+body.blur-active #portrait-bar,
+body.blur-active #sidebar-right {
+    filter: blur(15px) grayscale(0.5);
+    transition: filter 0.8s ease;
+    outline: 5px solid red; /* Border Debugging: 빨간 테두리가 보이면 정상 */
+    outline-offset: -5px;
+}
+
+body.blur-active #focus-timer,
+body.blur-active #popup-overlay,
+body.blur-active #mobile-hud {
+    filter: none;
+}
+
+
+/* [GLOBAL FIX] 시스템 통합 블러 및 보더 디버깅 */
+html.blur-active #game-container,
+html.blur-active #combat-hud-container,
+html.blur-active #portrait-bar,
+html.blur-active #sidebar-right,
+html.blur-active #ultimate-cutscene-overlay,
+body.blur-active #game-container,
+body.blur-active #combat-hud-container,
+body.blur-active #portrait-bar,
+body.blur-active #sidebar-right,
+body.blur-active #ultimate-cutscene-overlay {
+    filter: blur(15px) grayscale(0.5);
+    transition: filter 0.8s ease;
+    pointer-events: none; /* 블러 상태에서 오클릭 방지 */
+}
+
+html.blur-active #focus-timer,
+html.blur-active #popup-overlay,
+html.blur-active #mobile-hud,
+body.blur-active #focus-timer,
+body.blur-active #popup-overlay,
+body.blur-active #mobile-hud {
+    filter: none !important;
+    outline: none !important;
+    pointer-events: auto !important;
 }

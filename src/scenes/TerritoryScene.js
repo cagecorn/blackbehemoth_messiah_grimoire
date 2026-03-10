@@ -93,6 +93,14 @@ const TERRITORY_BANNERS = [
         accentColor: '#3b82f6',
         action: function () { if (this.game && this.game.uiManager) this.game.uiManager.showFishingManagement(); },
     },
+    {
+        id: 'focus-music',
+        label: '집중 모드 & 음반 구입',
+        sublabel: 'FOCUS & MUSIC',
+        cutscene: 'assets/characters/party/lute_cutscene.png', // Lute associated with music
+        accentColor: '#8b5cf6', // Violet
+        action: function () { if (this.game && this.game.uiManager) this.game.uiManager.showFocusMusicManager(); },
+    },
 ];
 
 export default class TerritoryScene extends Phaser.Scene {

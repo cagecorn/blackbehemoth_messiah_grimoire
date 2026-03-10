@@ -40,6 +40,7 @@
 
 2. **독특한 재화 시스템:**
    * **이모지 화폐 (Emoji Currency):** 게임 내에서 드랍되는 모든 채집물 및 화폐 기호는 **트위터 이모지(Twemoji SVG)**로 시각화됩니다. 수많은 종류의 이모지들이 게임 세계의 경제와 재료 시스템을 구축합니다.
+   * **공식 골드 재화 키값**: `emoji_coin` 🪙
 
 3. **온디바이스 AI (On-Device AI):**
    * **지능적 대사 선택**: 외부 서버 없이도 캐릭터의 성격(`Persona`)과 현재 전황을 고려하여 가장 적절한 대사를 선택하여 출력합니다.
@@ -73,6 +74,9 @@
   * `iceRes`: 얼음 저항력 (%)
   * `lightningRes`: 번개 저항력 (%)
   * `id`: 엔티티 고유 식별자
+  * **공식 재화 키값 (Official Currency Keys)**:
+    * 골드(Gold): `emoji_coin` 🪙 [반드시 `emoji_gold`와 혼동 금지]
+    * 다이아(Diamond): `emoji_gem` 💎
   * **주의**: 신규 몬스터/용병 추가 시 위 명칭을 제외한 임의의 명칭(예: `attackDamage`) 사용을 엄격히 금지합니다.
 
 * **UI/버그 해결 원칙 (UI & Bug Prevention Rules):**
@@ -275,6 +279,33 @@
     *   **나 여우 아니다 (I'm not a fox)**: `nickle_fox`
 *   **나나 (Nana)**
     *   **모두의 아이돌**: `nana_idol`
+
+## 💿 집중 모드 & 음반 시스템 (Focus Mode & Music System)
+집중 모드는 플레이어가 게임에 더 몰입할 수 있도록 배경을 블러 처리하고 전용 음악을 재생하는 고유 시스템입니다.
+
+### 1. 주요 모듈 및 역할 (Core Modules)
+- **`FocusManager.js`**: 집중 모드의 전역 상태(`isFocusModeActive`)를 관리합니다. '📀 PLAYLIST' 버튼 클릭 시 `toggleFocusMode()`가 호출되어 상태를 전환하고 `EventBus`를 통해 시스템 전반에 신호를 보냅니다.
+- **`MusicManager.js`**: 음반 구입 정보와 재생 목록을 관리합니다. 집중 모드 활성화 시 `playTrack()`을 통해 전용 트랙을 순환 재생하며, Phaser의 Sound 인스턴스를 제어합니다.
+- **`UIManager.js`**: `FOCUS_MODE_CHANGED` 이벤트를 수신하여 실제 시각 효과 적용 및 배경음악 중복 방지 로직을 수행합니다.
+
+### 2. 핵심 로직 및 이벤트 흐름 (Logic Flow)
+1.  **발동 (Trigger)**: UI의 플레이리스트 버튼 클릭 시 호출.
+2.  **상태 전환 (Toggle)**: `FocusManager`가 내부 상태를 변경하고 `{ active: boolean, settings: Object }` 페이로드를 담아 `FOCUS_MODE_CHANGED` 이벤트를 발생시킵니다.
+3.  **음악 제어 (Music Control)**:
+    - 집중 모드 시 `MusicManager`가 구매한 음반 중 하나를 무작위/순차 재생합니다.
+    - **중복 재생 방지**: `UIManager`는 집중 모드 진입 시 현재 재생 중인 모든 일반 배경음악(`this.game.sound.sounds`)을 일시정지(Pause)하고, 모드 해제 시 다시 재개(Resume)합니다.
+4.  **UI/UX 업데이트**: `UIManager`가 다음 시각적 조치를 취합니다.
+    - `document.body` 및 `html`에 `.blur-active` 클래스를 토글하여 CSS 블러 가동.
+    - `#focus-timer`의 가시성을 조절하여 현재 집중 시간을 표시.
+
+### 3. 시각 효과 및 CSS 구조 (Visual Effects)
+-   **블러 적용 대상**: 집중 모드 시 `#game-container`, `#combat-hud-container`, `#portrait-bar`, `#sidebar-right`, `#ultimate-cutscene-overlay` 등 게임 핵심 월드 요소들이 블러 처리됩니다.
+-   **블러 예외 대상**: 사용자 상호작용이 필요한 `#focus-timer`, `#popup-overlay`, `#mobile-hud`는 필터에서 제외되어 선명하게 유지됩니다.
+-   **CSS 클래스**: `blur-active` 클래스가 활성화되면 미리 정의된 `filter: blur(15px) grayscale(0.5)` 속성이 적용됩니다.
+
+### 4. 이벤트 버스 API (EventBus)
+-   **구독**: `EventBus.on('FOCUS_MODE_CHANGED', (payload) => ...)`
+-   **발행**: `EventBus.emit('FOCUS_MODE_CHANGED', { active: true, settings: { ... } })`
 
 ## 시스템 용어 및 상태 이상 (Global Terms & Status)
 
