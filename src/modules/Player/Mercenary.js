@@ -868,6 +868,7 @@ export default class Mercenary extends Phaser.GameObjects.Container {
                 }
             }
 
+
             // Lifesteal for Blood Rage
             if (attacker && typeof attacker === 'object' && attacker.isBloodRaging && attacker.heal) {
                 attacker.heal(finalDamage * 0.35);
@@ -974,9 +975,10 @@ export default class Mercenary extends Phaser.GameObjects.Container {
         if (armor) {
             const armorId = (typeof armor === 'string') ? armor : (armor.instanceId || armor.id);
             if (armorId && typeof armorId === 'string' && armorId.startsWith('eq_')) {
-                // equipmentManager.addExp(armorId, amount); // Removed equipmentManager usage
+                equipmentManager.addExp(armorId, amount);
             }
         }
+
 
         // Record damage received for combat tracker (including what was absorbed by shield)
         if (damageBeforeShield > 0) {
@@ -992,9 +994,10 @@ export default class Mercenary extends Phaser.GameObjects.Container {
                 const weapon = attacker.equipment.weapon;
                 const weaponId = (typeof weapon === 'string') ? weapon : (weapon.instanceId || weapon.id);
                 if (weaponId && typeof weaponId === 'string' && weaponId.startsWith('eq_')) {
-                    // equipmentManager.addExp(weaponId, finalDamage); // Removed equipmentManager usage
+                    equipmentManager.addExp(weaponId, finalDamage);
                 }
             }
+
 
             // Lifesteal for Blood Rage
             if (attacker && typeof attacker === 'object' && attacker.isBloodRaging && attacker.heal) {

@@ -60,6 +60,22 @@ const ITEM_DATABASE = {
     'emoji_divine_essence': { name: '전능의 정수 (✨)', type: ITEM_TYPES.MATERIAL, icon: 'emoji_divine_essence', description: '메시아의 권능을 강화하는 데 필요한 신성한 재료입니다. ✨' },
     'eternal_ice': { name: '영원한 얼음', type: ITEM_TYPES.MATERIAL, icon: 'emoji_ice_cube', description: '태고의 냉기를 머금고 있는 얼음입니다. 양초의 상위 재료로 사용됩니다. 🧊', price: 150 },
     'emoji_candle': { name: '양초', type: ITEM_TYPES.MATERIAL, icon: 'emoji_candle', description: '화염 정령들이 떨어뜨린 고급 마법 재료입니다. 🕯️', price: 200 },
+    'food_choco_parfait': {
+        name: '초코 파르페',
+        type: ITEM_TYPES.MATERIAL,
+        icon: 'choco_parfait',
+        customAsset: 'assets/food/choco_parfait.png',
+        description: '달콤한 초코 파르페입니다. 한 라운드 동안 파티 획득 경험치가 10% 상승합니다.',
+        price: 2000
+    },
+    'food_strawberry_cake': {
+        name: '딸기 케이크',
+        type: ITEM_TYPES.MATERIAL,
+        icon: 'strawberry_cake',
+        customAsset: 'assets/food/strawberry_cake.png',
+        description: '상큼한 딸기 케이크입니다. 한 라운드 동안 장비 획득 경험치가 10% 상승합니다.',
+        price: 2000
+    },
 
     // --- Tactical Node Charms ---
     'emoji_pouting_face': { name: '분노 (Enraged 😠)', type: 'node_charm', icon: 'emoji_pouting_face', description: '적의 서포터(힐러/바드)를 최우선으로 추적하며, 자신의 잃은 체력에 비례해 공격력이 최대 15%까지 상승합니다.' },

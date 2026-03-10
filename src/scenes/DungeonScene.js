@@ -50,7 +50,12 @@ import PetManager from '../modules/Player/PetManager.js';
 import DBManager from '../modules/Database/DBManager.js';
 import buildingManager from '../modules/Core/BuildingManager.js';
 import SupportActionManager from '../modules/Combat/SupportActionManager.js';
+import npcManager from '../modules/Core/NPCManager.js';
+import foodManager from '../modules/Core/FoodManager.js';
+import GrimoireManager from '../modules/Core/GrimoireManager.js';
+import equipmentManager from '../modules/Core/EquipmentManager.js';
 import StructureManager from '../modules/Core/StructureManager.js';
+
 // partyManager will be accessed via this.game.partyManager
 
 
@@ -68,6 +73,8 @@ export default class DungeonScene extends Phaser.Scene {
         this.ambientMoteManager = null;
         this.supportActionManager = null;
         this.structureManager = null;
+        this.foodManager = null;
+        this.grimoireManager = null;
 
         // Construction Mode State
         this.isConstructionMode = false;
@@ -76,6 +83,8 @@ export default class DungeonScene extends Phaser.Scene {
         // Reward values
         this.killExp = 25;
         this.roundClearExp = 500;
+        this.activeFoodBuffs = { PARTY_EXP_BONUS: 0, EQUIP_EXP_BONUS: 0 };
+
     }
 
     init(data) {
@@ -327,8 +336,10 @@ export default class DungeonScene extends Phaser.Scene {
             this.shieldManager = new ShieldManager(this);
             this.barkManager = new BarkManager(this);
             this.petManager = new PetManager(this);
+            // foodManager and grimoireManager are imported instances/classes, no need to 'new' if they aren't per-scene managers
             this.structureManager = new StructureManager(this);
             await this.structureManager.initDungeonStructures();
+
 
             // ⚔️ Premium Skill FX Layer (with Global Bloom)
             // This layer hosts all magical effects, projectiles, and skill visuals.
@@ -345,23 +356,15 @@ export default class DungeonScene extends Phaser.Scene {
                 this.game.uiManager.scene = this;
             }
 
-            // Create a named listener for Battery Saver for easy removal
-            this.onBatterySaverToggled = (enabled) => {
-                if (this.skillFxLayer && this.skillFxLayer.postFX) {
-                    if (enabled) {
-                        this.skillFxLayer.postFX.clear();
-                        console.log('[Visuals] Battery Saver ON - Removed PostFX from Skill Layer.');
-                    } else {
-                        if (this.skillFxLayer.postFX.list.length === 0) {
-                            this.skillFxLayer.postFX.addBloom(0xffffff, 1, 1, 1.2, 3);
-                            console.log('[Visuals] Battery Saver OFF - Restored PostFX Bloom.');
-                        }
-                    }
-                }
-            };
-            EventBus.on(EventBus.EVENTS.BATTERY_SAVER_TOGGLED, this.onBatterySaverToggled, this);
+            // --- Food Buff Initialization (Round 1) ---
+            this.activeFoodBuffs = await foodManager.consumeForRound();
+            if (this.game.uiManager) this.game.uiManager.updateFoodHUD();
+
+            // Sync Equipment Multiplier (for Strawberry Cake)
+            equipmentManager.expMultiplier = 1.0 + (this.activeFoodBuffs.EQUIP_EXP_BONUS || 0);
 
             // Listen for Character Swap
+
             this.handleDebugSwapListener = this.handleDebugSwap.bind(this);
             EventBus.on(EventBus.EVENTS.DEBUG_SWAP_CHARACTER, this.handleDebugSwapListener);
 
@@ -378,6 +381,11 @@ export default class DungeonScene extends Phaser.Scene {
                     // Epic monsters already have a higher expReward baked in (no extra multiplier needed)
                     const baseExp = payload.expReward || this.killExp;
                     let calculatedExp = baseExp * (1 + (monsterLevel - 1) * 0.1);
+
+                    // --- Food Buff: Party EXP Bonus ---
+                    if (this.activeFoodBuffs.PARTY_EXP_BONUS > 0) {
+                        calculatedExp *= (1 + this.activeFoodBuffs.PARTY_EXP_BONUS);
+                    }
 
                     if (isShadow) {
                         calculatedExp *= 5.0;
@@ -801,8 +809,20 @@ export default class DungeonScene extends Phaser.Scene {
             this.isResting = true;
             EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, `[시스템] 라운드 ${this.currentRound} 클리어! 5초 뒤 다음 라운드가 시작됩니다. ⛺`);
 
-            this.time.delayedCall(5000, () => {
+            this.time.delayedCall(5000, async () => {
+                // --- Food Buff Consumption (Next Rounds) ---
+                this.activeFoodBuffs = await foodManager.consumeForRound();
+                if (this.game.uiManager) this.game.uiManager.updateFoodHUD();
+
+                // Sync Equipment Multiplier
+                equipmentManager.expMultiplier = 1.0 + (this.activeFoodBuffs.EQUIP_EXP_BONUS || 0);
+
+                if (this.activeFoodBuffs.PARTY_EXP_BONUS > 0 || this.activeFoodBuffs.EQUIP_EXP_BONUS > 0) {
+                    console.log(`[DungeonScene] Food Buffs Activated for Round ${this.currentRound + 1}:`, this.activeFoodBuffs);
+                }
+
                 // Grant Round Clear EXP
+
                 this.mercenaries.getChildren().forEach(merc => {
                     if (merc.active && merc.hp > 0 && typeof merc.addExp === 'function') {
                         merc.addExp(this.roundClearExp);

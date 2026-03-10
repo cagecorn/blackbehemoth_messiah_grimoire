@@ -12,6 +12,8 @@ import ShopManager from './ShopManager.js';
 import npcManager from '../Core/NPCManager.js';
 import buildingManager, { BUILDING_TYPES } from '../Core/BuildingManager.js';
 import equipmentManager from '../Core/EquipmentManager.js';
+import foodManager, { FOOD_RECIPES } from '../Core/FoodManager.js';
+
 
 export default class UIManager {
     constructor() {
@@ -2096,6 +2098,162 @@ export default class UIManager {
             }
         }, 300);
     }
+
+    // --- Cooking & Food Buffs ---
+
+    async showCooking() {
+        if (this.cookingOverlay) return;
+
+        const overlay = document.createElement('div');
+        overlay.id = 'cooking-overlay';
+        overlay.className = 'shop-overlay retro-scanline-overlay cooking-overlay';
+        this.cookingOverlay = overlay;
+
+        overlay.innerHTML = `
+            <div class="shop-container cooking-container" style="max-width: 850px; width: 92vw;">
+                <div class="shop-header" style="background: linear-gradient(to right, #fb7185, #e11d48);">
+                    <div class="shop-title">🍳 KITCHEN (요리실: 버프 제작)</div>
+                    <button class="shop-close-btn" id="cooking-close">✕</button>
+                </div>
+                
+                <div class="shop-body" style="padding: 20px; display: flex; flex-direction: column; gap: 15px; max-height: 60vh; overflow-y: auto;">
+                    <div style="font-size: 11px; color: #fb7185; text-align: center; padding: 8px; background: rgba(251, 113, 133, 0.1); border: 1px dashed rgba(251, 113, 133, 0.4); border-radius: 8px; font-weight: bold;">
+                        💡 초코 파르페와 딸기 케이크는 상점(ROYAL SHOP)에서도 구매 가능합니다!
+                    </div>
+                    <div id="food-recipe-list" style="display: flex; flex-direction: column; gap: 15px;">
+                        <!-- Food recipes here -->
+                    </div>
+                </div>
+                
+                <div class="shop-footer" style="display: flex; justify-content: space-between; align-items: center; padding: 15px;">
+                    <div class="shop-currency" id="cooking-material-display" style="display:flex; align-items:center; gap:20px;">
+                        <!-- Materials: Meat & Herb -->
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('app-container').appendChild(overlay);
+
+        document.getElementById('cooking-close').onclick = () => this.hideCooking();
+        overlay.onclick = (e) => { if (e.target === overlay) this.hideCooking(); };
+
+        await this.refreshCooking();
+    }
+
+    async refreshCooking() {
+        const listContainer = document.getElementById('food-recipe-list');
+        const materialDisplay = document.getElementById('cooking-material-display');
+        if (!listContainer) return;
+
+        // 1. Materials
+        const meat = await DBManager.getInventoryItem('emoji_meat');
+        const herb = await DBManager.getInventoryItem('emoji_herb');
+
+        if (materialDisplay) {
+            materialDisplay.innerHTML = `
+                <div style="display:flex; align-items:center; gap:8px; color: #fff; font-weight: bold; font-size: 14px;">
+                    <img src="assets/emojis/1f356.svg" style="width:24px; height:24px;"> ${meat ? meat.amount.toLocaleString() : 0}
+                </div>
+                <div style="display:flex; align-items:center; gap:8px; color: #6ee7b7; font-weight: bold; font-size: 14px;">
+                    <img src="assets/emojis/1f33f.svg" style="width:24px; height:24px;"> ${herb ? herb.amount.toLocaleString() : 0}
+                </div>
+            `;
+        }
+
+        // 2. Recipes
+        let html = '';
+        for (const recipe of Object.values(FOOD_RECIPES)) {
+            const owned = await DBManager.getInventoryItem(recipe.id);
+            const amount = owned ? owned.amount : 0;
+
+            // Craft conditions
+            let canCraft1 = true;
+            for (const [matId, req] of Object.entries(recipe.requirements)) {
+                const item = await DBManager.getInventoryItem(matId);
+                if (!item || item.amount < req) canCraft1 = false;
+            }
+
+            html += `
+                <div class="food-recipe-card" style="background: rgba(0,0,0,0.3); border: 2px solid rgba(251, 113, 133, 0.4); border-radius: 12px; padding: 15px; display: flex; gap: 15px; align-items: center; position: relative;">
+                    <div style="background: rgba(255,255,255,0.05); padding: 5px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
+                        <img src="${recipe.asset}" style="width: 60px; height: 60px; object-fit: contain;">
+                    </div>
+                    <div style="flex: 1;">
+                        <div style="display: flex; justify-content: space-between; align-items: start;">
+                            <div style="font-size: 16px; font-weight: bold; color: #fb7185;">${recipe.name}</div>
+                            <div style="font-size: 11px; background: #e11d48; color: #fff; padding: 2px 6px; border-radius: 4px; font-weight: bold;">보유: ${amount}</div>
+                        </div>
+                        <div style="font-size: 11px; color: #d1d5db; margin: 4px 0;">${recipe.description}</div>
+                        <div style="display: flex; gap: 10px; font-size: 10px; color: #fb7185; opacity: 0.9; margin-bottom: 8px;">
+                            ${Object.entries(recipe.requirements).map(([id, req]) => `
+                                <span style="display:flex; align-items:center; gap:3px;">
+                                    <img src="assets/emojis/${ItemManager.getSVGFilename(id)}" style="width:12px; height:12px;"> ${req}
+                                </span>
+                            `).join('')}
+                        </div>
+                        
+                        <div style="display: flex; gap: 8px;">
+                            <button class="shop-buy-btn craft-food-btn" data-id="${recipe.id}" data-amount="1" ${canCraft1 ? '' : 'disabled'} style="font-size: 10px; padding: 5px 10px;">x1 제작</button>
+                            <button class="shop-buy-btn craft-food-btn" data-id="${recipe.id}" data-amount="10" ${canCraft1 ? '' : 'disabled'} style="font-size: 10px; padding: 5px 10px; background: #be123c;">x10 제작</button>
+                            <button class="shop-buy-btn craft-food-btn" data-id="${recipe.id}" data-amount="100" ${canCraft1 ? '' : 'disabled'} style="font-size: 10px; padding: 5px 10px; background: #9f1239;">x100 제작</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        listContainer.innerHTML = html;
+
+        // Bind events
+        listContainer.querySelectorAll('.craft-food-btn').forEach(btn => {
+            btn.onclick = async () => {
+                const id = btn.dataset.id;
+                const count = parseInt(btn.dataset.amount);
+                const result = await foodManager.craftFood(id, count);
+                this.showToast(result.message || `${result.name} ${count}개 제작 완료! ✨`);
+                if (result.success) {
+                    this.refreshCooking();
+                    this.updateFoodHUD();
+                }
+            };
+        });
+    }
+
+    hideCooking() {
+        if (!this.cookingOverlay) return;
+        this.cookingOverlay.classList.add('fade-out');
+        setTimeout(() => {
+            if (this.cookingOverlay) {
+                this.cookingOverlay.remove();
+                this.cookingOverlay = null;
+            }
+        }, 300);
+    }
+
+    async updateFoodHUD() {
+        const hud = document.getElementById('food-hud');
+        if (!hud) return;
+
+        const ownedFood = await foodManager.getOwnedFood();
+        let html = '';
+
+        for (const [id, count] of Object.entries(ownedFood)) {
+            if (count > 0) {
+                const recipe = FOOD_RECIPES[id];
+                html += `
+                    <div class="food-buff-icon" title="${recipe.name}: ${recipe.description}">
+                        <img src="${recipe.asset}" alt="${recipe.name}">
+                        <div class="food-buff-count">${count}</div>
+                    </div>
+                `;
+            }
+        }
+
+        hud.innerHTML = html;
+        hud.style.display = html ? 'flex' : 'none';
+    }
+
 
     async showMessiahManagement() {
         if (this.messiahOverlay) return;

@@ -116,9 +116,13 @@ class EquipmentManager {
         if (!instance) return;
 
         const oldLevel = instance.level;
-        instance.exp += Math.floor(amount);
+
+        // Apply Global Multiplier (from Food Buffs etc.)
+        const finalAmount = Math.floor(amount * (this.expMultiplier || 1.0));
+        instance.exp += finalAmount;
 
         const status = this.calculateLevelFromExp(instance.exp);
+
         instance.level = status.level;
 
         // Check for 10-level milestones (10, 20, 30, 40, 50)

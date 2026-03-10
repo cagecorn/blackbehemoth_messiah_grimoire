@@ -77,6 +77,14 @@ const TERRITORY_BANNERS = [
         accentColor: '#4ade80',
         action: function () { if (this.game && this.game.uiManager) this.game.uiManager.showMonsterCodex(); },
     },
+    {
+        id: 'cook',
+        label: '요리하기',
+        sublabel: 'COOKING',
+        cutscene: 'assets/characters/party/nana_cutscene.png', // Use Nana for cooking context (seems fitting for a supportive chef)
+        accentColor: '#fb7185',
+        action: function () { if (this.game && this.game.uiManager) this.game.uiManager.showCooking(); },
+    },
 ];
 
 export default class TerritoryScene extends Phaser.Scene {
