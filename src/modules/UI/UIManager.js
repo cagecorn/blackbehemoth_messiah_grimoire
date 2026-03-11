@@ -19,6 +19,8 @@ import alchemyManager from '../Core/AlchemyManager.js';
 import { MUSIC_TRACKS } from '../Core/MusicManager.js';
 import messiahManager from '../Core/MessiahManager.js';
 import localizationManager from '../Core/LocalizationManager.js';
+import PetUI from './PetUI.js';
+import NPCUI from './NPCUI.js';
 import MercenaryCodexUI from './MercenaryCodexUI.js';
 
 
@@ -121,6 +123,8 @@ export default class UIManager {
         this.shopUI = new ShopUI(this);
         this.equipmentUI = new EquipmentUI(this);
         this.mercenaryCodexUI = new MercenaryCodexUI(this);
+        this.petUI = new PetUI(this);
+        this.npcUI = new NPCUI(this);
         window.uiManager = this;
 
         // Bind the RAF loop
@@ -1425,143 +1429,13 @@ export default class UIManager {
     }
 
     async showPetStorage() {
-        if (this.petStorageOverlay) return;
-
-        const overlay = document.createElement('div');
-        overlay.id = 'pet-storage-overlay';
-        overlay.className = 'shop-overlay retro-scanline-overlay pet-storage-overlay';
-        this.petStorageOverlay = overlay;
-
-        const partyManager = this.scene?.game?.partyManager;
-        const petRoster = partyManager?.playerPetRoster || {};
-
-        overlay.innerHTML = `
-            <div class="shop-container pet-storage-container" style="max-width: 900px; width: 95vw;">
-                <div class="shop-header" style="background: linear-gradient(to right, #059669, #10b981);">
-                    <div class="shop-title">${localizationManager.t('ui_pet_storage_title')}</div>
-                    <button class="shop-close-btn" id="pet-storage-close">✕</button>
-                </div>
-                
-                <div class="shop-body pet-storage-body" id="pet-storage-body">
-                    <div class="pet-list-area" id="pet-list-area">
-                        <!-- Pet cards go here -->
-                    </div>
-                    
-                    <div class="pet-detail-area" id="pet-detail-area">
-                        <div class="pet-empty-detail">${localizationManager.t('ui_pet_empty_selection').replace(' ', '<br>')}</div>
-                    </div>
-                </div>
-                
-                <div class="shop-footer">
-                   <div class="shop-currency" id="pet-meat-display" style="display:flex; align-items:center; gap:6px;"><img src="assets/emojis/1f356.svg" style="width:20px; height:20px;"> 0</div>
-                </div>
-            </div>
-        `;
-
-        document.getElementById('app-container').appendChild(overlay);
-
-        // Close events
-        document.getElementById('pet-storage-close').onclick = () => this.hidePetStorage();
-        overlay.onclick = (e) => { if (e.target === overlay) this.hidePetStorage(); };
-
-        await this.refreshPetStorage();
+        if (this.petUI) {
+            this.petUI.show();
+        }
     }
 
-    async refreshPetStorage() {
-        if (!this.petStorageOverlay) return;
-
-        const listArea = document.getElementById('pet-list-area');
-        const partyManager = this.scene?.game?.partyManager;
-        const petRoster = partyManager?.playerPetRoster || {};
-
-        const meat = await DBManager.getInventoryItem('emoji_meat');
-        const meatDisplay = document.getElementById('pet-meat-display');
-        if (meatDisplay) meatDisplay.innerHTML = `<img src="assets/emojis/1f356.svg" style="width:20px; height:20px;"> ${meat ? meat.amount : 0}`;
-
-        let html = '';
-        Object.keys(PetStats).forEach(key => {
-            const pet = PetStats[key];
-            const starData = petRoster[pet.id];
-
-            if (starData) {
-                const highestStar = Math.max(...Object.keys(starData).map(Number));
-                html += `
-                    <div class="pet-card" data-id="${pet.id}" style="background: rgba(255,255,255,0.05); border: 2px solid var(--retro-border); border-radius: 12px; padding: 15px; cursor: pointer; text-align: center; position: relative; min-height: 110px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;">
-                        <div style="position:absolute; top:5px; right:8px; color:#fbbf24; font-weight:bold; font-size:12px; text-shadow: 1px 1px 2px #000;">★${highestStar}</div>
-                        <img src="assets/pet/${pet.sprite}.png" style="width: 64px; height: 64px; object-fit: contain; image-rendering: pixelated;">
-                        <div style="font-size: 11px; font-weight: bold; color: #fff;">${localizationManager.t('pet_name_' + pet.id)}</div>
-                    </div>
-                `;
-            }
-        });
-
-        listArea.innerHTML = html;
-
-        // Attach card events
-        listArea.querySelectorAll('.pet-card').forEach(card => {
-            card.onclick = () => this._renderPetDetail(card.dataset.id);
-        });
-    }
-
-    async _renderPetDetail(petId) {
-        const detailArea = document.getElementById('pet-detail-area');
-        const partyManager = this.scene?.game?.partyManager;
-        const state = partyManager.getPetState(petId);
-        const baseConfig = PetStats[petId.toUpperCase()];
-        const highestStar = partyManager.getHighestPetStar(petId);
-        const cost = partyManager.getPetLevelUpCost(petId, state.level);
-
-        // Scale stats by level and star using centralized utility
-        const scaledConfig = scaleStats({ ...baseConfig, star: highestStar }, state.level);
-
-        const currentAtk = scaledConfig.atk;
-        const currentMAtk = scaledConfig.mAtk;
-
-        detailArea.innerHTML = `
-            <div style="text-align: center; border-bottom: 2px solid rgba(255,255,255,0.1); padding-bottom: 12px; display: flex; flex-direction: column; align-items: center; gap: 8px;">
-                <div style="color: #fbbf24; font-size: 16px; font-weight: 900;">★${highestStar} ${localizationManager.t('pet_name_' + petId)}</div>
-                <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
-                    <img src="assets/pet/${baseConfig.sprite}.png" style="width: 80px; height: 80px; object-fit: contain; image-rendering: pixelated;">
-                </div>
-                <div style="color: #6ee7b7; font-size: 13px; font-weight: bold;">${localizationManager.t('ui_pet_level', [state.level])}</div>
-            </div>
-            
-            <div style="display: flex; flex-direction: column; gap: 6px; font-size: 12px;">
-                <div style="display: flex; justify-content: space-between;"><span>${localizationManager.t('ui_pet_stat_atk')}</span><span style="color: #ef4444; font-weight: bold;">${currentAtk}</span></div>
-                <div style="display: flex; justify-content: space-between;"><span>${localizationManager.t('ui_pet_stat_mAtk')}</span><span style="color: #3b82f6; font-weight: bold;">${currentMAtk}</span></div>
-                <div style="display: flex; justify-content: space-between;"><span>${localizationManager.t('ui_pet_stat_speed')}</span><span>${scaledConfig.speed}</span></div>
-                <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 4px;"><span>${localizationManager.t('ui_pet_stat_atkSpd')}</span><span>${scaledConfig.atkSpd}ms</span></div>
-            </div>
-            
-            <div style="background: rgba(0,0,0,0.5); padding: 12px; border-radius: 8px; font-size: 11px; line-height: 1.5; border-left: 3px solid #10b981;">
-                <div style="font-weight: bold; color: #10b981; margin-bottom: 4px;">${localizationManager.t('ui_pet_passive_header', [localizationManager.t('pet_passive_name_' + petId)])}</div>
-                <div style="color: #d1d5db;">${localizationManager.t('pet_passive_desc_' + petId)}</div>
-            </div>
-            
-            <button id="btn-feed-pet" class="shop-buy-btn" style="width: 100%; margin-top: auto; padding: 12px; height: auto; flex-direction: column; gap: 4px; border-radius: 8px;">
-                <div style="font-size: 15px; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 6px;"><img src="assets/emojis/1f356.svg" style="width:18px; height:18px;"> ${localizationManager.t('ui_pet_feed_btn')}</div>
-                <div style="font-size: 10px; opacity: 0.9;">${localizationManager.t('ui_pet_feed_cost', [cost])}</div>
-            </button>
-        `;
-
-        const feedBtn = document.getElementById('btn-feed-pet');
-        feedBtn.onclick = async () => {
-            const meatItem = await DBManager.getInventoryItem('emoji_meat');
-            if (!meatItem || meatItem.amount < cost) {
-                this.showToast(localizationManager.t('ui_pet_low_meat'));
-                return;
-            }
-
-            // Deduct meat
-            await DBManager.saveInventoryItem('emoji_meat', meatItem.amount - cost);
-
-            // Level Up
-            await partyManager.feedPet(petId);
-            this.showToast(localizationManager.t('ui_pet_lvl_up_success', [localizationManager.t('pet_name_' + petId)]));
-
-            // Refresh
-            this.refreshPetStorage();
-        };
+    hidePetStorage() {
+        // Now handled by popup system
     }
 
     async showEquipmentCrafting() {
@@ -1833,131 +1707,13 @@ export default class UIManager {
     }
 
     async showNPCHire() {
-        if (this.npcHireOverlay) return;
-
-        const overlay = document.createElement('div');
-        overlay.id = 'npc-hire-overlay';
-        overlay.className = 'shop-overlay retro-scanline-overlay npc-hire-overlay';
-        this.npcHireOverlay = overlay;
-
-        overlay.innerHTML = `
-            <div class="shop-container npc-hire-container" style="max-width: 800px; width: 90vw;">
-                <div class="shop-header" style="background: linear-gradient(to right, #7c3aed, #8b5cf6);">
-                    <div class="shop-title">${localizationManager.t('ui_npc_hire_title')}</div>
-                    <button class="shop-close-btn" id="npc-hire-close">✕</button>
-                </div>
-                
-                <div class="shop-body" style="padding: 20px; display: flex; flex-direction: column; gap: 20px; max-height: 60vh; overflow-y: auto;">
-                    <div id="npc-hire-list" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
-                        <!-- NPC cards will be injected here -->
-                    </div>
-                </div>
-                
-                <div class="shop-footer">
-                    <div class="shop-currency" id="npc-hire-gold-display" style="display:flex; align-items:center; gap:6px;"><img src="assets/emojis/1fa99.svg" style="width:20px; height:20px;"> 0</div>
-                </div>
-            </div>
-        `;
-
-        document.getElementById('app-container').appendChild(overlay);
-
-        document.getElementById('npc-hire-close').onclick = () => this.hideNPCHire();
-        overlay.onclick = (e) => { if (e.target === overlay) this.hideNPCHire(); };
-
-        this.refreshNPCHire();
-    }
-
-    async refreshNPCHire() {
-        const listContainer = document.getElementById('npc-hire-list');
-        const goldDisplay = document.getElementById('npc-hire-gold-display');
-        if (!listContainer) return;
-
-        const goldItem = await DBManager.getInventoryItem('emoji_coin');
-        if (goldDisplay) goldDisplay.innerHTML = `<img src="assets/emojis/1fa99.svg" style="width:20px; height:20px;"> ${goldItem ? goldItem.amount.toLocaleString() : 0}`;
-
-        const roster = npcManager.roster;
-        const activeNPCId = npcManager.activeNPCId;
-        let html = '';
-
-        Object.values(npcManager.constructor.NPC_DATA).forEach(npc => {
-            const ownedNPC = roster[npc.id];
-            const isActive = (npc.id === activeNPCId);
-
-            let statusText = '';
-            if (ownedNPC) {
-                statusText = `<div style="color: #6ee7b7; font-weight: bold; font-size: 11px; margin-top: 4px;">
-                    ${localizationManager.t('ui_npc_owned_stacks', [ownedNPC.stacks])} ${isActive ? localizationManager.t('ui_npc_active_status') : ''}
-                </div>`;
-            }
-
-            html += `
-                <div class="npc-hire-card" style="background: rgba(255,255,255,0.05); border: 2px solid ${isActive ? '#fbbf24' : (ownedNPC ? '#6ee7b7' : 'var(--retro-border)')}; border-radius: 12px; padding: 18px; display: flex; gap: 18px; align-items: center; position: relative; transition: all 0.2s;">
-                    <div style="background: rgba(0,0,0,0.4); padding: 8px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); flex-shrink: 0;">
-                        <img src="assets/npc/${npc.sprite}.png" style="width: 70px; height: 70px; object-fit: contain; image-rendering: pixelated;">
-                    </div>
-                    <div style="flex: 1; display: flex; flex-direction: column; gap: 6px;">
-                        <div style="font-size: 15px; font-weight: bold; color: #fbbf24; display: flex; align-items: center; gap: 8px;">
-                            ${npcManager.constructor.getLocalizedName(npc.id)}
-                            ${isActive ? '<span style="font-size: 9px; background: #fbbf24; color: #000; padding: 1px 4px; border-radius: 3px;">ACTIVE</span>' : ''}
-                        </div>
-                        <div style="font-size: 10.5px; color: #d1d5db; line-height: 1.4; min-height: 30px;">${npcManager.constructor.getLocalizedDescription(npc.id)}</div>
-                        ${statusText}
-                        
-                        <div style="display: flex; gap: 8px; margin-top: 8px;">
-                            <button class="shop-buy-btn npc-hire-btn" data-id="${npc.id}" style="flex: 2; height: 36px; font-size: 11px;">
-                                ${ownedNPC ? localizationManager.t('ui_npc_btn_add_stack', [npc.cost.toLocaleString()]) : localizationManager.t('ui_npc_btn_hire', [npc.cost.toLocaleString()])}
-                            </button>
-                            ${(ownedNPC && !isActive) ? `
-                                <button class="shop-buy-btn npc-select-btn" data-id="${npc.id}" style="flex: 1; height: 36px; font-size: 11px; background: #3b82f6; border-color: #60a5fa;">
-                                    ${localizationManager.t('ui_npc_btn_select')}
-                                </button>
-                            ` : ''}
-                        </div>
-                    </div>
-                </div>
-            `;
-        });
-
-        listContainer.innerHTML = html;
-
-        // Hire/Stack Events
-        listContainer.querySelectorAll('.npc-hire-btn').forEach(btn => {
-            btn.onclick = async () => {
-                const npcId = btn.dataset.id;
-                const result = await npcManager.hireNPC(npcId);
-                this.showToast(result.message);
-                if (result.success) {
-                    this.refreshNPCHire(); // Refresh UI to show accumulated stacks
-                    this.updateNPCHUD();
-                    if (this.partyFormationOverlay) this._updateNPCFormationSlot();
-                }
-            };
-        });
-
-        // Select Events
-        listContainer.querySelectorAll('.npc-select-btn').forEach(btn => {
-            btn.onclick = () => {
-                const npcId = btn.dataset.id;
-                if (npcManager.selectNPC(npcId)) {
-                    this.refreshNPCHire();
-                    this.updateNPCHUD();
-                    if (this.partyFormationOverlay) this._updateNPCFormationSlot();
-                    const localizedName = npcManager.constructor.getLocalizedName(npcId);
-                    this.showToast(localizationManager.t('ui_npc_toast_activated', [localizedName]));
-                }
-            };
-        });
+        if (this.npcUI) {
+            this.npcUI.show();
+        }
     }
 
     hideNPCHire() {
-        if (!this.npcHireOverlay) return;
-        this.npcHireOverlay.classList.add('fade-out');
-        setTimeout(() => {
-            if (this.npcHireOverlay) {
-                this.npcHireOverlay.remove();
-                this.npcHireOverlay = null;
-            }
-        }, 300);
+        // Now handled by popup system
     }
 
     // --- Cooking & Food Buffs ---
