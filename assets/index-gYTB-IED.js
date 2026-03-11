@@ -6883,58 +6883,506 @@ ${l.ultimateDescription}`))}updateNarrative(l,x){this.pendingData.narrative={unl
                     <div class="narrative-lv">Level ${d.level} ${r}</div>
                     <div class="narrative-text">${v}</div>
                 </div>
-            `}),C+="</div>";const b=this.narrativeView.querySelector(".narrative-content");b&&(b.innerHTML=C)}updateUltGauge(l){this.pendingData.ultProgress=l,this.dirty=!0}_applyUltGauge(l){this.ultGaugeOverlay&&this.lastState.ultProgress!==l&&(this.lastState.ultProgress=l,this.ultGaugeOverlay.style.height=`${l}%`,l>=100?this.element.classList.add("ult-ready-glow"):this.element.classList.remove("ult-ready-glow"))}update(){if(!this.dirty)return;this.dirty=!1;const l=this.pendingData;l.statuses&&this._applyStatuses(l.statuses),(l.equipment||l.grimoire)&&this._applyEquipment(l.equipment,l.grimoire),l.stats&&this._applyStats(l.stats),l.skill&&this._applySkill(l.skill),l.narrative.unlocks&&this._applyNarrative(l.narrative.unlocks,l.narrative.level),l.ultProgress!==null&&this._applyUltGauge(l.ultProgress),this.pendingData.stats=null,this.pendingData.statuses=null}bindUnit(l,x,E,C,b,d){this.linkedUnitId=l,this.characterId=d||this.characterId,this.updateVisuals(x,E,this.characterId),C&&this.updateSkill(C),b&&this.updateNarrative(b,1)}setupDragDrop(){this.element.addEventListener("dragover",l=>{l.preventDefault(),this.element.classList.add("drag-over")}),this.element.addEventListener("dragleave",()=>{this.element.classList.remove("drag-over")}),this.element.addEventListener("drop",l=>{l.preventDefault(),this.element.classList.remove("drag-over");const x=l.dataTransfer.getData("characterId");x&&Et(()=>Promise.resolve().then(()=>Nt),void 0,import.meta.url).then(E=>{E.default.emit("UI_SLOT_ASSIGNED",{slotId:this.id,characterId:x})})})}setupGearDragDrop(){if(!this.gearView)return;this.gearView.querySelectorAll(".gear-slot").forEach(x=>{x.addEventListener("dragover",E=>{E.preventDefault(),E.stopPropagation(),x.classList.add("drag-over")}),x.addEventListener("dragleave",E=>{E.stopPropagation(),x.classList.remove("drag-over")}),x.addEventListener("drop",E=>{E.preventDefault(),E.stopPropagation(),x.classList.remove("drag-over");const C=E.dataTransfer.getData("itemId");C&&this.linkedUnitId&&Et(()=>Promise.resolve().then(()=>Nt),void 0,import.meta.url).then(b=>{const d=b.default;d.emit(d.EVENTS.EQUIP_REQUEST,{unitId:this.linkedUnitId,itemId:C})})})})}setupGrimoireDragDrop(){if(!this.grimoireView)return;this.grimoireView.querySelectorAll(".grim-slot").forEach(x=>{const E=parseInt(x.dataset.index),C=x.dataset.chapter;x.addEventListener("dragover",b=>{b.preventDefault(),b.stopPropagation(),x.classList.add("drag-over")}),x.addEventListener("dragleave",b=>{b.stopPropagation(),x.classList.remove("drag-over")}),x.addEventListener("click",()=>{if(this.uiManager&&(document.querySelectorAll(".grim-slot").forEach(d=>d.classList.remove("grim-slot-pending")),this.uiManager.pendingGrimoireSlot={unitId:this.linkedUnitId,chapter:C,index:E,element:x},x.classList.add("grim-slot-pending"),console.log(`[Grimoire] Slot pending: ${C}[${E}] for ${this.name}`),this.uiManager.showPopup("inventory"),this.uiManager.switchInventoryTab)){let d="ALL";const g=C.toLowerCase();g.includes("active")?d="ACTIVE":g.includes("tactical")?d="TACTICAL":g.includes("class")?d="CLASS":g.includes("trans")&&(d="TRANSFORMATION"),this.uiManager.switchInventoryTab("materials",d)}}),x.addEventListener("drop",b=>{b.preventDefault(),b.stopPropagation(),x.classList.remove("drag-over");const d=b.dataTransfer.getData("itemId");d&&this.linkedUnitId&&Et(()=>Promise.resolve().then(()=>Nt),void 0,import.meta.url).then(g=>{g.default.emit("GRIMOIRE_REQUEST",{unitId:this.linkedUnitId,itemId:d,chapter:C,index:E,action:"set"})})}),x.addEventListener("contextmenu",b=>{b.preventDefault(),this.linkedUnitId&&Et(()=>Promise.resolve().then(()=>Nt),void 0,import.meta.url).then(d=>{d.default.emit("GRIMOIRE_REQUEST",{unitId:this.linkedUnitId,chapter:C,index:E,action:"remove"})})})})}findEmptyGrimoireSlot(l){if(!this.grimoire)return-1;const x=l==="ACTIVE"?"chapter_a":l==="TACTICAL"?"chapter_b":l==="CLASS"?"chapter_c":"chapter_d",E=this.grimoire[x];return E?E.findIndex(C=>C===null):-1}handleCombatTrackerUpdate(l){const x=this.linkedUnitId||`unit_${this.characterId}`;if(console.log(`[ChatChannel ${this.id}] Update received for targetId: ${x}`,l),!l||!l[x])return;const E=l[x],C=this.id,b=document.getElementById(`val-dmg-${C}`),d=document.getElementById(`val-rec-${C}`),g=document.getElementById(`val-heal-${C}`);b&&(b.innerText=Math.round(E.dps).toLocaleString()),d&&(d.innerText=Math.round(E.tps).toLocaleString()),g&&(g.innerText=Math.round(E.hps).toLocaleString());const t=document.getElementById(`rank-dmg-${C}`),r=document.getElementById(`rank-rec-${C}`),v=document.getElementById(`rank-heal-${C}`);t&&(t.innerText=`${E.dpsRank}등`),r&&(r.innerText=`${E.tpsRank}등`),v&&(v.innerText=`${E.hpsRank}등`);let o=1,a=1,n=1;Object.values(l).forEach(s=>{o=Math.max(o,s.dps),a=Math.max(a,s.tps),n=Math.max(n,s.hps)});const e=document.getElementById(`bar-dmg-${C}`),i=document.getElementById(`bar-rec-${C}`),h=document.getElementById(`bar-heal-${C}`);e&&(e.style.width=`${E.dps/o*100}%`),i&&(i.style.width=`${E.tps/a*100}%`),h&&(h.style.width=`${E.hps/n*100}%`)}findEmptyCharmSlot(){return this.charms.findIndex(l=>l===null)}findEmptyNodeCharmSlot(){return this.nodeCharms.findIndex(l=>l===null)}clear(){this.linkedUnitId=null,this.characterId=null,this.classId=null,this.element.classList.remove("has-unit"),this.element.classList.add("empty");const l=this.element.querySelector(".chat-bg-sprite");l&&(l.src="");const x=this.element.querySelector(".chat-name-select");x&&(x.innerHTML='<option value="none">Empty Slot (배치 전)</option>')}}class qn{constructor(l){this.uiManager=l,this.shopOverlay=null,this.currentCategory="tickets",this.inventory={tickets:[{id:"emoji_ticket",price:10,currency:"emoji_coin",icon:"🎫"},{id:"swampland_ticket",price:100,currency:"emoji_coin",icon:"🎫"},{id:"lava_field_ticket",price:500,currency:"emoji_coin",icon:"🎫"},{id:"winter_land_ticket",price:1e3,currency:"emoji_coin",icon:"🎫"}],charms:[{id:"emoji_fireworks",price:1e5,currency:"emoji_coin",icon:"🎆"},{id:"emoji_koinobori",price:1e5,currency:"emoji_coin",icon:"🎏"},{id:"emoji_sparkler",price:1e5,currency:"emoji_coin",icon:"🎇"},{id:"emoji_burger",price:1e5,currency:"emoji_coin",icon:"🍔"}],food:[{id:"food_choco_parfait",price:2e3,currency:"emoji_coin",icon:"choco_parfait"},{id:"food_strawberry_cake",price:2e3,currency:"emoji_coin",icon:"strawberry_cake"}],fishing:[{id:"bamboo_fishing_rod",price:2e4,currency:"emoji_coin",icon:"bamboo_fishing_rod"}],alchemy:[{id:"alchemy_tool_basic",price:9e4,currency:"emoji_coin",icon:"alchemy_tool"}]}}async show(){if(this.shopOverlay)return;const l=document.createElement("div");l.id="shop-overlay",l.className="shop-overlay retro-scanline-overlay",this.shopOverlay=l,l.innerHTML=`
-            <div class="shop-container">
-                <div class="shop-header">
-                    <div class="shop-title">${J.t("shop_title")}</div>
-                    <button class="shop-close-btn" id="shop-close">✕</button>
-                </div>
-                
-                <div class="shop-body">
-                    <div class="shop-sidebar">
-                        <button class="shop-tab active" data-category="tickets">${J.t("shop_category_tickets")}</button>
-                        <button class="shop-tab" data-category="charms">${J.t("shop_category_charms")}</button>
-                        <button class="shop-tab" data-category="food">${J.t("shop_category_food")}</button>
-                        <button class="shop-tab" data-category="fishing">${J.t("shop_category_fishing")}</button>
-                        <button class="shop-tab" data-category="alchemy">${J.t("shop_category_alchemy")}</button>
-                        <button class="shop-tab disabled" title="준비 중">${J.t("shop_category_materials")}</button>
-                    </div>
+            `}),C+="</div>";const b=this.narrativeView.querySelector(".narrative-content");b&&(b.innerHTML=C)}updateUltGauge(l){this.pendingData.ultProgress=l,this.dirty=!0}_applyUltGauge(l){this.ultGaugeOverlay&&this.lastState.ultProgress!==l&&(this.lastState.ultProgress=l,this.ultGaugeOverlay.style.height=`${l}%`,l>=100?this.element.classList.add("ult-ready-glow"):this.element.classList.remove("ult-ready-glow"))}update(){if(!this.dirty)return;this.dirty=!1;const l=this.pendingData;l.statuses&&this._applyStatuses(l.statuses),(l.equipment||l.grimoire)&&this._applyEquipment(l.equipment,l.grimoire),l.stats&&this._applyStats(l.stats),l.skill&&this._applySkill(l.skill),l.narrative.unlocks&&this._applyNarrative(l.narrative.unlocks,l.narrative.level),l.ultProgress!==null&&this._applyUltGauge(l.ultProgress),this.pendingData.stats=null,this.pendingData.statuses=null}bindUnit(l,x,E,C,b,d){this.linkedUnitId=l,this.characterId=d||this.characterId,this.updateVisuals(x,E,this.characterId),C&&this.updateSkill(C),b&&this.updateNarrative(b,1)}setupDragDrop(){this.element.addEventListener("dragover",l=>{l.preventDefault(),this.element.classList.add("drag-over")}),this.element.addEventListener("dragleave",()=>{this.element.classList.remove("drag-over")}),this.element.addEventListener("drop",l=>{l.preventDefault(),this.element.classList.remove("drag-over");const x=l.dataTransfer.getData("characterId");x&&Et(()=>Promise.resolve().then(()=>Nt),void 0,import.meta.url).then(E=>{E.default.emit("UI_SLOT_ASSIGNED",{slotId:this.id,characterId:x})})})}setupGearDragDrop(){if(!this.gearView)return;this.gearView.querySelectorAll(".gear-slot").forEach(x=>{x.addEventListener("dragover",E=>{E.preventDefault(),E.stopPropagation(),x.classList.add("drag-over")}),x.addEventListener("dragleave",E=>{E.stopPropagation(),x.classList.remove("drag-over")}),x.addEventListener("drop",E=>{E.preventDefault(),E.stopPropagation(),x.classList.remove("drag-over");const C=E.dataTransfer.getData("itemId");C&&this.linkedUnitId&&Et(()=>Promise.resolve().then(()=>Nt),void 0,import.meta.url).then(b=>{const d=b.default;d.emit(d.EVENTS.EQUIP_REQUEST,{unitId:this.linkedUnitId,itemId:C})})})})}setupGrimoireDragDrop(){if(!this.grimoireView)return;this.grimoireView.querySelectorAll(".grim-slot").forEach(x=>{const E=parseInt(x.dataset.index),C=x.dataset.chapter;x.addEventListener("dragover",b=>{b.preventDefault(),b.stopPropagation(),x.classList.add("drag-over")}),x.addEventListener("dragleave",b=>{b.stopPropagation(),x.classList.remove("drag-over")}),x.addEventListener("click",()=>{if(this.uiManager&&(document.querySelectorAll(".grim-slot").forEach(d=>d.classList.remove("grim-slot-pending")),this.uiManager.pendingGrimoireSlot={unitId:this.linkedUnitId,chapter:C,index:E,element:x},x.classList.add("grim-slot-pending"),console.log(`[Grimoire] Slot pending: ${C}[${E}] for ${this.name}`),this.uiManager.showPopup("inventory"),this.uiManager.switchInventoryTab)){let d="ALL";const g=C.toLowerCase();g.includes("active")?d="ACTIVE":g.includes("tactical")?d="TACTICAL":g.includes("class")?d="CLASS":g.includes("trans")&&(d="TRANSFORMATION"),this.uiManager.switchInventoryTab("materials",d)}}),x.addEventListener("drop",b=>{b.preventDefault(),b.stopPropagation(),x.classList.remove("drag-over");const d=b.dataTransfer.getData("itemId");d&&this.linkedUnitId&&Et(()=>Promise.resolve().then(()=>Nt),void 0,import.meta.url).then(g=>{g.default.emit("GRIMOIRE_REQUEST",{unitId:this.linkedUnitId,itemId:d,chapter:C,index:E,action:"set"})})}),x.addEventListener("contextmenu",b=>{b.preventDefault(),this.linkedUnitId&&Et(()=>Promise.resolve().then(()=>Nt),void 0,import.meta.url).then(d=>{d.default.emit("GRIMOIRE_REQUEST",{unitId:this.linkedUnitId,chapter:C,index:E,action:"remove"})})})})}findEmptyGrimoireSlot(l){if(!this.grimoire)return-1;const x=l==="ACTIVE"?"chapter_a":l==="TACTICAL"?"chapter_b":l==="CLASS"?"chapter_c":"chapter_d",E=this.grimoire[x];return E?E.findIndex(C=>C===null):-1}handleCombatTrackerUpdate(l){const x=this.linkedUnitId||`unit_${this.characterId}`;if(console.log(`[ChatChannel ${this.id}] Update received for targetId: ${x}`,l),!l||!l[x])return;const E=l[x],C=this.id,b=document.getElementById(`val-dmg-${C}`),d=document.getElementById(`val-rec-${C}`),g=document.getElementById(`val-heal-${C}`);b&&(b.innerText=Math.round(E.dps).toLocaleString()),d&&(d.innerText=Math.round(E.tps).toLocaleString()),g&&(g.innerText=Math.round(E.hps).toLocaleString());const t=document.getElementById(`rank-dmg-${C}`),r=document.getElementById(`rank-rec-${C}`),v=document.getElementById(`rank-heal-${C}`);t&&(t.innerText=`${E.dpsRank}등`),r&&(r.innerText=`${E.tpsRank}등`),v&&(v.innerText=`${E.hpsRank}등`);let o=1,a=1,n=1;Object.values(l).forEach(s=>{o=Math.max(o,s.dps),a=Math.max(a,s.tps),n=Math.max(n,s.hps)});const e=document.getElementById(`bar-dmg-${C}`),i=document.getElementById(`bar-rec-${C}`),h=document.getElementById(`bar-heal-${C}`);e&&(e.style.width=`${E.dps/o*100}%`),i&&(i.style.width=`${E.tps/a*100}%`),h&&(h.style.width=`${E.hps/n*100}%`)}findEmptyCharmSlot(){return this.charms.findIndex(l=>l===null)}findEmptyNodeCharmSlot(){return this.nodeCharms.findIndex(l=>l===null)}clear(){this.linkedUnitId=null,this.characterId=null,this.classId=null,this.element.classList.remove("has-unit"),this.element.classList.add("empty");const l=this.element.querySelector(".chat-bg-sprite");l&&(l.src="");const x=this.element.querySelector(".chat-name-select");x&&(x.innerHTML='<option value="none">Empty Slot (배치 전)</option>')}}class qn{constructor(l){this.uiManager=l,this.currentCategory="tickets",this.inventory={tickets:[{id:"emoji_ticket",price:10,currency:"emoji_coin"},{id:"swampland_ticket",price:100,currency:"emoji_coin"},{id:"lava_field_ticket",price:500,currency:"emoji_coin"},{id:"winter_land_ticket",price:1e3,currency:"emoji_coin"}],charms:[{id:"emoji_fireworks",price:1e5,currency:"emoji_coin"},{id:"emoji_koinobori",price:1e5,currency:"emoji_coin"},{id:"emoji_sparkler",price:1e5,currency:"emoji_coin"},{id:"emoji_burger",price:1e5,currency:"emoji_coin"}],food:[{id:"food_choco_parfait",price:2e3,currency:"emoji_coin"},{id:"food_strawberry_cake",price:2e3,currency:"emoji_coin"}],fishing:[{id:"bamboo_fishing_rod",price:2e4,currency:"emoji_coin"}],alchemy:[{id:"alchemy_tool_basic",price:9e4,currency:"emoji_coin"}],materials:[]}}async show(){console.log("[ShopUI] Opening Royal Shop...");const l=await q.getInventoryItem("emoji_coin"),x=await q.getInventoryItem("emoji_gem"),E=lt.getSVGFilename("emoji_coin"),C=lt.getSVGFilename("emoji_gem"),b=`
+            <div id="royal-shop-wrapper" class="royal-shop-v3">
+                <style>
+                    .royal-shop-v3 {
+                        display: flex;
+                        flex-direction: column;
+                        width: 100%;
+                        height: 100%;
+                        background: #1a0505;
+                        color: #fef3c7;
+                        font-family: 'Outfit', sans-serif;
+                        overflow: hidden;
+                        border: 2px solid #fbbf24;
+                        box-sizing: border-box;
+                    }
+
+                    /* Constrain any auto-replaced emojis or global images */
+                    .royal-shop-v3 img {
+                        max-width: 100%;
+                        max-height: 100%;
+                        object-fit: contain;
+                    }
+
+                    /* Header */
+                    .royal-header {
+                        height: 50px;
+                        min-height: 50px;
+                        background: linear-gradient(to bottom, #450a0a, #7f1d1d);
+                        border-bottom: 2px solid #fbbf24;
+                        display: flex;
+                        align-items: center;
+                        padding: 0 16px;
+                    }
+                    .royal-title {
+                        font-family: 'Press Start 2P', cursive;
+                        font-size: 14px;
+                        color: #fbbf24;
+                        display: flex;
+                        align-items: center;
+                        gap: 10px;
+                        text-shadow: 2px 2px #000;
+                    }
+                    /* Ensure emoji icons in title don't explode */
+                    .royal-title img, .royal-title span {
+                        width: 24px !important;
+                        height: 24px !important;
+                        display: inline-block;
+                        max-width: 24px !important;
+                        max-height: 24px !important;
+                    }
+
+                    .royal-body {
+                        flex: 1;
+                        display: flex;
+                        overflow: hidden;
+                        background: radial-gradient(circle at center, #2d0a0a 0%, #1a0505 100%);
+                    }
+
+                    /* Sidebar */
+                    .royal-sidebar {
+                        width: 160px;
+                        background: rgba(0, 0, 0, 0.4);
+                        border-right: 1px solid rgba(251, 191, 36, 0.3);
+                        display: flex;
+                        flex-direction: column;
+                        padding: 10px 0;
+                        flex-shrink: 0;
+                    }
+                    .royal-tab {
+                        padding: 14px 16px;
+                        border: none;
+                        background: transparent;
+                        color: #94a3b8;
+                        text-align: left;
+                        font-weight: bold;
+                        cursor: pointer;
+                        transition: all 0.2s;
+                        font-size: 13px;
+                        border-left: 4px solid transparent;
+                    }
+                    .royal-tab:hover { background: rgba(251, 191, 36, 0.05); color: #fef3c7; }
+                    .royal-tab.active {
+                        color: #fbbf24;
+                        background: rgba(251, 191, 36, 0.15);
+                        border-left: 4px solid #fbbf24;
+                    }
+
+                    /* Content Area */
+                    .royal-content {
+                        flex: 1;
+                        padding: 20px;
+                        overflow-y: auto;
+                        display: flex;
+                        flex-direction: column;
+                    }
+                    .royal-grid {
+                        display: grid;
+                        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+                        gap: 16px;
+                        align-content: start;
+                    }
+
+                    /* Item Card */
+                    .royal-card {
+                        background: rgba(0, 0, 0, 0.3);
+                        border: 1px solid #78350f;
+                        border-radius: 8px;
+                        padding: 12px;
+                        display: flex;
+                        flex-direction: column;
+                        gap: 10px;
+                        transition: transform 0.1s;
+                    }
+                    .royal-card:hover { border-color: #fbbf24; background: rgba(251, 191, 36, 0.05); }
+
+                    .card-top { display: flex; align-items: center; gap: 10px; }
+                    .card-icon-box {
+                        width: 44px; height: 44px;
+                        background: #1e1b4b;
+                        border: 1px solid #4338ca;
+                        border-radius: 6px;
+                        display: flex; align-items: center; justify-content: center;
+                        flex-shrink: 0;
+                    }
+                    .card-icon { width: 32px; height: 32px; image-rendering: pixelated; }
                     
-                    <div class="shop-content">
-                        <div class="shop-item-grid" id="shop-item-grid">
-                            ${this._renderCategory("tickets")}
+                    .card-info { flex: 1; min-width: 0; }
+                    .card-name { font-weight: bold; font-size: 13px; color: #f8fafc; margin-bottom: 2px; }
+                    .card-price { display: flex; align-items: center; gap: 4px; color: #fbbf24; font-size: 11px; font-weight: bold; }
+
+                    /* Buttons */
+                    .royal-btn {
+                        background: #fbbf24;
+                        border: none;
+                        border-radius: 4px;
+                        padding: 8px;
+                        color: #451a03 !important;
+                        font-weight: bold;
+                        font-size: 11px;
+                        cursor: pointer;
+                        box-shadow: 0 3px #b45309;
+                        text-align: center;
+                    }
+                    .royal-btn:active { transform: translateY(1px); box-shadow: 0 1px #b45309; }
+                    
+                    .bulk-group { display: flex; gap: 4px; }
+                    .bulk-btn { 
+                        flex: 1; padding: 6px 0; font-size: 10px; background: #fbbf24; 
+                        color: #451a03; border: none; font-weight: bold; cursor: pointer;
+                        border-radius: 4px; box-shadow: 0 2px #b45309; text-align: center;
+                    }
+
+                    /* Footer */
+                    .royal-footer {
+                        height: 48px;
+                        min-height: 48px;
+                        background: rgba(0, 0, 0, 0.6);
+                        border-top: 2px solid #fbbf24;
+                        display: flex;
+                        align-items: center;
+                        justify-content: flex-end;
+                        gap: 20px;
+                        padding: 0 24px;
+                    }
+                    .footer-val { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: bold; }
+                    .footer-val img { width: 20px !important; height: 20px !important; image-rendering: pixelated; }
+                </style>
+
+                <div class="royal-header">
+                    <div class="royal-title">
+                        ${J.t("shop_title",[],"🏛️ ROYAL SHOP")}
+                    </div>
+                </div>
+
+                <div class="royal-body">
+                    <div class="royal-sidebar">
+                        <div class="royal-tab ${this.currentCategory==="tickets"?"active":""}" data-cat="tickets">${J.t("shop_category_tickets")}</div>
+                        <div class="royal-tab ${this.currentCategory==="charms"?"active":""}" data-cat="charms">${J.t("shop_category_charms")}</div>
+                        <div class="royal-tab ${this.currentCategory==="food"?"active":""}" data-cat="food">${J.t("shop_category_food")}</div>
+                        <div class="royal-tab ${this.currentCategory==="fishing"?"active":""}" data-cat="fishing">${J.t("shop_category_fishing")}</div>
+                        <div class="royal-tab ${this.currentCategory==="alchemy"?"active":""}" data-cat="alchemy">${J.t("shop_category_alchemy")}</div>
+                        <div class="royal-tab disabled" title="준비 중">${J.t("shop_category_materials")}</div>
+                    </div>
+
+                    <div class="royal-content">
+                        <div class="royal-grid" id="royal-shop-grid">
+                            ${this._renderItems(this.currentCategory)}
                         </div>
                     </div>
                 </div>
-                
-                <div class="shop-footer">
-                    <div class="shop-currency" id="shop-gold-display">💰 0</div>
-                    <div class="shop-currency" id="shop-gem-display">💎 0</div>
+
+                <div class="royal-footer">
+                    <div class="footer-val">
+                        <img src="assets/emojis/${E}"> <span id="royal-gold-text">${l?l.amount.toLocaleString():0}</span>
+                    </div>
+                    <div class="footer-val">
+                        <img src="assets/emojis/${C}"> <span id="royal-gem-text">${x?x.amount.toLocaleString():0}</span>
+                    </div>
                 </div>
             </div>
-        `,document.getElementById("app-container").appendChild(l),this._attachEvents(),this._updateCurrency()}_renderCategory(l){return(this.inventory[l]||[]).map(E=>{const C=lt.getItem(E.id),b=(C==null?void 0:C.customAsset)||`assets/emojis/${lt.getSVGFilename(E.id)}`,d=lt.getSVGFilename(E.currency),g=l==="food",t=lt.getLocalizedName(E.id);return`
-                <div class="shop-item-card" data-id="${E.id}" data-price="${E.price}" data-currency="${E.currency}">
-                    <div class="shop-item-top">
-                        <div class="shop-item-icon">
-                            <img src="${b}" alt="${t}" style="width: 32px; height: 32px; image-rendering: pixelated; object-fit: contain;">
+        `;this.uiManager.showPopup(b,!0),requestAnimationFrame(()=>{setTimeout(()=>this._initEvents(),100)})}_renderItems(l){return(this.inventory[l]||[]).map(E=>{const C=lt.getItem(E.id),b=(C==null?void 0:C.customAsset)||`assets/emojis/${lt.getSVGFilename(E.id)}`,d=E.currency||"emoji_coin",g=lt.getSVGFilename(d),t=lt.getLocalizedName(E.id),r=l==="food";return`
+                <div class="royal-card">
+                    <div class="card-top">
+                        <div class="card-icon-box">
+                            <img src="${b}" class="card-icon">
                         </div>
-                        <div class="shop-item-label">${t}</div>
-                        <div class="shop-item-price">
-                            <span class="price-val">${E.price}</span>
-                            <img src="assets/emojis/${d}" alt="currency" style="width: 14px; height: 14px; margin-left: 2px;">
+                        <div class="card-info">
+                            <div class="card-name" title="${t}">${t}</div>
+                            <div class="card-price">
+                                ${E.price.toLocaleString()} <img src="assets/emojis/${g}" style="width:12px; height:12px;">
+                            </div>
                         </div>
                     </div>
-                    <div class="shop-buy-group" style="display: flex; gap: 4px; width: 100%;">
-                        ${g?`
-                            <button class="shop-buy-btn" data-qty="1" style="flex:1; font-size:9px; padding: 4px 0;">x1</button>
-                            <button class="shop-buy-btn" data-qty="10" style="flex:1; font-size:9px; padding: 4px 0; background:#be123c;">x10</button>
-                            <button class="shop-buy-btn" data-qty="100" style="flex:1; font-size:9px; padding: 4px 0; background:#9f1239;">x100</button>
-                        `:`
-                            <button class="shop-buy-btn" data-qty="1" style="width: 100%;">${J.t("shop_buy")}</button>
-                        `}
+                    
+                    ${r?`
+                        <div class="bulk-group">
+                            <div class="bulk-btn buy-btn" data-id="${E.id}" data-price="${E.price}" data-currency="${d}" data-qty="1">x1</div>
+                            <div class="bulk-btn buy-btn" data-id="${E.id}" data-price="${E.price}" data-currency="${d}" data-qty="10" style="background:#ea580c; color:#fff;">x10</div>
+                            <div class="bulk-btn buy-btn" data-id="${E.id}" data-price="${E.price}" data-currency="${d}" data-qty="100" style="background:#c2410c; color:#fff;">x100</div>
+                        </div>
+                    `:`
+                        <div class="royal-btn buy-btn" data-id="${E.id}" data-price="${E.price}" data-currency="${d}" data-qty="1">
+                            ${J.t("shop_buy",[],"BUY")}
+                        </div>
+                    `}
+                </div>
+            `}).join("")}_initEvents(){const l=document.getElementById("royal-shop-wrapper");if(!l){console.error("[ShopUI] Shop wrapper not found for events");return}console.log("[ShopUI] Initializing events via delegation..."),l.onclick=async x=>{const E=x.target.closest(".royal-tab");if(E&&!E.classList.contains("disabled")){const b=E.dataset.cat;if(b){console.log(`[ShopUI] Tab: ${b}`),this.currentCategory=b,l.querySelectorAll(".royal-tab").forEach(g=>g.classList.remove("active")),E.classList.add("active");const d=l.querySelector("#royal-shop-grid");d&&(d.innerHTML=this._renderItems(b))}return}const C=x.target.closest(".buy-btn");if(C){const b=C.dataset.id,d=parseInt(C.dataset.price),g=C.dataset.currency,t=parseInt(C.dataset.qty)||1;console.log(`[ShopUI] Buy: ${b} x${t}`),await this._handlePurchase(b,d,g,t)}}}async _handlePurchase(l,x,E,C=1){const b=await q.getInventoryItem(E),d=b?b.amount:0,g=x*C;if(d<g){this.uiManager.showToast(J.t("shop_low_resources"));return}await q.saveInventoryItem(E,d-g);const t=lt.getLocalizedName(l),r=C>1?`x${C}`:"",v=Kt.getCharm(l);if(v)for(let o=0;o<C;o++){const a=Math.floor(Math.random()*7)+2,n=typeof crypto<"u"&&crypto.randomUUID?crypto.randomUUID().split("-")[0]:Math.floor(Math.random()*1e6);await q.saveCharmInstance({instanceId:`charm_${Date.now()}_${n}`,id:l,stat:v.stat,value:a,collectedAt:Date.now()})}else{const o=await q.getInventoryItem(l);await q.saveInventoryItem(l,(o?o.amount:0)+C)}this.uiManager.showToast(J.t("shop_buy_success",[t,r])),this._updateCredits(),j.emit(j.EVENTS.INVENTORY_UPDATED)}async _updateCredits(){const l=await q.getInventoryItem("emoji_coin"),x=await q.getInventoryItem("emoji_gem"),E=document.getElementById("royal-gold-text"),C=document.getElementById("royal-gem-text");E&&(E.innerText=(l?l.amount:0).toLocaleString()),C&&(C.innerText=(x?x.amount:0).toLocaleString())}}class _n{constructor(l){this.uiManager=l,this.currentCraftFilter=null,this.currentEquipSelection=null}async show(){console.log("[EquipmentUI] Opening Equipment Sanctuary...");const l=await q.getInventoryItem("emoji_wood"),x=lt.getSVGFilename("emoji_wood"),E=`
+            <div id="equipment-sanctuary-wrapper" class="equip-sanctuary-v1">
+                <style>
+                    .equip-sanctuary-v1 {
+                        display: flex;
+                        flex-direction: column;
+                        width: 100%;
+                        height: 100%;
+                        background: #11001c;
+                        color: #e9d5ff;
+                        font-family: 'Outfit', sans-serif;
+                        overflow: hidden;
+                        border: 2px solid #7c3aed;
+                        box-sizing: border-box;
+                    }
+
+                    /* Constrain images */
+                    .equip-sanctuary-v1 img {
+                        max-width: 100%;
+                        object-fit: contain;
+                    }
+
+                    /* Header */
+                    .sanctuary-header {
+                        height: 50px;
+                        background: linear-gradient(to right, #4c1d95, #7c3aed);
+                        border-bottom: 2px solid #a78bfa;
+                        display: flex;
+                        align-items: center;
+                        padding: 0 16px;
+                    }
+                    .sanctuary-title {
+                        font-family: 'Press Start 2P', cursive;
+                        font-size: 14px;
+                        color: #fef08a;
+                        text-shadow: 2px 2px #000;
+                        display: flex;
+                        align-items: center;
+                        gap: 12px;
+                    }
+
+                    .sanctuary-body {
+                        flex: 1;
+                        display: grid;
+                        grid-template-columns: 1fr 1fr;
+                        gap: 20px;
+                        padding: 20px;
+                        overflow: hidden;
+                        background: radial-gradient(circle at center, #2e1065 0%, #11001c 100%);
+                    }
+
+                    /* Scrollable areas */
+                    .sanctuary-scroll {
+                        overflow-y: auto;
+                        padding-right: 10px;
+                    }
+                    .sanctuary-scroll::-webkit-scrollbar { width: 6px; }
+                    .sanctuary-scroll::-webkit-scrollbar-thumb { background: #7c3aed; border-radius: 3px; }
+
+                    .section-label {
+                        font-family: 'Press Start 2P', cursive;
+                        font-size: 10px;
+                        color: #a78bfa;
+                        margin-bottom: 12px;
+                        text-transform: uppercase;
+                    }
+
+                    /* Recipe List */
+                    .recipe-grid { display: flex; flex-direction: column; gap: 12px; }
+                    .recipe-card {
+                        background: rgba(0, 0, 0, 0.4);
+                        border: 1px solid #4c1d95;
+                        border-radius: 12px;
+                        padding: 12px;
+                        display: flex;
+                        align-items: center;
+                        gap: 16px;
+                        cursor: pointer;
+                        transition: all 0.2s;
+                        position: relative;
+                    }
+                    .recipe-card:hover { border-color: #a78bfa; background: rgba(124, 58, 237, 0.1); }
+                    .recipe-card.active { 
+                        border-color: #fef08a; 
+                        background: rgba(254, 240, 138, 0.05);
+                        box-shadow: 0 0 15px rgba(124, 58, 237, 0.3);
+                    }
+                    .recipe-card.active::after {
+                        content: '★';
+                        position: absolute;
+                        top: 8px;
+                        right: 12px;
+                        color: #fef08a;
+                        font-size: 10px;
+                    }
+
+                    .card-icon-box {
+                        width: 50px; height: 50px;
+                        background: #000;
+                        border: 1px solid #7c3aed;
+                        border-radius: 8px;
+                        display: flex; align-items: center; justify-content: center;
+                        flex-shrink: 0;
+                    }
+                    .card-icon { width: 36px; height: 36px; image-rendering: pixelated; }
+
+                    .card-main { flex: 1; min-width: 0; }
+                    .card-name { font-weight: bold; font-size: 14px; color: #f3f4f6; margin-bottom: 4px; }
+                    .card-req { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: bold; }
+
+                    /* Owned List */
+                    .owned-grid {
+                        display: grid;
+                        grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+                        gap: 12px;
+                        align-content: start;
+                    }
+                    .owned-card {
+                        background: rgba(0, 0, 0, 0.3);
+                        border: 1px solid #4c1d95;
+                        border-radius: 8px;
+                        padding: 8px;
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        gap: 4px;
+                        cursor: pointer;
+                        transition: all 0.1s;
+                        position: relative;
+                        text-align: center;
+                    }
+                    .owned-card:hover { border-color: #a78bfa; background: rgba(124, 58, 237, 0.1); }
+                    .owned-card.active { 
+                        border-color: #fef08a; 
+                        background: rgba(254, 240, 138, 0.2);
+                        box-shadow: 0 0 10px rgba(254, 240, 138, 0.3);
+                    }
+                    .owned-lv {
+                        position: absolute; top: -5px; right: -5px;
+                        background: #7c3aed; color: #fff;
+                        font-size: 8px; font-weight: bold;
+                        padding: 2px 5px; border-radius: 4px;
+                        border: 1px solid rgba(255, 255, 255, 0.3);
+                    }
+                    .owned-icon { width: 40px; height: 40px; image-rendering: pixelated; }
+                    .owned-name { font-size: 9px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; }
+                    .owned-tag { font-size: 8px; padding: 1px 4px; border-radius: 3px; font-weight: bold; margin-top: 2px; }
+
+                    /* Buttons */
+                    .sanctuary-btn {
+                        background: #7c3aed;
+                        border: none;
+                        border-radius: 6px;
+                        padding: 10px 16px;
+                        color: #fff !important;
+                        font-weight: bold;
+                        font-size: 12px;
+                        cursor: pointer;
+                        box-shadow: 0 4px #4c1d95;
+                        text-align: center;
+                    }
+                    .sanctuary-btn:hover { background: #8b5cf6; }
+                    .sanctuary-btn:active { transform: translateY(2px); box-shadow: 0 2px #4c1d95; }
+                    .sanctuary-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; pointer-events: none; }
+
+                    /* Control Panel */
+                    .control-panel {
+                        margin-top: 15px;
+                        padding: 16px;
+                        background: rgba(124, 58, 237, 0.1);
+                        border: 1px dashed #7c3aed;
+                        border-radius: 12px;
+                        display: none;
+                        flex-direction: column;
+                        gap: 12px;
+                    }
+                    .selected-info { font-weight: bold; font-size: 12px; color: #fef08a; }
+
+                    /* Footer */
+                    .sanctuary-footer {
+                        height: 50px;
+                        background: rgba(0, 0, 0, 0.5);
+                        border-top: 2px solid #7c3aed;
+                        display: flex;
+                        align-items: center;
+                        justify-content: space-between;
+                        padding: 0 20px;
+                    }
+                    .footer-mat { display: flex; align-items: center; gap: 8px; font-weight: bold; color: #ddd; }
+                    .footer-mat img { width: 22px; height: 22px; image-rendering: pixelated; }
+                    .footer-tip { font-size: 11px; opacity: 0.7; font-style: italic; }
+                </style>
+
+                <div class="sanctuary-header">
+                    <div class="sanctuary-title">
+                        <span>⚔️</span> ${J.t("ui_craft_title",[],"EQUIPMENT SANCTUARY")}
                     </div>
                 </div>
-            `}).join("")}_attachEvents(){const l=document.getElementById("shop-close");l&&(l.onclick=()=>this.hide());const x=this.shopOverlay.querySelectorAll(".shop-tab");x.forEach(E=>{E.classList.contains("disabled")||(E.onclick=()=>{const C=E.dataset.category;if(!C)return;this.currentCategory=C,x.forEach(d=>d.classList.remove("active")),E.classList.add("active");const b=document.getElementById("shop-item-grid");b&&(b.innerHTML=this._renderCategory(C)),this._attachPurchaseEvents()})}),this._attachPurchaseEvents(),this.shopOverlay.onclick=E=>{E.target===this.shopOverlay&&this.hide()}}_attachPurchaseEvents(){this.shopOverlay.querySelectorAll(".shop-item-card").forEach(x=>{x.querySelectorAll(".shop-buy-btn").forEach(C=>{C.onclick=b=>{b.stopPropagation();const d=parseInt(C.dataset.qty)||1;this._handlePurchase(x.dataset.id,parseInt(x.dataset.price),x.dataset.currency,d)}})})}async _handlePurchase(l,x,E,C=1){const b=await q.getInventoryItem(E),d=b?b.amount:0,g=x*C;if(d<g){this.uiManager.showToast(J.t("shop_low_resources"));return}await q.saveInventoryItem(E,d-g);const t=lt.getLocalizedName(l),r=C>1?`x${C}`:"",v=Kt.getCharm(l);if(v){for(let o=0;o<C;o++){const a=Math.floor(Math.random()*7)+2,n=typeof crypto<"u"&&crypto.randomUUID?crypto.randomUUID().split("-")[0]:Math.floor(Math.random()*1e6),i={instanceId:`charm_${Date.now()}_${n}`,id:l,stat:v.stat,value:a,collectedAt:Date.now()};await q.saveCharmInstance(i)}this.uiManager.showToast(J.t("shop_buy_success",[t,r]))}else{const o=await q.getInventoryItem(l),a=o?o.amount+C:C;await q.saveInventoryItem(l,a),this.uiManager.showToast(J.t("shop_buy_success",[t,r]))}this._updateCurrency(),j.emit(j.EVENTS.INVENTORY_UPDATED)}async _updateCurrency(){if(!this.shopOverlay)return;const l=await q.getInventoryItem("emoji_coin"),x=await q.getInventoryItem("emoji_gem"),E=document.getElementById("shop-gold-display"),C=document.getElementById("shop-gem-display"),b=lt.getSVGFilename("emoji_coin"),d=lt.getSVGFilename("emoji_gem");E&&(E.innerHTML=`<img src="assets/emojis/${b}" style="width: 18px; vertical-align: middle; margin-right: 4px;"> ${l?l.amount:0}`),C&&(C.innerHTML=`<img src="assets/emojis/${d}" style="width: 18px; vertical-align: middle; margin-right: 4px;"> ${x?x.amount:0}`)}hide(){this.shopOverlay&&(this.shopOverlay.classList.add("fade-out"),setTimeout(()=>{this.shopOverlay&&(this.shopOverlay.remove(),this.shopOverlay=null)},300))}}const ve=class ve{constructor(){this.stats={level:1,exp:0,atk:50,mAtk:50,def:10,castSpd:1e3,acc:90,crit:10},this.powers={JUDGMENT:{...ve.POWER_DATA.JUDGMENT,level:1},HEALING:{...ve.POWER_DATA.HEALING,level:1},ENCOURAGEMENT:{...ve.POWER_DATA.ENCOURAGEMENT,level:1}},this.activePowerId="JUDGMENT",this.stacks=0,this.maxStacks=10,this.cooldownTimer=0,this.baseCooldown=5e3,this.isAutoMode=!1,this.isInitialized=!1}static getLocalizedName(l){if(!l)return"";const x=`messiah_power_${l.toLowerCase()}_name`,E=ve.POWER_DATA[l.toUpperCase()];return J.t(x,null,E?E.name:l)}static getLocalizedDescription(l){if(!l)return"";const x=`messiah_power_${l.toLowerCase()}_desc`;return J.t(x,null,"")}async init(){if(this.isInitialized)return;const l=await q.get("settings","messiah_state");l&&(this.stats={...this.stats,...l.stats},this.powers={...this.powers,...l.powers},this.activePowerId=l.activePowerId||"JUDGMENT",this.stacks=l.stacks||0,this.isAutoMode=!!l.isAutoMode,this.updateMaxStacks(),console.log("[MessiahManager] Loaded saved state:",l)),this.isInitialized=!0}async saveState(){await q.save("settings","messiah_state",{stats:this.stats,powers:this.powers,activePowerId:this.activePowerId,stacks:this.stacks,isAutoMode:this.isAutoMode})}addExp(l){this.stats.exp+=l;let x=!1;for(;;){const E=this.stats.level*100;if(this.stats.exp>=E){this.stats.exp-=E,this.stats.level++,this.stats.atk+=5,this.stats.mAtk+=5,this.stats.def+=2,this.stats.acc+=1,x=!0;const C=J.t("ui_messiah_sys_leveled_up",[this.stats.level]);j.emit(j.EVENTS.SYSTEM_MESSAGE,C,"#fbbf24")}else break}this.saveState(),x&&(j.emit("MESSIAH_LEVELED_UP",this.stats.level),j.emit("MESSIAH_POWER_UPGRADED",this.activePowerId))}toggleAutoMode(){return this.isAutoMode=!this.isAutoMode,this.saveState(),this.isAutoMode}getActivePower(){return this.powers[this.activePowerId]}setActivePower(l){return this.powers[l]?(this.activePowerId=l,this.updateMaxStacks(),this.saveState(),j.emit("MESSIAH_POWER_CHANGED",l),!0):!1}getStats(){return this.stats}updateMaxStacks(){const l=this.getActivePower();l&&(this.maxStacks=10+(l.level-1)*2,this.stacks>this.maxStacks&&(this.stacks=this.maxStacks))}update(l,x){if(this.isInitialized&&this.stacks<this.maxStacks){this.cooldownTimer+=x;const E=this.baseCooldown*(1e3/this.stats.castSpd);this.cooldownTimer>=E&&(this.stacks++,this.cooldownTimer=0,j.emit("MESSIAH_STACKS_UPDATED",this.stacks))}}consumeStack(){return this.stacks>0?(this.stacks--,j.emit("MESSIAH_STACKS_UPDATED",this.stacks),this.saveState(),!0):!1}async upgradePower(l){const x=this.powers[l];if(!x)return!1;const E=x.level*10,C=await q.getInventoryItem("emoji_divine_essence"),b=C?C.amount:0;if(b<E){const d=J.t("ui_messiah_sys_low_essence",[E]);return j.emit(j.EVENTS.SYSTEM_MESSAGE,d),!1}return await q.saveInventoryItem("emoji_divine_essence",b-E),j.emit(j.EVENTS.INVENTORY_UPDATED),x.level++,this.updateMaxStacks(),await this.saveState(),j.emit("MESSIAH_POWER_UPGRADED",l),!0}};Wt(ve,"POWER_DATA",{JUDGMENT:{id:"JUDGMENT",name:"심판의 권능",emoji:"👆",type:"OFFENSE"},HEALING:{id:"HEALING",name:"치료의 권능",emoji:"🫳",type:"DEFENSE"},ENCOURAGEMENT:{id:"ENCOURAGEMENT",name:"격려의 권능",emoji:"👍",type:"SUPPORT"}});let di=ve;const pe=new di;class _n{constructor(l){this.uiManager=l,this.currentRosterSelection=null}async showMercenaryRoster(){if(!this.uiManager.popupOverlay)return;const l=await q.getMercenaryRoster(),x=[ct.NICKLE,ct.NANA];this.currentRosterSelection=x[0].id;const E=(d,g)=>`
+
+                <div class="sanctuary-body">
+                    <div class="sanctuary-scroll">
+                        <div class="section-label">${J.t("ui_craft_list_header")}</div>
+                        <div class="recipe-grid" id="recipe-grid-container">
+                            <!-- Recipes will be injected here -->
+                        </div>
+                    </div>
+
+                    <div class="sanctuary-scroll">
+                        <div class="section-label">${J.t("ui_owned_growth_header")}</div>
+                        <div id="owned-equip-grid" class="owned-grid">
+                            <!-- Owned items will be injected here -->
+                        </div>
+
+                        <div id="sanctuary-controls" class="control-panel">
+                            <div id="sanctuary-selected-name" class="selected-info">NONE SELECTED</div>
+                            <div style="display: flex; gap: 10px;">
+                                <button class="sanctuary-btn action-detail" style="flex: 1; background: #4f46e5; box-shadow: 0 4px #3730a3;">${J.t("ui_craft_detail_btn")}</button>
+                                <button class="sanctuary-btn action-destroy" style="flex: 1; background: #dc2626; box-shadow: 0 4px #991b1b;">${J.t("ui_craft_destroy_btn")}</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sanctuary-footer">
+                    <div class="footer-mat">
+                        <img src="assets/emojis/${x}"> <span id="sanctuary-wood-val">${l?l.amount.toLocaleString():0}</span>
+                    </div>
+                    <div class="footer-tip text-purple-200">
+                        ${J.t("ui_craft_footer_tip")}
+                    </div>
+                </div>
+            </div>
+        `;this.uiManager.showPopup(E,!0),requestAnimationFrame(()=>{setTimeout(()=>this._init(),100)})}async _init(){const l=document.getElementById("equipment-sanctuary-wrapper");l&&(console.log("[EquipmentUI] Initializing..."),await this._refresh(),this._attachEvents(l))}async _refresh(){const l=document.getElementById("equipment-sanctuary-wrapper");if(!l)return;const x=await q.getInventoryItem("emoji_wood"),E=lt.getAllItems(),C=await q.getAllEquipmentInstances(),b=l.querySelector("#sanctuary-wood-val");b&&(b.innerText=(x?x.amount:0).toLocaleString());const d=[];for(const e in E)E[e].type===St.EQUIPMENT&&d.push({id:e,reqWood:500});!this.currentCraftFilter&&d.length>0&&(this.currentCraftFilter=d[0].id);const g=d.map(e=>{const i=lt.getItem(e.id),h=x&&x.amount>=e.reqWood,s=i.customAsset||`assets/emojis/${lt.getSVGFilename(e.id)}`;return`
+                <div class="recipe-card ${this.currentCraftFilter===e.id?"active":""}" data-id="${e.id}">
+                    <div class="card-icon-box">
+                        <img src="${s}" class="card-icon">
+                    </div>
+                    <div class="card-main">
+                        <div class="card-name">${lt.getLocalizedName(e.id)}</div>
+                        <div class="card-req" style="color: ${h?"#e9d5ff":"#ef4444"}">
+                            <img src="assets/emojis/${lt.getSVGFilename("emoji_wood")}" style="width:14px; height:14px;"> ${e.reqWood}
+                        </div>
+                    </div>
+                    <button class="sanctuary-btn action-craft" data-id="${e.id}" ${h?"":"disabled"}>
+                        ${J.t("ui_craft_btn")}
+                    </button>
+                </div>
+            `}).join(""),t=l.querySelector("#recipe-grid-container");t&&(t.innerHTML=g);let r=C;this.currentCraftFilter&&(r=C.filter(e=>e.itemId===this.currentCraftFilter)),r.sort((e,i)=>i.level-e.level);const v=r.map(e=>{const h=lt.getItem(e.itemId).customAsset||`assets/emojis/${lt.getSVGFilename(e.itemId)}`,s=this.currentEquipSelection===e.id;let u="";return e.ownerId?u=`<div class="owned-tag" style="background:rgba(251,191,36,0.3); color:#fef08a; border:1px solid rgba(251,191,36,0.5);">${J.t("ui_craft_equipped",[e.ownerId])}</div>`:u=`<div class="owned-tag" style="background:rgba(16,185,129,0.3); color:#34d399; border:1px solid rgba(16,185,129,0.5);">${J.t("ui_craft_in_inventory")}</div>`,`
+                <div class="owned-card ${s?"active":""}" data-inst-id="${e.id}">
+                    <div class="owned-lv">LV.${e.level}</div>
+                    <img src="${h}" class="owned-icon">
+                    <div class="owned-name">${lt.getLocalizedName(e.itemId)}</div>
+                    ${u}
+                </div>
+            `}).join(""),o=l.querySelector("#owned-equip-grid");o&&(r.length===0?o.innerHTML=`<div style="grid-column: 1/-1; padding: 40px; text-align: center; opacity: 0.5; font-size: 13px;">${J.t("ui_craft_in_inventory",[],"No items in inventory.")}</div>`:o.innerHTML=v);const a=l.querySelector("#sanctuary-controls"),n=l.querySelector("#sanctuary-selected-name");if(this.currentEquipSelection){const e=C.find(i=>i.id===this.currentEquipSelection);e?(a.style.display="flex",n.innerText=`[SELECTED] ${lt.getLocalizedName(e.itemId)} (LV.${e.level})`):(this.currentEquipSelection=null,a.style.display="none")}else a.style.display="none"}_attachEvents(l){l.onclick=async x=>{const E=x.target.closest(".recipe-card");if(E&&!x.target.closest(".action-craft")){const t=E.dataset.id;console.log(`[EquipmentUI] Filter: ${t}`),this.currentCraftFilter=t,this.currentEquipSelection=null,await this._refresh();return}const C=x.target.closest(".action-craft");if(C){const t=C.dataset.id;console.log(`[EquipmentUI] Craft: ${t}`);const r=await kt.craftItem(t);r.success?(this.uiManager.showToast(J.t("ui_craft_success",[lt.getLocalizedName(t)])),await this._refresh()):this.uiManager.showToast(r.reason);return}const b=x.target.closest(".owned-card");if(b){const t=b.dataset.instId;console.log(`[EquipmentUI] Select: ${t}`),this.currentEquipSelection=this.currentEquipSelection===t?null:t,await this._refresh();return}if(x.target.closest(".action-detail")&&this.currentEquipSelection){const t=await q.getEquipmentInstance(this.currentEquipSelection);if(t){const r=kt.getDisplayInfo(t),a=`
+                        <div class="equip-detail-popup" style="padding: 24px; color: #f3f4f6; font-family: 'Outfit', sans-serif;">
+                            <style>
+                                .detail-header { display: flex; align-items: center; gap: 20px; border-bottom: 2px solid #7c3aed; padding-bottom: 16px; margin-bottom: 20px; }
+                                .detail-icon { width: 64px; height: 64px; image-rendering: pixelated; background: #000; border-radius: 12px; border: 2px solid #7c3aed; padding: 10px; }
+                                .detail-title { font-size: 20px; font-weight: bold; color: #fef08a; margin-bottom: 4px; }
+                                .detail-subtitle { font-size: 13px; color: #a78bfa; }
+                                .detail-section { background: rgba(0,0,0,0.4); padding: 16px; border-radius: 12px; border: 1px solid rgba(124,58,237,0.3); font-size: 14px; line-height: 1.6; white-space: pre-wrap; }
+                            </style>
+                            <div class="detail-header">
+                                <img src="${lt.getItem(t.itemId).customAsset||`assets/emojis/${lt.getSVGFilename(t.itemId)}`}" class="detail-icon">
+                                <div>
+                                    <div class="detail-title">${lt.getLocalizedName(t.itemId)} (LV.${t.level})</div>
+                                    <div class="detail-subtitle">${J.t("ui_craft_unique_growth")}</div>
+                                </div>
+                            </div>
+                            <div class="detail-section">${r.description}</div>
+                            <div style="margin-top: 15px; text-align: center; font-size: 11px; opacity: 0.6;">${J.t("ui_craft_growth_tip")}</div>
+                        </div>
+                    `;this.uiManager.showPopup(a)}return}if(x.target.closest(".action-destroy")&&this.currentEquipSelection){const t=await q.getEquipmentInstance(this.currentEquipSelection);if(t){const r=lt.getLocalizedName(t.itemId);this.uiManager.showConfirm(J.t("ui_craft_destroy_confirm",[r,t.level]),async()=>{var v,o;if(t.ownerId){const a=(o=(v=this.uiManager.scene)==null?void 0:v.game)==null?void 0:o.partyManager;if(a){const n=a.getState(t.ownerId);if(n&&n.equipment){for(const[e,i]of Object.entries(n.equipment))if(i&&i.instanceId===t.id){await a.unequipItem(t.ownerId,e);break}}}}await q.deleteEquipmentInstance(t.id),this.uiManager.showToast(J.t("ui_craft_destroy_success",[r])),this.currentEquipSelection=null,await this._refresh()})}return}}}}const ve=class ve{constructor(){this.stats={level:1,exp:0,atk:50,mAtk:50,def:10,castSpd:1e3,acc:90,crit:10},this.powers={JUDGMENT:{...ve.POWER_DATA.JUDGMENT,level:1},HEALING:{...ve.POWER_DATA.HEALING,level:1},ENCOURAGEMENT:{...ve.POWER_DATA.ENCOURAGEMENT,level:1}},this.activePowerId="JUDGMENT",this.stacks=0,this.maxStacks=10,this.cooldownTimer=0,this.baseCooldown=5e3,this.isAutoMode=!1,this.isInitialized=!1}static getLocalizedName(l){if(!l)return"";const x=`messiah_power_${l.toLowerCase()}_name`,E=ve.POWER_DATA[l.toUpperCase()];return J.t(x,null,E?E.name:l)}static getLocalizedDescription(l){if(!l)return"";const x=`messiah_power_${l.toLowerCase()}_desc`;return J.t(x,null,"")}async init(){if(this.isInitialized)return;const l=await q.get("settings","messiah_state");l&&(this.stats={...this.stats,...l.stats},this.powers={...this.powers,...l.powers},this.activePowerId=l.activePowerId||"JUDGMENT",this.stacks=l.stacks||0,this.isAutoMode=!!l.isAutoMode,this.updateMaxStacks(),console.log("[MessiahManager] Loaded saved state:",l)),this.isInitialized=!0}async saveState(){await q.save("settings","messiah_state",{stats:this.stats,powers:this.powers,activePowerId:this.activePowerId,stacks:this.stacks,isAutoMode:this.isAutoMode})}addExp(l){this.stats.exp+=l;let x=!1;for(;;){const E=this.stats.level*100;if(this.stats.exp>=E){this.stats.exp-=E,this.stats.level++,this.stats.atk+=5,this.stats.mAtk+=5,this.stats.def+=2,this.stats.acc+=1,x=!0;const C=J.t("ui_messiah_sys_leveled_up",[this.stats.level]);j.emit(j.EVENTS.SYSTEM_MESSAGE,C,"#fbbf24")}else break}this.saveState(),x&&(j.emit("MESSIAH_LEVELED_UP",this.stats.level),j.emit("MESSIAH_POWER_UPGRADED",this.activePowerId))}toggleAutoMode(){return this.isAutoMode=!this.isAutoMode,this.saveState(),this.isAutoMode}getActivePower(){return this.powers[this.activePowerId]}setActivePower(l){return this.powers[l]?(this.activePowerId=l,this.updateMaxStacks(),this.saveState(),j.emit("MESSIAH_POWER_CHANGED",l),!0):!1}getStats(){return this.stats}updateMaxStacks(){const l=this.getActivePower();l&&(this.maxStacks=10+(l.level-1)*2,this.stacks>this.maxStacks&&(this.stacks=this.maxStacks))}update(l,x){if(this.isInitialized&&this.stacks<this.maxStacks){this.cooldownTimer+=x;const E=this.baseCooldown*(1e3/this.stats.castSpd);this.cooldownTimer>=E&&(this.stacks++,this.cooldownTimer=0,j.emit("MESSIAH_STACKS_UPDATED",this.stacks))}}consumeStack(){return this.stacks>0?(this.stacks--,j.emit("MESSIAH_STACKS_UPDATED",this.stacks),this.saveState(),!0):!1}async upgradePower(l){const x=this.powers[l];if(!x)return!1;const E=x.level*10,C=await q.getInventoryItem("emoji_divine_essence"),b=C?C.amount:0;if(b<E){const d=J.t("ui_messiah_sys_low_essence",[E]);return j.emit(j.EVENTS.SYSTEM_MESSAGE,d),!1}return await q.saveInventoryItem("emoji_divine_essence",b-E),j.emit(j.EVENTS.INVENTORY_UPDATED),x.level++,this.updateMaxStacks(),await this.saveState(),j.emit("MESSIAH_POWER_UPGRADED",l),!0}};Wt(ve,"POWER_DATA",{JUDGMENT:{id:"JUDGMENT",name:"심판의 권능",emoji:"👆",type:"OFFENSE"},HEALING:{id:"HEALING",name:"치료의 권능",emoji:"🫳",type:"DEFENSE"},ENCOURAGEMENT:{id:"ENCOURAGEMENT",name:"격려의 권능",emoji:"👍",type:"SUPPORT"}});let di=ve;const pe=new di;class ta{constructor(l){this.uiManager=l,this.currentRosterSelection=null}async showMercenaryRoster(){if(!this.uiManager.popupOverlay)return;const l=await q.getMercenaryRoster(),x=[ct.NICKLE,ct.NANA];this.currentRosterSelection=x[0].id;const E=(d,g)=>`
             <div class="merc-stat-item">
                 <span class="stat-label">${d}</span>
                 <span class="stat-value">${g}</span>
@@ -7207,7 +7655,7 @@ ${l.ultimateDescription}`))}updateNarrative(l,x){this.pendingData.narrative={unl
                         `}).join("")}
                 </div>
             </div>
-        `,document.body.appendChild(C)}async handleSkinAction(l,x){const E=await q.getMercenarySkinData(l),C=Object.values(Qt).findIndex(d=>d.id===x),b=C!==-1?Object.values(Qt)[C]:null;if(x==="default")await q.setEquippedSkin(l,null),this.updateSkinUI(l,null);else if(E.ownedSkins.includes(x))await q.setEquippedSkin(l,x),this.updateSkinUI(l,x);else if(b){const d=J.t("ui_skin_buy_confirm",[b.name,b.price.toLocaleString()]);this.uiManager.showConfirm(d,async()=>{const g=await q.buySkin(l,x,b.price);g.success?(this.uiManager.showToast(J.t("ui_skin_buy_success"),"success"),await q.setEquippedSkin(l,x),j.emit(j.EVENTS.INVENTORY_UPDATED),this.updateSkinUI(l,x)):this.uiManager.showToast(g.message,"error")})}}async updateSkinUI(l,x){var E;window._partyManagerInstance&&await window._partyManagerInstance.loadSkinData(l),(E=document.querySelector(".skin-selector-overlay"))==null||E.remove(),await this.showMercenaryRoster(),j.emit("SKIN_CHANGED",{charId:l,skinId:x})}}class ta{constructor(){this.materialList=document.getElementById("material-list"),this.gearList=document.getElementById("gear-list"),this.chatContainer=document.getElementById("chat-container"),this.channels=[],this.unitToChannel={},this.resizeObserver=null,this.inventoryDirty=!0,this.isRefreshing=!1,this.detailChannel=null,this.portraits={},this.npcHud=null,this.npcHudIcon=null,this.npcHudStacks=null,this.lastGold=-1,this.lastGem=-1,this.lastNpcId=null,this.lastNpcStacks=-1,this.lastMessiahPowerId=null,this.lastMessiahStacks=-1,this.lastMessiahAuto=null,this.hudDirty=!0,this.portraitsDirty=!0,this.hudGold=document.getElementById("hud-gold"),this.hudGem=document.getElementById("hud-gem"),this.npcHud=document.getElementById("npc-hud"),this.npcHudIcon=document.getElementById("npc-hud-icon"),this.npcHudStacks=document.getElementById("npc-hud-stacks"),this.messiahHud=document.getElementById("messiah-hud"),this.messiahHudIcon=document.getElementById("messiah-hud-icon"),this.messiahHudStacks=document.getElementById("messiah-hud-stacks"),this.messiahCooldownFill=document.getElementById("messiah-cooldown-fill"),this.messiahAutoBtn=document.getElementById("messiah-auto-btn"),this.roundDisplay=document.getElementById("hud-round-display"),this.roundText=document.getElementById("hud-round-text"),this.difficultyMenu=document.getElementById("difficulty-toggle-menu"),this.lastRoundText="",this.currentDifficulty="NORMAL",this.defenseHud=document.getElementById("defense-hud"),this.defenseDeploymentPanel=document.getElementById("defense-deployment-panel"),this.defenseDeploymentList=document.getElementById("defense-deployment-list"),this.btnDefenseClose=document.getElementById("defense-panel-close"),this.constructionOverlay=document.getElementById("construction-overlay"),this.btnExitConstruction=document.getElementById("btn-exit-construction"),this.buildingGrid=document.getElementById("building-grid"),this.portraitBar=document.getElementById("portrait-bar"),this.popupOverlay=document.getElementById("popup-overlay"),this.popupContent=document.getElementById("popup-content"),this.popupInner=document.getElementById("popup-inner"),this.confirmOverlay=document.getElementById("confirm-overlay"),this.confirmMessage=document.getElementById("confirm-message"),this.btnConfirmYes=document.getElementById("btn-confirm-yes"),this.btnConfirmNo=document.getElementById("btn-confirm-no"),this.confirmCallback=null,this.popupClose=document.getElementById("popup-close"),this.btnInventory=document.getElementById("btn-inventory"),this.btnParty=document.getElementById("btn-party"),this.btnFullscreen=document.getElementById("btn-fullscreen"),this.btnSettings=document.getElementById("btn-settings"),this.btnExit=document.getElementById("btn-exit"),this.detailPanel=document.getElementById("item-detail-panel"),this.detailName=document.getElementById("detail-name"),this.detailType=document.getElementById("detail-type"),this.detailDesc=document.getElementById("detail-description"),this.btnEquipItem=document.getElementById("btn-equip-item"),this.btnDiscardItem=document.getElementById("btn-discard-item"),this.btnCloseDetail=document.getElementById("btn-close-detail"),this.selectedItemId=null,this.pendingGrimoireSlot=null,this.pendingGearSlot=null,this.emojiFilter="ALL",this.viewingInstanceId=null,this.currentCraftFilter=null,this.equipFilter="ALL",this.shopManager=new qn(this),this.mercenaryCodexUI=new _n(this),window.uiManager=this,this.rafLoop=this.rafLoop.bind(this),this.initEventListeners(),this.particlePool=[],this.showProductionAnim=!0,this.currentLanguage=localStorage.getItem("gameLanguage")||"KR"}get game(){var l;return(l=this.scene)==null?void 0:l.game}set scene(l){this._scene=l}get scene(){return this._scene}init(){console.log("[UIManager] Initialized DOM Overlay"),this.createTooltip(),this.setupChatChannels(),this.setupMobileEvents(),this.setupNavigationEvents(),this.setupDefenseEvents(),this.localizeUI(),j.on(j.EVENTS.LANGUAGE_CHANGED,()=>{this.localizeUI()}),this.loadSettings(),this.loadSettings(),zt&&(zt.init(),this.setupBuildingEvents()),j.on(j.EVENTS.MONSTER_KILLED,this.handleMonsterKilled,this),j.on(j.EVENTS.ITEM_COLLECTED,this.handleItemCollected,this),j.on(j.EVENTS.INVENTORY_UPDATED,()=>{this.inventoryDirty=!0,this.fishingBucketOverlay&&this.updateFishingBucketGrid()}),j.on(j.EVENTS.STATUS_UPDATED,l=>{this.portraitsDirty=!0;const x=this.unitToChannel[l.agentId];if(x&&(l.statuses&&x.updateStatuses(l.statuses),l.equipment&&x.updateEquipment(l.equipment,l.grimoire),l.stats)){if(x.updateStats(l.stats),l.stats.level!==void 0){x.lastLevel=l.stats.level;const E=Object.values(ct).find(C=>C&&C.id===x.characterId);E&&E.narrativeUnlocks&&x.updateNarrative(E.narrativeUnlocks,l.stats.level)}l.stats.ultGauge!==void 0&&x.updateUltGauge(l.stats.ultGauge)}}),j.on(j.EVENTS.PARTY_DEPLOYED,l=>{var C,b,d,g,t;l.scene&&(this.scene=l.scene);const x=((b=(C=this.scene)==null?void 0:C.scene)==null?void 0:b.key)||((t=(g=(d=this.scene)==null?void 0:d.sys)==null?void 0:g.settings)==null?void 0:t.key);console.log(`[UIManager] Party deployed in scene: ${x}`),this.updateActiveNav&&this.updateActiveNav(),this.portraitBar&&(x==="TerritoryScene"||x==="GachaScene"?(this.portraitBar.classList.add("hidden"),this.portraitBar.classList.remove("active"),this.btnExit&&(this.btnExit.style.display="none")):(this.portraitBar.classList.remove("hidden"),this.portraitBar.classList.add("active"),this.btnExit&&(this.btnExit.style.display="block"))),this.unitToChannel={},l.mercenaries.filter(r=>!r.hideInUI).forEach((r,v)=>{if(v<this.channels.length){const o=this.channels[v];this.unitToChannel[r.id]=o;const a=Object.values(ct).find(n=>n.id===r.characterId)||r;o.classId=r.classId||a.classId,o.bindUnit(r.id,r.unitName||r.name,`assets/characters/party/${a.sprite}.png`,{name:a.skillName,emoji:a.skillEmoji,description:a.skillDescription,passiveName:a.passiveName,passiveEmoji:a.passiveEmoji,passiveDescription:a.passiveDescription,ultimateName:a.ultimateName,ultimateDescription:a.ultimateDescription},a.narrativeUnlocks,r.characterId),this.unitToChannel[r.id]=o}}),this.portraitsDirty=!0}),j.on(j.EVENTS.DEBUG_SWAP_CHARACTER,l=>{const{classId:x,characterId:E,unitId:C}=l,b=ct[E.toUpperCase()];if(!b)return;const d=C?this.unitToChannel[C]:this.channels.find(g=>g.classId===x);d&&(d.updateVisuals(b.name,`assets/characters/party/${b.sprite}.png`,E),d.updateSkill({name:b.skillName,emoji:b.skillEmoji,description:b.skillDescription,passiveName:b.passiveName,passiveEmoji:b.passiveEmoji,passiveDescription:b.passiveDescription,ultimateName:b.ultimateName,ultimateDescription:b.ultimateDescription}),b.narrativeUnlocks&&d.updateNarrative(b.narrativeUnlocks,1))}),j.on(j.EVENTS.UNIT_BARK,l=>{const{agentId:x,text:E,unitName:C}=l,b=this.unitToChannel[x];b&&b.addLog(`[${C}] ${E}`,"#00ffcc")}),requestAnimationFrame(this.rafLoop),j.on("UI_SLOT_ASSIGNED",l=>{this.handleSlotAssigned(l.slotId,l.characterId)}),j.on("UI_REFRESH_INVENTORY",()=>{this.inventoryDirty=!0}),this.updateMobileHUD(),this.updatePortraitBar(),j.on(j.EVENTS.INVENTORY_UPDATED,()=>{this.hudDirty=!0,this.updateDungeonTickets()}),this.updateDungeonTickets(),this.updateBestRounds(),j.on("BEST_ROUND_UPDATED",()=>this.updateBestRounds()),j.on("BUILDINGS_UPDATED",()=>this.updateBuildingGrid()),j.on("EQUIPMENT_EXP_UPDATED",l=>this.handleEquipmentExpUpdated(l)),j.on("FOCUS_MODE_CHANGED",l=>{const{active:x,settings:E}=l,C=document.getElementById("game-container"),b=document.getElementById("focus-timer");x?(E.blurEnabled?C==null||C.classList.add("focus-blur-active"):C==null||C.classList.remove("focus-blur-active"),E.timerEnabled?b&&(b.style.display="block",this.focusModeStartTime=Date.now()):b&&(b.style.display="none")):(C==null||C.classList.remove("focus-blur-active"),b&&(b.style.display="none"),this.focusModeStartTime=null)})}setupBuildingEvents(){this.updateBuildingGrid(),this.buildingGrid&&this.buildingGrid.addEventListener("click",l=>{const x=l.target.closest(".building-slot");if(!x)return;const E=parseInt(x.dataset.index);this.handleBuildingClick(E)})}handleBuildingClick(l){zt.slots[l]?this.showBuildingInfo(l):this.showBuildingSelection(l)}showBuildingInfo(l){var e;const x=zt.slots[l];if(!x)return;const E=ke[x.typeId.toUpperCase()],C=Math.floor(100*Math.pow(1.5,x.level-1)),b=Math.floor(20*Math.pow(1.5,x.level-1));lt.getSVGFilename(E.resource),(e=lt.getItem(E.resource))!=null&&e.name||E.resource;const d=lt.getSVGFilename(E.iconId),g={bank:J.t("building_bank"),factory:J.t("building_factory"),church:J.t("building_church"),camp:J.t("building_camp"),tree:J.t("building_tree"),castle:J.t("building_castle")},t="width:16px; height:16px; vertical-align:middle; image-rendering:pixelated; margin-right:4px;",r="width:40px; height:40px; image-rendering:pixelated;",v=lt.getSVGFilename("emoji_coin"),o=lt.getSVGFilename("emoji_brick"),a=`
+        `,document.body.appendChild(C)}async handleSkinAction(l,x){const E=await q.getMercenarySkinData(l),C=Object.values(Qt).findIndex(d=>d.id===x),b=C!==-1?Object.values(Qt)[C]:null;if(x==="default")await q.setEquippedSkin(l,null),this.updateSkinUI(l,null);else if(E.ownedSkins.includes(x))await q.setEquippedSkin(l,x),this.updateSkinUI(l,x);else if(b){const d=J.t("ui_skin_buy_confirm",[b.name,b.price.toLocaleString()]);this.uiManager.showConfirm(d,async()=>{const g=await q.buySkin(l,x,b.price);g.success?(this.uiManager.showToast(J.t("ui_skin_buy_success"),"success"),await q.setEquippedSkin(l,x),j.emit(j.EVENTS.INVENTORY_UPDATED),this.updateSkinUI(l,x)):this.uiManager.showToast(g.message,"error")})}}async updateSkinUI(l,x){var E;window._partyManagerInstance&&await window._partyManagerInstance.loadSkinData(l),(E=document.querySelector(".skin-selector-overlay"))==null||E.remove(),await this.showMercenaryRoster(),j.emit("SKIN_CHANGED",{charId:l,skinId:x})}}class ea{constructor(){this.materialList=document.getElementById("material-list"),this.gearList=document.getElementById("gear-list"),this.chatContainer=document.getElementById("chat-container"),this.channels=[],this.unitToChannel={},this.resizeObserver=null,this.inventoryDirty=!0,this.isRefreshing=!1,this.detailChannel=null,this.portraits={},this.npcHud=null,this.npcHudIcon=null,this.npcHudStacks=null,this.lastGold=-1,this.lastGem=-1,this.lastNpcId=null,this.lastNpcStacks=-1,this.lastMessiahPowerId=null,this.lastMessiahStacks=-1,this.lastMessiahAuto=null,this.hudDirty=!0,this.portraitsDirty=!0,this.hudGold=document.getElementById("hud-gold"),this.hudGem=document.getElementById("hud-gem"),this.npcHud=document.getElementById("npc-hud"),this.npcHudIcon=document.getElementById("npc-hud-icon"),this.npcHudStacks=document.getElementById("npc-hud-stacks"),this.messiahHud=document.getElementById("messiah-hud"),this.messiahHudIcon=document.getElementById("messiah-hud-icon"),this.messiahHudStacks=document.getElementById("messiah-hud-stacks"),this.messiahCooldownFill=document.getElementById("messiah-cooldown-fill"),this.messiahAutoBtn=document.getElementById("messiah-auto-btn"),this.roundDisplay=document.getElementById("hud-round-display"),this.roundText=document.getElementById("hud-round-text"),this.difficultyMenu=document.getElementById("difficulty-toggle-menu"),this.lastRoundText="",this.currentDifficulty="NORMAL",this.defenseHud=document.getElementById("defense-hud"),this.defenseDeploymentPanel=document.getElementById("defense-deployment-panel"),this.defenseDeploymentList=document.getElementById("defense-deployment-list"),this.btnDefenseClose=document.getElementById("defense-panel-close"),this.constructionOverlay=document.getElementById("construction-overlay"),this.btnExitConstruction=document.getElementById("btn-exit-construction"),this.buildingGrid=document.getElementById("building-grid"),this.portraitBar=document.getElementById("portrait-bar"),this.popupOverlay=document.getElementById("popup-overlay"),this.popupContent=document.getElementById("popup-content"),this.popupInner=document.getElementById("popup-inner"),this.confirmOverlay=document.getElementById("confirm-overlay"),this.confirmMessage=document.getElementById("confirm-message"),this.btnConfirmYes=document.getElementById("btn-confirm-yes"),this.btnConfirmNo=document.getElementById("btn-confirm-no"),this.confirmCallback=null,this.popupClose=document.getElementById("popup-close"),this.btnInventory=document.getElementById("btn-inventory"),this.btnParty=document.getElementById("btn-party"),this.btnFullscreen=document.getElementById("btn-fullscreen"),this.btnSettings=document.getElementById("btn-settings"),this.btnExit=document.getElementById("btn-exit"),this.detailPanel=document.getElementById("item-detail-panel"),this.detailName=document.getElementById("detail-name"),this.detailType=document.getElementById("detail-type"),this.detailDesc=document.getElementById("detail-description"),this.btnEquipItem=document.getElementById("btn-equip-item"),this.btnDiscardItem=document.getElementById("btn-discard-item"),this.btnCloseDetail=document.getElementById("btn-close-detail"),this.selectedItemId=null,this.pendingGrimoireSlot=null,this.pendingGearSlot=null,this.emojiFilter="ALL",this.viewingInstanceId=null,this.currentCraftFilter=null,this.equipFilter="ALL",this.shopUI=new qn(this),this.equipmentUI=new _n(this),this.mercenaryCodexUI=new ta(this),window.uiManager=this,this.rafLoop=this.rafLoop.bind(this),this.initEventListeners(),this.particlePool=[],this.showProductionAnim=!0,this.currentLanguage=localStorage.getItem("gameLanguage")||"KR"}get game(){var l;return(l=this.scene)==null?void 0:l.game}set scene(l){this._scene=l}get scene(){return this._scene}init(){console.log("[UIManager] Initialized DOM Overlay"),this.createTooltip(),this.setupChatChannels(),this.setupMobileEvents(),this.setupNavigationEvents(),this.setupDefenseEvents(),this.localizeUI(),j.on(j.EVENTS.LANGUAGE_CHANGED,()=>{this.localizeUI()}),this.loadSettings(),this.loadSettings(),zt&&(zt.init(),this.setupBuildingEvents()),j.on(j.EVENTS.MONSTER_KILLED,this.handleMonsterKilled,this),j.on(j.EVENTS.ITEM_COLLECTED,this.handleItemCollected,this),j.on(j.EVENTS.INVENTORY_UPDATED,()=>{this.inventoryDirty=!0,this.fishingBucketOverlay&&this.updateFishingBucketGrid()}),j.on(j.EVENTS.STATUS_UPDATED,l=>{this.portraitsDirty=!0;const x=this.unitToChannel[l.agentId];if(x&&(l.statuses&&x.updateStatuses(l.statuses),l.equipment&&x.updateEquipment(l.equipment,l.grimoire),l.stats)){if(x.updateStats(l.stats),l.stats.level!==void 0){x.lastLevel=l.stats.level;const E=Object.values(ct).find(C=>C&&C.id===x.characterId);E&&E.narrativeUnlocks&&x.updateNarrative(E.narrativeUnlocks,l.stats.level)}l.stats.ultGauge!==void 0&&x.updateUltGauge(l.stats.ultGauge)}}),j.on(j.EVENTS.PARTY_DEPLOYED,l=>{var C,b,d,g,t;l.scene&&(this.scene=l.scene);const x=((b=(C=this.scene)==null?void 0:C.scene)==null?void 0:b.key)||((t=(g=(d=this.scene)==null?void 0:d.sys)==null?void 0:g.settings)==null?void 0:t.key);console.log(`[UIManager] Party deployed in scene: ${x}`),this.updateActiveNav&&this.updateActiveNav(),this.portraitBar&&(x==="TerritoryScene"||x==="GachaScene"?(this.portraitBar.classList.add("hidden"),this.portraitBar.classList.remove("active"),this.btnExit&&(this.btnExit.style.display="none")):(this.portraitBar.classList.remove("hidden"),this.portraitBar.classList.add("active"),this.btnExit&&(this.btnExit.style.display="block"))),this.unitToChannel={},l.mercenaries.filter(r=>!r.hideInUI).forEach((r,v)=>{if(v<this.channels.length){const o=this.channels[v];this.unitToChannel[r.id]=o;const a=Object.values(ct).find(n=>n.id===r.characterId)||r;o.classId=r.classId||a.classId,o.bindUnit(r.id,r.unitName||r.name,`assets/characters/party/${a.sprite}.png`,{name:a.skillName,emoji:a.skillEmoji,description:a.skillDescription,passiveName:a.passiveName,passiveEmoji:a.passiveEmoji,passiveDescription:a.passiveDescription,ultimateName:a.ultimateName,ultimateDescription:a.ultimateDescription},a.narrativeUnlocks,r.characterId),this.unitToChannel[r.id]=o}}),this.portraitsDirty=!0}),j.on(j.EVENTS.DEBUG_SWAP_CHARACTER,l=>{const{classId:x,characterId:E,unitId:C}=l,b=ct[E.toUpperCase()];if(!b)return;const d=C?this.unitToChannel[C]:this.channels.find(g=>g.classId===x);d&&(d.updateVisuals(b.name,`assets/characters/party/${b.sprite}.png`,E),d.updateSkill({name:b.skillName,emoji:b.skillEmoji,description:b.skillDescription,passiveName:b.passiveName,passiveEmoji:b.passiveEmoji,passiveDescription:b.passiveDescription,ultimateName:b.ultimateName,ultimateDescription:b.ultimateDescription}),b.narrativeUnlocks&&d.updateNarrative(b.narrativeUnlocks,1))}),j.on(j.EVENTS.UNIT_BARK,l=>{const{agentId:x,text:E,unitName:C}=l,b=this.unitToChannel[x];b&&b.addLog(`[${C}] ${E}`,"#00ffcc")}),requestAnimationFrame(this.rafLoop),j.on("UI_SLOT_ASSIGNED",l=>{this.handleSlotAssigned(l.slotId,l.characterId)}),j.on("UI_REFRESH_INVENTORY",()=>{this.inventoryDirty=!0}),this.updateMobileHUD(),this.updatePortraitBar(),j.on(j.EVENTS.INVENTORY_UPDATED,()=>{this.hudDirty=!0,this.updateDungeonTickets()}),this.updateDungeonTickets(),this.updateBestRounds(),j.on("BEST_ROUND_UPDATED",()=>this.updateBestRounds()),j.on("BUILDINGS_UPDATED",()=>this.updateBuildingGrid()),j.on("EQUIPMENT_EXP_UPDATED",l=>this.handleEquipmentExpUpdated(l)),j.on("FOCUS_MODE_CHANGED",l=>{const{active:x,settings:E}=l,C=document.getElementById("game-container"),b=document.getElementById("focus-timer");x?(E.blurEnabled?C==null||C.classList.add("focus-blur-active"):C==null||C.classList.remove("focus-blur-active"),E.timerEnabled?b&&(b.style.display="block",this.focusModeStartTime=Date.now()):b&&(b.style.display="none")):(C==null||C.classList.remove("focus-blur-active"),b&&(b.style.display="none"),this.focusModeStartTime=null)})}setupBuildingEvents(){this.updateBuildingGrid(),this.buildingGrid&&this.buildingGrid.addEventListener("click",l=>{const x=l.target.closest(".building-slot");if(!x)return;const E=parseInt(x.dataset.index);this.handleBuildingClick(E)})}handleBuildingClick(l){zt.slots[l]?this.showBuildingInfo(l):this.showBuildingSelection(l)}showBuildingInfo(l){var e;const x=zt.slots[l];if(!x)return;const E=ke[x.typeId.toUpperCase()],C=Math.floor(100*Math.pow(1.5,x.level-1)),b=Math.floor(20*Math.pow(1.5,x.level-1));lt.getSVGFilename(E.resource),(e=lt.getItem(E.resource))!=null&&e.name||E.resource;const d=lt.getSVGFilename(E.iconId),g={bank:J.t("building_bank"),factory:J.t("building_factory"),church:J.t("building_church"),camp:J.t("building_camp"),tree:J.t("building_tree"),castle:J.t("building_castle")},t="width:16px; height:16px; vertical-align:middle; image-rendering:pixelated; margin-right:4px;",r="width:40px; height:40px; image-rendering:pixelated;",v=lt.getSVGFilename("emoji_coin"),o=lt.getSVGFilename("emoji_brick"),a=`
             <div class="building-info-card">
                 <div class="info-header">
                     <div class="info-emoji-box">
@@ -7291,11 +7739,11 @@ ${r}`}else this.npcHudIcon.style.display="none",this.npcHudStacks.innerText="NON
             font-size: 10px;
             border: 2px solid #fbbf24;
             box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-            z-index: 10000;
+            z-index: 20000;
             pointer-events: none;
             opacity: 0;
             transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        `,document.body.appendChild(x),requestAnimationFrame(()=>{x.style.opacity="1",x.style.top="25%"}),setTimeout(()=>{x.style.opacity="0",x.style.top="20%",setTimeout(()=>x.remove(),300)},2200)}setupMobileEvents(){const l=["DungeonScene","ArenaScene","RaidScene"],x=()=>{var g,t,r,v,o;return((t=(g=this.scene)==null?void 0:g.scene)==null?void 0:t.key)||((o=(v=(r=this.scene)==null?void 0:r.sys)==null?void 0:v.settings)==null?void 0:o.key)||""};this.btnInventory&&(this.btnInventory.onclick=()=>{this.resetPendingState(),this.showPopup("inventory"),this.switchInventoryTab("materials")}),this.btnParty&&(this.btnParty.onclick=()=>{this.resetPendingState();const g=x();if(l.includes(g)){this.showConfirm("전투가 진행 중입니다. 정말로 나가시겠습니까?",()=>{this.safeSceneStart("TerritoryScene"),this.showPopup("party")});return}this.showPopup("party")}),this.popupClose&&(this.popupClose.onclick=()=>this.hidePopup()),this.popupOverlay&&(this.popupOverlay.onclick=g=>{g.target===this.popupOverlay&&this.hidePopup()}),this.btnSettings&&(this.btnSettings.onclick=()=>this.showSettings()),this.btnFullscreen&&(this.btnFullscreen.onclick=()=>this.toggleFullscreen()),this.btnExit&&(this.btnExit.onclick=()=>{const g=x();if(l.includes(g)){this.showConfirm(J.t("confirm_forfeit_combat"),()=>{this.safeSceneStart("TerritoryScene")});return}this.safeSceneStart("TerritoryScene")}),this.btnEquipItem&&(this.btnEquipItem.onclick=g=>{g.preventDefault(),g.stopPropagation(),console.log("[UIManager] EQUIP BUTTON CLICKED!",{selectedId:this.selectedItemId,detailChannel:this.detailChannel?this.detailChannel.name:"null",activeChannels:this.channels.filter(t=>t.active).length}),this.selectedItemId&&(this.btnEquipItem.style.opacity="0.5",this.btnEquipItem.innerText=J.currentLanguage==="EN"?"Equipping...":"장착 중...",this.executeEquip(this.selectedItemId),setTimeout(()=>{this.detailPanel&&(this.detailPanel.style.display="none"),this.btnEquipItem.style.opacity="1",this.btnEquipItem.innerText=J.t("ui_btn_equip"),this.selectedItemId=null},200))}),this.detailPanel&&(this.detailPanel.onclick=g=>{g.stopPropagation()});const E=document.getElementById("tab-materials"),C=document.getElementById("tab-gear");E&&(E.onclick=()=>{this.deselectItem(),this.switchInventoryTab("materials")}),C&&(C.onclick=()=>{this.deselectItem(),this.switchInventoryTab("gear")}),this.materialList&&(this.materialList.onclick=()=>this.deselectItem()),this.gearList&&(this.gearList.onclick=()=>this.deselectItem()),document.querySelectorAll(".emoji-filter-bar:not(.equip-filter-bar) .filter-btn").forEach(g=>{g.onclick=()=>{const t=g.dataset.filter;this.setEmojiFilter(t)}}),document.querySelectorAll(".equip-filter-bar .filter-btn").forEach(g=>{g.onclick=()=>{const t=g.dataset.equipFilter;this.setEquipFilter(t)}})}setupNavigationEvents(){const l=document.querySelectorAll("#hud-scene-nav .nav-btn"),x=["DungeonScene","ArenaScene","RaidScene"],E=()=>{var g,t,r,v,o;return((t=(g=this.scene)==null?void 0:g.scene)==null?void 0:t.key)||((o=(v=(r=this.scene)==null?void 0:r.sys)==null?void 0:v.settings)==null?void 0:o.key)||""};l.forEach(g=>{g.onclick=()=>{var n,e;const t=g.dataset.scene,r=g.dataset.popup,v=E(),o=["DungeonScene","ArenaScene","RaidScene"];if(o.includes(t)){const i=(e=(n=this.scene)==null?void 0:n.game)==null?void 0:e.partyManager;if(i&&!i.isPartyFull()){this.showToast(J.t("toast_party_not_full")),this.showPartyFormation();return}}if(o.includes(v)){this.showConfirm(J.t("confirm_exit_combat"),()=>{l.forEach(i=>i.classList.remove("active")),g.classList.add("active"),t?this.safeSceneStart(t):r&&(this.safeSceneStart("TerritoryScene"),this.showPopup(r))});return}l.forEach(i=>i.classList.remove("active")),g.classList.add("active"),t?(console.log(`[UIManager] Navigating to Scene: ${t}`),this.safeSceneStart(t)):r&&(console.log(`[UIManager] Opening Nav Popup: ${r}`),this.resetPendingState(),o.includes(v)&&this.safeSceneStart("TerritoryScene"),this.showPopup(r))}});const C=document.getElementById("btn-dungeon-main"),b=document.getElementById("dungeon-dropdown"),d=document.querySelectorAll(".nav-dropdown-item");C&&b&&(C.onclick=g=>{g.stopPropagation(),b.classList.toggle("show")},window.addEventListener("click",()=>{b.classList.remove("show")})),d.forEach(g=>{g.onclick=t=>{var n,e;t.stopPropagation();const r=g.dataset.scene,v=g.dataset.dungeon,o=E(),a=(e=(n=this.scene)==null?void 0:n.game)==null?void 0:e.partyManager;if(a&&!a.isPartyFull()){this.showToast(J.t("toast_party_not_full")),this.showPartyFormation();return}x.includes(o)?this.showConfirm(J.t("confirm_exit_combat"),()=>{this.safeSceneStart(r,{dungeonType:v})}):this.safeSceneStart(r,{dungeonType:v}),b==null||b.classList.remove("show")}})}localizeUI(){console.log("[UIManager] Localizing UI elements...");const l={TerritoryScene:"nav_territory",GachaScene:"nav_gacha",ArenaScene:"nav_arena",RaidScene:"nav_raid"};document.querySelectorAll("#hud-scene-nav .nav-btn").forEach(o=>{o.dataset.scene&&l[o.dataset.scene]?o.innerText=J.t(l[o.dataset.scene]):o.dataset.popup==="party"?o.innerText=J.t("nav_party"):o.id==="btn-dungeon-main"&&(o.innerText=J.t("nav_dungeon"))});const E={CURSED_FOREST:"nav_dungeon_forest",UNDEAD_GRAVEYARD:"nav_dungeon_graveyard",SWAMPLAND:"nav_dungeon_swamp",LAVA_FIELD:"nav_dungeon_lava",WINTER_LAND:"nav_dungeon_winter"};document.querySelectorAll(".nav-dropdown-item").forEach(o=>{const a=o.dataset.dungeon;a&&E[a]&&(o.innerText=J.t(E[a]))});const b=document.getElementById("tab-materials");b&&(b.innerText=J.t("ui_tab_emoji"));const d=document.getElementById("tab-gear");d&&(d.innerText=J.t("ui_tab_gear"));const g=document.querySelectorAll(".equip-filter-bar .filter-btn"),t={ALL:"ui_filter_all",weapon:"ui_filter_weapon",armor:"ui_filter_armor",necklace:"ui_filter_necklace",ring:"ui_filter_ring"};g.forEach(o=>{const a=o.dataset.equipFilter;a&&t[a]&&(o.innerText=J.t(t[a]))}),this.btnEquipItem&&(this.btnEquipItem.innerText=J.t("ui_btn_equip")),this.btnDiscardItem&&(this.btnDiscardItem.innerText=J.t("ui_btn_discard"));const r=document.getElementById("btn-exit-construction");r&&(r.innerText=J.t("ui_btn_construction_exit"));const v=document.querySelector(".construction-hint");v&&(v.innerText=J.t("ui_construction_hint")),this.updateNPCHUD()}setEmojiFilter(l){this.emojiFilter=l,this.deselectItem(),this.refreshInventory(),document.querySelectorAll(".emoji-filter-bar .filter-btn").forEach(E=>{E.dataset.filter===l?E.classList.add("active"):E.classList.remove("active")}),this.inventoryDirty=!0}setEquipFilter(l){this.equipFilter=l||"ALL",this.deselectItem(),this.refreshInventory(),document.querySelectorAll(".equip-filter-bar .filter-btn").forEach(E=>{E.dataset.equipFilter===this.equipFilter?E.classList.add("active"):E.classList.remove("active")}),this.inventoryDirty=!0}switchInventoryTab(l,x=null){l==="materials"?x?this.setEmojiFilter(x):this.setEmojiFilter("ALL"):l==="gear"&&(x?this.setEquipFilter(x):this.setEquipFilter("ALL"));const E=document.getElementById("section-materials"),C=document.getElementById("section-gear"),b=document.getElementById("tab-materials"),d=document.getElementById("tab-gear");l==="materials"?(E&&(E.style.display="flex"),C&&(C.style.display="none"),b&&b.classList.add("active"),d&&d.classList.remove("active")):(E&&(E.style.display="none"),C&&(C.style.display="flex"),b&&b.classList.remove("active"),d&&d.classList.add("active"))}toggleFullscreen(){document.fullscreenElement?document.exitFullscreen&&document.exitFullscreen():document.documentElement.requestFullscreen().catch(l=>{console.warn(`Error attempting to enable full-screen mode: ${l.message} (${l.name})`)})}showPopup(l,x=!1){if(!this.popupOverlay||!this.popupInner)return;this.clearPopupSafe();const E=document.getElementById("popup-content");if(E&&(x?E.classList.add("wide"):E.classList.remove("wide")),l==="inventory"){const C=document.getElementById("sidebar-right");C&&(this.popupInner.appendChild(C),C.style.setProperty("display","flex","important"),C.style.height="100%",C.style.background="transparent",C.style.border="none",C.style.boxShadow="none")}else if(l==="party"){this.showPartyFormation();return}else typeof l=="string"&&l.includes("<")&&(this.popupInner.innerHTML=l);this.popupOverlay.style.display="flex"}showShop(){this.shopManager&&this.shopManager.show()}async showPetStorage(){var E,C;if(this.petStorageOverlay)return;const l=document.createElement("div");l.id="pet-storage-overlay",l.className="shop-overlay retro-scanline-overlay pet-storage-overlay",this.petStorageOverlay=l;const x=(C=(E=this.scene)==null?void 0:E.game)==null?void 0:C.partyManager;x!=null&&x.playerPetRoster,l.innerHTML=`
+        `,document.body.appendChild(x),requestAnimationFrame(()=>{x.style.opacity="1",x.style.top="25%"}),setTimeout(()=>{x.style.opacity="0",x.style.top="20%",setTimeout(()=>x.remove(),300)},2200)}setupMobileEvents(){const l=["DungeonScene","ArenaScene","RaidScene"],x=()=>{var g,t,r,v,o;return((t=(g=this.scene)==null?void 0:g.scene)==null?void 0:t.key)||((o=(v=(r=this.scene)==null?void 0:r.sys)==null?void 0:v.settings)==null?void 0:o.key)||""};this.btnInventory&&(this.btnInventory.onclick=()=>{this.resetPendingState(),this.showPopup("inventory"),this.switchInventoryTab("materials")}),this.btnParty&&(this.btnParty.onclick=()=>{this.resetPendingState();const g=x();if(l.includes(g)){this.showConfirm("전투가 진행 중입니다. 정말로 나가시겠습니까?",()=>{this.safeSceneStart("TerritoryScene"),this.showPopup("party")});return}this.showPopup("party")}),this.popupClose&&(this.popupClose.onclick=()=>this.hidePopup()),this.popupOverlay&&(this.popupOverlay.onclick=g=>{g.target===this.popupOverlay&&this.hidePopup()}),this.btnSettings&&(this.btnSettings.onclick=()=>this.showSettings()),this.btnFullscreen&&(this.btnFullscreen.onclick=()=>this.toggleFullscreen()),this.btnExit&&(this.btnExit.onclick=()=>{const g=x();if(l.includes(g)){this.showConfirm(J.t("confirm_forfeit_combat"),()=>{this.safeSceneStart("TerritoryScene")});return}this.safeSceneStart("TerritoryScene")}),this.btnEquipItem&&(this.btnEquipItem.onclick=g=>{g.preventDefault(),g.stopPropagation(),console.log("[UIManager] EQUIP BUTTON CLICKED!",{selectedId:this.selectedItemId,detailChannel:this.detailChannel?this.detailChannel.name:"null",activeChannels:this.channels.filter(t=>t.active).length}),this.selectedItemId&&(this.btnEquipItem.style.opacity="0.5",this.btnEquipItem.innerText=J.currentLanguage==="EN"?"Equipping...":"장착 중...",this.executeEquip(this.selectedItemId),setTimeout(()=>{this.detailPanel&&(this.detailPanel.style.display="none"),this.btnEquipItem.style.opacity="1",this.btnEquipItem.innerText=J.t("ui_btn_equip"),this.selectedItemId=null},200))}),this.detailPanel&&(this.detailPanel.onclick=g=>{g.stopPropagation()});const E=document.getElementById("tab-materials"),C=document.getElementById("tab-gear");E&&(E.onclick=()=>{this.deselectItem(),this.switchInventoryTab("materials")}),C&&(C.onclick=()=>{this.deselectItem(),this.switchInventoryTab("gear")}),this.materialList&&(this.materialList.onclick=()=>this.deselectItem()),this.gearList&&(this.gearList.onclick=()=>this.deselectItem()),document.querySelectorAll(".emoji-filter-bar:not(.equip-filter-bar) .filter-btn").forEach(g=>{g.onclick=()=>{const t=g.dataset.filter;this.setEmojiFilter(t)}}),document.querySelectorAll(".equip-filter-bar .filter-btn").forEach(g=>{g.onclick=()=>{const t=g.dataset.equipFilter;this.setEquipFilter(t)}})}setupNavigationEvents(){const l=document.querySelectorAll("#hud-scene-nav .nav-btn"),x=["DungeonScene","ArenaScene","RaidScene"],E=()=>{var g,t,r,v,o;return((t=(g=this.scene)==null?void 0:g.scene)==null?void 0:t.key)||((o=(v=(r=this.scene)==null?void 0:r.sys)==null?void 0:v.settings)==null?void 0:o.key)||""};l.forEach(g=>{g.onclick=()=>{var n,e;const t=g.dataset.scene,r=g.dataset.popup,v=E(),o=["DungeonScene","ArenaScene","RaidScene"];if(o.includes(t)){const i=(e=(n=this.scene)==null?void 0:n.game)==null?void 0:e.partyManager;if(i&&!i.isPartyFull()){this.showToast(J.t("toast_party_not_full")),this.showPartyFormation();return}}if(o.includes(v)){this.showConfirm(J.t("confirm_exit_combat"),()=>{l.forEach(i=>i.classList.remove("active")),g.classList.add("active"),t?this.safeSceneStart(t):r&&(this.safeSceneStart("TerritoryScene"),this.showPopup(r))});return}l.forEach(i=>i.classList.remove("active")),g.classList.add("active"),t?(console.log(`[UIManager] Navigating to Scene: ${t}`),this.safeSceneStart(t)):r&&(console.log(`[UIManager] Opening Nav Popup: ${r}`),this.resetPendingState(),o.includes(v)&&this.safeSceneStart("TerritoryScene"),this.showPopup(r))}});const C=document.getElementById("btn-dungeon-main"),b=document.getElementById("dungeon-dropdown"),d=document.querySelectorAll(".nav-dropdown-item");C&&b&&(C.onclick=g=>{g.stopPropagation(),b.classList.toggle("show")},window.addEventListener("click",()=>{b.classList.remove("show")})),d.forEach(g=>{g.onclick=t=>{var n,e;t.stopPropagation();const r=g.dataset.scene,v=g.dataset.dungeon,o=E(),a=(e=(n=this.scene)==null?void 0:n.game)==null?void 0:e.partyManager;if(a&&!a.isPartyFull()){this.showToast(J.t("toast_party_not_full")),this.showPartyFormation();return}x.includes(o)?this.showConfirm(J.t("confirm_exit_combat"),()=>{this.safeSceneStart(r,{dungeonType:v})}):this.safeSceneStart(r,{dungeonType:v}),b==null||b.classList.remove("show")}})}localizeUI(){console.log("[UIManager] Localizing UI elements...");const l={TerritoryScene:"nav_territory",GachaScene:"nav_gacha",ArenaScene:"nav_arena",RaidScene:"nav_raid"};document.querySelectorAll("#hud-scene-nav .nav-btn").forEach(o=>{o.dataset.scene&&l[o.dataset.scene]?o.innerText=J.t(l[o.dataset.scene]):o.dataset.popup==="party"?o.innerText=J.t("nav_party"):o.id==="btn-dungeon-main"&&(o.innerText=J.t("nav_dungeon"))});const E={CURSED_FOREST:"nav_dungeon_forest",UNDEAD_GRAVEYARD:"nav_dungeon_graveyard",SWAMPLAND:"nav_dungeon_swamp",LAVA_FIELD:"nav_dungeon_lava",WINTER_LAND:"nav_dungeon_winter"};document.querySelectorAll(".nav-dropdown-item").forEach(o=>{const a=o.dataset.dungeon;a&&E[a]&&(o.innerText=J.t(E[a]))});const b=document.getElementById("tab-materials");b&&(b.innerText=J.t("ui_tab_emoji"));const d=document.getElementById("tab-gear");d&&(d.innerText=J.t("ui_tab_gear"));const g=document.querySelectorAll(".equip-filter-bar .filter-btn"),t={ALL:"ui_filter_all",weapon:"ui_filter_weapon",armor:"ui_filter_armor",necklace:"ui_filter_necklace",ring:"ui_filter_ring"};g.forEach(o=>{const a=o.dataset.equipFilter;a&&t[a]&&(o.innerText=J.t(t[a]))}),this.btnEquipItem&&(this.btnEquipItem.innerText=J.t("ui_btn_equip")),this.btnDiscardItem&&(this.btnDiscardItem.innerText=J.t("ui_btn_discard"));const r=document.getElementById("btn-exit-construction");r&&(r.innerText=J.t("ui_btn_construction_exit"));const v=document.querySelector(".construction-hint");v&&(v.innerText=J.t("ui_construction_hint")),this.updateNPCHUD()}setEmojiFilter(l){this.emojiFilter=l,this.deselectItem(),this.refreshInventory(),document.querySelectorAll(".emoji-filter-bar .filter-btn").forEach(E=>{E.dataset.filter===l?E.classList.add("active"):E.classList.remove("active")}),this.inventoryDirty=!0}setEquipFilter(l){this.equipFilter=l||"ALL",this.deselectItem(),this.refreshInventory(),document.querySelectorAll(".equip-filter-bar .filter-btn").forEach(E=>{E.dataset.equipFilter===this.equipFilter?E.classList.add("active"):E.classList.remove("active")}),this.inventoryDirty=!0}switchInventoryTab(l,x=null){l==="materials"?x?this.setEmojiFilter(x):this.setEmojiFilter("ALL"):l==="gear"&&(x?this.setEquipFilter(x):this.setEquipFilter("ALL"));const E=document.getElementById("section-materials"),C=document.getElementById("section-gear"),b=document.getElementById("tab-materials"),d=document.getElementById("tab-gear");l==="materials"?(E&&(E.style.display="flex"),C&&(C.style.display="none"),b&&b.classList.add("active"),d&&d.classList.remove("active")):(E&&(E.style.display="none"),C&&(C.style.display="flex"),b&&b.classList.remove("active"),d&&d.classList.add("active"))}toggleFullscreen(){document.fullscreenElement?document.exitFullscreen&&document.exitFullscreen():document.documentElement.requestFullscreen().catch(l=>{console.warn(`Error attempting to enable full-screen mode: ${l.message} (${l.name})`)})}showPopup(l,x=!1){if(!this.popupOverlay||!this.popupInner)return;this.clearPopupSafe();const E=document.getElementById("popup-content");if(E&&(x?E.classList.add("wide"):E.classList.remove("wide")),l==="inventory"){const C=document.getElementById("sidebar-right");C&&(this.popupInner.appendChild(C),C.style.setProperty("display","flex","important"),C.style.height="100%",C.style.background="transparent",C.style.border="none",C.style.boxShadow="none")}else if(l==="party"){this.showPartyFormation();return}else typeof l=="string"&&l.includes("<")&&(this.popupInner.innerHTML=l);this.popupOverlay.style.display="flex"}showShop(){this.shopUI&&this.shopUI.show()}async showPetStorage(){var E,C;if(this.petStorageOverlay)return;const l=document.createElement("div");l.id="pet-storage-overlay",l.className="shop-overlay retro-scanline-overlay pet-storage-overlay",this.petStorageOverlay=l;const x=(C=(E=this.scene)==null?void 0:E.game)==null?void 0:C.partyManager;x!=null&&x.playerPetRoster,l.innerHTML=`
             <div class="shop-container pet-storage-container" style="max-width: 900px; width: 95vw;">
                 <div class="shop-header" style="background: linear-gradient(to right, #059669, #10b981);">
                     <div class="shop-title">${J.t("ui_pet_storage_title")}</div>
@@ -7347,46 +7795,7 @@ ${r}`}else this.npcHudIcon.style.display="none",this.npcHudStacks.innerText="NON
                 <div style="font-size: 15px; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 6px;"><img src="assets/emojis/1f356.svg" style="width:18px; height:18px;"> ${J.t("ui_pet_feed_btn")}</div>
                 <div style="font-size: 10px; opacity: 0.9;">${J.t("ui_pet_feed_cost",[g])}</div>
             </button>
-        `;const o=document.getElementById("btn-feed-pet");o.onclick=async()=>{const e=await q.getInventoryItem("emoji_meat");if(!e||e.amount<g){this.showToast(J.t("ui_pet_low_meat"));return}await q.saveInventoryItem("emoji_meat",e.amount-g),await E.feedPet(l),this.showToast(J.t("ui_pet_lvl_up_success",[J.t("pet_name_"+l)])),this.refreshPetStorage(),this._renderPetDetail(l)}}async showEquipmentCrafting(){if(this.equipmentCraftingOverlay)return;const l=document.createElement("div");l.id="equipment-crafting-overlay",l.className="shop-overlay retro-scanline-overlay equipment-crafting-overlay",this.equipmentCraftingOverlay=l,l.innerHTML=`
-            <div class="shop-container equipment-crafting-container" style="max-width: 900px; width: 95vw;">
-                <div class="shop-header" style="background: linear-gradient(to right, #7c3aed, #a855f7);">
-                    <div class="shop-title">${J.t("ui_craft_title")}</div>
-                    <button class="shop-close-btn" id="equip-craft-close">✕</button>
-                </div>
-                
-                <div class="shop-body equipment-crafting-body" id="equip-craft-body" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 20px;">
-                    <div class="craft-recipe-area" style="border-right: 1px solid rgba(255,255,255,0.1); padding-right: 15px;">
-                        <div style="font-size: 14px; font-weight: bold; margin-bottom: 12px; color: #a78bfa;">${J.t("ui_craft_list_header")}</div>
-                        <div id="craft-recipe-list" style="display: flex; flex-direction: column; gap: 10px;">
-                            <!-- Recipes go here -->
-                        </div>
-                    </div>
-                    
-                    <div class="owned-equipment-area" style="display: flex; flex-direction: column; gap: 10px;">
-                        <div style="font-size: 14px; font-weight: bold; color: #a78bfa;">${J.t("ui_owned_growth_header")}</div>
-                        <div id="owned-equip-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px; max-height: 280px; overflow-y: auto; padding: 5px; background: rgba(0,0,0,0.2); border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
-                            <!-- Owned instances go here -->
-                        </div>
-                        
-                        <!-- NEW: Selection Control Area -->
-                        <div id="selected-equip-controls" style="margin-top: 5px; padding: 12px; background: rgba(124, 58, 237, 0.1); border: 1px dashed #7c3aed; border-radius: 8px; display: none; flex-direction: column; gap: 10px;">
-                            <div id="selected-equip-info" style="font-size: 12px; color: #fff; font-weight: bold;">${J.t("ui_craft_none_selected")}</div>
-                            <div style="display: flex; gap: 10px;">
-                                <button id="btn-equip-detail" class="shop-buy-btn" style="flex: 1; height: 32px; font-size: 11px; background: #4f46e5;">${J.t("ui_craft_detail_btn")}</button>
-                                <button id="btn-equip-destroy" class="shop-buy-btn" style="flex: 1; height: 32px; font-size: 11px; background: #dc2626; border-color: #ef4444;">${J.t("ui_craft_destroy_btn")}</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="shop-footer" style="display: flex; justify-content: space-between; align-items: center; padding: 15px;">
-                    <div class="shop-currency" id="craft-material-display" style="display:flex; align-items:center; gap:10px;">
-                        <!-- Materials like wood will be shown here -->
-                    </div>
-                    <div style="font-size: 11px; opacity: 0.7; color: #d1d5db;">${J.t("ui_craft_footer_tip")}</div>
-                </div>
-            </div>
-        `,(document.getElementById("app-container")||document.body).appendChild(l);const E=document.getElementById("equip-craft-close");E&&(E.onclick=()=>this.hideEquipmentCrafting()),l.onclick=C=>{C.target===l&&this.hideEquipmentCrafting()},await this.refreshEquipmentCrafting()}hideEquipmentCrafting(){this.equipmentCraftingOverlay&&(this.equipmentCraftingOverlay.remove(),this.equipmentCraftingOverlay=null)}async showDefenseManagement(){if(this.defenseManagementOverlay)return;const l=document.createElement("div");l.id="defense-management-overlay",l.className="shop-overlay retro-scanline-overlay defense-management-overlay",this.defenseManagementOverlay=l,l.innerHTML=`
+        `;const o=document.getElementById("btn-feed-pet");o.onclick=async()=>{const e=await q.getInventoryItem("emoji_meat");if(!e||e.amount<g){this.showToast(J.t("ui_pet_low_meat"));return}await q.saveInventoryItem("emoji_meat",e.amount-g),await E.feedPet(l),this.showToast(J.t("ui_pet_lvl_up_success",[J.t("pet_name_"+l)])),this.refreshPetStorage()}}async showEquipmentCrafting(){this.equipmentUI.show()}hideEquipmentCrafting(){}async showDefenseManagement(){if(this.defenseManagementOverlay)return;const l=document.createElement("div");l.id="defense-management-overlay",l.className="shop-overlay retro-scanline-overlay defense-management-overlay",this.defenseManagementOverlay=l,l.innerHTML=`
             <div class="shop-container defense-management-container" style="max-width: 900px; width: 95vw;">
                 <div class="shop-header" style="background: linear-gradient(to right, #10b981, #059669);">
                     <div class="shop-title">${J.t("ui_defense_title")}</div>
@@ -7465,48 +7874,7 @@ ${h?J.t("ui_defense_installed",[a.dungeonId]):J.t("ui_defense_in_inventory")}">
 
                         ${u}
                     </div>
-                `}}x.innerHTML=o,x.querySelectorAll(".structure-instance-card").forEach(a=>{a.onclick=()=>{const n=a.dataset.instanceId,e=v.find(i=>i.id===n);if(this.scene&&this.scene.constructor.name==="DungeonScene"){if(e.dungeonId){this.showToast("이미 설치된 시설물입니다!");return}this.hideDefenseManagement(),this.scene.startConstructionMode(n)}else this.showToast("던전 안에서만 설치가 가능합니다!")}})}async refreshEquipmentCrafting(){if(!this.equipmentCraftingOverlay)return;const l=document.getElementById("craft-recipe-list"),x=document.getElementById("owned-equip-list"),E=document.getElementById("craft-material-display");if(!l||!x||!E)return;const C=await q.getInventoryItem("emoji_wood");E.innerHTML=`<div style="display:flex; align-items:center; gap:5px; color: #fff; font-weight: bold;"><img src="assets/emojis/1fab5.svg" style="width:20px; height:20px;"> ${C?C.amount:0}</div>`;const b=lt.getAllItems(),d=[];for(const e in b)b[e].type===St.EQUIPMENT&&d.push({id:e,req:{emoji_wood:500}});!this.currentCraftFilter&&d.length>0&&(this.currentCraftFilter=d[0].id);let g="";for(const e of d){const i=lt.getItem(e.id),h=C&&C.amount>=e.req.emoji_wood,s=i.customAsset||"assets/emojis/"+lt.getSVGFilename(e.id),u=this.currentCraftFilter===e.id;g+=`
-                <div class="craft-card ${u?"selected":""}" data-id="${e.id}" 
-                     style="background: ${u?"rgba(124, 58, 237, 0.2)":"rgba(0,0,0,0.3)"}; 
-                            border: 2px solid ${u?"#a78bfa":"#5b21b6"}; 
-                            box-shadow: ${u?"0 0 15px rgba(167, 139, 250, 0.4)":"none"};
-                            border-radius: 12px; padding: 12px; display: flex; align-items: center; gap: 15px; 
-                            position: relative; overflow: hidden; cursor: pointer; transition: all 0.2s ease;">
-                    <div class="retro-scanline-overlay" style="pointer-events: none;"></div>
-                    <img src="${s}" style="width: 48px; height: 48px; object-fit: contain; image-rendering: pixelated; background: rgba(255,255,255,0.05); border-radius: 8px; padding: 4px; border: 1px solid rgba(255,255,255,0.1);">
-                    <div style="flex: 1;">
-                        <div style="font-weight: bold; font-size: 14px; color: #fff;">${lt.getLocalizedName(e.id)}</div>
-                        <div style="font-size: 11px; color: #a78bfa; display: flex; align-items: center; gap: 4px;">${J.t("ui_craft_owned_count",[e.req.emoji_wood])}: <img src="assets/emojis/1fab5.svg" style="width:14px; height:14px;"> ${e.req.emoji_wood}</div>
-                    </div>
-                    <button class="shop-buy-btn craft-btn" data-id="${e.id}" ${h?"":"disabled"} style="padding: 8px 15px; font-size: 12px; height: auto; background: ${h?"linear-gradient(to bottom, #7c3aed, #5b21b6)":"#333"}; opacity: ${h?1:.5}; cursor: ${h?"pointer":"not-allowed"}; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); color: #fff; font-weight: bold;">${J.t("ui_craft_btn")}</button>
-                    ${u?'<div style="position: absolute; top: 5px; right: 5px; color: #a78bfa; font-size: 10px;">★</div>':""}
-                </div>
-            `}l.innerHTML=g,l.querySelectorAll(".craft-card").forEach(e=>{e.onclick=h=>{if(h.target.classList.contains("craft-btn"))return;const s=e.dataset.id;this.currentCraftFilter=s,this.refreshEquipmentCrafting()};const i=e.querySelector(".craft-btn");i.onclick=async h=>{h.stopPropagation();const s=i.dataset.id,u=await kt.craftItem(s);u.success?(this.showToast(J.t("ui_craft_success",[lt.getLocalizedName(s)])),this.refreshEquipmentCrafting()):this.showToast(u.reason)}});let t=await q.getAllEquipmentInstances();this.currentCraftFilter&&(t=t.filter(e=>e.itemId===this.currentCraftFilter));let r="";if(t.length===0)r=`<div style="grid-column: 1/-1; text-align: center; opacity: 0.4; padding: 40px; font-size: 12px; color: #fff;">
-                ${this.currentCraftFilter?lt.getLocalizedName(this.currentCraftFilter)+" ":""}${J.t("ui_craft_in_inventory")}
-            </div>`;else{t.sort((e,i)=>i.level-e.level);for(const e of t){const i=lt.getItem(e.itemId),h=i.customAsset||"assets/emojis/"+lt.getSVGFilename(e.itemId),s=e.ownerId?`<div style="font-size: 8px; color: #fbbf24; margin-top: 2px; font-weight: bold; border: 1px solid rgba(251, 191, 36, 0.5); padding: 1px 3px; border-radius: 3px; background: rgba(0,0,0,0.3); display: inline-block;">${J.t("ui_craft_equipped",[e.ownerId])}</div>`:`<div style="font-size: 8px; color: #10b981; margin-top: 2px; font-weight: bold;">${J.t("ui_craft_in_inventory")}</div>`,u=this.currentEquipSelection===e.id;r+=`
-                    <div class="owned-equip-card ${u?"selected":""}" data-instance-id="${e.id}" 
-                        style="background: ${u?"rgba(124, 58, 237, 0.3)":"rgba(255,255,255,0.05)"}; 
-                               border: ${u?"2px solid #fbbf24":"1px solid rgba(167, 139, 250, 0.3)"}; 
-                               box-shadow: ${u?"0 0 10px rgba(251, 191, 36, 0.3)":"none"};
-                               border-radius: 8px; padding: 10px; display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer; position: relative;" title="${i.name} LV.${e.level}">
-                        <div style="position: absolute; top: -5px; right: -5px; background: #7c3aed; color: #fff; font-size: 8px; font-weight: bold; padding: 2px 5px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.3);">LV.${e.level}</div>
-                        <img src="${h}" style="width: 32px; height: 32px; object-fit: contain; image-rendering: pixelated; filter: drop-shadow(0 0 5px rgba(124, 58, 237, 0.5));">
-                        <div style="font-size: 9px; color: #fff; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; font-weight: bold;">${lt.getLocalizedName(e.itemId)}</div>
-                        ${s}
-                    </div>
-                `}}x.innerHTML=r;const v=document.getElementById("selected-equip-controls"),o=document.getElementById("selected-equip-info"),a=document.getElementById("btn-equip-detail"),n=document.getElementById("btn-equip-destroy");if(x.querySelectorAll(".owned-equip-card").forEach(e=>{e.onclick=()=>{const i=e.dataset.instanceId;this.currentEquipSelection===i?this.currentEquipSelection=null:this.currentEquipSelection=i,this.refreshEquipmentCrafting()}}),this.currentEquipSelection){const e=t.find(i=>i.id===this.currentEquipSelection);if(e){const i=lt.getItem(e.itemId);v.style.display="flex",o.innerHTML=`[SELECTED] ${lt.getLocalizedName(e.itemId)} (LV.${e.level})`,a.onclick=()=>{kt.getDisplayInfo(e);const s=`
-                        <div class="item-detail-popup" style="padding: 25px; color: #fff; font-family: 'VT323', monospace;">
-                            <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 20px; border-bottom: 2px solid rgba(124, 58, 237, 0.4); padding-bottom: 15px;">
-                                <img src="${i.customAsset||"assets/emojis/"+lt.getSVGFilename(e.itemId)}" style="width: 64px; height: 64px; image-rendering: pixelated; background: rgba(0,0,0,0.3); border-radius: 12px; padding: 10px; border: 2px solid #7c3aed;">
-                                <div>
-                                    <div style="font-size: 24px; color: #fbbf24; text-shadow: 0 0 10px rgba(251, 191, 36, 0.5);">${lt.getLocalizedName(e.itemId)}</div>
-                                    <div style="font-size: 14px; color: #a78bfa; opacity: 0.8;">${J.t("ui_craft_unique_growth")}</div>
-                                </div>
-                            </div>
-                            <div style="font-size: 16px; line-height: 1.6; white-space: pre-wrap; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">${lt.getLocalizedDescription(e.itemId)}</div>
-                            <div style="margin-top: 20px; text-align: center; font-size: 12px; color: #666;">${J.t("ui_craft_growth_tip")}</div>
-                        </div>
-                    `;this.showPopup(s)},n.onclick=()=>{const h=lt.getLocalizedName(e.itemId);this.showConfirm(J.t("ui_craft_destroy_confirm",[h,e.level]),async()=>{if(e.ownerId){const s=e.ownerId,u=partyManager.getState(s);if(u&&u.equipment){let c=null;for(const[p,f]of Object.entries(u.equipment))if(f&&f.instanceId===e.id){c=p;break}c&&(console.log(`[UIManager] Auto-unequipping ${e.id} from ${s} slot ${c}`),await partyManager.unequipItem(s,c))}}await q.deleteEquipmentInstance(e.id),this.showToast(J.t("ui_craft_destroy_success",[lt.getLocalizedName(e.itemId)])),this.currentEquipSelection=null,this.refreshEquipmentCrafting()})}}else this.currentEquipSelection=null,v.style.display="none"}else v.style.display="none"}async showNPCHire(){if(this.npcHireOverlay)return;const l=document.createElement("div");l.id="npc-hire-overlay",l.className="shop-overlay retro-scanline-overlay npc-hire-overlay",this.npcHireOverlay=l,l.innerHTML=`
+                `}}x.innerHTML=o,x.querySelectorAll(".structure-instance-card").forEach(a=>{a.onclick=()=>{const n=a.dataset.instanceId,e=v.find(i=>i.id===n);if(this.scene&&this.scene.constructor.name==="DungeonScene"){if(e.dungeonId){this.showToast("이미 설치된 시설물입니다!");return}this.hideDefenseManagement(),this.scene.startConstructionMode(n)}else this.showToast("던전 안에서만 설치가 가능합니다!")}})}async showNPCHire(){if(this.npcHireOverlay)return;const l=document.createElement("div");l.id="npc-hire-overlay",l.className="shop-overlay retro-scanline-overlay npc-hire-overlay",this.npcHireOverlay=l,l.innerHTML=`
             <div class="shop-container npc-hire-container" style="max-width: 800px; width: 90vw;">
                 <div class="shop-header" style="background: linear-gradient(to right, #7c3aed, #8b5cf6);">
                     <div class="shop-title">${J.t("ui_npc_hire_title")}</div>
@@ -8625,4 +8993,4 @@ ${e}`}this.messiahHudStacks.innerText=g,this.lastMessiahStacks=b.stacks}if(this.
                 </div>
                 <div id="music-manager-inner"></div>
             </div>
-        `,this.popupOverlay.style.display="flex",g();const t=this.popupInner.querySelector("#music-shop-close");t&&(t.onclick=()=>this.popupClose.click());const r=this.popupClose.onclick;this.popupClose.onclick=()=>{this.popupInner&&(this.popupInner.style.maxWidth="",this.popupInner.style.width=""),this.popupOverlay.style.display="none",this.game&&this.game.musicManager&&this.game.musicManager.stopPreview(),r&&r(),this.popupClose.onclick=r};const v=()=>{q.getInventoryItem("emoji_coin").then(a=>{const n=(a?a.amount:0).toLocaleString(),e=document.getElementById("header-gold");e&&(e.innerText="💰 "+n);const i=document.getElementById("store-gold-count");i&&(i.innerText=n)})},o=this.popupInner.querySelectorAll(".music-tab-btn");o.forEach(a=>{a.addEventListener("click",()=>{o.forEach(n=>n.classList.remove("active")),a.classList.add("active"),C=a.dataset.tab,g(),C==="STORE"&&v()})}),v(),this.popupInner.addEventListener("click",a=>{(a.target.classList.contains("buy-music-btn")||a.target.classList.contains("category-btn"))&&setTimeout(v,100)})}}class ea{constructor(){this.logContainer=document.getElementById("log-container"),this.chatForm=document.getElementById("chat-form"),this.chatInput=document.getElementById("chat-input")}init(){console.log("[LogManager] Initialized"),j.on(j.EVENTS.ITEM_COLLECTED,this.handleItemCollected,this),j.on(j.EVENTS.MONSTER_KILLED,this.handleMonsterKilled,this),j.on(j.EVENTS.SYSTEM_MESSAGE,this.handleSystemMessage,this),j.on("UNIT_DIED",this.handleUnitDied,this),j.on(j.EVENTS.UNIT_BARK,l=>{this.addLog(`[${l.unitName}] ${l.text}`,"#00ffcc")}),this.chatForm&&this.chatForm.addEventListener("submit",this.handleChatSubmit.bind(this)),this.addLog("Welcome to Messiah Grimoire!","#00ffcc")}addLog(l,x="#e0e0e0"){if(!this.logContainer)return;const E=document.createElement("div");E.className="log-entry",E.style.color=x,E.textContent=`> ${l}`,this.logContainer.appendChild(E),this.logContainer.children.length>50&&this.logContainer.removeChild(this.logContainer.firstElementChild),this.logContainer.scrollTop=this.logContainer.scrollHeight}handleItemCollected(l){this.addLog(`Obtained ${l}`,"#ffffbb")}handleSystemMessage(l){this.addLog(`[SYSTEM] ${l}`,"#bb88ff")}handleMonsterKilled(l){const{monsterId:x,attackerId:E}=l,C=E||"warrior",b=x==="goblin_sprite"||x==="monster"?"👺":"👾";let d="Warrior";C==="archer"&&(d="Archer"),C==="healer"&&(d="Healer"),C==="wizard"&&(d="Wizard"),C==="bard"&&(d="Bard"),this.addLog(`${d} defeated a monster! ${b}`,"#ffbbbb")}handleUnitDied(l){this.addLog(`${l} has fallen in battle! 💀`,"#ff0000")}async handleChatSubmit(l){l.preventDefault();const x=this.chatInput.value.trim();if(x){if(this.addLog(`User: ${x}`,"#ffffff"),this.chatInput.value="",!Ue.isReady){this.addLog("[System] AI Commander is still booting up...","#aaaaaa");return}try{const E=await Ue.route(x);if(E.type==="COMMAND"){this.addLog(`[System] Tactical command recognized: ${E.intent}`,"#aaaaaa"),j.emit(j.EVENTS.AI_COMMAND,{command:E.action.name,args:E.action.arguments});const C=E.action.name==="attack_priority"?`${E.action.arguments.role} 우선 공격`:`${E.action.name}(${Object.entries(E.action.arguments).map(([b,d])=>`${b}: ${d}`).join(", ")})`;this.addLog(`[AI] 실행: ${C}`,"#bb88ff")}else{this.addLog("[System] Conversational intent detected. Consulting memory...","#aaaaaa");const C=await Yt.searchMemory(x),b=oe.getActiveParty().filter(t=>t!==null);let d=ct.AREN;if(!b.includes("aren")&&b.length>0){const t=b[0];d=Object.values(ct).find(r=>r.id===t)||ct.AREN}const g=await Ie.generateResponse(d,x,C,[],1,b);this.addLog(`[${d.name}] ${g}`,"#00ffcc"),j.emit(j.EVENTS.AI_RESPONSE,{agentId:"warrior",text:g})}}catch(E){this.addLog(`[AI Error] ${E.message}`,"#ff5555")}}}destroy(){j.off(j.EVENTS.ITEM_COLLECTED,this.handleItemCollected,this),j.off(j.EVENTS.MONSTER_KILLED,this.handleMonsterKilled,this),j.off(j.EVENTS.SYSTEM_MESSAGE,this.handleSystemMessage,this)}}const ia=new ea;class sa{constructor(){this.memoryLimit=50,this.eventsQueue=[]}init(){console.log("[Blackboard] Initialized and listening to EventBus."),j.on(j.EVENTS.ITEM_COLLECTED,this.handleItemCollected,this),j.on(j.EVENTS.MONSTER_KILLED,this.handleMonsterKilled,this),j.on(j.EVENTS.SYSTEM_MESSAGE,this.handleSystemMessage,this),j.on(j.EVENTS.UNIT_DIED,this.handleUnitDied,this)}addEvent(l){this.eventsQueue.push(l),this.eventsQueue.length>this.memoryLimit&&this.eventsQueue.shift(),console.log(`[Blackboard] Update: ${l}`)}handleItemCollected(l){const{emoji:x,collectorId:E}=l,C=E==="archer"?"Archer":"Warrior";this.addEvent(`${C} collected: ${x}`)}handleMonsterKilled(l){const x=l.monsterId||l,E=x==="goblin_sprite"||x==="monster"?"👺":"👾";this.addEvent(`A monster ${E} was killed.`)}handleSystemMessage(l){this.addEvent(`System Report: ${l}`)}handleUnitDied(l){this.addEvent(`PARTY ALERT: ${l} died! 💀`)}getRecentEvents(){return[...this.eventsQueue]}destroy(){j.off(j.EVENTS.ITEM_COLLECTED,this.handleItemCollected,this),j.off(j.EVENTS.MONSTER_KILLED,this.handleMonsterKilled,this),j.off(j.EVENTS.SYSTEM_MESSAGE,this.handleSystemMessage,this),j.off(j.EVENTS.UNIT_DIED,this.handleUnitDied,this)}}const na=new sa;class aa{constructor(){this.stats={},this.isActive=!1,this.updateInterval=500,this.timer=null,this.lastGlobalUpdateTime=0}init(){j.on(j.EVENTS.COMBAT_DATA_RECORD,this.recordData,this),j.on(j.EVENTS.PARTY_DEPLOYED,this.reset,this),console.log("[CombatTracker] Initialized")}start(){this.isActive||(this.isActive=!0,this.timer=setInterval(()=>this.calculateAndPublish(),this.updateInterval),console.log("[CombatTracker] Tracker Started"))}stop(){this.isActive=!1,this.timer&&clearInterval(this.timer),this.timer=null}reset(){this.stats={},this.lastGlobalUpdateTime=Date.now(),console.log("[CombatTracker] Stats Reset")}recordData(l){const{type:x,amount:E,unitId:C}=l;if(!C)return;const b=Date.now();if(b-this.lastGlobalUpdateTime>5e3&&(console.log("[CombatTracker] Out of combat detected (>5s gap). Resetting stats for new session."),this.stats={}),this.lastGlobalUpdateTime=b,!oe.getState(C))return;this.stats[C]||(this.stats[C]={totalDamage:0,totalReceived:0,totalHeal:0,startTime:b,lastUpdateTime:b});const d=this.stats[C];x==="damage"?d.totalDamage+=E:x==="received"?d.totalReceived+=E:x==="heal"&&(d.totalHeal+=E),!this.isActive&&(x==="damage"||x==="received"||x==="heal")&&(console.log("[CombatTracker] Auto-starting tracker"),this.start())}calculateAndPublish(){const l=Date.now(),x={},E=Object.keys(this.stats);if(E.length===0)return;E.forEach(b=>{const d=this.stats[b],g=Math.max(1,(l-d.startTime)/1e3);x[b]={dps:d.totalDamage/g,tps:d.totalReceived/g,hps:d.totalHeal/g,totalDamage:d.totalDamage,totalReceived:d.totalReceived,totalHeal:d.totalHeal}}),["dps","tps","hps"].forEach(b=>{[...E].sort((g,t)=>x[t][b]-x[g][b]).forEach((g,t)=>{x[g][`${b}Rank`]=t+1})}),j.emit(j.EVENTS.COMBAT_TRACKER_UPDATE,x)}}const ra=new aa,oa={type:Q.AUTO,scale:{mode:Q.Scale.FIT,autoCenter:Q.Scale.CENTER_BOTH,parent:"game-container",width:1280,height:720},resolution:1,antialias:!0,roundPixels:!0,render:{powerPreference:"high-performance"},fps:{target:60,forceSetTimeOut:!1,panicMax:10,smoothStep:!0},parent:"game-container",backgroundColor:"#000000",scene:[Os,$n,Yn,Wn,Kn,Jn],physics:{default:"arcade",arcade:{gravity:{y:0},debug:!1}},callbacks:{postBoot:function(Y){Y.canvas.oncontextmenu=l=>l.preventDefault()}}},Qi=new ta,Ji=ia;(async()=>{Qi.init(),Ji.init(),na.init(),ra.init(),await oe.init(Object.values(ct)),await Ft.init(),await pe.init(),await vt.init(),await Mt.init();const Y=new Q.Game(oa);Y.uiManager=Qi,Y.logManager=Ji,Y.partyManager=oe,Y.npcManager=Ft,Y.messiahManager=pe,Y.fishingManager=vt,Y.alchemyManager=Mt,Y.dbManager=q,window.addDiamonds=async(l=99999)=>{const x=await q.getInventoryItem("emoji_gem"),C=(x?x.amount:0)+l;await q.saveInventoryItem("emoji_gem",C),j.emit(j.EVENTS.INVENTORY_UPDATED,{id:"emoji_gem",amount:C}),console.log(`%c[Cheat] Added ${l} diamonds. Total: ${C}`,"color: #00ffcc; font-weight: bold;")},window.addGold=async(l=999999)=>{const x=await q.getInventoryItem("emoji_coin"),C=(x?x.amount:0)+l;await q.saveInventoryItem("emoji_coin",C),j.emit(j.EVENTS.INVENTORY_UPDATED,{id:"emoji_coin",amount:C}),console.log(`%c[Cheat] Added ${l} gold. Total: ${C}`,"color: #ffd700; font-weight: bold;")},window.addTickets=async(l=10)=>{const x=await q.getInventoryItem("swampland_ticket"),C=(x?x.amount:0)+l;await q.saveInventoryItem("swampland_ticket",C),j.emit(j.EVENTS.INVENTORY_UPDATED),console.log(`%c[Cheat] Added ${l} Swampland Tickets. Total: ${C}`,"color: #ff9d00; font-weight: bold;")}})();
+        `,this.popupOverlay.style.display="flex",g();const t=this.popupInner.querySelector("#music-shop-close");t&&(t.onclick=()=>this.popupClose.click());const r=this.popupClose.onclick;this.popupClose.onclick=()=>{this.popupInner&&(this.popupInner.style.maxWidth="",this.popupInner.style.width=""),this.popupOverlay.style.display="none",this.game&&this.game.musicManager&&this.game.musicManager.stopPreview(),r&&r(),this.popupClose.onclick=r};const v=()=>{q.getInventoryItem("emoji_coin").then(a=>{const n=(a?a.amount:0).toLocaleString(),e=document.getElementById("header-gold");e&&(e.innerText="💰 "+n);const i=document.getElementById("store-gold-count");i&&(i.innerText=n)})},o=this.popupInner.querySelectorAll(".music-tab-btn");o.forEach(a=>{a.addEventListener("click",()=>{o.forEach(n=>n.classList.remove("active")),a.classList.add("active"),C=a.dataset.tab,g(),C==="STORE"&&v()})}),v(),this.popupInner.addEventListener("click",a=>{(a.target.classList.contains("buy-music-btn")||a.target.classList.contains("category-btn"))&&setTimeout(v,100)})}}class ia{constructor(){this.logContainer=document.getElementById("log-container"),this.chatForm=document.getElementById("chat-form"),this.chatInput=document.getElementById("chat-input")}init(){console.log("[LogManager] Initialized"),j.on(j.EVENTS.ITEM_COLLECTED,this.handleItemCollected,this),j.on(j.EVENTS.MONSTER_KILLED,this.handleMonsterKilled,this),j.on(j.EVENTS.SYSTEM_MESSAGE,this.handleSystemMessage,this),j.on("UNIT_DIED",this.handleUnitDied,this),j.on(j.EVENTS.UNIT_BARK,l=>{this.addLog(`[${l.unitName}] ${l.text}`,"#00ffcc")}),this.chatForm&&this.chatForm.addEventListener("submit",this.handleChatSubmit.bind(this)),this.addLog("Welcome to Messiah Grimoire!","#00ffcc")}addLog(l,x="#e0e0e0"){if(!this.logContainer)return;const E=document.createElement("div");E.className="log-entry",E.style.color=x,E.textContent=`> ${l}`,this.logContainer.appendChild(E),this.logContainer.children.length>50&&this.logContainer.removeChild(this.logContainer.firstElementChild),this.logContainer.scrollTop=this.logContainer.scrollHeight}handleItemCollected(l){this.addLog(`Obtained ${l}`,"#ffffbb")}handleSystemMessage(l){this.addLog(`[SYSTEM] ${l}`,"#bb88ff")}handleMonsterKilled(l){const{monsterId:x,attackerId:E}=l,C=E||"warrior",b=x==="goblin_sprite"||x==="monster"?"👺":"👾";let d="Warrior";C==="archer"&&(d="Archer"),C==="healer"&&(d="Healer"),C==="wizard"&&(d="Wizard"),C==="bard"&&(d="Bard"),this.addLog(`${d} defeated a monster! ${b}`,"#ffbbbb")}handleUnitDied(l){this.addLog(`${l} has fallen in battle! 💀`,"#ff0000")}async handleChatSubmit(l){l.preventDefault();const x=this.chatInput.value.trim();if(x){if(this.addLog(`User: ${x}`,"#ffffff"),this.chatInput.value="",!Ue.isReady){this.addLog("[System] AI Commander is still booting up...","#aaaaaa");return}try{const E=await Ue.route(x);if(E.type==="COMMAND"){this.addLog(`[System] Tactical command recognized: ${E.intent}`,"#aaaaaa"),j.emit(j.EVENTS.AI_COMMAND,{command:E.action.name,args:E.action.arguments});const C=E.action.name==="attack_priority"?`${E.action.arguments.role} 우선 공격`:`${E.action.name}(${Object.entries(E.action.arguments).map(([b,d])=>`${b}: ${d}`).join(", ")})`;this.addLog(`[AI] 실행: ${C}`,"#bb88ff")}else{this.addLog("[System] Conversational intent detected. Consulting memory...","#aaaaaa");const C=await Yt.searchMemory(x),b=oe.getActiveParty().filter(t=>t!==null);let d=ct.AREN;if(!b.includes("aren")&&b.length>0){const t=b[0];d=Object.values(ct).find(r=>r.id===t)||ct.AREN}const g=await Ie.generateResponse(d,x,C,[],1,b);this.addLog(`[${d.name}] ${g}`,"#00ffcc"),j.emit(j.EVENTS.AI_RESPONSE,{agentId:"warrior",text:g})}}catch(E){this.addLog(`[AI Error] ${E.message}`,"#ff5555")}}}destroy(){j.off(j.EVENTS.ITEM_COLLECTED,this.handleItemCollected,this),j.off(j.EVENTS.MONSTER_KILLED,this.handleMonsterKilled,this),j.off(j.EVENTS.SYSTEM_MESSAGE,this.handleSystemMessage,this)}}const sa=new ia;class na{constructor(){this.memoryLimit=50,this.eventsQueue=[]}init(){console.log("[Blackboard] Initialized and listening to EventBus."),j.on(j.EVENTS.ITEM_COLLECTED,this.handleItemCollected,this),j.on(j.EVENTS.MONSTER_KILLED,this.handleMonsterKilled,this),j.on(j.EVENTS.SYSTEM_MESSAGE,this.handleSystemMessage,this),j.on(j.EVENTS.UNIT_DIED,this.handleUnitDied,this)}addEvent(l){this.eventsQueue.push(l),this.eventsQueue.length>this.memoryLimit&&this.eventsQueue.shift(),console.log(`[Blackboard] Update: ${l}`)}handleItemCollected(l){const{emoji:x,collectorId:E}=l,C=E==="archer"?"Archer":"Warrior";this.addEvent(`${C} collected: ${x}`)}handleMonsterKilled(l){const x=l.monsterId||l,E=x==="goblin_sprite"||x==="monster"?"👺":"👾";this.addEvent(`A monster ${E} was killed.`)}handleSystemMessage(l){this.addEvent(`System Report: ${l}`)}handleUnitDied(l){this.addEvent(`PARTY ALERT: ${l} died! 💀`)}getRecentEvents(){return[...this.eventsQueue]}destroy(){j.off(j.EVENTS.ITEM_COLLECTED,this.handleItemCollected,this),j.off(j.EVENTS.MONSTER_KILLED,this.handleMonsterKilled,this),j.off(j.EVENTS.SYSTEM_MESSAGE,this.handleSystemMessage,this),j.off(j.EVENTS.UNIT_DIED,this.handleUnitDied,this)}}const aa=new na;class ra{constructor(){this.stats={},this.isActive=!1,this.updateInterval=500,this.timer=null,this.lastGlobalUpdateTime=0}init(){j.on(j.EVENTS.COMBAT_DATA_RECORD,this.recordData,this),j.on(j.EVENTS.PARTY_DEPLOYED,this.reset,this),console.log("[CombatTracker] Initialized")}start(){this.isActive||(this.isActive=!0,this.timer=setInterval(()=>this.calculateAndPublish(),this.updateInterval),console.log("[CombatTracker] Tracker Started"))}stop(){this.isActive=!1,this.timer&&clearInterval(this.timer),this.timer=null}reset(){this.stats={},this.lastGlobalUpdateTime=Date.now(),console.log("[CombatTracker] Stats Reset")}recordData(l){const{type:x,amount:E,unitId:C}=l;if(!C)return;const b=Date.now();if(b-this.lastGlobalUpdateTime>5e3&&(console.log("[CombatTracker] Out of combat detected (>5s gap). Resetting stats for new session."),this.stats={}),this.lastGlobalUpdateTime=b,!oe.getState(C))return;this.stats[C]||(this.stats[C]={totalDamage:0,totalReceived:0,totalHeal:0,startTime:b,lastUpdateTime:b});const d=this.stats[C];x==="damage"?d.totalDamage+=E:x==="received"?d.totalReceived+=E:x==="heal"&&(d.totalHeal+=E),!this.isActive&&(x==="damage"||x==="received"||x==="heal")&&(console.log("[CombatTracker] Auto-starting tracker"),this.start())}calculateAndPublish(){const l=Date.now(),x={},E=Object.keys(this.stats);if(E.length===0)return;E.forEach(b=>{const d=this.stats[b],g=Math.max(1,(l-d.startTime)/1e3);x[b]={dps:d.totalDamage/g,tps:d.totalReceived/g,hps:d.totalHeal/g,totalDamage:d.totalDamage,totalReceived:d.totalReceived,totalHeal:d.totalHeal}}),["dps","tps","hps"].forEach(b=>{[...E].sort((g,t)=>x[t][b]-x[g][b]).forEach((g,t)=>{x[g][`${b}Rank`]=t+1})}),j.emit(j.EVENTS.COMBAT_TRACKER_UPDATE,x)}}const oa=new ra,la={type:Q.AUTO,scale:{mode:Q.Scale.FIT,autoCenter:Q.Scale.CENTER_BOTH,parent:"game-container",width:1280,height:720},resolution:1,antialias:!0,roundPixels:!0,render:{powerPreference:"high-performance"},fps:{target:60,forceSetTimeOut:!1,panicMax:10,smoothStep:!0},parent:"game-container",backgroundColor:"#000000",scene:[Os,$n,Yn,Wn,Kn,Jn],physics:{default:"arcade",arcade:{gravity:{y:0},debug:!1}},callbacks:{postBoot:function(Y){Y.canvas.oncontextmenu=l=>l.preventDefault()}}},Qi=new ea,Ji=sa;(async()=>{Qi.init(),Ji.init(),aa.init(),oa.init(),await oe.init(Object.values(ct)),await Ft.init(),await pe.init(),await vt.init(),await Mt.init();const Y=new Q.Game(la);Y.uiManager=Qi,Y.logManager=Ji,Y.partyManager=oe,Y.npcManager=Ft,Y.messiahManager=pe,Y.fishingManager=vt,Y.alchemyManager=Mt,Y.dbManager=q,window.addDiamonds=async(l=99999)=>{const x=await q.getInventoryItem("emoji_gem"),C=(x?x.amount:0)+l;await q.saveInventoryItem("emoji_gem",C),j.emit(j.EVENTS.INVENTORY_UPDATED,{id:"emoji_gem",amount:C}),console.log(`%c[Cheat] Added ${l} diamonds. Total: ${C}`,"color: #00ffcc; font-weight: bold;")},window.addGold=async(l=999999)=>{const x=await q.getInventoryItem("emoji_coin"),C=(x?x.amount:0)+l;await q.saveInventoryItem("emoji_coin",C),j.emit(j.EVENTS.INVENTORY_UPDATED,{id:"emoji_coin",amount:C}),console.log(`%c[Cheat] Added ${l} gold. Total: ${C}`,"color: #ffd700; font-weight: bold;")},window.addTickets=async(l=10)=>{const x=await q.getInventoryItem("swampland_ticket"),C=(x?x.amount:0)+l;await q.saveInventoryItem("swampland_ticket",C),j.emit(j.EVENTS.INVENTORY_UPDATED),console.log(`%c[Cheat] Added ${l} Swampland Tickets. Total: ${C}`,"color: #ff9d00; font-weight: bold;")}})();
