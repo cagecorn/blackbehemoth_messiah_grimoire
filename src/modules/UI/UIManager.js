@@ -8,7 +8,8 @@ import { MercenaryClasses, Characters, PetStats, scaleStats, StructureStats, Ski
 // partyManager will be accessed via this.scene.game.partyManager
 import ItemManager, { ITEM_TYPES } from '../Core/ItemManager.js';
 import CharmManager from '../Core/CharmManager.js';
-import ShopManager from './ShopManager.js';
+import ShopUI from './ShopUI.js';
+import EquipmentUI from './EquipmentUI.js';
 import npcManager from '../Core/NPCManager.js';
 import buildingManager, { BUILDING_TYPES } from '../Core/BuildingManager.js';
 import equipmentManager from '../Core/EquipmentManager.js';
@@ -117,7 +118,8 @@ export default class UIManager {
         this.currentCraftFilter = null; // Filter for equipment crafting UI
         this.equipFilter = 'ALL'; // Filter for Equipment Inventory
 
-        this.shopManager = new ShopManager(this);
+        this.shopUI = new ShopUI(this);
+        this.equipmentUI = new EquipmentUI(this);
         this.mercenaryCodexUI = new MercenaryCodexUI(this);
         window.uiManager = this;
 
@@ -985,7 +987,7 @@ export default class UIManager {
             font-size: 10px;
             border: 2px solid #fbbf24;
             box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-            z-index: 10000;
+            z-index: 20000;
             pointer-events: none;
             opacity: 0;
             transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -1417,8 +1419,8 @@ export default class UIManager {
     }
 
     showShop() {
-        if (this.shopManager) {
-            this.shopManager.show();
+        if (this.shopUI) {
+            this.shopUI.show();
         }
     }
 
@@ -1559,75 +1561,16 @@ export default class UIManager {
 
             // Refresh
             this.refreshPetStorage();
-            this._renderPetDetail(petId);
         };
     }
 
     async showEquipmentCrafting() {
-        if (this.equipmentCraftingOverlay) return;
-
-        const overlay = document.createElement('div');
-        overlay.id = 'equipment-crafting-overlay';
-        overlay.className = 'shop-overlay retro-scanline-overlay equipment-crafting-overlay';
-        this.equipmentCraftingOverlay = overlay;
-
-        overlay.innerHTML = `
-            <div class="shop-container equipment-crafting-container" style="max-width: 900px; width: 95vw;">
-                <div class="shop-header" style="background: linear-gradient(to right, #7c3aed, #a855f7);">
-                    <div class="shop-title">${localizationManager.t('ui_craft_title')}</div>
-                    <button class="shop-close-btn" id="equip-craft-close">✕</button>
-                </div>
-                
-                <div class="shop-body equipment-crafting-body" id="equip-craft-body" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 20px;">
-                    <div class="craft-recipe-area" style="border-right: 1px solid rgba(255,255,255,0.1); padding-right: 15px;">
-                        <div style="font-size: 14px; font-weight: bold; margin-bottom: 12px; color: #a78bfa;">${localizationManager.t('ui_craft_list_header')}</div>
-                        <div id="craft-recipe-list" style="display: flex; flex-direction: column; gap: 10px;">
-                            <!-- Recipes go here -->
-                        </div>
-                    </div>
-                    
-                    <div class="owned-equipment-area" style="display: flex; flex-direction: column; gap: 10px;">
-                        <div style="font-size: 14px; font-weight: bold; color: #a78bfa;">${localizationManager.t('ui_owned_growth_header')}</div>
-                        <div id="owned-equip-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px; max-height: 280px; overflow-y: auto; padding: 5px; background: rgba(0,0,0,0.2); border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
-                            <!-- Owned instances go here -->
-                        </div>
-                        
-                        <!-- NEW: Selection Control Area -->
-                        <div id="selected-equip-controls" style="margin-top: 5px; padding: 12px; background: rgba(124, 58, 237, 0.1); border: 1px dashed #7c3aed; border-radius: 8px; display: none; flex-direction: column; gap: 10px;">
-                            <div id="selected-equip-info" style="font-size: 12px; color: #fff; font-weight: bold;">${localizationManager.t('ui_craft_none_selected')}</div>
-                            <div style="display: flex; gap: 10px;">
-                                <button id="btn-equip-detail" class="shop-buy-btn" style="flex: 1; height: 32px; font-size: 11px; background: #4f46e5;">${localizationManager.t('ui_craft_detail_btn')}</button>
-                                <button id="btn-equip-destroy" class="shop-buy-btn" style="flex: 1; height: 32px; font-size: 11px; background: #dc2626; border-color: #ef4444;">${localizationManager.t('ui_craft_destroy_btn')}</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="shop-footer" style="display: flex; justify-content: space-between; align-items: center; padding: 15px;">
-                    <div class="shop-currency" id="craft-material-display" style="display:flex; align-items:center; gap:10px;">
-                        <!-- Materials like wood will be shown here -->
-                    </div>
-                    <div style="font-size: 11px; opacity: 0.7; color: #d1d5db;">${localizationManager.t('ui_craft_footer_tip')}</div>
-                </div>
-            </div>
-        `;
-
-        const appContainer = document.getElementById('app-container') || document.body;
-        appContainer.appendChild(overlay);
-
-        // Close events
-        const closeBtn = document.getElementById('equip-craft-close');
-        if (closeBtn) closeBtn.onclick = () => this.hideEquipmentCrafting();
-        overlay.onclick = (e) => { if (e.target === overlay) this.hideEquipmentCrafting(); };
-
-        await this.refreshEquipmentCrafting();
+        this.equipmentUI.show();
     }
 
+
     hideEquipmentCrafting() {
-        if (this.equipmentCraftingOverlay) {
-            this.equipmentCraftingOverlay.remove();
-            this.equipmentCraftingOverlay = null;
-        }
+        // Now handled by popup system
     }
 
     async showDefenseManagement() {
@@ -1887,219 +1830,6 @@ export default class UIManager {
                 }
             };
         });
-    }
-
-    async refreshEquipmentCrafting() {
-        if (!this.equipmentCraftingOverlay) return;
-
-        const recipeList = document.getElementById('craft-recipe-list');
-        const ownedList = document.getElementById('owned-equip-list');
-        const materialDisplay = document.getElementById('craft-material-display');
-
-        if (!recipeList || !ownedList || !materialDisplay) return;
-
-        // 1. Materials
-        const wood = await DBManager.getInventoryItem('emoji_wood');
-        materialDisplay.innerHTML = `<div style="display:flex; align-items:center; gap:5px; color: #fff; font-weight: bold;"><img src="assets/emojis/1fab5.svg" style="width:20px; height:20px;"> ${wood ? wood.amount : 0}</div>`;
-
-        // 2. Recipes (Dynamic from ItemManager)
-        const allItems = ItemManager.getAllItems();
-        const recipes = [];
-        for (const id in allItems) {
-            if (allItems[id].type === ITEM_TYPES.EQUIPMENT) {
-                recipes.push({ id, req: { emoji_wood: 500 } });
-            }
-        }
-
-        // Set default filter if none selected
-        if (!this.currentCraftFilter && recipes.length > 0) {
-            this.currentCraftFilter = recipes[0].id;
-        }
-
-        let recipeHtml = '';
-        for (const r of recipes) {
-            const item = ItemManager.getItem(r.id);
-            const canCraft = wood && wood.amount >= r.req.emoji_wood;
-            const iconUrl = item.customAsset || 'assets/emojis/' + ItemManager.getSVGFilename(r.id);
-            const isSelected = this.currentCraftFilter === r.id;
-
-            recipeHtml += `
-                <div class="craft-card ${isSelected ? 'selected' : ''}" data-id="${r.id}" 
-                     style="background: ${isSelected ? 'rgba(124, 58, 237, 0.2)' : 'rgba(0,0,0,0.3)'}; 
-                            border: 2px solid ${isSelected ? '#a78bfa' : '#5b21b6'}; 
-                            box-shadow: ${isSelected ? '0 0 15px rgba(167, 139, 250, 0.4)' : 'none'};
-                            border-radius: 12px; padding: 12px; display: flex; align-items: center; gap: 15px; 
-                            position: relative; overflow: hidden; cursor: pointer; transition: all 0.2s ease;">
-                    <div class="retro-scanline-overlay" style="pointer-events: none;"></div>
-                    <img src="${iconUrl}" style="width: 48px; height: 48px; object-fit: contain; image-rendering: pixelated; background: rgba(255,255,255,0.05); border-radius: 8px; padding: 4px; border: 1px solid rgba(255,255,255,0.1);">
-                    <div style="flex: 1;">
-                        <div style="font-weight: bold; font-size: 14px; color: #fff;">${ItemManager.getLocalizedName(r.id)}</div>
-                        <div style="font-size: 11px; color: #a78bfa; display: flex; align-items: center; gap: 4px;">${localizationManager.t('ui_craft_owned_count', [r.req.emoji_wood])}: <img src="assets/emojis/1fab5.svg" style="width:14px; height:14px;"> ${r.req.emoji_wood}</div>
-                    </div>
-                    <button class="shop-buy-btn craft-btn" data-id="${r.id}" ${canCraft ? '' : 'disabled'} style="padding: 8px 15px; font-size: 12px; height: auto; background: ${canCraft ? 'linear-gradient(to bottom, #7c3aed, #5b21b6)' : '#333'}; opacity: ${canCraft ? 1 : 0.5}; cursor: ${canCraft ? 'pointer' : 'not-allowed'}; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); color: #fff; font-weight: bold;">${localizationManager.t('ui_craft_btn')}</button>
-                    ${isSelected ? '<div style="position: absolute; top: 5px; right: 5px; color: #a78bfa; font-size: 10px;">★</div>' : ''}
-                </div>
-            `;
-        }
-        recipeList.innerHTML = recipeHtml;
-
-        // Bind recipe card selection & craft buttons
-        recipeList.querySelectorAll('.craft-card').forEach(card => {
-            card.onclick = (e) => {
-                // If button was clicked, don't trigger filter (craftItem handled below)
-                if (e.target.classList.contains('craft-btn')) return;
-
-                const id = card.dataset.id;
-                this.currentCraftFilter = id;
-                this.refreshEquipmentCrafting();
-            };
-
-            const btn = card.querySelector('.craft-btn');
-            btn.onclick = async (e) => {
-                e.stopPropagation(); // Prevent card click
-                const itemId = btn.dataset.id;
-                const result = await equipmentManager.craftItem(itemId);
-                if (result.success) {
-                    this.showToast(localizationManager.t('ui_craft_success', [ItemManager.getLocalizedName(itemId)]));
-                    this.refreshEquipmentCrafting();
-                } else {
-                    this.showToast(result.reason);
-                }
-            };
-        });
-
-        // 3. Owned Instances (Filtered by selection)
-        let instances = await DBManager.getAllEquipmentInstances();
-
-        // Apply filter if exists
-        if (this.currentCraftFilter) {
-            instances = instances.filter(inst => inst.itemId === this.currentCraftFilter);
-        }
-
-        let ownedHtml = '';
-        if (instances.length === 0) {
-            const itemName = this.currentCraftFilter ? ItemManager.getLocalizedName(this.currentCraftFilter) + ' ' : '';
-            ownedHtml = `<div style="grid-column: 1/-1; text-align: center; opacity: 0.4; padding: 40px; font-size: 12px; color: #fff;">
-                ${itemName}${localizationManager.t('ui_craft_in_inventory')}
-            </div>`;
-        } else {
-            // Sort by level descending
-            instances.sort((a, b) => b.level - a.level);
-
-            for (const inst of instances) {
-                const base = ItemManager.getItem(inst.itemId);
-                const iconUrl = base.customAsset || 'assets/emojis/' + ItemManager.getSVGFilename(inst.itemId);
-
-                // Show ownership label
-                const ownerLabel = inst.ownerId ?
-                    `<div style="font-size: 8px; color: #fbbf24; margin-top: 2px; font-weight: bold; border: 1px solid rgba(251, 191, 36, 0.5); padding: 1px 3px; border-radius: 3px; background: rgba(0,0,0,0.3); display: inline-block;">${localizationManager.t('ui_craft_equipped', [inst.ownerId])}</div>` :
-                    `<div style="font-size: 8px; color: #10b981; margin-top: 2px; font-weight: bold;">${localizationManager.t('ui_craft_in_inventory')}</div>`;
-
-                const isSelected = this.currentEquipSelection === inst.id;
-                ownedHtml += `
-                    <div class="owned-equip-card ${isSelected ? 'selected' : ''}" data-instance-id="${inst.id}" 
-                        style="background: ${isSelected ? 'rgba(124, 58, 237, 0.3)' : 'rgba(255,255,255,0.05)'}; 
-                               border: ${isSelected ? '2px solid #fbbf24' : '1px solid rgba(167, 139, 250, 0.3)'}; 
-                               box-shadow: ${isSelected ? '0 0 10px rgba(251, 191, 36, 0.3)' : 'none'};
-                               border-radius: 8px; padding: 10px; display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer; position: relative;" title="${base.name} LV.${inst.level}">
-                        <div style="position: absolute; top: -5px; right: -5px; background: #7c3aed; color: #fff; font-size: 8px; font-weight: bold; padding: 2px 5px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.3);">LV.${inst.level}</div>
-                        <img src="${iconUrl}" style="width: 32px; height: 32px; object-fit: contain; image-rendering: pixelated; filter: drop-shadow(0 0 5px rgba(124, 58, 237, 0.5));">
-                        <div style="font-size: 9px; color: #fff; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; font-weight: bold;">${ItemManager.getLocalizedName(inst.itemId)}</div>
-                        ${ownerLabel}
-                    </div>
-                `;
-            }
-        }
-        ownedList.innerHTML = ownedHtml;
-
-        // 4. Bind Selection & Controls
-        const controlArea = document.getElementById('selected-equip-controls');
-        const infoDisplay = document.getElementById('selected-equip-info');
-        const detailBtn = document.getElementById('btn-equip-detail');
-        const destroyBtn = document.getElementById('btn-equip-destroy');
-
-        // Handle selection clicks
-        ownedList.querySelectorAll('.owned-equip-card').forEach(card => {
-            card.onclick = () => {
-                const instId = card.dataset.instanceId;
-                if (this.currentEquipSelection === instId) {
-                    this.currentEquipSelection = null;
-                } else {
-                    this.currentEquipSelection = instId;
-                }
-                this.refreshEquipmentCrafting();
-            };
-        });
-
-        // Update control area visibility
-        if (this.currentEquipSelection) {
-            const selectedInst = instances.find(inst => inst.id === this.currentEquipSelection);
-            if (selectedInst) {
-                const base = ItemManager.getItem(selectedInst.itemId);
-                controlArea.style.display = 'flex';
-                infoDisplay.innerHTML = `[SELECTED] ${ItemManager.getLocalizedName(selectedInst.itemId)} (LV.${selectedInst.level})`;
-
-                // Detail Button
-                detailBtn.onclick = () => {
-                    const info = equipmentManager.getDisplayInfo(selectedInst);
-                    const iconUrl = base.customAsset || 'assets/emojis/' + ItemManager.getSVGFilename(selectedInst.itemId);
-
-                    const html = `
-                        <div class="item-detail-popup" style="padding: 25px; color: #fff; font-family: 'VT323', monospace;">
-                            <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 20px; border-bottom: 2px solid rgba(124, 58, 237, 0.4); padding-bottom: 15px;">
-                                <img src="${iconUrl}" style="width: 64px; height: 64px; image-rendering: pixelated; background: rgba(0,0,0,0.3); border-radius: 12px; padding: 10px; border: 2px solid #7c3aed;">
-                                <div>
-                                    <div style="font-size: 24px; color: #fbbf24; text-shadow: 0 0 10px rgba(251, 191, 36, 0.5);">${ItemManager.getLocalizedName(selectedInst.itemId)}</div>
-                                    <div style="font-size: 14px; color: #a78bfa; opacity: 0.8;">${localizationManager.t('ui_craft_unique_growth')}</div>
-                                </div>
-                            </div>
-                            <div style="font-size: 16px; line-height: 1.6; white-space: pre-wrap; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">${ItemManager.getLocalizedDescription(selectedInst.itemId)}</div>
-                            <div style="margin-top: 20px; text-align: center; font-size: 12px; color: #666;">${localizationManager.t('ui_craft_growth_tip')}</div>
-                        </div>
-                    `;
-                    this.showPopup(html);
-                };
-
-                // Destroy Button
-                destroyBtn.onclick = () => {
-                    const itemName = ItemManager.getLocalizedName(selectedInst.itemId);
-                    this.showConfirm(localizationManager.t('ui_craft_destroy_confirm', [itemName, selectedInst.level]), async () => {
-                        // 1. Unequip if needed
-                        if (selectedInst.ownerId) {
-                            const ownerId = selectedInst.ownerId;
-                            // Find which slot it occupies in the owner's state
-                            const ownerState = partyManager.getState(ownerId);
-                            if (ownerState && ownerState.equipment) {
-                                let foundSlot = null;
-                                for (const [slot, item] of Object.entries(ownerState.equipment)) {
-                                    if (item && item.instanceId === selectedInst.id) {
-                                        foundSlot = slot;
-                                        break;
-                                    }
-                                }
-                                if (foundSlot) {
-                                    console.log(`[UIManager] Auto-unequipping ${selectedInst.id} from ${ownerId} slot ${foundSlot}`);
-                                    await partyManager.unequipItem(ownerId, foundSlot);
-                                }
-                            }
-                        }
-
-                        // 2. Delete from DB
-                        await DBManager.deleteEquipmentInstance(selectedInst.id);
-                        this.showToast(localizationManager.t('ui_craft_destroy_success', [ItemManager.getLocalizedName(selectedInst.itemId)]));
-
-                        // 3. Reset selection and refresh
-                        this.currentEquipSelection = null;
-                        this.refreshEquipmentCrafting();
-                    });
-                };
-            } else {
-                this.currentEquipSelection = null;
-                controlArea.style.display = 'none';
-            }
-        } else {
-            controlArea.style.display = 'none';
-        }
     }
 
     async showNPCHire() {
