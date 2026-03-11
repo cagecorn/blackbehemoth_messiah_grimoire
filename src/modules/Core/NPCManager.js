@@ -1,56 +1,74 @@
 import DBManager from '../Database/DBManager.js';
 import EventBus from '../Events/EventBus.js';
+import localizationManager from './LocalizationManager.js';
 
 /**
  * NPCManager.js
  * Manages hired non-combat NPCs and their abilities.
  */
 class NPCManager {
+    static NPC_DATA = {
+        'MISSIONARY': {
+            id: 'MISSIONARY',
+            name: '선교사',
+            sprite: 'missionary_npc',
+            icon: 'assets/npc/missionary_npc.png',
+            cost: 10000,
+            maxStacks: 50,
+            description: '던전/레이드에서 용병 사망 시, 자동으로 풀 체력으로 부활 (50회)'
+        },
+        'NUN': {
+            id: 'NUN',
+            name: '수녀',
+            sprite: 'nun_npc',
+            icon: 'assets/npc/nun_npc.png',
+            cost: 50000,
+            maxStacks: 50,
+            description: '던전/레이드에서 패배 시, 1라운드가 아닌 현재 라운드에서 재시작 (50회)'
+        },
+        'HIRED_WARRIOR': {
+            id: 'HIRED_WARRIOR',
+            name: '고용 전사',
+            sprite: 'hired_warrior_sprite',
+            icon: 'assets/npc/hired_warrior_sprite.png',
+            cost: 50000,
+            maxStacks: 10,
+            description: '전투에 직접 참여하는 강력한 전사. 사망 시 스택을 소모해 즉시 부활합니다. (10회)',
+            isCombatant: true,
+            classId: 'warrior'
+        },
+        'HIRED_ARCHER': {
+            id: 'HIRED_ARCHER',
+            name: '고용 아쳐',
+            sprite: 'hired_archer_sprite',
+            icon: 'assets/npc/hired_archer_sprite.png',
+            cost: 50000,
+            maxStacks: 10,
+            description: '전투에 직접 참여하는 강력한 아쳐. 사망 시 스택을 소모해 즉시 부활합니다. (10회)',
+            isCombatant: true,
+            classId: 'archer'
+        }
+    };
+
     constructor() {
         this.roster = {}; // { npcId: { id, stacks } }
         this.activeNPCId = null;
-        this.NPC_DATA = {
-            'MISSIONARY': {
-                id: 'MISSIONARY',
-                name: '선교사',
-                sprite: 'missionary_npc',
-                icon: 'assets/npc/missionary_npc.png',
-                cost: 10000,
-                maxStacks: 50,
-                description: '던전/레이드에서 용병 사망 시, 자동으로 풀 체력으로 부활 (50회)'
-            },
-            'NUN': {
-                id: 'NUN',
-                name: '수녀',
-                sprite: 'nun_npc',
-                icon: 'assets/npc/nun_npc.png',
-                cost: 50000,
-                maxStacks: 50,
-                description: '던전/레이드에서 패배 시, 1라운드가 아닌 현재 라운드에서 재시작 (50회)'
-            },
-            'HIRED_WARRIOR': {
-                id: 'HIRED_WARRIOR',
-                name: '고용 전사',
-                sprite: 'hired_warrior_sprite',
-                icon: 'assets/npc/hired_warrior_sprite.png',
-                cost: 50000,
-                maxStacks: 10,
-                description: '전투에 직접 참여하는 강력한 전사. 사망 시 스택을 소모해 즉시 부활합니다. (10회)',
-                isCombatant: true,
-                classId: 'warrior'
-            },
-            'HIRED_ARCHER': {
-                id: 'HIRED_ARCHER',
-                name: '고용 아쳐',
-                sprite: 'hired_archer_sprite',
-                icon: 'assets/npc/hired_archer_sprite.png',
-                cost: 50000,
-                maxStacks: 10,
-                description: '전투에 직접 참여하는 강력한 아쳐. 사망 시 스택을 소모해 즉시 부활합니다. (10회)',
-                isCombatant: true,
-                classId: 'archer'
-            }
-        };
+        // NPC_DATA is now static
+    }
+
+    static getLocalizedName(npcId) {
+        if (!npcId) return '';
+        const key = `npc_name_${npcId.toLowerCase()}`;
+        // Fallback to internal data if key missing
+        const internal = NPCManager.NPC_DATA[npcId.toUpperCase()];
+        return localizationManager.t(key, null, internal ? internal.name : npcId);
+    }
+
+    static getLocalizedDescription(npcId) {
+        if (!npcId) return '';
+        const key = `npc_desc_${npcId.toLowerCase()}`;
+        const internal = NPCManager.NPC_DATA[npcId.toUpperCase()];
+        return localizationManager.t(key, null, internal ? internal.description : '');
     }
 
     async init() {
@@ -84,7 +102,7 @@ class NPCManager {
 
     async hireNPC(npcId) {
         npcId = npcId.toUpperCase();
-        const npcConfig = this.NPC_DATA[npcId];
+        const npcConfig = NPCManager.NPC_DATA[npcId];
         if (!npcConfig) return { success: false, message: 'Invalid NPC ID' };
 
         // Check gold
@@ -92,7 +110,7 @@ class NPCManager {
         const currentGold = goldItem ? goldItem.amount : 0;
 
         if (currentGold < npcConfig.cost) {
-            return { success: false, message: '골드가 부족합니다! 💰' };
+            return { success: false, message: localizationManager.t('ui_npc_low_gold') };
         }
 
         // Deduct Gold
@@ -117,7 +135,8 @@ class NPCManager {
         EventBus.emit('NPC_STACK_UPDATED', this.roster[npcId]);
 
         console.log(`[NPCManager] Hired/Stacked ${npcConfig.name}. Total Stacks: ${this.roster[npcId].stacks}`);
-        return { success: true, message: `${npcConfig.name}를 고용했습니다! 현재 총 ${this.roster[npcId].stacks}회 사용 가능 ✨` };
+        const localizedName = NPCManager.getLocalizedName(npcId);
+        return { success: true, message: localizationManager.t('ui_npc_hire_success', [localizedName, this.roster[npcId].stacks]) };
     }
 
     selectNPC(npcId) {
@@ -143,7 +162,7 @@ class NPCManager {
     getHiredNPC() {
         const active = this.getActiveNPC();
         if (!active) return null;
-        const data = this.NPC_DATA[active.id];
+        const data = NPCManager.NPC_DATA[active.id];
         return {
             ...active,
             ...data,
@@ -157,7 +176,7 @@ class NPCManager {
     getAllHiredNPCs() {
         return Object.values(this.roster).map(npc => ({
             ...npc,
-            ...this.NPC_DATA[npc.id]
+            ...NPCManager.NPC_DATA[npc.id]
         }));
     }
 
@@ -169,7 +188,7 @@ class NPCManager {
         console.log(`[NPCManager] Consumed stack for ${active.id}. Remaining: ${active.stacks}`);
 
         if (active.stacks <= 0) {
-            const oldName = this.NPC_DATA[active.id].name;
+            const oldName = NPCManager.getLocalizedName(active.id);
             delete this.roster[active.id];
 
             // If active was deleted, pick another if available
@@ -190,7 +209,7 @@ class NPCManager {
     }
 
     getNPCInfo(npcId) {
-        return this.NPC_DATA[npcId.toUpperCase()];
+        return NPCManager.NPC_DATA[npcId.toUpperCase()];
     }
 }
 

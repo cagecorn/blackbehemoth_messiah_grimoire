@@ -16,6 +16,7 @@ import foodManager, { FOOD_RECIPES } from '../Core/FoodManager.js';
 import fishingManager from '../Core/FishingManager.js';
 import alchemyManager from '../Core/AlchemyManager.js';
 import { MUSIC_TRACKS } from '../Core/MusicManager.js';
+import messiahManager from '../Core/MessiahManager.js';
 import localizationManager from '../Core/LocalizationManager.js';
 
 
@@ -787,14 +788,16 @@ export default class UIManager {
             this.npcHud.style.display = 'none';
             return;
         }
-
         const hiredNPC = npcManager.getHiredNPC();
         if (hiredNPC) {
             this.npcHudIcon.style.display = 'block';
             this.npcHudIcon.src = hiredNPC.icon;
+            const localizedName = npcManager.constructor.getLocalizedName(hiredNPC.id);
+            const localizedDesc = npcManager.constructor.getLocalizedDescription(hiredNPC.id);
+            const stacksUnit = localizationManager.t('ui_npc_stacks_unit');
             this.npcHudStacks.innerText = hiredNPC.currentStacks;
             this.npcHudStacks.style.fontSize = '12px';
-            this.npcHud.dataset.tooltip = hiredNPC ? `${hiredNPC.name} (${hiredNPC.currentStacks} ${localizationManager.currentLanguage === 'EN' ? 'Stacks' : '스택'})\n${hiredNPC.description}` : localizationManager.t('menu_npc_hire');
+            this.npcHud.dataset.tooltip = `${localizedName} (${hiredNPC.currentStacks} ${stacksUnit})\n${localizedDesc}`;
         } else {
             // Show NONE for empty state
             this.npcHudIcon.style.display = 'none';
@@ -2104,7 +2107,7 @@ export default class UIManager {
         overlay.innerHTML = `
             <div class="shop-container npc-hire-container" style="max-width: 800px; width: 90vw;">
                 <div class="shop-header" style="background: linear-gradient(to right, #7c3aed, #8b5cf6);">
-                    <div class="shop-title">🤝 NPC RECRUITMENT (NPC 고용)</div>
+                    <div class="shop-title">${localizationManager.t('ui_npc_hire_title')}</div>
                     <button class="shop-close-btn" id="npc-hire-close">✕</button>
                 </div>
                 
@@ -2140,14 +2143,14 @@ export default class UIManager {
         const activeNPCId = npcManager.activeNPCId;
         let html = '';
 
-        Object.values(npcManager.NPC_DATA).forEach(npc => {
+        Object.values(npcManager.constructor.NPC_DATA).forEach(npc => {
             const ownedNPC = roster[npc.id];
             const isActive = (npc.id === activeNPCId);
 
             let statusText = '';
             if (ownedNPC) {
                 statusText = `<div style="color: #6ee7b7; font-weight: bold; font-size: 11px; margin-top: 4px;">
-                    [보유 중: ${ownedNPC.stacks} 스택] ${isActive ? '✅ 활동 중' : ''}
+                    ${localizationManager.t('ui_npc_owned_stacks', [ownedNPC.stacks])} ${isActive ? localizationManager.t('ui_npc_active_status') : ''}
                 </div>`;
             }
 
@@ -2158,19 +2161,19 @@ export default class UIManager {
                     </div>
                     <div style="flex: 1; display: flex; flex-direction: column; gap: 6px;">
                         <div style="font-size: 15px; font-weight: bold; color: #fbbf24; display: flex; align-items: center; gap: 8px;">
-                            ${npc.name}
+                            ${npcManager.constructor.getLocalizedName(npc.id)}
                             ${isActive ? '<span style="font-size: 9px; background: #fbbf24; color: #000; padding: 1px 4px; border-radius: 3px;">ACTIVE</span>' : ''}
                         </div>
-                        <div style="font-size: 10.5px; color: #d1d5db; line-height: 1.4; min-height: 30px;">${npc.description}</div>
+                        <div style="font-size: 10.5px; color: #d1d5db; line-height: 1.4; min-height: 30px;">${npcManager.constructor.getLocalizedDescription(npc.id)}</div>
                         ${statusText}
                         
                         <div style="display: flex; gap: 8px; margin-top: 8px;">
                             <button class="shop-buy-btn npc-hire-btn" data-id="${npc.id}" style="flex: 2; height: 36px; font-size: 11px;">
-                                ${ownedNPC ? `스택 추가 (${npc.cost.toLocaleString()}G)` : `고용하기 (${npc.cost.toLocaleString()}G)`}
+                                ${ownedNPC ? localizationManager.t('ui_npc_btn_add_stack', [npc.cost.toLocaleString()]) : localizationManager.t('ui_npc_btn_hire', [npc.cost.toLocaleString()])}
                             </button>
                             ${(ownedNPC && !isActive) ? `
                                 <button class="shop-buy-btn npc-select-btn" data-id="${npc.id}" style="flex: 1; height: 36px; font-size: 11px; background: #3b82f6; border-color: #60a5fa;">
-                                    선택
+                                    ${localizationManager.t('ui_npc_btn_select')}
                                 </button>
                             ` : ''}
                         </div>
@@ -2203,7 +2206,8 @@ export default class UIManager {
                     this.refreshNPCHire();
                     this.updateNPCHUD();
                     if (this.partyFormationOverlay) this._updateNPCFormationSlot();
-                    this.showToast(`${npcManager.NPC_DATA[npcId].name}(을)를 활성화했습니다.`);
+                    const localizedName = npcManager.constructor.getLocalizedName(npcId);
+                    this.showToast(localizationManager.t('ui_npc_toast_activated', [localizedName]));
                 }
             };
         });
@@ -3140,14 +3144,14 @@ export default class UIManager {
         overlay.innerHTML = `
             <div class="shop-container messiah-container" style="max-width: 900px; width: 95vw; border-color: #fff; box-shadow: 0 0 20px rgba(255,255,255,0.2);">
                 <div class="shop-header" style="background: linear-gradient(to right, #334155, #475569, #334155); border-bottom: 2px solid #fff;">
-                    <div class="shop-title" style="color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.8);">✨ MESSIAH POWERS (메시아의 권능)</div>
+                    <div class="shop-title" style="color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.8);">${localizationManager.t('ui_messiah_title')}</div>
                     <button class="shop-close-btn" id="messiah-close">✕</button>
                 </div>
                 
                 <div class="shop-body" style="padding: 20px; display: grid; grid-template-columns: 1fr 1.5fr; gap: 20px;">
                     <!-- Messiah Stats -->
                     <div class="messiah-stats-panel" style="background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 15px;">
-                        <div style="font-family: var(--font-pixel); color: #fff; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px;">[ MESSIAH STATUS ]</div>
+                        <div style="font-family: var(--font-pixel); color: #fff; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px;">${localizationManager.t('ui_messiah_status_header')}</div>
                         <div id="messiah-stats-list" style="display: flex; flex-direction: column; gap: 8px; font-size: 13px;">
                             <!-- Stats injected here -->
                         </div>
@@ -3188,23 +3192,23 @@ export default class UIManager {
         const requiredExp = stats.level * 100;
         const expPct = Math.min(100, Math.floor((stats.exp / requiredExp) * 100));
         statsList.innerHTML = `
-            <div style="display:flex; justify-content:space-between; color:#fbbf24;"><span>LEVEL</span><span>${stats.level}</span></div>
-            <div style="display:flex; justify-content:space-between;"><span>ATK</span><span>${stats.atk}</span></div>
-            <div style="display:flex; justify-content:space-between;"><span>M.ATK</span><span>${stats.mAtk}</span></div>
-            <div style="display:flex; justify-content:space-between;"><span>DEF</span><span>${stats.def}</span></div>
-            <div style="display:flex; justify-content:space-between;"><span>CAST SPD</span><span>${stats.castSpd}</span></div>
-            <div style="display:flex; justify-content:space-between;"><span>ACC</span><span>${stats.acc}</span></div>
-            <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:5px;"><span>CRIT</span><span>${stats.crit}%</span></div>
+            <div style="display:flex; justify-content:space-between; color:#fbbf24;"><span>${localizationManager.t('ui_messiah_level')}</span><span>${stats.level}</span></div>
+            <div style="display:flex; justify-content:space-between;"><span>${localizationManager.t('ui_messiah_atk')}</span><span>${stats.atk}</span></div>
+            <div style="display:flex; justify-content:space-between;"><span>${localizationManager.t('ui_messiah_matk')}</span><span>${stats.mAtk}</span></div>
+            <div style="display:flex; justify-content:space-between;"><span>${localizationManager.t('ui_messiah_def')}</span><span>${stats.def}</span></div>
+            <div style="display:flex; justify-content:space-between;"><span>${localizationManager.t('ui_messiah_castspd')}</span><span>${stats.castSpd}</span></div>
+            <div style="display:flex; justify-content:space-between;"><span>${localizationManager.t('ui_messiah_acc')}</span><span>${stats.acc}</span></div>
+            <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:5px;"><span>${localizationManager.t('ui_messiah_crit')}</span><span>${stats.crit}%</span></div>
             <div style="margin-top:10px;">
                 <div style="display:flex; justify-content:space-between; font-size:10px; color:#fbbf24; margin-bottom:4px; font-family:var(--font-pixel);">
-                    <span>✨ EXP</span><span>${stats.exp} / ${requiredExp}</span>
+                    <span>${localizationManager.t('ui_messiah_exp_label')}</span><span>${stats.exp} / ${requiredExp}</span>
                 </div>
                 <div style="background:rgba(0,0,0,0.5); border:1px solid rgba(251,191,36,0.4); border-radius:4px; height:10px; overflow:hidden;">
                     <div style="width:${expPct}%; height:100%; background:linear-gradient(to right,#92400e,#fbbf24); box-shadow:0 0 6px rgba(251,191,36,0.5); transition:width 0.3s ease;"></div>
                 </div>
-                <div style="text-align:right; font-size:9px; color:#94a3b8; margin-top:2px; font-family:var(--font-pixel);">NEXT LEVEL: ${requiredExp - stats.exp} EXP</div>
+                <div style="text-align:right; font-size:9px; color:#94a3b8; margin-top:2px; font-family:var(--font-pixel);">${localizationManager.t('ui_messiah_next_level', [requiredExp - stats.exp])}</div>
             </div>
-            <div style="margin-top:10px; font-size:11px; color:#94a3b8; line-height:1.4;">신성한 권능은 메시아의 스탯에 비례하여 위력이 강화됩니다.</div>
+            <div style="margin-top:10px; font-size:11px; color:#94a3b8; line-height:1.4;">${localizationManager.t('ui_messiah_desc')}</div>
         `;
 
         // Essence Display (using emoji_divine_essence - Divine Essence)
@@ -3223,15 +3227,15 @@ export default class UIManager {
                 <div class="messiah-power-card ${isActive ? 'active' : ''}" style="background: ${isActive ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.3)'}; border: 1px solid ${isActive ? '#fff' : 'rgba(255,255,255,0.1)'}; border-radius: 8px; padding: 12px; display: flex; align-items: center; justify-content: space-between; gap: 15px;">
                     <div style="font-size: 24px;">${power.emoji}</div>
                     <div style="flex: 1;">
-                        <div style="font-weight: bold; font-size: 13px;">${power.name}</div>
-                        <div style="font-size: 11px; color: #94a3b8;">Lv.${power.level} | Max Stacks: ${10 + (power.level - 1) * 2}</div>
+                        <div style="font-weight: bold; font-size: 13px;">${messiahManager.constructor.getLocalizedName(power.id)}</div>
+                        <div style="font-size: 11px; color: #94a3b8;">${localizationManager.t('ui_messiah_power_status', [power.level, 10 + (power.level - 1) * 2])}</div>
                     </div>
                     <div style="display: flex; flex-direction: column; gap: 5px;">
                         <button class="messiah-select-btn" data-id="${power.id}" style="padding: 4px 8px; font-size: 10px; background: ${isActive ? '#fbbf24' : '#475569'}; border: none; color: #000; border-radius: 4px; cursor: pointer;">
-                            ${isActive ? '사용 중' : '선택'}
+                            ${isActive ? localizationManager.t('ui_messiah_active') : localizationManager.t('ui_messiah_select')}
                         </button>
                         <button class="messiah-upgrade-btn" data-id="${power.id}" style="padding: 4px 8px; font-size: 10px; background: #10b981; border: none; color: #fff; border-radius: 4px; cursor: pointer;">
-                            강화 (✨${upgradeCost})
+                            ${localizationManager.t('ui_messiah_upgrade', [upgradeCost])}
                         </button>
                     </div>
                 </div>
@@ -3244,7 +3248,8 @@ export default class UIManager {
             btn.onclick = () => {
                 mm.setActivePower(btn.dataset.id);
                 this.refreshMessiahManagement();
-                this.showToast(`${mm.powers[btn.dataset.id].name} 선택됨!`);
+                const localizedName = messiahManager.constructor.getLocalizedName(btn.dataset.id);
+                this.showToast(localizationManager.t('ui_messiah_selected_toast', [localizedName]));
                 this._updateMessiahFormationSlot(); // Update formation slot if open
             };
         });
@@ -3257,13 +3262,14 @@ export default class UIManager {
 
                 const essenceItem = await DBManager.getInventoryItem('emoji_divine_essence');
                 if (!essenceItem || essenceItem.amount < cost) {
-                    this.showToast('전능의 정수가 부족합니다! ✨');
+                    this.showToast(localizationManager.t('ui_messiah_low_essence_toast'));
                     return;
                 }
 
                 await DBManager.saveInventoryItem('emoji_divine_essence', essenceItem.amount - cost);
                 await mm.upgradePower(powerId);
-                this.showToast(`${power.name} 강화 완료! ✨`);
+                const localizedName = messiahManager.constructor.getLocalizedName(powerId);
+                this.showToast(localizationManager.t('ui_messiah_upgraded_toast', [localizedName]));
                 this.refreshMessiahManagement();
                 this._updateMessiahFormationSlot(); // Update formation slot if open
             };
@@ -4199,7 +4205,7 @@ export default class UIManager {
         slotEl.innerHTML = `
             <div style="position:absolute; top:2px; left:4px; font-size:8px; font-weight:bold; color:#fff; text-shadow:0 1px 2px #000; z-index:10; background:rgba(0,0,0,0.5); padding:0 2px; border-radius:2px;">Lv.${power.level}</div>
             <div style="font-size: 28px;">${power.emoji}</div>
-            <div style="position:absolute; bottom:2px; right:4px; font-size:8px; font-weight:bold; color:#fff; text-shadow:0 1px 2px #000; z-index:10;">${maxStacks}회</div>
+            <div style="position:absolute; bottom:2px; right:4px; font-size:8px; font-weight:bold; color:#fff; text-shadow:0 1px 2px #000; z-index:10;">${maxStacks}${localizationManager.t('ui_npc_stacks_unit')}</div>
         `;
         slotEl.classList.add('filled');
     }
@@ -4583,9 +4589,12 @@ export default class UIManager {
                     this.npcHudIcon.src = hiredNPC.icon;
                     this.lastNpcId = hiredNPC.id;
                 }
+                const localizedName = npcManager.constructor.getLocalizedName(hiredNPC.id);
+                const localizedDesc = npcManager.constructor.getLocalizedDescription(hiredNPC.id);
+                const stacksUnit = localizationManager.t('ui_npc_stacks_unit');
                 this.npcHudStacks.innerText = hiredNPC.currentStacks;
                 this.lastNpcStacks = hiredNPC.currentStacks;
-                this.npcHud.dataset.tooltip = `${hiredNPC.name} (${hiredNPC.currentStacks} 스택)\n${hiredNPC.description}`;
+                this.npcHud.dataset.tooltip = `${localizedName} (${hiredNPC.currentStacks} ${stacksUnit})\n${localizedDesc}`;
 
                 if (!this.npcHud.classList.contains('active')) {
                     this.npcHud.classList.add('active');
@@ -4637,6 +4646,11 @@ export default class UIManager {
             if (this.lastMessiahPowerId !== power.id) {
                 this.messiahHudIcon.innerText = power.emoji;
                 this.lastMessiahPowerId = power.id;
+                
+                // Update Tooltip
+                const localizedName = messiahManager.constructor.getLocalizedName(power.id);
+                const localizedDesc = messiahManager.constructor.getLocalizedDescription(power.id);
+                this.messiahHud.dataset.tooltip = `${localizedName}\n${localizedDesc}`;
             }
             this.messiahHudStacks.innerText = stackStr;
             this.lastMessiahStacks = mm.stacks;

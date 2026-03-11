@@ -1,11 +1,18 @@
 import DBManager from '../Database/DBManager.js';
 import EventBus from '../Events/EventBus.js';
+import localizationManager from './LocalizationManager.js';
 
 /**
  * MessiahManager
  * Handles the "Messiah Touch" system: stats, powers, stacks, and upgrades.
  */
 class MessiahManager {
+    static POWER_DATA = {
+        JUDGMENT: { id: 'JUDGMENT', name: '심판의 권능', emoji: '👆', type: 'OFFENSE' },
+        HEALING: { id: 'HEALING', name: '치료의 권능', emoji: '🫳', type: 'DEFENSE' },
+        ENCOURAGEMENT: { id: 'ENCOURAGEMENT', name: '격려의 권능', emoji: '👍', type: 'SUPPORT' }
+    };
+
     constructor() {
         this.stats = {
             level: 1,
@@ -19,9 +26,9 @@ class MessiahManager {
         };
 
         this.powers = {
-            JUDGMENT: { id: 'JUDGMENT', name: '심판의 권능', emoji: '👆', level: 1, type: 'OFFENSE' },
-            HEALING: { id: 'HEALING', name: '치료의 권능', emoji: '🫳', level: 1, type: 'DEFENSE' },
-            ENCOURAGEMENT: { id: 'ENCOURAGEMENT', name: '격려의 권능', emoji: '👍', level: 1, type: 'SUPPORT' }
+            JUDGMENT: { ...MessiahManager.POWER_DATA.JUDGMENT, level: 1 },
+            HEALING: { ...MessiahManager.POWER_DATA.HEALING, level: 1 },
+            ENCOURAGEMENT: { ...MessiahManager.POWER_DATA.ENCOURAGEMENT, level: 1 }
         };
 
         this.activePowerId = 'JUDGMENT';
@@ -32,6 +39,19 @@ class MessiahManager {
         this.isAutoMode = false;
 
         this.isInitialized = false;
+    }
+
+    static getLocalizedName(powerId) {
+        if (!powerId) return '';
+        const key = `messiah_power_${powerId.toLowerCase()}_name`;
+        const internal = MessiahManager.POWER_DATA[powerId.toUpperCase()];
+        return localizationManager.t(key, null, internal ? internal.name : powerId);
+    }
+
+    static getLocalizedDescription(powerId) {
+        if (!powerId) return '';
+        const key = `messiah_power_${powerId.toLowerCase()}_desc`;
+        return localizationManager.t(key, null, '');
     }
 
     async init() {
@@ -79,7 +99,8 @@ class MessiahManager {
                 // crit and castSpd remain relatively static or can be scaled differently if needed
 
                 leveledUp = true;
-                EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, `[시스템] 메시아가 영적으로 각성했습니다! (Lv.${this.stats.level}) 🌟`, '#fbbf24');
+                const msg = localizationManager.t('ui_messiah_sys_leveled_up', [this.stats.level]);
+                EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, msg, '#fbbf24');
             } else {
                 break;
             }
@@ -167,7 +188,8 @@ class MessiahManager {
         const currentEssence = essenceItem ? essenceItem.amount : 0;
 
         if (currentEssence < cost) {
-            EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, `[시스템] 전능의 정수(✨)가 부족합니다. (필요: ${cost})`);
+            const msg = localizationManager.t('ui_messiah_sys_low_essence', [cost]);
+            EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, msg);
             return false;
         }
 
