@@ -6406,41 +6406,41 @@ export default class UIManager {
                             <div class="merc-detail-sprite-wrap">
                                 <img src="assets/characters/party/${m.sprite}.png" class="merc-detail-sprite">
                             </div>
-                            <button class="theme-skin-btn active-btn" onclick="window.uiManager.openSkinSelector('${m.id}')">[테마 스킨 교체]</button>
+                            <button class="theme-skin-btn active-btn" onclick="window.uiManager.openSkinSelector('${m.id}')">${localizationManager.t('ui_btn_theme_skin')}</button>
                         </div>
                         <div class="merc-detail-title-info">
                             <div class="merc-detail-name-row">
-                                <span class="merc-detail-name">${m.name}</span>
-                                <span class="merc-detail-count">보유: ${totalPulls}</span>
+                                <span class="merc-detail-name">${localizationManager.t('char_' + m.id + '_name', [], m.name)}</span>
+                                <span class="merc-detail-count">${localizationManager.t('ui_roster_owned', [totalPulls])}</span>
                             </div>
-                            <div class="merc-detail-desc">${m.personality}</div>
+                            <div class="merc-detail-desc">${localizationManager.t('char_' + m.id + '_personality', [], m.personality)}</div>
                         </div>
                     </div>
                     
                     <div class="merc-detail-columns">
                         <div class="merc-stats-section">
-                            <div class="section-title">DETAILED STATISTICS</div>
+                            <div class="section-title">${localizationManager.t('ui_roster_stats')}</div>
                             <div class="merc-stats-grid">
                                 ${stats.map(s => renderStat(s.label, s.val)).join('')}
                             </div>
                         </div>
 
                         <div class="merc-skills-section">
-                            <div class="section-title">SKILLS & ULTIMATE</div>
+                            <div class="section-title">${localizationManager.t('ui_roster_skills')}</div>
                             <div class="merc-skills-grid">
                                 <div class="merc-skill-card">
                                     <div class="skill-header">
                                         <span class="skill-emoji">${m.skillEmoji}</span>
-                                        <span class="skill-name">${m.skillName}</span>
+                                        <span class="skill-name">${localizationManager.t('char_' + m.id + '_skill_name', [], m.skillName)}</span>
                                     </div>
-                                    <div class="skill-desc">${m.skillDescription}</div>
+                                    <div class="skill-desc">${localizationManager.t('char_' + m.id + '_skill_desc', [], m.skillDescription)}</div>
                                 </div>
                                 <div class="merc-skill-card ultimate">
                                     <div class="skill-header">
                                         <span class="skill-emoji">✨</span>
-                                        <span class="skill-name">${m.ultimateName}</span>
+                                        <span class="skill-name">${localizationManager.t('char_' + m.id + '_ult_name', [], m.ultimateName)}</span>
                                     </div>
-                                    <div class="skill-desc">${m.ultimateDescription}</div>
+                                    <div class="skill-desc">${localizationManager.t('char_' + m.id + '_ult_desc', [], m.ultimateDescription)}</div>
                                 </div>
                             </div>
                         </div>
@@ -6589,9 +6589,11 @@ export default class UIManager {
 
                     .theme-skin-btn {
                         background: #1e293b; border: 1px solid #fbbf24; border-radius: 6px;
-                        color: #fbbf24; padding: 8px 4px; cursor: pointer; font-weight: bold;
-                        transition: all 0.2s; font-family: 'Press Start 2P', cursive; font-size: 8px;
-                        width: 100%; text-align: center; white-space: nowrap; box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+                        color: #fbbf24; padding: 6px 4px; cursor: pointer; font-weight: bold;
+                        transition: all 0.2s; font-family: 'Press Start 2P', cursive; font-size: 7px;
+                        width: 100%; text-align: center; white-space: normal; line-height: 1.2;
+                        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+                        display: flex; align-items: center; justify-content: center; min-height: 30px;
                     }
                     .theme-skin-btn.active-btn { border-color: #fbbf24; color: #fbbf24; background: rgba(251, 191, 36, 0.1); box-shadow: 0 0 10px rgba(251, 191, 36, 0.15); }
                     .theme-skin-btn.active-btn:hover { background: #fbbf24; color: #0f172a; box-shadow: 0 0 15px rgba(251, 191, 36, 0.4); transform: translateY(-2px); }
@@ -6673,7 +6675,7 @@ export default class UIManager {
             modal.innerHTML = `
                 <div class="skin-selector-card">
                     <div class="skin-selector-header">
-                        <span class="skin-selector-title">스킨 선택 - ${charId.toUpperCase()}</span>
+                        <span class="skin-selector-title">${localizationManager.t('ui_skin_selector_title', [charId.toUpperCase()])}</span>
                         <span class="skin-selector-close" onclick="this.closest('.skin-selector-overlay').remove()">×</span>
                     </div>
                     <div class="skin-list">
@@ -6681,8 +6683,8 @@ export default class UIManager {
                         <div class="skin-item ${!skinData.equippedSkin ? 'equipped owned' : 'owned'}" 
                              onclick="window.uiManager.handleSkinAction('${charId}', 'default')">
                             <img src="assets/characters/party/${charId}_sprite.png" class="skin-thumb">
-                            <span class="skin-name">기본 외형</span>
-                            ${!skinData.equippedSkin ? '<span class="skin-equipped-tag">[착용 중]</span>' : ''}
+                            <span class="skin-name">${localizationManager.t('ui_skin_default')}</span>
+                            ${!skinData.equippedSkin ? `<span class="skin-equipped-tag">${localizationManager.t('ui_skin_equipped')}</span>` : ''}
                         </div>
                         
                         ${availableSkins.map(s => {
@@ -6692,10 +6694,10 @@ export default class UIManager {
                                 <div class="skin-item ${isOwned ? 'owned' : ''} ${isEquipped ? 'equipped' : ''}"
                                      onclick="window.uiManager.handleSkinAction('${charId}', '${s.id}')">
                                     <img src="assets/characters/skin/${s.sprite}.png" class="skin-thumb">
-                                    <span class="skin-name">${s.name}</span>
-                                    <span class="skin-bonus">${s.abilityBonus.bonusText}</span>
-                                    ${isEquipped ? '<span class="skin-equipped-tag">[착용 중]</span>' :
-                        isOwned ? '<span class="skin-price">보유 중</span>' :
+                                    <span class="skin-name">${localizationManager.t('skin_' + s.id + '_name', [], s.name)}</span>
+                                    <span class="skin-bonus">${localizationManager.t('skin_' + s.id + '_bonus', [], s.abilityBonus.bonusText)}</span>
+                                    ${isEquipped ? `<span class="skin-equipped-tag">${localizationManager.t('ui_skin_equipped')}</span>` :
+                        isOwned ? `<span class="skin-price">${localizationManager.t('ui_skin_owned')}</span>` :
                             `<span class="skin-price">💎 ${s.price.toLocaleString()}</span>`}
                                 </div>
                             `;
@@ -6719,10 +6721,11 @@ export default class UIManager {
                 this.updateSkinUI(charId, skinId);
             } else {
                 // Buy logic
-                this.showConfirm(`${skin.name} 스킨을 ${skin.price.toLocaleString()}다이아에 구매하시겠습니까?`, async () => {
+                const confirmMsg = localizationManager.t('ui_skin_buy_confirm', [skin.name, skin.price.toLocaleString()]);
+                this.showConfirm(confirmMsg, async () => {
                     const result = await DBManager.buySkin(charId, skinId, skin.price);
                     if (result.success) {
-                        this.showToast('구매 완료!', 'success');
+                        this.showToast(localizationManager.t('ui_skin_buy_success'), 'success');
                         await DBManager.setEquippedSkin(charId, skinId);
                         EventBus.emit(EventBus.EVENTS.INVENTORY_UPDATED);
                         this.updateSkinUI(charId, skinId);

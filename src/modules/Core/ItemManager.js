@@ -3,6 +3,7 @@
  * 
  * Central registry and manager for all items (Materials & Equipment).
  */
+import localizationManager from './LocalizationManager.js';
 
 export const ITEM_TYPES = {
     MATERIAL: 'material',
@@ -207,6 +208,28 @@ const ITEM_DATABASE = {
 export default class ItemManager {
     static getItem(id) {
         return ITEM_DATABASE[id] || null;
+    }
+
+    /**
+     * Returns a localized name for the item.
+     * @param {string} id Item ID
+     * @returns {string} Localized name or database fallback
+     */
+    static getLocalizedName(id) {
+        const item = this.getItem(id);
+        if (!item) return id;
+        return localizationManager.t(`item_name_${id}`, [], item.name);
+    }
+
+    /**
+     * Returns a localized description for the item.
+     * @param {string} id Item ID
+     * @returns {string} Localized description or database fallback
+     */
+    static getLocalizedDescription(id) {
+        const item = this.getItem(id);
+        if (!item) return '';
+        return localizationManager.t(`item_desc_${id}`, [], item.description || '');
     }
 
     static getAllItems() {

@@ -2,6 +2,7 @@ import DBManager from '../Database/DBManager.js';
 import EventBus from '../Events/EventBus.js';
 import ItemManager from '../Core/ItemManager.js';
 import CharmManager from '../Core/CharmManager.js';
+import localizationManager from '../Core/LocalizationManager.js';
 
 export default class ShopManager {
     constructor(uiManager) {
@@ -11,26 +12,26 @@ export default class ShopManager {
 
         this.inventory = {
             tickets: [
-                { id: 'emoji_ticket', price: 10, currency: 'emoji_coin', label: '언데드 묘지 입장권', icon: '🎫' },
-                { id: 'swampland_ticket', price: 100, currency: 'emoji_coin', label: '늪지대 입장권', icon: '🎫' },
-                { id: 'lava_field_ticket', price: 500, currency: 'emoji_coin', label: '용암 지대 입장권', icon: '🎫' },
-                { id: 'winter_land_ticket', price: 1000, currency: 'emoji_coin', label: '겨울의 나라 입장권', icon: '🎫' }
+                { id: 'emoji_ticket', price: 10, currency: 'emoji_coin', icon: '🎫' },
+                { id: 'swampland_ticket', price: 100, currency: 'emoji_coin', icon: '🎫' },
+                { id: 'lava_field_ticket', price: 500, currency: 'emoji_coin', icon: '🎫' },
+                { id: 'winter_land_ticket', price: 1000, currency: 'emoji_coin', icon: '🎫' }
             ],
             charms: [
-                { id: 'emoji_fireworks', price: 100000, currency: 'emoji_coin', label: '화염 저항의 참', icon: '🎆' },
-                { id: 'emoji_koinobori', price: 100000, currency: 'emoji_coin', label: '냉기 저항의 참', icon: '🎏' },
-                { id: 'emoji_sparkler', price: 100000, currency: 'emoji_coin', label: '번개 저항의 참', icon: '🎇' },
-                { id: 'emoji_burger', price: 100000, currency: 'emoji_coin', label: '햄버거 참', icon: '🍔' }
+                { id: 'emoji_fireworks', price: 100000, currency: 'emoji_coin', icon: '🎆' },
+                { id: 'emoji_koinobori', price: 100000, currency: 'emoji_coin', icon: '🎏' },
+                { id: 'emoji_sparkler', price: 100000, currency: 'emoji_coin', icon: '🎇' },
+                { id: 'emoji_burger', price: 100000, currency: 'emoji_coin', icon: '🍔' }
             ],
             food: [
-                { id: 'food_choco_parfait', price: 2000, currency: 'emoji_coin', label: '초코 파르페', icon: 'choco_parfait' },
-                { id: 'food_strawberry_cake', price: 2000, currency: 'emoji_coin', label: '딸기 케이크', icon: 'strawberry_cake' }
+                { id: 'food_choco_parfait', price: 2000, currency: 'emoji_coin', icon: 'choco_parfait' },
+                { id: 'food_strawberry_cake', price: 2000, currency: 'emoji_coin', icon: 'strawberry_cake' }
             ],
             fishing: [
-                { id: 'bamboo_fishing_rod', price: 20000, currency: 'emoji_coin', label: '대나무 낚시대', icon: 'bamboo_fishing_rod' }
+                { id: 'bamboo_fishing_rod', price: 20000, currency: 'emoji_coin', icon: 'bamboo_fishing_rod' }
             ],
             alchemy: [
-                { id: 'alchemy_tool_basic', price: 90000, currency: 'emoji_coin', label: '평범한 연금도구', icon: 'alchemy_tool' }
+                { id: 'alchemy_tool_basic', price: 90000, currency: 'emoji_coin', icon: 'alchemy_tool' }
             ]
         };
     }
@@ -46,18 +47,18 @@ export default class ShopManager {
         overlay.innerHTML = `
             <div class="shop-container">
                 <div class="shop-header">
-                    <div class="shop-title">🏛️ ROYAL SHOP</div>
+                    <div class="shop-title">${localizationManager.t('shop_title')}</div>
                     <button class="shop-close-btn" id="shop-close">✕</button>
                 </div>
                 
                 <div class="shop-body">
                     <div class="shop-sidebar">
-                        <button class="shop-tab active" data-category="tickets">🎫 입장권</button>
-                        <button class="shop-tab" data-category="charms">✨ 부적</button>
-                        <button class="shop-tab" data-category="food">🍰 음식</button>
-                        <button class="shop-tab" data-category="fishing">🎣 낚시</button>
-                        <button class="shop-tab" data-category="alchemy">⚗️ 연금</button>
-                        <button class="shop-tab disabled" title="준비 중">🌿 재료</button>
+                        <button class="shop-tab active" data-category="tickets">${localizationManager.t('shop_category_tickets')}</button>
+                        <button class="shop-tab" data-category="charms">${localizationManager.t('shop_category_charms')}</button>
+                        <button class="shop-tab" data-category="food">${localizationManager.t('shop_category_food')}</button>
+                        <button class="shop-tab" data-category="fishing">${localizationManager.t('shop_category_fishing')}</button>
+                        <button class="shop-tab" data-category="alchemy">${localizationManager.t('shop_category_alchemy')}</button>
+                        <button class="shop-tab disabled" title="준비 중">${localizationManager.t('shop_category_materials')}</button>
                     </div>
                     
                     <div class="shop-content">
@@ -89,15 +90,19 @@ export default class ShopManager {
             // Support bulk purchase for food category
             const isBulk = (categoryId === 'food');
 
+            const itemName = ItemManager.getLocalizedName(item.id);
+
             return `
                 <div class="shop-item-card" data-id="${item.id}" data-price="${item.price}" data-currency="${item.currency}">
-                    <div class="shop-item-icon">
-                        <img src="${iconPath}" alt="${item.label}" style="width: 32px; height: 32px; image-rendering: pixelated; object-fit: contain;">
-                    </div>
-                    <div class="shop-item-label">${item.label}</div>
-                    <div class="shop-item-price">
-                        <span class="price-val">${item.price}</span>
-                        <img src="assets/emojis/${currencySvg}" alt="currency" style="width: 14px; height: 14px; margin-left: 2px;">
+                    <div class="shop-item-top">
+                        <div class="shop-item-icon">
+                            <img src="${iconPath}" alt="${itemName}" style="width: 32px; height: 32px; image-rendering: pixelated; object-fit: contain;">
+                        </div>
+                        <div class="shop-item-label">${itemName}</div>
+                        <div class="shop-item-price">
+                            <span class="price-val">${item.price}</span>
+                            <img src="assets/emojis/${currencySvg}" alt="currency" style="width: 14px; height: 14px; margin-left: 2px;">
+                        </div>
                     </div>
                     <div class="shop-buy-group" style="display: flex; gap: 4px; width: 100%;">
                         ${isBulk ? `
@@ -105,7 +110,7 @@ export default class ShopManager {
                             <button class="shop-buy-btn" data-qty="10" style="flex:1; font-size:9px; padding: 4px 0; background:#be123c;">x10</button>
                             <button class="shop-buy-btn" data-qty="100" style="flex:1; font-size:9px; padding: 4px 0; background:#9f1239;">x100</button>
                         ` : `
-                            <button class="shop-buy-btn" data-qty="1" style="width: 100%;">구매</button>
+                            <button class="shop-buy-btn" data-qty="1" style="width: 100%;">${localizationManager.t('shop_buy')}</button>
                         `}
                     </div>
                 </div>
@@ -175,17 +180,19 @@ export default class ShopManager {
         const totalCost = price * quantity;
 
         if (currentAmount < totalCost) {
-            this.uiManager.showToast('자원이 부족합니다! ⚠️');
+            this.uiManager.showToast(localizationManager.t('shop_low_resources'));
             return;
         }
 
         // Save Currency
         await DBManager.saveInventoryItem(currencyId, currentAmount - totalCost);
 
+        const itemName = ItemManager.getLocalizedName(itemId);
+        const qtyStr = quantity > 1 ? `x${quantity}` : '';
+
         const charmBase = CharmManager.getCharm(itemId);
         if (charmBase) {
-            // Purchase Unique Charm Instances (always 1 at a time for safety here, but logic supports loop if needed)
-            // Currently charms aren't in 'food', but for future-proofing:
+            // Purchase Unique Charm Instances
             for (let i = 0; i < quantity; i++) {
                 const rolledValue = Math.floor(Math.random() * (8 - 2 + 1)) + 2;
                 const uniquePart = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID().split('-')[0] : Math.floor(Math.random() * 1000000);
@@ -201,13 +208,13 @@ export default class ShopManager {
 
                 await DBManager.saveCharmInstance(charmInstance);
             }
-            this.uiManager.showToast(`${ItemManager.getItem(itemId).name} ${quantity > 1 ? quantity + '개 ' : ''}구매 완료! ✨`);
+            this.uiManager.showToast(localizationManager.t('shop_buy_success', [itemName, qtyStr]));
         } else {
             // Save Normal Stackable Item
             const existingItem = await DBManager.getInventoryItem(itemId);
             const newItemAmount = existingItem ? existingItem.amount + quantity : quantity;
             await DBManager.saveInventoryItem(itemId, newItemAmount);
-            this.uiManager.showToast(`${ItemManager.getItem(itemId).name} ${quantity > 1 ? quantity + '개 ' : ''}구매 완료! ✨`);
+            this.uiManager.showToast(localizationManager.t('shop_buy_success', [itemName, qtyStr]));
         }
 
         // Refresh
