@@ -34,9 +34,17 @@ export default class Execution {
         const originalScaleX = caster.sprite.scaleX; 
         const originalScaleY = caster.sprite.scaleY;
 
-        // Darken screen for drama
-        const darken = scene.add.rectangle(0, 0, scene.game.config.width * 2, scene.game.config.height * 2, 0x000000, 0.5)
-            .setDepth(15000).setScrollFactor(0);
+        // Darken screen for drama - centered and oversized to handle camera shakes
+        const darken = scene.add.rectangle(
+            scene.cameras.main.centerX, 
+            scene.cameras.main.centerY, 
+            scene.game.config.width * 8, 
+            scene.game.config.height * 8, 
+            0x000000, 0.5
+        )
+            .setOrigin(0.5)
+            .setDepth(15000)
+            .setScrollFactor(0);
 
         // 2. Perform strike sequence
         try {
