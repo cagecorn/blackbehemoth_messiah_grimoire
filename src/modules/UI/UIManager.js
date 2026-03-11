@@ -3305,19 +3305,19 @@ export default class UIManager {
         overlay.innerHTML = `
             <div class="shop-container achievements-container" style="max-width: 600px; width: 95vw; border-color: #ef4444; box-shadow: 0 0 20px rgba(239, 68, 68, 0.2);">
                 <div class="shop-header" style="background: linear-gradient(to right, #450a0a, #7f1d1d, #450a0a); border-bottom: 2px solid #ef4444;">
-                    <div class="shop-title" style="color: #fca5a5; text-shadow: 0 0 10px rgba(252, 165, 165, 0.8);">🏆 ACHIEVEMENTS (업적)</div>
+                    <div class="shop-title" style="color: #fca5a5; text-shadow: 0 0 10px rgba(252, 165, 165, 0.8);">${localizationManager.t('ui_achievements_title')}</div>
                     <button class="shop-close-btn" id="achievements-close" style="color: #fca5a5;">✕</button>
                 </div>
                 
                 <div class="shop-body" style="padding: 10px 20px 20px 20px; display: flex; flex-direction: column;">
                     <!-- Tabs -->
                     <div style="display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 1px solid rgba(239,68,68,0.3); padding-bottom: 5px;">
-                        <button id="achieve-tab-dungeon" class="retro-btn achievement-tab-btn active" style="flex: 1; font-size: 11px; padding: 6px; background: rgba(239,68,68,0.3); border-color: #ef4444;">던전 업적</button>
-                        <button id="achieve-tab-monster" class="retro-btn achievement-tab-btn" style="flex: 1; font-size: 11px; padding: 6px; border-color: rgba(239,68,68,0.3);">몬스터 업적</button>
+                        <button id="achieve-tab-dungeon" class="retro-btn achievement-tab-btn active" style="flex: 1; font-size: 11px; padding: 6px; background: rgba(239,68,68,0.3); border-color: #ef4444;">${localizationManager.t('ui_achievements_tab_dungeon')}</button>
+                        <button id="achieve-tab-monster" class="retro-btn achievement-tab-btn" style="flex: 1; font-size: 11px; padding: 6px; border-color: rgba(239,68,68,0.3);">${localizationManager.t('ui_achievements_tab_monster')}</button>
                     </div>
 
                     <div style="font-family: var(--font-pixel); color: #fca5a5; font-size: 11px; margin-bottom: 15px; text-align: center;">
-                        목표 달성 시 메시아 경험치(✨)를 획득하여 권능을 강화하세요!
+                        ${localizationManager.t('ui_achievements_desc')}
                     </div>
                     <div id="achievements-list" style="display: flex; flex-direction: column; gap: 12px; max-height: 50vh; overflow-y: auto; padding-right: 5px;">
                         <!-- Achievements injected here -->
@@ -3394,18 +3394,18 @@ export default class UIManager {
             <div class="retro-container" style="width: 100%; max-width: 800px; height: 95%; background: #0f172a; border: 2px solid #4ade80; border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; position: relative; box-shadow: 0 0 30px rgba(0,0,0,1);">
                 <!-- Header -->
                 <div style="background: #1e293b; padding: 12px 15px; border-bottom: 2px solid #4ade80; display: flex; justify-content: space-between; align-items: center;">
-                    <h2 style="margin: 0; color: #4ade80; font-size: 16px; text-shadow: 0 0 10px rgba(74,222,128,0.5);">👾 몬스터 도감</h2>
+                    <h2 style="margin: 0; color: #4ade80; font-size: 16px; text-shadow: 0 0 10px rgba(74,222,128,0.5);">${localizationManager.t('ui_codex_title')}</h2>
                     <button id="close-codex" class="retro-btn" style="background: transparent; border: none; color: #ef4444; font-size: 20px; cursor: pointer; padding: 0 5px;">✕</button>
                 </div>
                 
                 <div id="codex-main-body" style="display: flex; flex: 1; overflow: hidden; flex-direction: row;">
                     <!-- Sidebar -->
                     <div id="codex-sidebar" style="width: 120px; background: #1e293b; border-right: 1px solid rgba(74,222,128,0.2); display: flex; flex-direction: column; gap: 4px; padding: 8px; overflow-y: auto;">
-                        <button class="codex-tab active" data-cat="CURSED_FOREST" style="padding: 8px; background: rgba(74,222,128,0.2); border: 1px solid #4ade80; color: #fff; text-align: left; border-radius: 4px; font-size: 10px;">🌲 저주받은 숲</button>
-                        <button class="codex-tab" data-cat="UNDEAD_GRAVEYARD" style="padding: 8px; background: transparent; border: 1px solid rgba(74,222,128,0.2); color: #94a3b8; text-align: left; border-radius: 4px; font-size: 10px;">🪦 언데드 묘지</button>
-                        <button class="codex-tab" data-cat="SWAMPLAND" style="padding: 8px; background: transparent; border: 1px solid rgba(74,222,128,0.2); color: #94a3b8; text-align: left; border-radius: 4px; font-size: 10px;">🐸 늪지대</button>
-                        <button class="codex-tab" data-cat="LAVA_FIELD" style="padding: 8px; background: transparent; border: 1px solid rgba(74,222,128,0.2); color: #94a3b8; text-align: left; border-radius: 4px; font-size: 10px;">🌋 용암 지대</button>
-                        <button class="codex-tab" data-cat="WINTER_LAND" style="padding: 8px; background: transparent; border: 1px solid rgba(74,222,128,0.2); color: #94a3b8; text-align: left; border-radius: 4px; font-size: 10px;">❄️ 겨울의 나라</button>
+                        <button class="codex-tab active" data-cat="CURSED_FOREST" style="padding: 8px; background: rgba(74,222,128,0.2); border: 1px solid #4ade80; color: #fff; text-align: left; border-radius: 4px; font-size: 10px;">🌲 ${localizationManager.t('nav_dungeon_forest')}</button>
+                        <button class="codex-tab" data-cat="UNDEAD_GRAVEYARD" style="padding: 8px; background: transparent; border: 1px solid rgba(74,222,128,0.2); color: #94a3b8; text-align: left; border-radius: 4px; font-size: 10px;">🪦 ${localizationManager.t('nav_dungeon_graveyard')}</button>
+                        <button class="codex-tab" data-cat="SWAMPLAND" style="padding: 8px; background: transparent; border: 1px solid rgba(74,222,128,0.2); color: #94a3b8; text-align: left; border-radius: 4px; font-size: 10px;">🐸 ${localizationManager.t('nav_dungeon_swamp')}</button>
+                        <button class="codex-tab" data-cat="LAVA_FIELD" style="padding: 8px; background: transparent; border: 1px solid rgba(74,222,128,0.2); color: #94a3b8; text-align: left; border-radius: 4px; font-size: 10px;">🌋 ${localizationManager.t('nav_dungeon_lava')}</button>
+                        <button class="codex-tab" data-cat="WINTER_LAND" style="padding: 8px; background: transparent; border: 1px solid rgba(74,222,128,0.2); color: #94a3b8; text-align: left; border-radius: 4px; font-size: 10px;">❄️ ${localizationManager.t('nav_dungeon_winter')}</button>
                     </div>
                     
                     <!-- Content -->
@@ -3416,7 +3416,7 @@ export default class UIManager {
                 
                 <!-- Footer Info -->
                 <div style="background: #1e293b; padding: 10px 20px; border-top: 1px solid rgba(74,222,128,0.2); font-size: 11px; color: #64748b; display: flex; justify-content: space-between;">
-                    <span>* 모든 능력치는 1층(Level 1) 기준 기본 스탯입니다.</span>
+                    <span>${localizationManager.t('ui_codex_footer_stats_info')}</span>
                     <span>Antigravity Codex System v1.0</span>
                 </div>
             </div>
@@ -3467,7 +3467,7 @@ export default class UIManager {
 
         const stageConfig = StageConfigs[this.currentCodexCategory];
         if (!stageConfig) {
-            content.innerHTML = '<div style="color: #64748b; text-align: center; padding: 40px;">데이터가 존재하지 않습니다.</div>';
+            content.innerHTML = `<div style="color: #64748b; text-align: center; padding: 40px;">${localizationManager.t('ui_codex_no_data')}</div>`;
             return;
         }
 
@@ -3475,7 +3475,7 @@ export default class UIManager {
         let monsterPool = stageConfig.monsterPool || [];
 
         if (monsterPool.length === 0) {
-            content.innerHTML = '<div style="color: #64748b; text-align: center; padding: 40px;">등록된 몬스터 정보가 없습니다.</div>';
+            content.innerHTML = `<div style="color: #64748b; text-align: center; padding: 40px;">${localizationManager.t('ui_codex_no_monster')}</div>`;
             return;
         }
 
@@ -3486,27 +3486,38 @@ export default class UIManager {
         const config = MonsterClasses[monsterId.toUpperCase()];
         if (!config) return '';
 
-        const stage = StageConfigs[this.currentCodexCategory]?.name || 'Unknown';
+        const monsterKey = `monster_${config.id}`;
+        const monsterName = localizationManager.t(monsterKey, null, config.name);
+
+        const dungeonKeyMap = {
+            'CURSED_FOREST': 'nav_dungeon_forest',
+            'UNDEAD_GRAVEYARD': 'nav_dungeon_graveyard',
+            'SWAMPLAND': 'nav_dungeon_swamp',
+            'LAVA_FIELD': 'nav_dungeon_lava',
+            'WINTER_LAND': 'nav_dungeon_winter'
+        };
+        const dungeonKey = dungeonKeyMap[this.currentCodexCategory] || 'nav_dungeon';
+        const stage = localizationManager.t(dungeonKey, null, StageConfigs[this.currentCodexCategory]?.name || 'Unknown');
 
         // Stats to display
         const displayStats = [
-            { label: 'HP', val: config.maxHp, icon: '❤️' },
-            { label: 'ATK', val: config.atk, icon: '⚔️' },
-            { label: 'M.ATK', val: config.mAtk, icon: '🔮' },
-            { label: 'DEF', val: config.def, icon: '🛡️' },
-            { label: 'M.DEF', val: config.mDef, icon: '✨' },
-            { label: 'SPD', val: config.speed, icon: '👟' },
-            { label: 'ACC', val: config.acc, icon: '🎯' },
-            { label: 'EVA', val: config.eva, icon: '💨' },
-            { label: 'CRIT', val: config.crit + '%', icon: '💥' }
+            { label: localizationManager.t('stat_hp'), val: config.maxHp, icon: '❤️' },
+            { label: localizationManager.t('stat_atk'), val: config.atk, icon: '⚔️' },
+            { label: localizationManager.t('stat_matk'), val: config.mAtk, icon: '🔮' },
+            { label: localizationManager.t('stat_def'), val: config.def, icon: '🛡️' },
+            { label: localizationManager.t('stat_mdef'), val: config.mDef, icon: '✨' },
+            { label: localizationManager.t('stat_spd'), val: config.speed, icon: '👟' },
+            { label: localizationManager.t('stat_acc'), val: config.acc, icon: '🎯' },
+            { label: localizationManager.t('stat_eva'), val: config.eva, icon: '💨' },
+            { label: localizationManager.t('stat_crit'), val: config.crit + '%', icon: '💥' }
         ];
 
         const secondaryStats = [
-            { label: 'AtkSpd', val: (config.atkSpd / 1000).toFixed(1) + 's', icon: '⏱️' },
-            { label: 'Range', val: config.atkRange, icon: '📏' },
-            { label: 'FireRes', val: (config.fireRes || 0) + '%', icon: '🔥' },
-            { label: 'IceRes', val: (config.iceRes || 0) + '%', icon: '❄️' },
-            { label: 'LightRes', val: (config.lightningRes || 0) + '%', icon: '⚡' }
+            { label: localizationManager.t('stat_atk_spd'), val: (config.atkSpd / 1000).toFixed(1) + 's', icon: '⏱️' },
+            { label: localizationManager.t('stat_range'), val: config.atkRange, icon: '📏' },
+            { label: localizationManager.t('stat_fire_res'), val: (config.fireRes || 0) + '%', icon: '🔥' },
+            { label: localizationManager.t('stat_ice_res'), val: (config.iceRes || 0) + '%', icon: '❄️' },
+            { label: localizationManager.t('stat_light_res'), val: (config.lightningRes || 0) + '%', icon: '⚡' }
         ];
 
         const isEpic = config.id?.startsWith('epic_');
@@ -3515,10 +3526,9 @@ export default class UIManager {
         const lv50ExpReward = Math.floor(baseExpReward * (1 + (50 - 1) * 0.1));
 
         // Build EXP variant string
-        // - 일반 몬스터는 그림자 용병이 될 수 없으므로 "그림자 x5" 배지는 표시하지 않음
         const expVariants = [];
-        if (isSkeleton && !isEpic) expVariants.push('스켈레톤 x1.5');
-        expVariants.push('엘리트 x3');
+        if (isSkeleton && !isEpic) expVariants.push(localizationManager.t('ui_codex_variant_skeleton'));
+        expVariants.push(localizationManager.t('ui_codex_variant_elite'));
 
         return `
             <div class="monster-card" style="background: rgba(30,41,59,0.5); border: 1px solid rgba(74,222,128,0.3); border-radius: 8px; padding: 12px; display: flex; flex-wrap: wrap; gap: 15px;">
@@ -3529,7 +3539,7 @@ export default class UIManager {
                         <img src="assets/characters/enemies/${config.sprite || 'goblin_sprite'}.png" style="width: 56px; height: 56px; object-fit: contain; image-rendering: pixelated; position: relative; z-index: 1;">
                     </div>
                     <div style="text-align: center;">
-                        <div style="color: #4ade80; font-size: 11px; font-weight: bold; white-space: nowrap;">${config.name}</div>
+                        <div style="color: #4ade80; font-size: 11px; font-weight: bold; white-space: nowrap;">${monsterName}</div>
                         <div style="color: #64748b; font-size: 9px; margin-top: 1px;">📍 ${stage}</div>
                     </div>
                 </div>
@@ -3556,7 +3566,7 @@ export default class UIManager {
 
                     <!-- EXP Reward Section -->
                     <div style="border: 1px solid rgba(250,204,21,0.3); background: rgba(250,204,21,0.05); border-radius: 5px; padding: 5px 8px;">
-                        <div style="font-size: 9px; color: #fbbf24; font-weight: bold; margin-bottom: 4px;">⭐ EXP 보상</div>
+                        <div style="font-size: 9px; color: #fbbf24; font-weight: bold; margin-bottom: 4px;">${localizationManager.t('ui_codex_exp_reward')}</div>
                         <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
                             <div style="display: flex; align-items: center; gap: 4px;">
                                 <span style="font-size: 9px; color: #64748b;">Lv.1:</span>
@@ -3574,7 +3584,7 @@ export default class UIManager {
 
                     ${config.skillName ? `
                     <div style="margin-top: 4px; border: 1px dashed rgba(255,170,0,0.4); background: rgba(255,170,0,0.05); padding: 5px 8px; border-radius: 5px; display: flex; align-items: center; gap: 8px;">
-                        <span style="font-size: 10px; color: #ffaa00; font-weight: bold;">🌟 특수 기술:</span>
+                        <span style="font-size: 10px; color: #ffaa00; font-weight: bold;">${localizationManager.t('ui_codex_special_skill')}</span>
                         <span style="font-size: 11px; color: #fff; text-shadow: 0 0 5px rgba(255,170,0,0.5);">${config.skillName}</span>
                     </div>
                     ` : ''}
@@ -3588,7 +3598,7 @@ export default class UIManager {
         const listContainer = document.getElementById('achievements-list');
         if (!listContainer) return;
 
-        listContainer.innerHTML = '<div style="text-align: center; color: #94a3b8; font-size: 14px; padding: 20px;">불러오는 중...</div>';
+        listContainer.innerHTML = `<div style="text-align: center; color: #94a3b8; font-size: 14px; padding: 20px;">${localizationManager.t('ui_achievements_loading')}</div>`;
 
         if (this.currentAchievementTab === 'DUNGEON') {
             await this._renderDungeonAchievements(listContainer);
@@ -3600,11 +3610,11 @@ export default class UIManager {
     async _renderDungeonAchievements(container) {
         const claimed = await DBManager.getClaimedAchievements();
         const targets = [
-            { id: 'CURSED_FOREST', name: '저주받은 숲', icon: '🌲' },
-            { id: 'UNDEAD_GRAVEYARD', name: '언데드 묘지', icon: '🪦' },
-            { id: 'SWAMPLAND', name: '늪지대', icon: '🐸' },
-            { id: 'LAVA_FIELD', name: '용암 지대', icon: '🌋' },
-            { id: 'WINTER_LAND', name: '겨울의 나라', icon: '❄️' }
+            { id: 'CURSED_FOREST', name: localizationManager.t('nav_dungeon_forest'), icon: '🌲' },
+            { id: 'UNDEAD_GRAVEYARD', name: localizationManager.t('nav_dungeon_graveyard'), icon: '🪦' },
+            { id: 'SWAMPLAND', name: localizationManager.t('nav_dungeon_swamp'), icon: '🐸' },
+            { id: 'LAVA_FIELD', name: localizationManager.t('nav_dungeon_lava'), icon: '🌋' },
+            { id: 'WINTER_LAND', name: localizationManager.t('nav_dungeon_winter'), icon: '❄️' }
         ];
 
         let html = '';
@@ -3618,14 +3628,14 @@ export default class UIManager {
                 <div class="achievement-card" style="background: rgba(0,0,0,0.4); border: 1px solid ${canClaim ? '#ef4444' : 'rgba(239,68,68,0.2)'}; border-radius: 8px; padding: 15px; display: flex; justify-content: space-between; align-items: center;">
                     <div style="display: flex; flex-direction: column; gap: 5px;">
                         <div style="color: #fca5a5; font-size: 14px; font-weight: bold; font-family: var(--font-pixel);">
-                            ${t.icon} ${t.name} <span style="color:#fbbf24; font-size: 12px;">(${targetRound}라운드 달성)</span>
+                            ${t.icon} ${t.name} <span style="color:#fbbf24; font-size: 12px;">${localizationManager.t('ui_achievements_dungeon_goal', [targetRound])}</span>
                         </div>
-                        <div style="color: #cbd5e1; font-size: 11px;">보상: 메시아 경험치 ✨ 100</div>
+                        <div style="color: #cbd5e1; font-size: 11px;">${localizationManager.t('ui_achievements_reward_label', [100])}</div>
                     </div>
                     <div>
                         ${canClaim ?
-                    `<button class="achieve-claim-btn retro-btn" data-type="DUNGEON" data-id="${t.id}" data-target="${targetRound}" style="background: #ef4444; border-color: #fca5a5; color: #fff; padding: 5px 15px; font-size: 11px;">[보상 수령]</button>` :
-                    `<div style="color: #94a3b8; font-size: 12px; font-family: var(--font-pixel);">진행도: ${bestRound} / ${targetRound}</div>`
+                    `<button class="achieve-claim-btn retro-btn" data-type="DUNGEON" data-id="${t.id}" data-target="${targetRound}" style="background: #ef4444; border-color: #fca5a5; color: #fff; padding: 5px 15px; font-size: 11px;">${localizationManager.t('ui_achievements_claim_btn')}</button>` :
+                    `<div style="color: #94a3b8; font-size: 12px; font-family: var(--font-pixel);">${localizationManager.t('ui_achievements_progress_label', [bestRound, targetRound])}</div>`
                 }
                     </div>
                 </div>
@@ -3651,7 +3661,8 @@ export default class UIManager {
             if (m.id.includes('ice')) icon = '❄️';
             if (m.id.includes('boss')) icon = '👑';
 
-            return { id: m.id.toUpperCase(), name: m.name.split('(')[0].trim(), icon: icon };
+            const localizedName = localizationManager.t(`monster_${m.id}`);
+            return { id: m.id.toUpperCase(), name: localizedName, icon: icon };
         });
 
         let html = '';
@@ -3671,20 +3682,20 @@ export default class UIManager {
                 <div class="achievement-card" style="background: rgba(0,0,0,0.4); border: 1px solid ${canClaim ? '#ef4444' : 'rgba(239,68,68,0.2)'}; border-radius: 8px; padding: 15px; display: flex; justify-content: space-between; align-items: center;">
                     <div style="display: flex; flex-direction: column; gap: 5px;">
                         <div style="color: #fca5a5; font-size: 14px; font-weight: bold; font-family: var(--font-pixel);">
-                            ${t.icon} ${t.name} 처치 <span style="color:#fbbf24; font-size: 12px;">(${nextMilestone}마리 달성)</span>
+                            ${t.icon} ${localizationManager.t('ui_achievements_monster_kill_label', [t.name])} <span style="color:#fbbf24; font-size: 12px;">${localizationManager.t('ui_achievements_monster_goal', [nextMilestone])}</span>
                         </div>
-                        <div style="color: #cbd5e1; font-size: 11px;">보상: 메시아 경험치 ✨ 150</div>
+                        <div style="color: #cbd5e1; font-size: 11px;">${localizationManager.t('ui_achievements_reward_label', [150])}</div>
                     </div>
                     <div>
                         ${canClaim ?
-                    `<button class="achieve-claim-btn retro-btn" data-type="MONSTER" data-id="${t.id}" data-target="${nextMilestone}" style="background: #ef4444; border-color: #fca5a5; color: #fff; padding: 5px 15px; font-size: 11px;">[보상 수령]</button>` :
-                    `<div style="color: #94a3b8; font-size: 12px; font-family: var(--font-pixel);">진행도: ${currentKills} / ${nextMilestone}</div>`
+                    `<button class="achieve-claim-btn retro-btn" data-type="MONSTER" data-id="${t.id}" data-target="${nextMilestone}" style="background: #ef4444; border-color: #fca5a5; color: #fff; padding: 5px 15px; font-size: 11px;">${localizationManager.t('ui_achievements_claim_btn')}</button>` :
+                    `<div style="color: #94a3b8; font-size: 12px; font-family: var(--font-pixel);">${localizationManager.t('ui_achievements_progress_label', [currentKills, nextMilestone])}</div>`
                 }
                     </div>
                 </div>
             `;
         }
-        container.innerHTML = html || '<div style="text-align: center; color: #94a3b8; font-size: 14px; padding: 20px;">아직 처치 기록이 없습니다.</div>';
+        container.innerHTML = html || `<div style="text-align: center; color: #94a3b8; font-size: 14px; padding: 20px;">${localizationManager.t('ui_achievements_no_kills')}</div>`;
         this._bindAchievementClaimButtons(container);
     }
 
@@ -3710,8 +3721,8 @@ export default class UIManager {
                     if (mm) mm.addExp(150);
                 }
 
-                this.showToast(`✨ 업적 달성! 메시아 경험치 수령!`);
-                btn.innerText = '수령 완료!';
+                this.showToast(localizationManager.t('ui_achievements_toast_success'));
+                btn.innerText = localizationManager.t('ui_achievements_claimed_status');
                 btn.style.background = '#10b981';
                 btn.style.borderColor = '#34d399';
                 btn.disabled = true;

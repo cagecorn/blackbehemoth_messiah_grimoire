@@ -89,11 +89,13 @@ export default function applyBardAI(unit, getAllyGroup, getEnemyGroup) {
         return dist <= atkRange;
     }, "In Attack Range?");
 
+    const isEnemyTooClose = new Condition(() => {
         const targetObj = unit.blackboard.get('target');
         if (!targetObj || !targetObj.active) return false;
         const dist = Phaser.Math.Distance.Between(unit.x, unit.y, targetObj.x, targetObj.y);
         const rangeMin = unit.getTotalRangeMin();
         return dist < rangeMin;
+    }, "Target Too Close?");
 
     // 2. Actions
 
