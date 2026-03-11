@@ -23,6 +23,8 @@ import PetUI from './PetUI.js';
 import NPCUI from './NPCUI.js';
 import TerritoryUI from './TerritoryUI.js';
 import MercenaryCodexUI from './MercenaryCodexUI.js';
+import MessiahUI from './MessiahUI.js';
+import AchievementUI from './AchievementUI.js';
 
 
 export default class UIManager {
@@ -127,6 +129,8 @@ export default class UIManager {
         this.petUI = new PetUI(this);
         this.npcUI = new NPCUI(this);
         this.territoryUI = new TerritoryUI(this);
+        this.messiahUI = new MessiahUI(this);
+        this.achievementUI = new AchievementUI(this);
         window.uiManager = this;
 
         // Bind the RAF loop
@@ -853,7 +857,7 @@ export default class UIManager {
     }
 
     async refreshDefenseDeploymentPanel() {
-        if (!this.defenseDeploymentList) return;
+        if (!this.defenseDeploymentPanel) return;
         this.defenseDeploymentList.innerHTML = '<div class="loading-retro">LOADING...</div>';
 
         const instances = await DBManager.getAllStructureInstances();
@@ -993,7 +997,7 @@ export default class UIManager {
             font-size: 10px;
             border: 2px solid #fbbf24;
             box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-            z-index: 20000;
+            z-index: 99999;
             pointer-events: none;
             opacity: 0;
             transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -2643,240 +2647,28 @@ export default class UIManager {
 
 
     async showMessiahManagement() {
-        if (this.messiahOverlay) return;
-
-        const overlay = document.createElement('div');
-        overlay.id = 'messiah-overlay';
-        overlay.className = 'shop-overlay messiah-overlay retro-scanline-overlay';
-        this.messiahOverlay = overlay;
-
-        overlay.innerHTML = `
-            <div class="shop-container messiah-container" style="max-width: 900px; width: 95vw; border-color: #fff; box-shadow: 0 0 20px rgba(255,255,255,0.2);">
-                <div class="shop-header" style="background: linear-gradient(to right, #334155, #475569, #334155); border-bottom: 2px solid #fff;">
-                    <div class="shop-title" style="color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.8);">${localizationManager.t('ui_messiah_title')}</div>
-                    <button class="shop-close-btn" id="messiah-close">✕</button>
-                </div>
-                
-                <div class="shop-body" style="padding: 20px; display: grid; grid-template-columns: 1fr 1.5fr; gap: 20px;">
-                    <!-- Messiah Stats -->
-                    <div class="messiah-stats-panel" style="background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 15px;">
-                        <div style="font-family: var(--font-pixel); color: #fff; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px;">${localizationManager.t('ui_messiah_status_header')}</div>
-                        <div id="messiah-stats-list" style="display: flex; flex-direction: column; gap: 8px; font-size: 13px;">
-                            <!-- Stats injected here -->
-                        </div>
-                    </div>
-
-                    <!-- Powers List -->
-                    <div class="messiah-powers-panel" style="display: flex; flex-direction: column; gap: 15px;">
-                        <div id="messiah-powers-list" style="display: flex; flex-direction: column; gap: 10px;">
-                            <!-- Powers injected here -->
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="shop-footer" style="background: rgba(0,0,0,0.6);">
-                    <div class="shop-currency" id="messiah-essence-display">✨ 0</div>
-                </div>
-            </div>
-        `;
-
-        document.getElementById('app-container').appendChild(overlay);
-
-        document.getElementById('messiah-close').onclick = () => this.hideMessiahManagement();
-        overlay.onclick = (e) => { if (e.target === overlay) this.hideMessiahManagement(); };
-
-        this.refreshMessiahManagement();
+        this.messiahUI.show();
     }
 
     async refreshMessiahManagement() {
-        if (!this.messiahOverlay) return;
-
-        const game = this.scene.game || (this.scene.scene && this.scene.scene.game);
-        const mm = game?.messiahManager;
-        if (!mm) return;
-
-        // Stats Display
-        const statsList = document.getElementById('messiah-stats-list');
-        const stats = mm.getStats();
-        const requiredExp = stats.level * 100;
-        const expPct = Math.min(100, Math.floor((stats.exp / requiredExp) * 100));
-        statsList.innerHTML = `
-            <div style="display:flex; justify-content:space-between; color:#fbbf24;"><span>${localizationManager.t('ui_messiah_level')}</span><span>${stats.level}</span></div>
-            <div style="display:flex; justify-content:space-between;"><span>${localizationManager.t('ui_messiah_atk')}</span><span>${stats.atk}</span></div>
-            <div style="display:flex; justify-content:space-between;"><span>${localizationManager.t('ui_messiah_matk')}</span><span>${stats.mAtk}</span></div>
-            <div style="display:flex; justify-content:space-between;"><span>${localizationManager.t('ui_messiah_def')}</span><span>${stats.def}</span></div>
-            <div style="display:flex; justify-content:space-between;"><span>${localizationManager.t('ui_messiah_castspd')}</span><span>${stats.castSpd}</span></div>
-            <div style="display:flex; justify-content:space-between;"><span>${localizationManager.t('ui_messiah_acc')}</span><span>${stats.acc}</span></div>
-            <div style="display:flex; justify-content:space-between; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:5px;"><span>${localizationManager.t('ui_messiah_crit')}</span><span>${stats.crit}%</span></div>
-            <div style="margin-top:10px;">
-                <div style="display:flex; justify-content:space-between; font-size:10px; color:#fbbf24; margin-bottom:4px; font-family:var(--font-pixel);">
-                    <span>${localizationManager.t('ui_messiah_exp_label')}</span><span>${stats.exp} / ${requiredExp}</span>
-                </div>
-                <div style="background:rgba(0,0,0,0.5); border:1px solid rgba(251,191,36,0.4); border-radius:4px; height:10px; overflow:hidden;">
-                    <div style="width:${expPct}%; height:100%; background:linear-gradient(to right,#92400e,#fbbf24); box-shadow:0 0 6px rgba(251,191,36,0.5); transition:width 0.3s ease;"></div>
-                </div>
-                <div style="text-align:right; font-size:9px; color:#94a3b8; margin-top:2px; font-family:var(--font-pixel);">${localizationManager.t('ui_messiah_next_level', [requiredExp - stats.exp])}</div>
-            </div>
-            <div style="margin-top:10px; font-size:11px; color:#94a3b8; line-height:1.4;">${localizationManager.t('ui_messiah_desc')}</div>
-        `;
-
-        // Essence Display (using emoji_divine_essence - Divine Essence)
-        const essence = await DBManager.getInventoryItem('emoji_divine_essence');
-        const essenceDisplay = document.getElementById('messiah-essence-display');
-        if (essenceDisplay) essenceDisplay.innerText = `✨ ${essence ? essence.amount : 0}`;
-
-        // Powers List
-        const powersList = document.getElementById('messiah-powers-list');
-        let powersHtml = '';
-        Object.values(mm.powers).forEach(power => {
-            const isActive = mm.activePowerId === power.id;
-            const upgradeCost = 5 + (power.level - 1) * 3;
-
-            powersHtml += `
-                <div class="messiah-power-card ${isActive ? 'active' : ''}" style="background: ${isActive ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.3)'}; border: 1px solid ${isActive ? '#fff' : 'rgba(255,255,255,0.1)'}; border-radius: 8px; padding: 12px; display: flex; align-items: center; justify-content: space-between; gap: 15px;">
-                    <div style="font-size: 24px;">${power.emoji}</div>
-                    <div style="flex: 1;">
-                        <div style="font-weight: bold; font-size: 13px;">${messiahManager.constructor.getLocalizedName(power.id)}</div>
-                        <div style="font-size: 11px; color: #94a3b8;">${localizationManager.t('ui_messiah_power_status', [power.level, 10 + (power.level - 1) * 2])}</div>
-                    </div>
-                    <div style="display: flex; flex-direction: column; gap: 5px;">
-                        <button class="messiah-select-btn" data-id="${power.id}" style="padding: 4px 8px; font-size: 10px; background: ${isActive ? '#fbbf24' : '#475569'}; border: none; color: #000; border-radius: 4px; cursor: pointer;">
-                            ${isActive ? localizationManager.t('ui_messiah_active') : localizationManager.t('ui_messiah_select')}
-                        </button>
-                        <button class="messiah-upgrade-btn" data-id="${power.id}" style="padding: 4px 8px; font-size: 10px; background: #10b981; border: none; color: #fff; border-radius: 4px; cursor: pointer;">
-                            ${localizationManager.t('ui_messiah_upgrade', [upgradeCost])}
-                        </button>
-                    </div>
-                </div>
-            `;
-        });
-        powersList.innerHTML = powersHtml;
-
-        // Button Events
-        powersList.querySelectorAll('.messiah-select-btn').forEach(btn => {
-            btn.onclick = () => {
-                mm.setActivePower(btn.dataset.id);
-                this.refreshMessiahManagement();
-                const localizedName = messiahManager.constructor.getLocalizedName(btn.dataset.id);
-                this.showToast(localizationManager.t('ui_messiah_selected_toast', [localizedName]));
-                this._updateMessiahFormationSlot(); // Update formation slot if open
-            };
-        });
-
-        powersList.querySelectorAll('.messiah-upgrade-btn').forEach(btn => {
-            btn.onclick = async () => {
-                const powerId = btn.dataset.id;
-                const power = mm.powers[powerId];
-                const cost = 5 + (power.level - 1) * 3;
-
-                const essenceItem = await DBManager.getInventoryItem('emoji_divine_essence');
-                if (!essenceItem || essenceItem.amount < cost) {
-                    this.showToast(localizationManager.t('ui_messiah_low_essence_toast'));
-                    return;
-                }
-
-                await DBManager.saveInventoryItem('emoji_divine_essence', essenceItem.amount - cost);
-                await mm.upgradePower(powerId);
-                const localizedName = messiahManager.constructor.getLocalizedName(powerId);
-                this.showToast(localizationManager.t('ui_messiah_upgraded_toast', [localizedName]));
-                this.refreshMessiahManagement();
-                this._updateMessiahFormationSlot(); // Update formation slot if open
-            };
-        });
+        this.messiahUI.refresh();
     }
 
     hideMessiahManagement() {
-        if (!this.messiahOverlay) return;
-        this.messiahOverlay.classList.add('fade-out');
-        setTimeout(() => {
-            if (this.messiahOverlay) {
-                this.messiahOverlay.remove();
-                this.messiahOverlay = null;
-            }
-        }, 300);
+        this.messiahUI.hide();
     }
 
     // ─── Achievements UI ───────────────────────────────────────────────────────
-    async showAchievementsUI() {
-        if (this.achievementsOverlay) return;
+    showAchievementsUI() {
+        this.achievementUI.show();
+    }
 
-        // Current tab state
-        this.currentAchievementTab = 'DUNGEON';
-
-        const overlay = document.createElement('div');
-        overlay.id = 'achievements-overlay';
-        overlay.className = 'shop-overlay retro-scanline-overlay';
-        this.achievementsOverlay = overlay;
-
-        overlay.innerHTML = `
-            <div class="shop-container achievements-container" style="max-width: 600px; width: 95vw; border-color: #ef4444; box-shadow: 0 0 20px rgba(239, 68, 68, 0.2);">
-                <div class="shop-header" style="background: linear-gradient(to right, #450a0a, #7f1d1d, #450a0a); border-bottom: 2px solid #ef4444;">
-                    <div class="shop-title" style="color: #fca5a5; text-shadow: 0 0 10px rgba(252, 165, 165, 0.8);">${localizationManager.t('ui_achievements_title')}</div>
-                    <button class="shop-close-btn" id="achievements-close" style="color: #fca5a5;">✕</button>
-                </div>
-                
-                <div class="shop-body" style="padding: 10px 20px 20px 20px; display: flex; flex-direction: column;">
-                    <!-- Tabs -->
-                    <div style="display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 1px solid rgba(239,68,68,0.3); padding-bottom: 5px;">
-                        <button id="achieve-tab-dungeon" class="retro-btn achievement-tab-btn active" style="flex: 1; font-size: 11px; padding: 6px; background: rgba(239,68,68,0.3); border-color: #ef4444;">${localizationManager.t('ui_achievements_tab_dungeon')}</button>
-                        <button id="achieve-tab-monster" class="retro-btn achievement-tab-btn" style="flex: 1; font-size: 11px; padding: 6px; border-color: rgba(239,68,68,0.3);">${localizationManager.t('ui_achievements_tab_monster')}</button>
-                    </div>
-
-                    <div style="font-family: var(--font-pixel); color: #fca5a5; font-size: 11px; margin-bottom: 15px; text-align: center;">
-                        ${localizationManager.t('ui_achievements_desc')}
-                    </div>
-                    <div id="achievements-list" style="display: flex; flex-direction: column; gap: 12px; max-height: 50vh; overflow-y: auto; padding-right: 5px;">
-                        <!-- Achievements injected here -->
-                    </div>
-                </div>
-            </div>
-        `;
-
-        document.getElementById('app-container').appendChild(overlay);
-
-        document.getElementById('achievements-close').onclick = () => this.hideAchievementsUI();
-        overlay.onclick = (e) => { if (e.target === overlay) this.hideAchievementsUI(); };
-
-        // Tab Events
-        const dungeonTab = document.getElementById('achieve-tab-dungeon');
-        const monsterTab = document.getElementById('achieve-tab-monster');
-
-        dungeonTab.onclick = () => {
-            if (this.currentAchievementTab === 'DUNGEON') return;
-            this.currentAchievementTab = 'DUNGEON';
-            dungeonTab.classList.add('active');
-            dungeonTab.style.background = 'rgba(239,68,68,0.3)';
-            dungeonTab.style.borderColor = '#ef4444';
-            monsterTab.classList.remove('active');
-            monsterTab.style.background = 'transparent';
-            monsterTab.style.borderColor = 'rgba(239,68,68,0.3)';
-            this.refreshAchievements();
-        };
-
-        monsterTab.onclick = () => {
-            if (this.currentAchievementTab === 'MONSTER') return;
-            this.currentAchievementTab = 'MONSTER';
-            monsterTab.classList.add('active');
-            monsterTab.style.background = 'rgba(239,68,68,0.3)';
-            monsterTab.style.borderColor = '#ef4444';
-            dungeonTab.classList.remove('active');
-            dungeonTab.style.background = 'transparent';
-            dungeonTab.style.borderColor = 'rgba(239,68,68,0.3)';
-            this.refreshAchievements();
-        };
-
-        await this.refreshAchievements();
+    refreshAchievements() {
+        this.achievementUI.refreshList();
     }
 
     hideAchievementsUI() {
-        if (!this.achievementsOverlay) return;
-        this.achievementsOverlay.classList.add('fade-out');
-        setTimeout(() => {
-            if (this.achievementsOverlay) {
-                this.achievementsOverlay.remove();
-                this.achievementsOverlay = null;
-            }
-        }, 300);
+        this.achievementUI.hide();
     }
 
     async showMonsterCodex() {
@@ -3097,112 +2889,6 @@ export default class UIManager {
                 </div>
             </div>
         `;
-    }
-
-    async refreshAchievements() {
-        if (!this.achievementsOverlay) return;
-        const listContainer = document.getElementById('achievements-list');
-        if (!listContainer) return;
-
-        listContainer.innerHTML = `<div style="text-align: center; color: #94a3b8; font-size: 14px; padding: 20px;">${localizationManager.t('ui_achievements_loading')}</div>`;
-
-        if (this.currentAchievementTab === 'DUNGEON') {
-            await this._renderDungeonAchievements(listContainer);
-        } else {
-            await this._renderMonsterAchievements(listContainer);
-        }
-    }
-
-    async _renderDungeonAchievements(container) {
-        const claimed = await DBManager.getClaimedAchievements();
-        const targets = [
-            { id: 'CURSED_FOREST', name: localizationManager.t('nav_dungeon_forest'), icon: '🌲' },
-            { id: 'UNDEAD_GRAVEYARD', name: localizationManager.t('nav_dungeon_graveyard'), icon: '🪦' },
-            { id: 'SWAMPLAND', name: localizationManager.t('nav_dungeon_swamp'), icon: '🐸' },
-            { id: 'LAVA_FIELD', name: localizationManager.t('nav_dungeon_lava'), icon: '🌋' },
-            { id: 'WINTER_LAND', name: localizationManager.t('nav_dungeon_winter'), icon: '❄️' }
-        ];
-
-        let html = '';
-        for (const t of targets) {
-            const bestRound = await DBManager.getBestRound(t.id);
-            const currentClaimed = claimed[t.id] || 0;
-            const targetRound = currentClaimed + 10;
-            const canClaim = bestRound >= targetRound;
-
-            html += `
-                <div class="achievement-card" style="background: rgba(0,0,0,0.4); border: 1px solid ${canClaim ? '#ef4444' : 'rgba(239,68,68,0.2)'}; border-radius: 8px; padding: 15px; display: flex; justify-content: space-between; align-items: center;">
-                    <div style="display: flex; flex-direction: column; gap: 5px;">
-                        <div style="color: #fca5a5; font-size: 14px; font-weight: bold; font-family: var(--font-pixel);">
-                            ${t.icon} ${t.name} <span style="color:#fbbf24; font-size: 12px;">${localizationManager.t('ui_achievements_dungeon_goal', [targetRound])}</span>
-                        </div>
-                        <div style="color: #cbd5e1; font-size: 11px;">${localizationManager.t('ui_achievements_reward_label', [100])}</div>
-                    </div>
-                    <div>
-                        ${canClaim ?
-                    `<button class="achieve-claim-btn retro-btn" data-type="DUNGEON" data-id="${t.id}" data-target="${targetRound}" style="background: #ef4444; border-color: #fca5a5; color: #fff; padding: 5px 15px; font-size: 11px;">${localizationManager.t('ui_achievements_claim_btn')}</button>` :
-                    `<div style="color: #94a3b8; font-size: 12px; font-family: var(--font-pixel);">${localizationManager.t('ui_achievements_progress_label', [bestRound, targetRound])}</div>`
-                }
-                    </div>
-                </div>
-            `;
-        }
-        container.innerHTML = html;
-        this._bindAchievementClaimButtons(container);
-    }
-
-    async _renderMonsterAchievements(container) {
-        const kills = await DBManager.getMonsterKills();
-        const claimed = await DBManager.getClaimedMonsterAchievements();
-
-        // Dynamically include all monsters from MonsterClasses
-        const targets = Object.keys(MonsterClasses).map(key => {
-            const m = MonsterClasses[key];
-            let icon = '👺'; // Default
-            if (m.id.includes('shaman')) icon = '🧙‍♂️';
-            if (m.id.includes('orc')) icon = '🏹';
-            if (m.id.includes('skeleton')) icon = '💀';
-            if (m.id.includes('crocodile')) icon = '🐊';
-            if (m.id.includes('spirit')) icon = '🔥';
-            if (m.id.includes('ice')) icon = '❄️';
-            if (m.id.includes('boss')) icon = '👑';
-
-            const localizedName = localizationManager.t(`monster_${m.id}`);
-            return { id: m.id.toUpperCase(), name: localizedName, icon: icon };
-        });
-
-        let html = '';
-        for (const t of targets) {
-            const currentKills = kills[t.id] || 0;
-            const currentClaimed = claimed[t.id] || 0;
-
-            // Tiers: 100, 1000, 10000...
-            let nextMilestone = 100;
-            if (currentClaimed >= 100) nextMilestone = 1000;
-            if (currentClaimed >= 1000) nextMilestone = 10000;
-            if (currentClaimed >= 10000) nextMilestone = currentClaimed + 10000; // Future proof
-
-            const canClaim = currentKills >= nextMilestone;
-
-            html += `
-                <div class="achievement-card" style="background: rgba(0,0,0,0.4); border: 1px solid ${canClaim ? '#ef4444' : 'rgba(239,68,68,0.2)'}; border-radius: 8px; padding: 15px; display: flex; justify-content: space-between; align-items: center;">
-                    <div style="display: flex; flex-direction: column; gap: 5px;">
-                        <div style="color: #fca5a5; font-size: 14px; font-weight: bold; font-family: var(--font-pixel);">
-                            ${t.icon} ${localizationManager.t('ui_achievements_monster_kill_label', [t.name])} <span style="color:#fbbf24; font-size: 12px;">${localizationManager.t('ui_achievements_monster_goal', [nextMilestone])}</span>
-                        </div>
-                        <div style="color: #cbd5e1; font-size: 11px;">${localizationManager.t('ui_achievements_reward_label', [150])}</div>
-                    </div>
-                    <div>
-                        ${canClaim ?
-                    `<button class="achieve-claim-btn retro-btn" data-type="MONSTER" data-id="${t.id}" data-target="${nextMilestone}" style="background: #ef4444; border-color: #fca5a5; color: #fff; padding: 5px 15px; font-size: 11px;">${localizationManager.t('ui_achievements_claim_btn')}</button>` :
-                    `<div style="color: #94a3b8; font-size: 12px; font-family: var(--font-pixel);">${localizationManager.t('ui_achievements_progress_label', [currentKills, nextMilestone])}</div>`
-                }
-                    </div>
-                </div>
-            `;
-        }
-        container.innerHTML = html || `<div style="text-align: center; color: #94a3b8; font-size: 14px; padding: 20px;">${localizationManager.t('ui_achievements_no_kills')}</div>`;
-        this._bindAchievementClaimButtons(container);
     }
 
     _bindAchievementClaimButtons(container) {
@@ -3708,26 +3394,7 @@ export default class UIManager {
     }
 
     _updateMessiahFormationSlot() {
-        const slotEl = document.getElementById('formation-messiah-slot');
-        const game = this.scene.game || (this.scene.scene && this.scene.scene.game);
-        const mm = game?.messiahManager;
-        if (!slotEl || !mm) return;
-
-        const power = mm.getActivePower();
-        const maxStacks = 10 + (power.level - 1) * 2;
-
-        slotEl.style.position = 'relative';
-        slotEl.style.display = 'flex';
-        slotEl.style.flexDirection = 'column';
-        slotEl.style.alignItems = 'center';
-        slotEl.style.justifyContent = 'center';
-
-        slotEl.innerHTML = `
-            <div style="position:absolute; top:2px; left:4px; font-size:8px; font-weight:bold; color:#fff; text-shadow:0 1px 2px #000; z-index:10; background:rgba(0,0,0,0.5); padding:0 2px; border-radius:2px;">Lv.${power.level}</div>
-            <div style="font-size: 28px;">${power.emoji}</div>
-            <div style="position:absolute; bottom:2px; right:4px; font-size:8px; font-weight:bold; color:#fff; text-shadow:0 1px 2px #000; z-index:10;">${maxStacks}${localizationManager.t('ui_npc_stacks_unit')}</div>
-        `;
-        slotEl.classList.add('filled');
+        this.messiahUI.updateFormationSlot();
     }
 
     /**
@@ -4130,78 +3797,7 @@ export default class UIManager {
     }
 
     updateMessiahHUD() {
-        if (!this.messiahHud || !this.messiahHudIcon || !this.messiahHudStacks || !this.messiahCooldownFill) return;
-
-        // Only show in combat scenes (except Arena)
-        const sceneKey = this.scene?.scene?.key || this.scene?.sys?.settings?.key;
-        const isCombat = (sceneKey === 'DungeonScene' || sceneKey === 'RaidScene' || sceneKey === 'ArenaScene');
-        const isArena = (sceneKey === 'ArenaScene');
-
-        if (!isCombat || isArena) {
-            if (this.messiahHud) {
-                if (this.messiahHud.classList.contains('active')) this.messiahHud.classList.remove('active');
-            }
-            this.lastMessiahPowerId = null;
-            this.lastMessiahStacks = -1;
-            return;
-        }
-
-        const game = this.scene.game || (this.scene.scene && this.scene.scene.game);
-        const mm = game?.messiahManager;
-        if (!mm) return;
-
-        const power = mm.getActivePower();
-        if (!power) {
-            if (this.messiahHud.classList.contains('active')) this.messiahHud.classList.remove('active');
-            return;
-        }
-
-        if (!this.messiahHud.classList.contains('active')) {
-            this.messiahHud.classList.add('active');
-        }
-
-        // 1. Power/Emoji/Stacks Dirty Check
-        const stackStr = `${mm.stacks}/${mm.maxStacks}`;
-        if (this.lastMessiahPowerId !== power.id || this.lastMessiahStacks !== mm.stacks) {
-            if (this.lastMessiahPowerId !== power.id) {
-                this.messiahHudIcon.innerText = power.emoji;
-                this.lastMessiahPowerId = power.id;
-                
-                // Update Tooltip
-                const localizedName = messiahManager.constructor.getLocalizedName(power.id);
-                const localizedDesc = messiahManager.constructor.getLocalizedDescription(power.id);
-                this.messiahHud.dataset.tooltip = `${localizedName}\n${localizedDesc}`;
-            }
-            this.messiahHudStacks.innerText = stackStr;
-            this.lastMessiahStacks = mm.stacks;
-        }
-
-        // 2. Auto Mode Dirty Check
-        if (this.lastMessiahAuto !== mm.isAutoMode) {
-            if (mm.isAutoMode) {
-                this.messiahAutoBtn.classList.add('active');
-            } else {
-                this.messiahAutoBtn.classList.remove('active');
-            }
-            this.lastMessiahAuto = mm.isAutoMode;
-        }
-
-        // 3. Cooldown Bar (Updates frequently, but only if change > threshold)
-        if (mm.stacks >= mm.maxStacks) {
-            if (this.lastMessiahCooldown !== 100) {
-                this.messiahCooldownFill.style.width = '100%';
-                this.lastMessiahCooldown = 100;
-            }
-        } else {
-            const actualCooldown = mm.baseCooldown * (1000 / mm.stats.castSpd);
-            const percentage = Math.min(100, Math.max(0, (mm.cooldownTimer / actualCooldown) * 100));
-
-            // Only update DOM if percentage changed significantly (e.g. 0.5%)
-            if (Math.abs((this.lastMessiahCooldown || 0) - percentage) > 0.5) {
-                this.messiahCooldownFill.style.width = `${percentage.toFixed(1)}%`;
-                this.lastMessiahCooldown = percentage;
-            }
-        }
+        this.messiahUI.updateHUD();
     }
 
     updateRoundDisplay(text) {

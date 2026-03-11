@@ -107,6 +107,11 @@ class MessiahManager {
         }
 
         this.saveState();
+        
+        // --- Currency Unification ---
+        // Earned Messiah EXP also acts as Divine Essence for upgrades
+        this._awardEssence(amount);
+
         if (leveledUp) {
             EventBus.emit('MESSIAH_LEVELED_UP', this.stats.level);
             // Also notify power UI if it's open
@@ -181,8 +186,14 @@ class MessiahManager {
         const power = this.powers[powerId];
         if (!power) return false;
 
+        // Level Linkage: Power level cannot exceed Messiah Level
+        if (power.level >= this.stats.level) {
+            const msg = `메시아 레벨이 부족합니다! (현재 최고 레벨: ${this.stats.level})`;
+            EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, msg, '#ff5555');
+            return false;
+        }
+
         // Upgrade logic (requires ✨ Divine Essence)
-        // Check if we have enough essence (cost scales with level)
         const cost = power.level * 10;
         const essenceItem = await DBManager.getInventoryItem('emoji_divine_essence');
         const currentEssence = essenceItem ? essenceItem.amount : 0;
@@ -203,6 +214,17 @@ class MessiahManager {
         await this.saveState();
         EventBus.emit('MESSIAH_POWER_UPGRADED', powerId);
         return true;
+    }
+
+    async _awardEssence(amount) {
+        try {
+            const essenceItem = await DBManager.getInventoryItem('emoji_divine_essence');
+            const currentEssence = essenceItem ? essenceItem.amount : 0;
+            await DBManager.saveInventoryItem('emoji_divine_essence', currentEssence + amount);
+            EventBus.emit(EventBus.EVENTS.INVENTORY_UPDATED);
+        } catch (e) {
+            console.error('[MessiahManager] Error awarding essence:', e);
+        }
     }
 }
 
