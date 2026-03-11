@@ -16,6 +16,7 @@ import foodManager, { FOOD_RECIPES } from '../Core/FoodManager.js';
 import fishingManager from '../Core/FishingManager.js';
 import alchemyManager from '../Core/AlchemyManager.js';
 import { MUSIC_TRACKS } from '../Core/MusicManager.js';
+import localizationManager from '../Core/LocalizationManager.js';
 
 
 export default class UIManager {
@@ -145,6 +146,11 @@ export default class UIManager {
         this.setupMobileEvents();
         this.setupNavigationEvents();
         this.setupDefenseEvents();
+        this.localizeUI(); // Initial localization
+
+        EventBus.on(EventBus.EVENTS.LANGUAGE_CHANGED, () => {
+            this.localizeUI();
+        });
 
         // Load Settings
         this.loadSettings();
@@ -396,12 +402,12 @@ export default class UIManager {
         const bIcon = ItemManager.getSVGFilename(config.iconId);
 
         const kNames = {
-            'bank': '은행',
-            'factory': '공장',
-            'church': '성당',
-            'camp': '캠프',
-            'tree': '나무',
-            'castle': '성'
+            'bank': localizationManager.t('building_bank'),
+            'factory': localizationManager.t('building_factory'),
+            'church': localizationManager.t('building_church'),
+            'camp': localizationManager.t('building_camp'),
+            'tree': localizationManager.t('building_tree'),
+            'castle': localizationManager.t('building_castle')
         };
 
         const imgStyle = `width:16px; height:16px; vertical-align:middle; image-rendering:pixelated; margin-right:4px;`;
@@ -464,17 +470,17 @@ export default class UIManager {
         popup.querySelector('#btn-upgrade').onclick = async () => {
             const res = await buildingManager.upgradeBuilding(slotIndex);
             if (res.success) {
-                this.showToast('건물을 강화했습니다! ✨');
+                this.showToast(localizationManager.t('toast_building_upgraded'));
                 this.showBuildingInfo(slotIndex); // Refresh
             } else {
-                this.showToast(res.reason || '강화 실패');
+                this.showToast(res.reason || localizationManager.t('toast_preparing'));
             }
         };
 
         popup.querySelector('#btn-demolish').onclick = () => {
-            this.showConfirm(`${config.emoji} 건물을 철거하시겠습니까? 🔨`, async () => {
+            this.showConfirm(`${config.emoji} ${localizationManager.t('confirm_demolish')}`, async () => {
                 await buildingManager.removeBuilding(slotIndex);
-                this.showToast('건물을 철거했습니다. 💨');
+                this.showToast(localizationManager.t('toast_building_demolished'));
                 this.hidePopup();
             });
         };
@@ -482,12 +488,12 @@ export default class UIManager {
 
     showBuildingSelection(slotIndex) {
         const kData = {
-            'bank': { name: '은행', desc: '[ 지원 주기: 10초 ] 하늘에서 <strong style="color:var(--retro-amber);">골드(Gold) 🪙</strong>를 떨어뜨려 전장에 드랍합니다.' },
-            'factory': { name: '공장', desc: '[ 지원 주기: 20초 ] 하늘에서 <strong style="color:var(--retro-red);">로켓 🚀</strong>을 발사하여 무작위 적 1명을 물리 공격합니다.' },
-            'church': { name: '성당', desc: '[ 지원 주기: 60초 ] 아군 1명에게 성스러운 빛을 내려 <strong style="color:var(--retro-green);">체력을 회복</strong>시키고 모든 <strong style="color:var(--retro-amber);">상태이상 정화</strong>를 부여합니다.' },
-            'camp': { name: '캠프', desc: '[ 지원 주기: 30초 ] 하늘에서 <strong style="color:white;">바위 🪨</strong>를 떨어뜨려 적에게 피해를 입히고 <strong style="color:var(--retro-red);">기절(Stun)</strong>시킵니다.' },
-            'tree': { name: '나무', desc: '[ 지원 주기: 15초 ] 하늘에서 <strong style="color:var(--retro-green);">치유의 과일 🍎</strong>을 떨어뜨려 무작위 아군 1명을 회복시킵니다.' },
-            'castle': { name: '성', desc: '[ 지원 주기: 300초 ] 매우 긴 주기마다 하늘에서 희귀한 <strong style="color:var(--retro-blue);">다이아(Diamond) 💎</strong>를 떨어뜨려 드랍합니다.' }
+            'bank': { name: localizationManager.t('building_bank'), desc: '[ 지원 주기: 10초 ] 하늘에서 <strong style="color:var(--retro-amber);">골드(Gold) 🪙</strong>를 떨어뜨려 전장에 드랍합니다.' },
+            'factory': { name: localizationManager.t('building_factory'), desc: '[ 지원 주기: 20초 ] 하늘에서 <strong style="color:var(--retro-red);">로켓 🚀</strong>을 발사하여 무작위 적 1명을 물리 공격합니다.' },
+            'church': { name: localizationManager.t('building_church'), desc: '[ 지원 주기: 60초 ] 아군 1명에게 성스러운 빛을 내려 <strong style="color:var(--retro-green);">체력을 회복</strong>시키고 모든 <strong style="color:var(--retro-amber);">상태이상 정화</strong>를 부여합니다.' },
+            'camp': { name: localizationManager.t('building_camp'), desc: '[ 지원 주기: 30초 ] 하늘에서 <strong style="color:white;">바위 🪨</strong>를 떨어뜨려 적에게 피해를 입히고 <strong style="color:var(--retro-red);">기절(Stun)</strong>시킵니다.' },
+            'tree': { name: localizationManager.t('building_tree'), desc: '[ 지원 주기: 15초 ] 하늘에서 <strong style="color:var(--retro-green);">치유의 과일 🍎</strong>을 떨어뜨려 무작위 아군 1명을 회복시킵니다.' },
+            'castle': { name: localizationManager.t('building_castle'), desc: '[ 지원 주기: 300초 ] 매우 긴 주기마다 하늘에서 희귀한 <strong style="color:var(--retro-blue);">다이아(Diamond) 💎</strong>를 떨어뜨려 드랍합니다.' }
         };
 
         const options = Object.values(BUILDING_TYPES).map(type => {
@@ -528,7 +534,7 @@ export default class UIManager {
             card.onclick = async () => {
                 const typeId = card.dataset.type;
                 await buildingManager.addBuilding(typeId, slotIndex);
-                this.showToast(`${BUILDING_TYPES[typeId.toUpperCase()].emoji} 건물을 건설했습니다! ✨`);
+                this.showToast(localizationManager.t('toast_building_constructed'));
                 this.hidePopup();
             };
         });
@@ -759,7 +765,7 @@ export default class UIManager {
         // Restart Dungeon if we are in one
         const sceneKey = this.scene?.scene?.key || this.scene?.sys?.settings?.key;
         if (sceneKey === 'DungeonScene') {
-            this.showToast(`${difficulty} 난이도로 던전을 재시작합니다.`);
+            this.showToast(localizationManager.t('toast_preparing'));
             // Restart with same params, DungeonScene.init will reload difficulty from DB
             this.scene.scene.restart({ dungeonType: this.scene.dungeonType, startRound: 1 });
         }
@@ -788,13 +794,13 @@ export default class UIManager {
             this.npcHudIcon.src = hiredNPC.icon;
             this.npcHudStacks.innerText = hiredNPC.currentStacks;
             this.npcHudStacks.style.fontSize = '12px';
-            this.npcHud.dataset.tooltip = `${hiredNPC.name} (${hiredNPC.currentStacks} 스택)\n${hiredNPC.description}`;
+            this.npcHud.dataset.tooltip = hiredNPC ? `${hiredNPC.name} (${hiredNPC.currentStacks} ${localizationManager.currentLanguage === 'EN' ? 'Stacks' : '스택'})\n${hiredNPC.description}` : localizationManager.t('menu_npc_hire');
         } else {
             // Show NONE for empty state
             this.npcHudIcon.style.display = 'none';
             this.npcHudStacks.innerText = 'NONE';
             this.npcHudStacks.style.fontSize = '8px'; // Smaller for NONE text
-            this.npcHud.dataset.tooltip = '고용된 NPC가 없습니다.';
+            this.npcHud.dataset.tooltip = localizationManager.t('menu_npc_hire');
         }
     }
 
@@ -1038,7 +1044,7 @@ export default class UIManager {
             this.btnExit.onclick = () => {
                 const currentKey = getActiveKey();
                 if (combatScenes.includes(currentKey)) {
-                    this.showConfirm("전투를 포기하고 나가시겠습니까?", () => {
+                    this.showConfirm(localizationManager.t('confirm_forfeit_combat'), () => {
                         this.safeSceneStart('TerritoryScene');
                     });
                     return;
@@ -1059,14 +1065,14 @@ export default class UIManager {
 
                 if (this.selectedItemId) {
                     this.btnEquipItem.style.opacity = '0.5';
-                    this.btnEquipItem.innerText = '장착 중...';
+                    this.btnEquipItem.innerText = localizationManager.currentLanguage === 'EN' ? 'Equipping...' : '장착 중...';
 
                     this.executeEquip(this.selectedItemId);
 
                     setTimeout(() => {
                         if (this.detailPanel) this.detailPanel.style.display = 'none';
                         this.btnEquipItem.style.opacity = '1';
-                        this.btnEquipItem.innerText = '장착';
+                        this.btnEquipItem.innerText = localizationManager.t('ui_btn_equip');
                         this.selectedItemId = null;
                     }, 200);
                 }
@@ -1136,7 +1142,7 @@ export default class UIManager {
                 if (isCombatTarget) {
                     const partyManager = this.scene?.game?.partyManager;
                     if (partyManager && !partyManager.isPartyFull()) {
-                        this.showToast("6명의 용병을 편성해주세요");
+                        this.showToast(localizationManager.t('toast_party_not_full'));
                         this.showPartyFormation();
                         return;
                     }
@@ -1144,7 +1150,7 @@ export default class UIManager {
 
                 // 2. Confirmation if in combat
                 if (combatScenes.includes(currentKey)) {
-                    this.showConfirm("전투가 진행 중입니다. 정말로 나가시겠습니까?", () => {
+                    this.showConfirm(localizationManager.t('confirm_exit_combat'), () => {
                         // Success Callback
                         navButtons.forEach(b => b.classList.remove('active'));
                         btn.classList.add('active');
@@ -1204,13 +1210,13 @@ export default class UIManager {
 
                 const partyManager = this.scene?.game?.partyManager;
                 if (partyManager && !partyManager.isPartyFull()) {
-                    this.showToast("6명의 용병을 편성해주세요");
+                    this.showToast(localizationManager.t('toast_party_not_full'));
                     this.showPartyFormation();
                     return;
                 }
 
                 if (combatScenes.includes(currentKey)) {
-                    this.showConfirm("전투가 진행 중입니다. 정말로 나가시겠습니까?", () => {
+                    this.showConfirm(localizationManager.t('confirm_exit_combat'), () => {
                         this.safeSceneStart(sceneKey, { dungeonType });
                     });
                 } else {
@@ -1219,41 +1225,80 @@ export default class UIManager {
                 dungeonDropdown?.classList.remove('show');
             };
         });
+    }
 
-        // Highlight active scene function
-        this.updateActiveNav = () => {
-            if (!this.scene || !this.scene.scene) return;
-            const currentSceneKey = this.scene.scene.key;
-            navButtons.forEach(btn => {
-                if (btn.dataset.scene === currentSceneKey) {
-                    btn.classList.add('active');
-                } else {
-                    btn.classList.remove('active');
-                }
-            });
+    localizeUI() {
+        console.log('[UIManager] Localizing UI elements...');
 
-            // Toggle Building Grid based on scene
-            if (this.buildingGrid) {
-                const showScenes = ['TerritoryScene', 'DungeonScene', 'RaidScene'];
-                const showGrid = showScenes.includes(currentSceneKey);
-                this.buildingGrid.style.display = showGrid ? 'flex' : 'none';
-            }
-
-            // Toggle Food HUD: Only on DungeonScene
-            const foodHud = document.getElementById('food-hud');
-            if (foodHud) {
-                const isDungeon = currentSceneKey === 'DungeonScene';
-                foodHud.style.display = isDungeon ? 'flex' : 'none';
-                
-                // Also handle Right NPC HUD initialization
-                if (isDungeon) {
-                    this.initRightNPCHUD();
-                } else {
-                    const rightHud = document.getElementById('right-npc-hud');
-                    if (rightHud) rightHud.style.display = 'none';
-                }
-            }
+        // 1. Navigation Buttons
+        const navMap = {
+            'TerritoryScene': 'nav_territory',
+            'GachaScene': 'nav_gacha',
+            'ArenaScene': 'nav_arena',
+            'RaidScene': 'nav_raid'
         };
+
+        const navButtons = document.querySelectorAll('#hud-scene-nav .nav-btn');
+        navButtons.forEach(btn => {
+            if (btn.dataset.scene && navMap[btn.dataset.scene]) {
+                btn.innerText = localizationManager.t(navMap[btn.dataset.scene]);
+            } else if (btn.dataset.popup === 'party') {
+                btn.innerText = localizationManager.t('nav_party');
+            } else if (btn.id === 'btn-dungeon-main') {
+                btn.innerText = localizationManager.t('nav_dungeon');
+            }
+        });
+
+        // 2. Dungeon Dropdown Items
+        const dungeonMap = {
+            'CURSED_FOREST': 'nav_dungeon_forest',
+            'UNDEAD_GRAVEYARD': 'nav_dungeon_graveyard',
+            'SWAMPLAND': 'nav_dungeon_swamp',
+            'LAVA_FIELD': 'nav_dungeon_lava',
+            'WINTER_LAND': 'nav_dungeon_winter'
+        };
+        const dropdownItems = document.querySelectorAll('.nav-dropdown-item');
+        dropdownItems.forEach(item => {
+            const dungeonId = item.dataset.dungeon;
+            if (dungeonId && dungeonMap[dungeonId]) {
+                item.innerText = localizationManager.t(dungeonMap[dungeonId]);
+            }
+        });
+
+        // 3. Inventory Tabs
+        const tabEmoji = document.getElementById('tab-materials');
+        if (tabEmoji) tabEmoji.innerText = localizationManager.t('ui_tab_emoji');
+        const tabGear = document.getElementById('tab-gear');
+        if (tabGear) tabGear.innerText = localizationManager.t('ui_tab_gear');
+
+        // 4. Equipment Filters
+        const filters = document.querySelectorAll('.equip-filter-bar .filter-btn');
+        const filterMap = {
+            'ALL': 'ui_filter_all',
+            'weapon': 'ui_filter_weapon',
+            'armor': 'ui_filter_armor',
+            'necklace': 'ui_filter_necklace',
+            'ring': 'ui_filter_ring'
+        };
+        filters.forEach(btn => {
+            const f = btn.dataset.equipFilter;
+            if (f && filterMap[f]) {
+                btn.innerText = localizationManager.t(filterMap[f]);
+            }
+        });
+
+        // 5. Item Detail Buttons
+        if (this.btnEquipItem) this.btnEquipItem.innerText = localizationManager.t('ui_btn_equip');
+        if (this.btnDiscardItem) this.btnDiscardItem.innerText = localizationManager.t('ui_btn_discard');
+
+        // 6. Construction UI
+        const constExit = document.getElementById('btn-exit-construction');
+        if (constExit) constExit.innerText = localizationManager.t('ui_btn_construction_exit');
+        const constHint = document.querySelector('.construction-hint');
+        if (constHint) constHint.innerText = localizationManager.t('ui_construction_hint');
+
+        // Refresh NPC HUD for tooltip
+        this.updateNPCHUD();
     }
 
     setEmojiFilter(filter) {
@@ -6087,7 +6132,7 @@ export default class UIManager {
                     EventBus.emit(EventBus.EVENTS.LANGUAGE_CHANGED, { language: newLang });
                     
                     if (this.showToast) {
-                        this.showToast(newLang === 'KR' ? '언어가 한국어로 변경되었습니다.' : 'Language changed to English.');
+                        this.showToast(localizationManager.t('toast_language_changed'));
                     }
                 };
             }

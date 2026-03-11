@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import EventBus from '../modules/Events/EventBus.js';
+import localizationManager from '../modules/Core/LocalizationManager.js';
 
 // ============================================================
 // Banner definitions — easy to extend by adding more entries
@@ -7,15 +8,15 @@ import EventBus from '../modules/Events/EventBus.js';
 const TERRITORY_BANNERS = [
     {
         id: 'companion',
-        label: '용병 도감',
+        langKey: 'menu_roster',
         sublabel: 'ROSTER',
         cutscene: 'assets/characters/party/king_cutscene.png',
         accentColor: '#c0843a',
-        action: null, // 기능 미정
+        action: null, 
     },
     {
         id: 'shop',
-        label: '상점',
+        langKey: 'menu_shop',
         sublabel: 'SHOP',
         cutscene: 'assets/characters/party/lute_cutscene.png',
         accentColor: '#3a7fc0',
@@ -23,7 +24,7 @@ const TERRITORY_BANNERS = [
     },
     {
         id: 'equipment',
-        label: '장비창',
+        langKey: 'menu_equipment',
         sublabel: 'EQUIPMENT',
         cutscene: 'assets/characters/party/aren_cutscene.png',
         accentColor: '#7a3ac0',
@@ -31,7 +32,7 @@ const TERRITORY_BANNERS = [
     },
     {
         id: 'pet',
-        label: '펫 보관함',
+        langKey: 'menu_pets',
         sublabel: 'PETS',
         cutscene: 'assets/characters/party/nana_cutscene.png',
         accentColor: '#3ac06e',
@@ -39,23 +40,23 @@ const TERRITORY_BANNERS = [
     },
     {
         id: 'npc-hire',
-        label: 'NPC 고용',
+        langKey: 'menu_npc_hire',
         sublabel: 'NPC HIRE',
-        cutscene: 'assets/characters/party/king_cutscene.png', // Temporary cutscene, will adjust or use NPC assets later
+        cutscene: 'assets/characters/party/king_cutscene.png', 
         accentColor: '#fbbf24',
         action: null,
     },
     {
         id: 'messiah',
-        label: '메시아 권능 관리',
+        langKey: 'menu_messiah',
         sublabel: 'MESSIAH TOUCH',
-        cutscene: 'assets/characters/party/messiah_cutscene.png', // Premium Messiah cutscene image
-        accentColor: '#ffffff', // Radiant white
+        cutscene: 'assets/characters/party/messiah_cutscene.png', 
+        accentColor: '#ffffff', 
         action: null,
     },
     {
         id: 'defense',
-        label: '방어 시설 관리',
+        langKey: 'menu_structures',
         sublabel: 'STRUCTURES',
         cutscene: 'assets/characters/party/boon_cutscene.png',
         accentColor: '#4ade80',
@@ -63,7 +64,7 @@ const TERRITORY_BANNERS = [
     },
     {
         id: 'achievement',
-        label: '업적',
+        langKey: 'menu_achievements',
         sublabel: 'ACHIEVEMENTS',
         cutscene: 'assets/characters/party/silvi_cutscene.png',
         accentColor: '#c03a3a',
@@ -71,7 +72,7 @@ const TERRITORY_BANNERS = [
     },
     {
         id: 'monster-codex',
-        label: '몬스터 도감',
+        langKey: 'menu_monster_codex',
         sublabel: 'MONSTER CODEX',
         cutscene: 'assets/characters/enemies/goblin_cutscene.png',
         accentColor: '#4ade80',
@@ -79,15 +80,15 @@ const TERRITORY_BANNERS = [
     },
     {
         id: 'cook',
-        label: '요리하기',
+        langKey: 'menu_cooking',
         sublabel: 'COOKING',
-        cutscene: 'assets/characters/party/nana_cutscene.png', // Use Nana for cooking context (seems fitting for a supportive chef)
+        cutscene: 'assets/characters/party/nana_cutscene.png', 
         accentColor: '#fb7185',
         action: function () { if (this.game && this.game.uiManager) this.game.uiManager.showCooking(); },
     },
     {
         id: 'fishing',
-        label: '낚시 관리',
+        langKey: 'menu_fishing',
         sublabel: 'FISHING',
         cutscene: 'assets/npc/polar_bear.png',
         accentColor: '#3b82f6',
@@ -95,7 +96,7 @@ const TERRITORY_BANNERS = [
     },
     {
         id: 'alchemy',
-        label: '연금술 관리',
+        langKey: 'menu_alchemy',
         sublabel: 'ALCHEMY',
         cutscene: 'assets/npc/rabbit.png',
         accentColor: '#a78bfa',
@@ -103,10 +104,10 @@ const TERRITORY_BANNERS = [
     },
     {
         id: 'focus-music',
-        label: '집중 모드 & 음반 구입',
+        langKey: 'menu_music',
         sublabel: 'FOCUS & MUSIC',
-        cutscene: 'assets/characters/party/lute_cutscene.png', // Lute associated with music
-        accentColor: '#8b5cf6', // Violet
+        cutscene: 'assets/characters/party/lute_cutscene.png', 
+        accentColor: '#8b5cf6', 
         action: function () { if (this.game && this.game.uiManager) this.game.uiManager.showFocusMusicManager(); },
     },
 ];
@@ -145,6 +146,21 @@ export default class TerritoryScene extends Phaser.Scene {
         // DOM layers
         this.createBannerList();
         this.createPatchNotes();
+
+        // Localization Support
+        EventBus.on(EventBus.EVENTS.LANGUAGE_CHANGED, () => {
+            console.log('[TerritoryScene] Language changed, refreshing UI components.');
+            if (this.navContainer) {
+                this.navContainer.remove();
+                this.navContainer = null;
+                this.createBannerList();
+            }
+            if (this.patchNotesContainer) {
+                // We refresh patch notes mostly for the title tab
+                const title = document.querySelector('#territory-patch-tab span');
+                if (title) title.innerText = localizationManager.t('patch_notes_title');
+            }
+        });
 
         // Clean up on scene shutdown/sleep: ONLY HIDE, DON'T REMOVE (for faster re-entry)
         const cleanup = () => {
@@ -255,6 +271,8 @@ export default class TerritoryScene extends Phaser.Scene {
         const nebulaTint1 = `${banner.accentColor}25`; // ~15% alpha hex
         const nebulaTint2 = `${banner.accentColor}15`; // ~8% alpha hex
 
+        const localizedLabel = localizationManager.t(banner.langKey);
+
         return `
             <div
                 id="banner-${banner.id}"
@@ -270,7 +288,7 @@ export default class TerritoryScene extends Phaser.Scene {
                 <div class="territory-banner-img-wrap">
                     <img
                         src="${banner.cutscene}"
-                        alt="${banner.label}"
+                        alt="${localizedLabel}"
                         class="territory-banner-img"
                         draggable="false"
                     />
@@ -278,7 +296,7 @@ export default class TerritoryScene extends Phaser.Scene {
                 </div>
                 <div class="territory-banner-label-wrap">
                     <span class="territory-banner-sublabel">${banner.sublabel}</span>
-                    <span class="territory-banner-label">${banner.label}</span>
+                    <span class="territory-banner-label">${localizedLabel}</span>
                     <span class="territory-banner-arrow">▸</span>
                 </div>
             </div>
@@ -299,7 +317,7 @@ export default class TerritoryScene extends Phaser.Scene {
         wrap.id = 'territory-patch-notes';
         wrap.innerHTML = `
             <div id="territory-patch-tab">
-                <span>📋 패치 내역</span>
+                <span>${localizationManager.t('patch_notes_title')}</span>
                 <button id="territory-patch-close" title="닫기">✕</button>
             </div>
             <div id="territory-patch-body">
