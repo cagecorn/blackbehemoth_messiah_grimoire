@@ -1638,20 +1638,20 @@ export default class UIManager {
         overlay.innerHTML = `
             <div class="shop-container defense-management-container" style="max-width: 900px; width: 95vw;">
                 <div class="shop-header" style="background: linear-gradient(to right, #10b981, #059669);">
-                    <div class="shop-title">🛡️ DEFENSE STRUCTURES (방어 시설 관리)</div>
+                    <div class="shop-title">${localizationManager.t('ui_defense_title')}</div>
                     <button class="shop-close-btn" id="defense-manage-close">✕</button>
                 </div>
                 
                 <div class="shop-body defense-management-body" id="defense-manage-body" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 20px;">
                     <div class="craft-recipe-area" style="border-right: 1px solid rgba(255,255,255,0.1); padding-right: 15px;">
-                        <div style="font-size: 14px; font-weight: bold; margin-bottom: 12px; color: #34d399;">[설치 가능 시설물]</div>
+                        <div style="font-size: 14px; font-weight: bold; margin-bottom: 12px; color: #34d399;">${localizationManager.t('ui_defense_constructible')}</div>
                         <div id="defense-recipe-list" style="display: flex; flex-direction: column; gap: 10px;">
                             <!-- Recipes go here -->
                         </div>
                     </div>
                     
                     <div class="owned-defense-area">
-                        <div style="font-size: 14px; font-weight: bold; margin-bottom: 12px; color: #34d399;">[보유 중인 시설물 인벤토리]</div>
+                        <div style="font-size: 14px; font-weight: bold; margin-bottom: 12px; color: #34d399;">${localizationManager.t('ui_defense_owned_inventory')}</div>
                         <div id="owned-defense-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px; max-height: 400px; overflow-y: auto; padding: 5px;">
                             <!-- Owned items go here -->
                         </div>
@@ -1662,7 +1662,7 @@ export default class UIManager {
                     <div class="shop-currency" id="defense-material-display" style="display:flex; align-items:center; gap:15px;">
                         <!-- Materials like wood and bone will be shown here -->
                     </div>
-                    <div style="font-size: 11px; opacity: 0.7; color: #d1d5db;">* 시설물은 던전에 입장한 후 원하는 위치에 고정하여 설치할 수 있습니다.</div>
+                    <div style="font-size: 11px; opacity: 0.7; color: #d1d5db;">${localizationManager.t('ui_defense_footer_tip')}</div>
                 </div>
             </div>
         `;
@@ -1736,8 +1736,8 @@ export default class UIManager {
                     <div class="retro-scanline-overlay" style="pointer-events: none;"></div>
                     <img src="${iconUrl}" style="width: 48px; height: 48px; object-fit: contain; image-rendering: pixelated; background: rgba(255,255,255,0.05); border-radius: 8px; padding: 4px; border: 1px solid rgba(255,255,255,0.1);">
                     <div style="flex: 1;">
-                        <div style="font-weight: bold; font-size: 14px; color: #fff;">${item.name}</div>
-                        <div style="font-size: 10px; color: #34d399; margin-bottom: 4px;">${item.description}</div>
+                        <div style="font-weight: bold; font-size: 14px; color: #fff;">${ItemManager.getLocalizedName(r.id)}</div>
+                        <div style="font-size: 10px; color: #34d399; margin-bottom: 4px;">${ItemManager.getLocalizedDescription(r.id)}</div>
                         <div style="font-size: 11px; color: #d1d5db; display: flex; align-items: center; gap: 8px;">
                             ${r.req.emoji_wood ? `<span style="display:flex; align-items:center; gap:2px; color: ${hasWood ? '#fff' : '#ef4444'}"><img src="assets/emojis/1fab5.svg" style="width:12px; height:12px;"> ${r.req.emoji_wood}</span>` : ''}
                             ${r.req.emoji_bone ? `<span style="display:flex; align-items:center; gap:2px; color: ${hasBone ? '#fff' : '#ef4444'}"><img src="assets/emojis/1f9b4.svg" style="width:12px; height:12px;"> ${r.req.emoji_bone}</span>` : ''}
@@ -1745,7 +1745,7 @@ export default class UIManager {
                         </div>
                     </div>
                     <button class="shop-buy-btn defense-craft-btn" data-id="${r.id}" ${canCraft ? '' : 'disabled'} 
-                            style="padding: 8px 15px; font-size: 12px; height: auto; background: ${canCraft ? 'linear-gradient(to bottom, #10b981, #059669)' : '#333'}; opacity: ${canCraft ? 1 : 0.5}; cursor: ${canCraft ? 'pointer' : 'not-allowed'}; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); color: #fff; font-weight: bold;">제작</button>
+                            style="padding: 8px 15px; font-size: 12px; height: auto; background: ${canCraft ? 'linear-gradient(to bottom, #10b981, #059669)' : '#333'}; opacity: ${canCraft ? 1 : 0.5}; cursor: ${canCraft ? 'pointer' : 'not-allowed'}; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); color: #fff; font-weight: bold;">${localizationManager.t('ui_defense_craft_btn')}</button>
                     ${isSelected ? '<div style="position: absolute; top: 5px; right: 5px; color: #34d399; font-size: 10px;">★</div>' : ''}
                 </div>
             `;
@@ -1793,11 +1793,12 @@ export default class UIManager {
                             createdAt: Date.now()
                         });
 
-                        this.showToast(`${ItemManager.getItem(itemId).name} 제작 성공! 🛡️`);
+                        const localizedName = ItemManager.getLocalizedName(itemId);
+                        this.showToast(localizationManager.t('ui_defense_craft_success', [localizedName]));
                         await this.refreshDefenseManagement();
                         if (this.refreshInventory) this.refreshInventory();
                     } else {
-                        this.showToast('재료가 부족합니다!');
+                        this.showToast(localizationManager.t('ui_defense_low_materials'));
                     }
                 };
             }
@@ -1809,7 +1810,7 @@ export default class UIManager {
 
         let ownedHtml = '';
         if (structures.length === 0) {
-            ownedHtml = `<div style="grid-column: 1/-1; text-align: center; opacity: 0.4; padding: 40px; font-size: 12px; color: #fff;">보유 중인 시설물이 없습니다.</div>`;
+            ownedHtml = `<div style="grid-column: 1/-1; text-align: center; opacity: 0.4; padding: 40px; font-size: 12px; color: #fff;">${localizationManager.t('ui_defense_no_owned')}</div>`;
         } else {
             // Sort by newest first
             structures.sort((a, b) => b.createdAt - a.createdAt);
@@ -1825,28 +1826,30 @@ export default class UIManager {
 
                 let statusBadge = '';
                 let cardStyle = 'background: rgba(255,255,255,0.05); border: 1px solid rgba(16, 185, 129, 0.3);';
-                let btnText = isInstalled ? 'CURRENT' : 'DEPLOY ▶';
+                let btnText = isInstalled ? localizationManager.t('ui_defense_current') : localizationManager.t('ui_defense_deploy');
                 let btnColor = isInstalled ? '#10b981' : '#f59e0b';
                 let btnStyle = isSelected ? 'border: 2px solid #fff; box-shadow: 0 0 10px #fff;' : '';
 
                 if (isInstalled) {
-                    statusBadge = `<div style="position: absolute; bottom: 5px; right: 5px; background: #3b82f6; color: #fff; font-size: 6px; font-weight: bold; padding: 1px 3px; border-radius: 2px;">${s.dungeonId.replace('_', ' ')}</div>`;
+                    const dungeonKey = `nav_dungeon_${s.dungeonId.split('_').pop()}`; // e.g., undead_graveyard -> graveyard
+                    const localizedDungeon = localizationManager.t(dungeonKey, null, s.dungeonId.replace('_', ' ').toUpperCase());
+                    statusBadge = `<div style="position: absolute; bottom: 5px; right: 5px; background: #3b82f6; color: #fff; font-size: 6px; font-weight: bold; padding: 1px 3px; border-radius: 2px;">${localizedDungeon}</div>`;
                     cardStyle = 'background: rgba(59, 130, 246, 0.1); border: 1px solid #3b82f6; opacity: 0.9;';
                 }
 
                 ownedHtml += `
                     <div class="owned-equip-card structure-instance-card" data-instance-id="${s.id}"
                          style="${cardStyle} border-radius: 8px; padding: 10px; display: flex; flex-direction: row; align-items: center; gap: 15px; position: relative; cursor: pointer; transition: all 0.2s;" 
-                         title="${base.name}\n${isInstalled ? 'INSTALLED: ' + s.dungeonId : 'IN INVENTORY'}">
+                         title="${ItemManager.getLocalizedName(s.baseId)}\n${isInstalled ? localizationManager.t('ui_defense_installed', [s.dungeonId]) : localizationManager.t('ui_defense_in_inventory')}">
                         
                         <div style="background: rgba(0,0,0,0.5); border-radius: 6px; padding: 8px; border: 1px solid rgba(255,255,255,0.1);">
                             <img src="${iconUrl}" style="width: 32px; height: 32px; object-fit: contain; image-rendering: pixelated; filter: drop-shadow(0 0 5px rgba(16, 185, 129, 0.3));">
                         </div>
 
                         <div style="flex: 1;">
-                            <div style="font-size: 11px; color: #fff; font-weight: bold;">${base.name}</div>
+                            <div style="font-size: 11px; color: #fff; font-weight: bold;">${ItemManager.getLocalizedName(s.baseId)}</div>
                             <div style="font-size: 8px; color: #34d399; opacity: 0.6;">SERIAL: #${shortId}</div>
-                            <div style="font-size: 8px; color: #fbbf24;">STATUS: HP ${s.currentHp || s.maxHp || 1000} / ${s.maxHp || 1000}</div>
+                            <div style="font-size: 8px; color: #fbbf24;">${localizationManager.t('ui_defense_status_hp', [s.currentHp || s.maxHp || 1000, s.maxHp || 1000])}</div>
                         </div>
 
                         <div class="deploy-unit-btn" data-instance-id="${s.id}" 
