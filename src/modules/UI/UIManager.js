@@ -433,7 +433,7 @@ export default class UIManager {
                     : slot.typeId === 'bank'
                         ? `하늘에서 <strong style="color:var(--retro-amber);">골드(Gold) 🪙</strong>를 떨어뜨려 전장에 ${50 + (slot.level - 1) * 25} 골드를 드랍합니다. (직접 획득 가능)`
                         : slot.typeId === 'church'
-                            ? `아군 1명에게 성스러운 빛을 내려 모든 <strong style="color:var(--retro-amber);">상태이상 및 디버프를 정화</strong>합니다.`
+                            ? `아군 1명에게 성스러운 빛을 내려 <strong style="color:var(--retro-green);">체력을 ${(15 + (slot.level - 1) * 5) / 2} 회복</strong>시키고 모든 <strong style="color:var(--retro-amber);">상태이상 및 디버프를 정화</strong>합니다.`
                             : slot.typeId === 'camp'
                                 ? `하늘에서 <strong style="color:white;">바위 🪨</strong>를 떨어뜨려 적에게 ${10 + (slot.level - 1) * 3}의 피해를 입히고 <strong style="color:var(--retro-red);">기절(Stun)</strong>시킵니다. (레이드 제외)`
                                 : slot.typeId === 'castle'
@@ -483,7 +483,7 @@ export default class UIManager {
         const kData = {
             'bank': { name: '은행', desc: '[ 지원 주기: 10초 ] 하늘에서 <strong style="color:var(--retro-amber);">골드(Gold) 🪙</strong>를 떨어뜨려 전장에 드랍합니다.' },
             'factory': { name: '공장', desc: '[ 지원 주기: 20초 ] 하늘에서 <strong style="color:var(--retro-red);">로켓 🚀</strong>을 발사하여 무작위 적 1명을 물리 공격합니다.' },
-            'church': { name: '성당', desc: '[ 지원 주기: 60초 ] 아군 1명에게 성스러운 빛을 내려 모든 <strong style="color:var(--retro-amber);">상태이상 및 디버프를 정화</strong>합니다.' },
+            'church': { name: '성당', desc: '[ 지원 주기: 60초 ] 아군 1명에게 성스러운 빛을 내려 <strong style="color:var(--retro-green);">체력을 회복</strong>시키고 모든 <strong style="color:var(--retro-amber);">상태이상 정화</strong>를 부여합니다.' },
             'camp': { name: '캠프', desc: '[ 지원 주기: 30초 ] 하늘에서 <strong style="color:white;">바위 🪨</strong>를 떨어뜨려 적에게 피해를 입히고 <strong style="color:var(--retro-red);">기절(Stun)</strong>시킵니다.' },
             'tree': { name: '나무', desc: '[ 지원 주기: 15초 ] 하늘에서 <strong style="color:var(--retro-green);">치유의 과일 🍎</strong>을 떨어뜨려 무작위 아군 1명을 회복시킵니다.' },
             'castle': { name: '성', desc: '[ 지원 주기: 300초 ] 매우 긴 주기마다 하늘에서 희귀한 <strong style="color:var(--retro-blue);">다이아(Diamond) 💎</strong>를 떨어뜨려 드랍합니다.' }

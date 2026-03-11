@@ -137,9 +137,10 @@ export default class SupportActionManager {
         console.log(`[SupportAction] Factory building launched rocket at ${target.config?.id || 'Enemy'}`);
     }
 
-    applyHeal(target, level) {
+    applyHeal(target, level, isHalfAmount = false) {
         // Heal amount: 15 base + 5 per extra level
-        const amount = 15 + (level - 1) * 5;
+        let amount = 15 + (level - 1) * 5;
+        if (isHalfAmount) amount /= 2;
 
         if (target.heal) {
             target.heal(amount);
@@ -210,6 +211,9 @@ export default class SupportActionManager {
         if (target.cleanse) {
             target.cleanse();
         }
+
+        // Heal (Half of tree's amount)
+        this.applyHeal(target, level, true);
 
         // Light Pillar Effect (Simplified Sera Ult)
         const light = scene.add.rectangle(target.x, target.y - 400, 40, 800, 0xffffff, 0.5);
