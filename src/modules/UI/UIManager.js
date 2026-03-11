@@ -6008,34 +6008,12 @@ export default class UIManager {
                         </div>
                     </div>
 
-                    <!-- Vibration -->
-                    <div class="settings-row">
-                        <div class="settings-label-row">
-                            <span class="settings-label">진동 (Vibration)</span>
-                            <label class="switch">
-                                <input type="checkbox" id="check-vibration" ${sfx.vibrationEnabled ? 'checked' : ''}>
-                                <span class="slider round"></span>
-                            </label>
-                        </div>
-                    </div>
-
                     <!-- Battery Saver -->
                     <div class="settings-row">
                         <div class="settings-label-row">
                             <span class="settings-label">방치 모드 (Battery Saver)</span>
                             <label class="switch">
                                 <input type="checkbox" id="check-battery-saver" ${localStorage.getItem('batterySaver') === 'true' ? 'checked' : ''}>
-                                <span class="slider round"></span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- Resource Animation Toggle -->
-                    <div class="settings-row">
-                        <div class="settings-label-row">
-                            <span class="settings-label">자원 생산 애니메이션 효과</span>
-                            <label class="switch">
-                                <input type="checkbox" id="toggle-production-anim" ${this.showProductionAnim ? 'checked' : ''}>
                                 <span class="slider round"></span>
                             </label>
                         </div>
@@ -6097,11 +6075,20 @@ export default class UIManager {
                 };
             }
 
-            // Vibration Listener
-            const vibCheck = document.getElementById('check-vibration');
-            if (vibCheck) {
-                vibCheck.onchange = (e) => {
-                    sfx.setVibrationEnabled(e.target.checked);
+            // Language Listener
+            const langSelect = document.getElementById('select-language');
+            if (langSelect) {
+                langSelect.onchange = (e) => {
+                    const newLang = e.target.value;
+                    this.currentLanguage = newLang;
+                    localStorage.setItem('gameLanguage', newLang);
+                    
+                    console.log(`[UIManager] Language changed to: ${newLang}`);
+                    EventBus.emit(EventBus.EVENTS.LANGUAGE_CHANGED, { language: newLang });
+                    
+                    if (this.showToast) {
+                        this.showToast(newLang === 'KR' ? '언어가 한국어로 변경되었습니다.' : 'Language changed to English.');
+                    }
                 };
             }
 
@@ -6118,15 +6105,6 @@ export default class UIManager {
                 };
             }
 
-            // Animation Toggle Listener
-            const animCheck = document.getElementById('toggle-production-anim');
-            if (animCheck) {
-                animCheck.onchange = (e) => {
-                    this.showProductionAnim = e.target.checked;
-                    this.saveSettings();
-                    this.showToast(this.showProductionAnim ? '애니메이션 효과 활성화 ✨' : '애니메이션 효과 비활성화 💨');
-                };
-            }
         });
     }
 

@@ -60,6 +60,10 @@ import alchemyManager from '../modules/Core/AlchemyManager.js';
 
 // partyManager will be accessed via this.game.partyManager
 
+// ==========================================
+// 🏰 [구역 1] 기초 시스템 (FOUNDATION & INIT)
+// ==========================================
+//#region Foundation
 
 export default class DungeonScene extends Phaser.Scene {
     constructor() {
@@ -591,9 +595,15 @@ export default class DungeonScene extends Phaser.Scene {
             this.scene.start('TerritoryScene');
         } finally {
             this.isInitializing = false;
-            console.log(`[Dungeon] Initialization Complete. Stance: READY.`);
+            console.log(`%c[DungeonScene] Initialization Complete. Stance: READY.`, "color: #00ff00; font-weight: bold;");
         }
     }
+//#endregion
+
+// ==========================================
+// 👥 [구역 2] 유닛 및 파티 관리 (UNITS & PARTY)
+// ==========================================
+//#region Units and Party
 
     async spawnHiredNPC(startPos, playerLeader) {
         const npcManager = (await import('../modules/Core/NPCManager.js')).default;
@@ -976,6 +986,12 @@ export default class DungeonScene extends Phaser.Scene {
             this.stageManager.update(time, delta);
         }
     }
+//#endregion
+
+// ==========================================
+// 💀 [구역 4] 패배 및 복구 (DEFEAT & RECOVERY)
+// ==========================================
+//#region Defeat and Recovery
 
     handlePartyWipeout() {
         this.isResetting = true;
@@ -1038,34 +1054,9 @@ export default class DungeonScene extends Phaser.Scene {
             ease: 'Power2'
         });
 
-        EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, `[시스템] 파티가 전멸했습니다. 1라운드부터 재시작합니다. 🔄`);
-
         // Wait and Restart
         this.time.delayedCall(4000, () => {
-            // Reset resurrection costs when party loops
-            this.resurrectionCosts = {};
-
-            // Heal all before restart to ensure they spawn with full HP
-            if (this.game.partyManager) this.game.partyManager.healAll();
-
-            // Ticket deduction for specific dungeons
-            if (this.dungeonType === 'UNDEAD_GRAVEYARD') {
-                const hasTicket = this.game.inventory.removeItem('emoji_ticket', 1);
-                if (!hasTicket) {
-                    console.warn('[DungeonScene] No ticket for Undead Graveyard. Returning.');
-                    this.game.uiManager.showToast('언데드 묘지 입장권(🎫)이 필요합니다.');
-                    this.scene.start('DungeonScene', { dungeonType: 'CURSED_FOREST' });
-                    return;
-                }
-            } else if (this.dungeonType === 'SWAMPLAND') {
-                const hasTicket = this.game.inventory.removeItem('swampland_ticket', 1);
-                if (!hasTicket) {
-                    console.warn('[DungeonScene] No ticket for Swampland. Returning.');
-                    this.game.uiManager.showToast('늪지대 입장권(🎫)이 필요합니다.');
-                    this.scene.start('DungeonScene', { dungeonType: 'CURSED_FOREST' });
-                    return;
-                }
-            }
+            console.log(`%c[DungeonScene] handlePartyWipeout -> Restarting from Round 1`, "color: #ff4444; font-weight: bold;");
             this.scene.restart({ dungeonType: this.dungeonType, startRound: 1 });
         });
     }
@@ -1152,7 +1143,7 @@ export default class DungeonScene extends Phaser.Scene {
 
             if (newUnit) {
                 newUnit.id = unitId; // Keep the same UI slot ID
-
+                console.log(`%c[DungeonScene] Resurrection complete for: ${characterId}`, "color: #00ffcc; font-weight: bold;");
                 // --- Resurrection Polish ---
                 // 1. Force 100% HP (prevents loading stale dead state)
                 newUnit.hp = newUnit.maxHp;
@@ -1240,6 +1231,12 @@ export default class DungeonScene extends Phaser.Scene {
             }
         }
     }
+//#endregion
+
+// ==========================================
+// ⚔️ [구역 5] 전투 및 웨이브 매니지먼트 (COMBAT & WAVE)
+// ==========================================
+//#region Combat and Wave
 
     spawnWave() {
         if (this.isResetting) return;
@@ -1730,6 +1727,12 @@ export default class DungeonScene extends Phaser.Scene {
 
         console.log('[디버그] 대기 효과 적용 (구름 그림자 & 렌즈 플레어)');
     }
+//#endregion
+
+// ==========================================
+// ✨ [구역 6] 연출 및 비주얼 (VFX & VISUALS)
+// ==========================================
+//#region VFX and Visuals
 
     /**
      * Applies a cinematic intro blur that fades away.
@@ -2032,6 +2035,7 @@ export default class DungeonScene extends Phaser.Scene {
             yoyo: true
         });
         
-        console.log(`[Alchemy] Launched ${potionId} toward ${target.unitName}`);
+        console.log(`%c[DungeonScene] Launched ${potionId} toward ${target.unitName}`, "color: #9333ea;");
     }
 }
+//#endregion

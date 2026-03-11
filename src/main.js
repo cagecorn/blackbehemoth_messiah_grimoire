@@ -20,6 +20,7 @@ import npcManager from './modules/Core/NPCManager.js';
 import messiahManager from './modules/Core/MessiahManager.js';
 import fishingManager from './modules/Core/FishingManager.js';
 import alchemyManager from './modules/Core/AlchemyManager.js';
+import localizationManager from './modules/Core/LocalizationManager.js';
 
 
 const config = {
