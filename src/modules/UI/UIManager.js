@@ -121,7 +121,8 @@ export default class UIManager {
 
         this.initEventListeners();
         this.particlePool = []; // For resource-pop-anim recycling
-        this.showProductionAnim = true; // Default setting
+        this.showProductionAnim = true; // Default setting (always on now)
+        this.currentLanguage = localStorage.getItem('gameLanguage') || 'KR';
     }
 
     get game() {
@@ -5992,6 +5993,19 @@ export default class UIManager {
                             </div>
                         </div>
                         <input type="range" id="slider-bgm-vol" class="settings-slider" min="0" max="1" step="0.01" value="${currentBgmVol}">
+                    </div>
+
+                    <!-- Language Settings -->
+                    <div class="settings-row">
+                        <div class="settings-label-row">
+                            <span class="settings-label">언어 설정 (Language)</span>
+                            <div class="settings-controls">
+                                <select id="select-language" class="settings-select" style="background: #1a1a1a; color: #fff; border: 1px solid #444; font-family: 'Outfit'; font-size: 12px; padding: 2px 5px;">
+                                    <option value="KR" ${this.currentLanguage === 'KR' ? 'selected' : ''}>한국어</option>
+                                    <option value="EN" ${this.currentLanguage === 'EN' ? 'selected' : ''}>ENGLISH</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Vibration -->
