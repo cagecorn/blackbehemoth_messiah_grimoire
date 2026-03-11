@@ -1430,7 +1430,7 @@ export default class UIManager {
         overlay.innerHTML = `
             <div class="shop-container pet-storage-container" style="max-width: 900px; width: 95vw;">
                 <div class="shop-header" style="background: linear-gradient(to right, #059669, #10b981);">
-                    <div class="shop-title">🐾 PET STORAGE (펫 보관함)</div>
+                    <div class="shop-title">${localizationManager.t('ui_pet_storage_title')}</div>
                     <button class="shop-close-btn" id="pet-storage-close">✕</button>
                 </div>
                 
@@ -1440,7 +1440,7 @@ export default class UIManager {
                     </div>
                     
                     <div class="pet-detail-area" id="pet-detail-area">
-                        <div class="pet-empty-detail">펫을<br>선택하세요</div>
+                        <div class="pet-empty-detail">${localizationManager.t('ui_pet_empty_selection').replace(' ', '<br>')}</div>
                     </div>
                 </div>
                 
@@ -1481,7 +1481,7 @@ export default class UIManager {
                     <div class="pet-card" data-id="${pet.id}" style="background: rgba(255,255,255,0.05); border: 2px solid var(--retro-border); border-radius: 12px; padding: 15px; cursor: pointer; text-align: center; position: relative; min-height: 110px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;">
                         <div style="position:absolute; top:5px; right:8px; color:#fbbf24; font-weight:bold; font-size:12px; text-shadow: 1px 1px 2px #000;">★${highestStar}</div>
                         <img src="assets/pet/${pet.sprite}.png" style="width: 64px; height: 64px; object-fit: contain; image-rendering: pixelated;">
-                        <div style="font-size: 11px; font-weight: bold; color: #fff;">${pet.name}</div>
+                        <div style="font-size: 11px; font-weight: bold; color: #fff;">${localizationManager.t('pet_name_' + pet.id)}</div>
                     </div>
                 `;
             }
@@ -1511,28 +1511,28 @@ export default class UIManager {
 
         detailArea.innerHTML = `
             <div style="text-align: center; border-bottom: 2px solid rgba(255,255,255,0.1); padding-bottom: 12px; display: flex; flex-direction: column; align-items: center; gap: 8px;">
-                <div style="color: #fbbf24; font-size: 16px; font-weight: 900;">★${highestStar} ${baseConfig.name}</div>
+                <div style="color: #fbbf24; font-size: 16px; font-weight: 900;">★${highestStar} ${localizationManager.t('pet_name_' + petId)}</div>
                 <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);">
                     <img src="assets/pet/${baseConfig.sprite}.png" style="width: 80px; height: 80px; object-fit: contain; image-rendering: pixelated;">
                 </div>
-                <div style="color: #6ee7b7; font-size: 13px; font-weight: bold;">LEVEL ${state.level}</div>
+                <div style="color: #6ee7b7; font-size: 13px; font-weight: bold;">${localizationManager.t('ui_pet_level', [state.level])}</div>
             </div>
             
             <div style="display: flex; flex-direction: column; gap: 6px; font-size: 12px;">
-                <div style="display: flex; justify-content: space-between;"><span>공격력</span><span style="color: #ef4444; font-weight: bold;">${currentAtk}</span></div>
-                <div style="display: flex; justify-content: space-between;"><span>마법공격력</span><span style="color: #3b82f6; font-weight: bold;">${currentMAtk}</span></div>
-                <div style="display: flex; justify-content: space-between;"><span>이동속도</span><span>${scaledConfig.speed}</span></div>
-                <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 4px;"><span>공격속도</span><span>${scaledConfig.atkSpd}ms</span></div>
+                <div style="display: flex; justify-content: space-between;"><span>${localizationManager.t('ui_pet_stat_atk')}</span><span style="color: #ef4444; font-weight: bold;">${currentAtk}</span></div>
+                <div style="display: flex; justify-content: space-between;"><span>${localizationManager.t('ui_pet_stat_mAtk')}</span><span style="color: #3b82f6; font-weight: bold;">${currentMAtk}</span></div>
+                <div style="display: flex; justify-content: space-between;"><span>${localizationManager.t('ui_pet_stat_speed')}</span><span>${scaledConfig.speed}</span></div>
+                <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 4px;"><span>${localizationManager.t('ui_pet_stat_atkSpd')}</span><span>${scaledConfig.atkSpd}ms</span></div>
             </div>
             
             <div style="background: rgba(0,0,0,0.5); padding: 12px; border-radius: 8px; font-size: 11px; line-height: 1.5; border-left: 3px solid #10b981;">
-                <div style="font-weight: bold; color: #10b981; margin-bottom: 4px;">[특수 패시브: ${baseConfig.passive.name}]</div>
-                <div style="color: #d1d5db;">${baseConfig.passive.description}</div>
+                <div style="font-weight: bold; color: #10b981; margin-bottom: 4px;">${localizationManager.t('ui_pet_passive_header', [localizationManager.t('pet_passive_name_' + petId)])}</div>
+                <div style="color: #d1d5db;">${localizationManager.t('pet_passive_desc_' + petId)}</div>
             </div>
             
             <button id="btn-feed-pet" class="shop-buy-btn" style="width: 100%; margin-top: auto; padding: 12px; height: auto; flex-direction: column; gap: 4px; border-radius: 8px;">
-                <div style="font-size: 15px; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 6px;"><img src="assets/emojis/1f356.svg" style="width:18px; height:18px;"> 고기 먹이기</div>
-                <div style="font-size: 10px; opacity: 0.9;">(소모: ${cost}개)</div>
+                <div style="font-size: 15px; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 6px;"><img src="assets/emojis/1f356.svg" style="width:18px; height:18px;"> ${localizationManager.t('ui_pet_feed_btn')}</div>
+                <div style="font-size: 10px; opacity: 0.9;">${localizationManager.t('ui_pet_feed_cost', [cost])}</div>
             </button>
         `;
 
@@ -1540,7 +1540,7 @@ export default class UIManager {
         feedBtn.onclick = async () => {
             const meatItem = await DBManager.getInventoryItem('emoji_meat');
             if (!meatItem || meatItem.amount < cost) {
-                this.showToast('몬스터 고기가 부족합니다! 🍖');
+                this.showToast(localizationManager.t('ui_pet_low_meat'));
                 return;
             }
 
@@ -1549,7 +1549,7 @@ export default class UIManager {
 
             // Level Up
             await partyManager.feedPet(petId);
-            this.showToast(`${baseConfig.name} 레벨 업! ✨`);
+            this.showToast(localizationManager.t('ui_pet_lvl_up_success', [localizationManager.t('pet_name_' + petId)]));
 
             // Refresh
             this.refreshPetStorage();
@@ -1568,30 +1568,30 @@ export default class UIManager {
         overlay.innerHTML = `
             <div class="shop-container equipment-crafting-container" style="max-width: 900px; width: 95vw;">
                 <div class="shop-header" style="background: linear-gradient(to right, #7c3aed, #a855f7);">
-                    <div class="shop-title">⚔️ EQUIPMENT CRAFTING (장비 제작)</div>
+                    <div class="shop-title">${localizationManager.t('ui_craft_title')}</div>
                     <button class="shop-close-btn" id="equip-craft-close">✕</button>
                 </div>
                 
                 <div class="shop-body equipment-crafting-body" id="equip-craft-body" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 20px;">
                     <div class="craft-recipe-area" style="border-right: 1px solid rgba(255,255,255,0.1); padding-right: 15px;">
-                        <div style="font-size: 14px; font-weight: bold; margin-bottom: 12px; color: #a78bfa;">[제작 가능 목록]</div>
+                        <div style="font-size: 14px; font-weight: bold; margin-bottom: 12px; color: #a78bfa;">${localizationManager.t('ui_craft_list_header')}</div>
                         <div id="craft-recipe-list" style="display: flex; flex-direction: column; gap: 10px;">
                             <!-- Recipes go here -->
                         </div>
                     </div>
                     
                     <div class="owned-equipment-area" style="display: flex; flex-direction: column; gap: 10px;">
-                        <div style="font-size: 14px; font-weight: bold; color: #a78bfa;">[보유 중인 성장 장비]</div>
+                        <div style="font-size: 14px; font-weight: bold; color: #a78bfa;">${localizationManager.t('ui_owned_growth_header')}</div>
                         <div id="owned-equip-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px; max-height: 280px; overflow-y: auto; padding: 5px; background: rgba(0,0,0,0.2); border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
                             <!-- Owned instances go here -->
                         </div>
                         
                         <!-- NEW: Selection Control Area -->
                         <div id="selected-equip-controls" style="margin-top: 5px; padding: 12px; background: rgba(124, 58, 237, 0.1); border: 1px dashed #7c3aed; border-radius: 8px; display: none; flex-direction: column; gap: 10px;">
-                            <div id="selected-equip-info" style="font-size: 12px; color: #fff; font-weight: bold;">선택된 장비 없음</div>
+                            <div id="selected-equip-info" style="font-size: 12px; color: #fff; font-weight: bold;">${localizationManager.t('ui_craft_none_selected')}</div>
                             <div style="display: flex; gap: 10px;">
-                                <button id="btn-equip-detail" class="shop-buy-btn" style="flex: 1; height: 32px; font-size: 11px; background: #4f46e5;">상세 정보 보기</button>
-                                <button id="btn-equip-destroy" class="shop-buy-btn" style="flex: 1; height: 32px; font-size: 11px; background: #dc2626; border-color: #ef4444;">장비 파괴</button>
+                                <button id="btn-equip-detail" class="shop-buy-btn" style="flex: 1; height: 32px; font-size: 11px; background: #4f46e5;">${localizationManager.t('ui_craft_detail_btn')}</button>
+                                <button id="btn-equip-destroy" class="shop-buy-btn" style="flex: 1; height: 32px; font-size: 11px; background: #dc2626; border-color: #ef4444;">${localizationManager.t('ui_craft_destroy_btn')}</button>
                             </div>
                         </div>
                     </div>
@@ -1601,7 +1601,7 @@ export default class UIManager {
                     <div class="shop-currency" id="craft-material-display" style="display:flex; align-items:center; gap:10px;">
                         <!-- Materials like wood will be shown here -->
                     </div>
-                    <div style="font-size: 11px; opacity: 0.7; color: #d1d5db;">* 무기는 데미지를 입힐 때, 방어구는 데미지를 받을 때 성장합니다.</div>
+                    <div style="font-size: 11px; opacity: 0.7; color: #d1d5db;">${localizationManager.t('ui_craft_footer_tip')}</div>
                 </div>
             </div>
         `;
@@ -1924,10 +1924,10 @@ export default class UIManager {
                     <div class="retro-scanline-overlay" style="pointer-events: none;"></div>
                     <img src="${iconUrl}" style="width: 48px; height: 48px; object-fit: contain; image-rendering: pixelated; background: rgba(255,255,255,0.05); border-radius: 8px; padding: 4px; border: 1px solid rgba(255,255,255,0.1);">
                     <div style="flex: 1;">
-                        <div style="font-weight: bold; font-size: 14px; color: #fff;">${item.name}</div>
-                        <div style="font-size: 11px; color: #a78bfa; display: flex; align-items: center; gap: 4px;">재료: <img src="assets/emojis/1fab5.svg" style="width:14px; height:14px;"> ${r.req.emoji_wood}</div>
+                        <div style="font-weight: bold; font-size: 14px; color: #fff;">${ItemManager.getLocalizedName(r.id)}</div>
+                        <div style="font-size: 11px; color: #a78bfa; display: flex; align-items: center; gap: 4px;">${localizationManager.t('ui_craft_owned_count', [r.req.emoji_wood])}: <img src="assets/emojis/1fab5.svg" style="width:14px; height:14px;"> ${r.req.emoji_wood}</div>
                     </div>
-                    <button class="shop-buy-btn craft-btn" data-id="${r.id}" ${canCraft ? '' : 'disabled'} style="padding: 8px 15px; font-size: 12px; height: auto; background: ${canCraft ? 'linear-gradient(to bottom, #7c3aed, #5b21b6)' : '#333'}; opacity: ${canCraft ? 1 : 0.5}; cursor: ${canCraft ? 'pointer' : 'not-allowed'}; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); color: #fff; font-weight: bold;">제작</button>
+                    <button class="shop-buy-btn craft-btn" data-id="${r.id}" ${canCraft ? '' : 'disabled'} style="padding: 8px 15px; font-size: 12px; height: auto; background: ${canCraft ? 'linear-gradient(to bottom, #7c3aed, #5b21b6)' : '#333'}; opacity: ${canCraft ? 1 : 0.5}; cursor: ${canCraft ? 'pointer' : 'not-allowed'}; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); color: #fff; font-weight: bold;">${localizationManager.t('ui_craft_btn')}</button>
                     ${isSelected ? '<div style="position: absolute; top: 5px; right: 5px; color: #a78bfa; font-size: 10px;">★</div>' : ''}
                 </div>
             `;
@@ -1951,7 +1951,7 @@ export default class UIManager {
                 const itemId = btn.dataset.id;
                 const result = await equipmentManager.craftItem(itemId);
                 if (result.success) {
-                    this.showToast(`${ItemManager.getItem(itemId).name} 제작 성공! ✨`);
+                    this.showToast(localizationManager.t('ui_craft_success', [ItemManager.getLocalizedName(itemId)]));
                     this.refreshEquipmentCrafting();
                 } else {
                     this.showToast(result.reason);
@@ -1969,8 +1969,9 @@ export default class UIManager {
 
         let ownedHtml = '';
         if (instances.length === 0) {
+            const itemName = this.currentCraftFilter ? ItemManager.getLocalizedName(this.currentCraftFilter) + ' ' : '';
             ownedHtml = `<div style="grid-column: 1/-1; text-align: center; opacity: 0.4; padding: 40px; font-size: 12px; color: #fff;">
-                ${this.currentCraftFilter ? ItemManager.getItem(this.currentCraftFilter).name + ' ' : ''}보유 인벤토리가 비어있습니다.
+                ${itemName}${localizationManager.t('ui_craft_in_inventory')}
             </div>`;
         } else {
             // Sort by level descending
@@ -1982,8 +1983,8 @@ export default class UIManager {
 
                 // Show ownership label
                 const ownerLabel = inst.ownerId ?
-                    `<div style="font-size: 8px; color: #fbbf24; margin-top: 2px; font-weight: bold; border: 1px solid rgba(251, 191, 36, 0.5); padding: 1px 3px; border-radius: 3px; background: rgba(0,0,0,0.3); display: inline-block;">장착 중: ${inst.ownerId}</div>` :
-                    `<div style="font-size: 8px; color: #10b981; margin-top: 2px; font-weight: bold;">[보유 중]</div>`;
+                    `<div style="font-size: 8px; color: #fbbf24; margin-top: 2px; font-weight: bold; border: 1px solid rgba(251, 191, 36, 0.5); padding: 1px 3px; border-radius: 3px; background: rgba(0,0,0,0.3); display: inline-block;">${localizationManager.t('ui_craft_equipped', [inst.ownerId])}</div>` :
+                    `<div style="font-size: 8px; color: #10b981; margin-top: 2px; font-weight: bold;">${localizationManager.t('ui_craft_in_inventory')}</div>`;
 
                 const isSelected = this.currentEquipSelection === inst.id;
                 ownedHtml += `
@@ -1994,7 +1995,7 @@ export default class UIManager {
                                border-radius: 8px; padding: 10px; display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer; position: relative;" title="${base.name} LV.${inst.level}">
                         <div style="position: absolute; top: -5px; right: -5px; background: #7c3aed; color: #fff; font-size: 8px; font-weight: bold; padding: 2px 5px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.3);">LV.${inst.level}</div>
                         <img src="${iconUrl}" style="width: 32px; height: 32px; object-fit: contain; image-rendering: pixelated; filter: drop-shadow(0 0 5px rgba(124, 58, 237, 0.5));">
-                        <div style="font-size: 9px; color: #fff; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; font-weight: bold;">${base.name}</div>
+                        <div style="font-size: 9px; color: #fff; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; font-weight: bold;">${ItemManager.getLocalizedName(inst.itemId)}</div>
                         ${ownerLabel}
                     </div>
                 `;
@@ -2027,7 +2028,7 @@ export default class UIManager {
             if (selectedInst) {
                 const base = ItemManager.getItem(selectedInst.itemId);
                 controlArea.style.display = 'flex';
-                infoDisplay.innerHTML = `[선택됨] ${base.name} (LV.${selectedInst.level})`;
+                infoDisplay.innerHTML = `[SELECTED] ${ItemManager.getLocalizedName(selectedInst.itemId)} (LV.${selectedInst.level})`;
 
                 // Detail Button
                 detailBtn.onclick = () => {
@@ -2039,12 +2040,12 @@ export default class UIManager {
                             <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 20px; border-bottom: 2px solid rgba(124, 58, 237, 0.4); padding-bottom: 15px;">
                                 <img src="${iconUrl}" style="width: 64px; height: 64px; image-rendering: pixelated; background: rgba(0,0,0,0.3); border-radius: 12px; padding: 10px; border: 2px solid #7c3aed;">
                                 <div>
-                                    <div style="font-size: 24px; color: #fbbf24; text-shadow: 0 0 10px rgba(251, 191, 36, 0.5);">${info.name}</div>
-                                    <div style="font-size: 14px; color: #a78bfa; opacity: 0.8;">Unique Growth Equipment</div>
+                                    <div style="font-size: 24px; color: #fbbf24; text-shadow: 0 0 10px rgba(251, 191, 36, 0.5);">${ItemManager.getLocalizedName(selectedInst.itemId)}</div>
+                                    <div style="font-size: 14px; color: #a78bfa; opacity: 0.8;">${localizationManager.t('ui_craft_unique_growth')}</div>
                                 </div>
                             </div>
-                            <div style="font-size: 16px; line-height: 1.6; white-space: pre-wrap; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">${info.description}</div>
-                            <div style="margin-top: 20px; text-align: center; font-size: 12px; color: #666;">* 이 장비는 전투를 통해 성장하며 추가 옵션이 개방됩니다.</div>
+                            <div style="font-size: 16px; line-height: 1.6; white-space: pre-wrap; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">${ItemManager.getLocalizedDescription(selectedInst.itemId)}</div>
+                            <div style="margin-top: 20px; text-align: center; font-size: 12px; color: #666;">${localizationManager.t('ui_craft_growth_tip')}</div>
                         </div>
                     `;
                     this.showPopup(html);
@@ -2052,7 +2053,8 @@ export default class UIManager {
 
                 // Destroy Button
                 destroyBtn.onclick = () => {
-                    this.showConfirm(`장비 [${base.name} LV.${selectedInst.level}]을 파괴하시겠습니까?<br><span style="color: #ef4444; font-size: 11px;">* 이 작업은 되돌릴 수 없습니다.</span>`, async () => {
+                    const itemName = ItemManager.getLocalizedName(selectedInst.itemId);
+                    this.showConfirm(localizationManager.t('ui_craft_destroy_confirm', [itemName, selectedInst.level]), async () => {
                         // 1. Unequip if needed
                         if (selectedInst.ownerId) {
                             const ownerId = selectedInst.ownerId;
@@ -2075,7 +2077,7 @@ export default class UIManager {
 
                         // 2. Delete from DB
                         await DBManager.deleteEquipmentInstance(selectedInst.id);
-                        this.showToast(`${base.name} 파괴 완료. 💥`);
+                        this.showToast(localizationManager.t('ui_craft_destroy_success', [ItemManager.getLocalizedName(selectedInst.itemId)]));
 
                         // 3. Reset selection and refresh
                         this.currentEquipSelection = null;
