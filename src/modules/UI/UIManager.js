@@ -21,6 +21,7 @@ import messiahManager from '../Core/MessiahManager.js';
 import localizationManager from '../Core/LocalizationManager.js';
 import PetUI from './PetUI.js';
 import NPCUI from './NPCUI.js';
+import TerritoryUI from './TerritoryUI.js';
 import MercenaryCodexUI from './MercenaryCodexUI.js';
 
 
@@ -125,6 +126,7 @@ export default class UIManager {
         this.mercenaryCodexUI = new MercenaryCodexUI(this);
         this.petUI = new PetUI(this);
         this.npcUI = new NPCUI(this);
+        this.territoryUI = new TerritoryUI(this);
         window.uiManager = this;
 
         // Bind the RAF loop
