@@ -134,6 +134,22 @@
     * `1000`: **라운드 표시 (`#hud-round-display`)** - 배경 알림성 HUD.
     * `500`: **전투 HUD (`#npc-hud`, `#messiah-hud`)** - 월드 내 유닛 정보 표시.
 
+## 🏗️ UI 모듈화 리팩토링 (UI Modularization Refactoring)
+`UIManager.js`의 거대화를 막고 유지보수성을 높이기 위해 기능별로 UI 모듈을 분리하는 프로젝트를 진행 중입니다.
+
+### 📅 리팩토링 진행 상황
+1. **Mercenary Codex UI (`MercenaryCodexUI.js`) [완료]**: 용병/영웅 도감(편성창) 분리 및 최적화 완료.
+2. **Settings UI (`SettingsUI.js`) [완료]**: 설정 메뉴 분리 완료.
+3. **Fishing UI (`FishingUI.js`) [예정]**: 낚시 관리 UI 분리 작업 예정.
+4. **Alchemy UI (`AlchemyUI.js`) [예정]**: 연금술 관리 UI 분리.
+5. **Kitchen UI (`KitchenUI.js`) [예정]**: 요리 및 버프 제작 UI 분리.
+6. **Gacha UI (`GachaUI.js`) [예정]**: 용병 뽑기 UI 분리.
+
+### 🛡️ 모듈화 원칙
+- **Event-Driven**: 각 UI 모듈은 `UIManager`에 직접 의존하기보다 `EventBus`를 통해 통신하며 독립성을 유지합니다.
+- **Visual Consistency**: 모든 모듈은 `index.css`에 정의된 레트로 디자인 시스템을 따릅니다.
+- **Prefix Naming**: 모듈 내 변수와 함수에는 고유의 접두사를 붙여 충돌을 방지합니다.
+
 * **펫 시스템 (Pet System):**
   * 도그펫(dog_pet): 기본 지급되는 펫. 빠른 속도로 자원을 자동 수집합니다.
   * 뽈뽈뽈: 펫의 귀여운 뒤뚱뒤뚱 이동 애니메이션 상태.
