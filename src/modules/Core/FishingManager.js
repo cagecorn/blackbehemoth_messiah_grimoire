@@ -1,5 +1,6 @@
 import DBManager from '../Database/DBManager.js';
 import EventBus from '../Events/EventBus.js';
+import localizationManager from './LocalizationManager.js';
 
 /**
  * FishingManager.js
@@ -204,7 +205,8 @@ class FishingManager {
                 fishermanId,
                 level: this.state.levels[fishermanId]
             });
-            EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, `[낚시] ${this.fishermen[fishermanId].name}의 레벨이 ${this.state.levels[fishermanId]}이 되었습니다! 🎣`);
+            const fName = localizationManager.t(`fisherman_${fishermanId.toLowerCase()}_name`, [], this.fishermen[fishermanId].name);
+            EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, localizationManager.t('sys_fishing_lvl_up', [fName, this.state.levels[fishermanId]]));
         }
         await this.save();
     }
@@ -232,7 +234,7 @@ class FishingManager {
 
             // 1. Check Requirements
             if (this.state.currentStamina < 1) {
-                return { success: false, reason: 'STAMINA', message: '스테미나 부족!' };
+                return { success: false, reason: 'STAMINA', message: localizationManager.t('sys_fishing_stamina_low') };
             }
             
             // Auto-equip rod from inventory if durability is 0
@@ -257,9 +259,9 @@ class FishingManager {
                     
                     console.log(`[FishingManager] 낚시대 자동 교체 성공: ${rodData.name}. 남은 수량: ${rodInventory.amount - 1}`);
                     EventBus.emit(EventBus.EVENTS.INVENTORY_UPDATED);
-                    EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, `[낚시] 낚시대를 자동으로 교체했습니다! 🎣`);
+                    EventBus.emit(EventBus.EVENTS.SYSTEM_MESSAGE, localizationManager.t('sys_fishing_rod_replaced'));
                 } else {
-                    return { success: false, reason: 'DURABILITY', message: '낚시대 파손!' };
+                    return { success: false, reason: 'DURABILITY', message: localizationManager.t('sys_fishing_rod_broken') };
                 }
             }
 
@@ -307,7 +309,7 @@ class FishingManager {
 
                 EventBus.emit(EventBus.EVENTS.INVENTORY_UPDATED);
             } else {
-                result = { success: false, reason: 'MISS', message: '허탕쳤습니다...' };
+                result = { success: false, reason: 'MISS', message: localizationManager.t('sys_fishing_miss') };
             }
 
             this.save();
@@ -315,7 +317,7 @@ class FishingManager {
             return result;
         } catch (error) {
             console.error(`[FishingManager] Fishing turn error:`, error);
-            return { success: false, reason: 'ERROR', message: '낚시 중 오류 발생' };
+            return { success: false, reason: 'ERROR', message: localizationManager.t('sys_fishing_error') };
         } finally {
             this.isFishing = false;
         }
@@ -409,8 +411,8 @@ class FishingManager {
         for (const [matId, reqAmount] of Object.entries(rod.requirements)) {
             const item = await DBManager.getInventoryItem(matId);
             if (!item || item.amount < reqAmount) {
-                const matName = require('./ItemManager.js').default.getItem(matId)?.name || matId;
-                return { success: false, message: `${matName} 재료가 부족합니다.` };
+                const matName = localizationManager.t(`item_name_${matId}`, [], matId);
+                return { success: false, message: localizationManager.t('ui_kitchen_insufficient_materials', [matName]) };
             }
         }
 
@@ -428,7 +430,8 @@ class FishingManager {
         console.log(`[FishingManager] Crafted ${rod.name}. Total: ${currentAmount + 1}`);
         EventBus.emit(EventBus.EVENTS.INVENTORY_UPDATED);
 
-        return { success: true, message: `${rod.name} 제작 완료! 🎣` };
+        const localizedRodName = localizationManager.t(`item_name_${rodId}`, [], rod.name);
+        return { success: true, message: localizationManager.t('sys_fishing_craft_success', [localizedRodName]) };
     }
 }
 

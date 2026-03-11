@@ -1,6 +1,7 @@
 import DBManager from '../Database/DBManager.js';
 import ItemManager from './ItemManager.js';
 import EventBus from '../Events/EventBus.js';
+import localizationManager from './LocalizationManager.js';
 
 /**
  * FoodManager.js
@@ -51,7 +52,11 @@ class FoodManager {
             const item = await DBManager.getInventoryItem(matId);
             if (!item || item.amount < reqAmount * count) {
                 const matName = ItemManager.getItem(matId)?.name || matId;
-                return { success: false, message: `${matName} 재료가 부족합니다.` };
+                const localizedMatName = localizationManager.t('item_name_' + matId, [], matName);
+                return { 
+                    success: false, 
+                    message: localizationManager.t('ui_kitchen_insufficient_materials').replace('{0}', localizedMatName) 
+                };
             }
         }
 
