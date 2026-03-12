@@ -291,13 +291,13 @@ export default class AchievementUI {
                 current[id] = targetReached;
                 await DBManager.saveClaimedAchievements(current);
                 // AWARD REWARD: Use directly imported messiahManager for reliability
-                messiahManager.addExp(100);
+                await messiahManager.addExp(100);
             } else {
                 const current = await DBManager.getClaimedMonsterAchievements();
                 current[id] = targetReached;
                 await DBManager.saveClaimedMonsterAchievements(current);
                 // AWARD REWARD: Use directly imported messiahManager for reliability
-                messiahManager.addExp(150);
+                await messiahManager.addExp(150);
             }
 
             this.uiManager.showToast(localizationManager.t('ui_achievements_toast_success'));

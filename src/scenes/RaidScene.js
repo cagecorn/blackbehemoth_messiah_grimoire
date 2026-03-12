@@ -467,7 +467,7 @@ export default class RaidScene extends Phaser.Scene {
     }
 
 
-    handleMessiahTouch(pointer) {
+    async handleMessiahTouch(pointer) {
         if (!this.game.messiahManager) return;
         const mm = this.game.messiahManager;
         const power = mm.getActivePower();
@@ -494,7 +494,7 @@ export default class RaidScene extends Phaser.Scene {
         }
 
         if (target) {
-            if (mm.consumeStack()) {
+            if (await mm.consumeStack()) {
                 this.showMessiahPowerEffect(target.x, target.y - 20, power, target);
                 const stats = mm.getStats();
                 if (power.type === 'OFFENSE') {
@@ -598,7 +598,7 @@ export default class RaidScene extends Phaser.Scene {
         });
     }
 
-    executeAutoMessiahTouch() {
+    async executeAutoMessiahTouch() {
         const mm = this.game.messiahManager;
         if (!mm || mm.stacks <= 0 || !mm.isAutoMode) return;
         const power = mm.getActivePower();
@@ -619,7 +619,7 @@ export default class RaidScene extends Phaser.Scene {
         if (potentialTargets.length === 0) return;
         const target = Phaser.Utils.Array.GetRandom(potentialTargets);
         if (target) {
-            this.handleMessiahTouch({ worldX: target.x, worldY: target.y });
+            await this.handleMessiahTouch({ worldX: target.x, worldY: target.y });
             this.lastAutoMessiahCast = this.time.now;
         }
     }

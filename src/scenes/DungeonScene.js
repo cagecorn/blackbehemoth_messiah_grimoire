@@ -1517,7 +1517,7 @@ export default class DungeonScene extends Phaser.Scene {
         return monster;
     }
 
-    handleMessiahTouch(pointer) {
+    async handleMessiahTouch(pointer) {
         if (!this.game.messiahManager) return;
         const mm = this.game.messiahManager;
 
@@ -1554,7 +1554,7 @@ export default class DungeonScene extends Phaser.Scene {
         }
 
         if (target) {
-            if (mm.consumeStack()) { // Consume stack ONLY if target is found
+            if (await mm.consumeStack()) { // Consume stack ONLY if target is found
                 // Play visual effect
                 this.showMessiahPowerEffect(target.x, target.y - 20, power, target);
 
@@ -1678,7 +1678,7 @@ export default class DungeonScene extends Phaser.Scene {
         });
     }
 
-    executeAutoMessiahTouch() {
+    async executeAutoMessiahTouch() {
         const mm = this.game.messiahManager;
         if (!mm || mm.stacks <= 0 || !mm.isAutoMode) return;
 
@@ -1711,7 +1711,7 @@ export default class DungeonScene extends Phaser.Scene {
             const pseudoPointer = { worldX: target.x, worldY: target.y };
 
             // Fire!
-            this.handleMessiahTouch(pseudoPointer);
+            await this.handleMessiahTouch(pseudoPointer);
             this.lastAutoMessiahCast = this.time.now;
         }
     }

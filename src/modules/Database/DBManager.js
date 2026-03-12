@@ -4,94 +4,117 @@ const DB_NAME = 'IsacRPG_DB';
 const DB_VERSION = 7;
 
 export default class DBManager {
+    static _initPromise = null;
+
     static async initDB() {
-        if (this.db) {
-            try {
-                this.db.close();
-            } catch (e) {
-                // ignore close errors
-            }
-            this.db = null;
+        if (this._initPromise) return this._initPromise;
+
+        this._initPromise = (async () => {
+            // If already opened, just return
+            if (this.db) return this.db;
+
+            console.log(`%c[DBManager] Initializing IndexedDB: ${DB_NAME} (v${DB_VERSION})`, "color: #a78bfa; font-weight: bold;");
+            
+            this.db = await openDB(DB_NAME, DB_VERSION, {
+                upgrade(db, oldVersion) {
+                    console.log(`[DBManager] Upgrade required: ${oldVersion} -> ${DB_VERSION}`);
+                    // Emojis mapping (ID -> Amount)
+                    if (!db.objectStoreNames.contains('inventory')) {
+                        db.createObjectStore('inventory', { keyPath: 'id' });
+                    }
+                    // Party stats and progress
+                    if (!db.objectStoreNames.contains('party')) {
+                        db.createObjectStore('party', { keyPath: 'id' });
+                    }
+                    // Global game settings
+                    if (!db.objectStoreNames.contains('settings')) {
+                        db.createObjectStore('settings', { keyPath: 'id' });
+                    }
+                    // Mercenary roster for Gacha System
+                    if (!db.objectStoreNames.contains('mercenary_roster')) {
+                        db.createObjectStore('mercenary_roster', { keyPath: 'charId' });
+                    }
+                    // Unique Equipment Instances (LV, EXP tracking)
+                    if (!db.objectStoreNames.contains('equipment_instances')) {
+                        db.createObjectStore('equipment_instances', { keyPath: 'id' });
+                    }
+                    // Unique Defense Structure Instances
+                    if (!db.objectStoreNames.contains('structure_instances')) {
+                        db.createObjectStore('structure_instances', { keyPath: 'id' });
+                    }
+
+                    // --- DB Version 6 Migration ---
+                    if (oldVersion < 6 && db.objectStoreNames.contains('charm_instances')) {
+                        db.deleteObjectStore('charm_instances'); // Recreate with correct keyPath
+                    }
+
+                    // Unique Charm Instances (Randomized values)
+                    if (!db.objectStoreNames.contains('charm_instances')) {
+                        db.createObjectStore('charm_instances', { keyPath: 'instanceId' });
+                    }
+
+                    // --- DB Version 7 Migration ---
+                    // Mercenary Skins (Owned skins and equipped skin per character)
+                    if (!db.objectStoreNames.contains('mercenary_skins')) {
+                        db.createObjectStore('mercenary_skins', { keyPath: 'charId' });
+                    }
+                },
+            });
+            
+            return this.db;
+        })();
+
+        try {
+            return await this._initPromise;
+        } catch (err) {
+            console.error('[DBManager] Critical DB Initialization Error:', err);
+            this._initPromise = null; // Allow retry
+            throw err;
         }
-        this.db = await openDB(DB_NAME, DB_VERSION, {
-            upgrade(db, oldVersion) {
-                // Emojis mapping (ID -> Amount)
-                if (!db.objectStoreNames.contains('inventory')) {
-                    db.createObjectStore('inventory', { keyPath: 'id' });
-                }
-                // Party stats and progress
-                if (!db.objectStoreNames.contains('party')) {
-                    db.createObjectStore('party', { keyPath: 'id' });
-                }
-                // Global game settings
-                if (!db.objectStoreNames.contains('settings')) {
-                    db.createObjectStore('settings', { keyPath: 'id' });
-                }
-                // Mercenary roster for Gacha System
-                if (!db.objectStoreNames.contains('mercenary_roster')) {
-                    db.createObjectStore('mercenary_roster', { keyPath: 'charId' });
-                }
-                // Unique Equipment Instances (LV, EXP tracking)
-                if (!db.objectStoreNames.contains('equipment_instances')) {
-                    db.createObjectStore('equipment_instances', { keyPath: 'id' });
-                }
-                // Unique Defense Structure Instances
-                if (!db.objectStoreNames.contains('structure_instances')) {
-                    db.createObjectStore('structure_instances', { keyPath: 'id' });
-                }
-
-                // --- DB Version 6 Migration ---
-                if (oldVersion < 6 && db.objectStoreNames.contains('charm_instances')) {
-                    db.deleteObjectStore('charm_instances'); // Recreate with correct keyPath
-                }
-
-                // Unique Charm Instances (Randomized values)
-                if (!db.objectStoreNames.contains('charm_instances')) {
-                    db.createObjectStore('charm_instances', { keyPath: 'instanceId' });
-                }
-
-                // --- DB Version 7 Migration ---
-                // Mercenary Skins (Owned skins and equipped skin per character)
-                if (!db.objectStoreNames.contains('mercenary_skins')) {
-                    db.createObjectStore('mercenary_skins', { keyPath: 'charId' });
-                }
-            },
-        });
-        console.log(`IndexedDB '${DB_NAME}' Initialized`);
     }
 
     // --- Inventory Operations ---
     static async getInventoryItem(emojiId) {
-        if (!this.db) await this.initDB();
+        await this.initDB();
         try {
             return await this.db.get('inventory', emojiId);
         } catch (err) {
+            console.error(`[DBManager] Error getting inventory item ${emojiId}:`, err);
+            // Emergency fallback: try to re-init once
+            this._initPromise = null;
             await this.initDB();
             return await this.db.get('inventory', emojiId);
         }
     }
 
     static async saveInventoryItem(emojiId, amount) {
-        if (!this.db) await this.initDB();
+        await this.initDB();
         try {
             await this.db.put('inventory', { id: emojiId, amount });
         } catch (err) {
+            console.error(`[DBManager] Error saving inventory item ${emojiId}:`, err);
+            this._initPromise = null;
             await this.initDB();
             await this.db.put('inventory', { id: emojiId, amount });
         }
     }
 
     static async deleteInventoryItem(emojiId) {
-        if (!this.db) await this.initDB();
-        await this.db.delete('inventory', emojiId);
+        await this.initDB();
+        try {
+            await this.db.delete('inventory', emojiId);
+        } catch (err) {
+            console.error(`[DBManager] Error deleting inventory item ${emojiId}:`, err);
+        }
     }
 
     static async getAllInventory() {
-        if (!this.db) await this.initDB();
+        await this.initDB();
         try {
             return await this.db.getAll('inventory');
         } catch (err) {
-            console.warn('[DBManager] DB access error. Reconnecting...', err);
+            console.error('[DBManager] Error getting all inventory:', err);
+            this._initPromise = null;
             await this.initDB();
             return await this.db.getAll('inventory');
         }
@@ -99,14 +122,35 @@ export default class DBManager {
 
     // --- Generic Key/Value Operations (Settings/Party) ---
     static async get(storeName, key) {
-        if (!this.db) await this.initDB();
-        return await this.db.get(storeName, key);
+        await this.initDB();
+        try {
+            const result = await this.db.get(storeName, key);
+            if (storeName === 'settings' && key === 'messiah_state') {
+                console.log(`%c[DBManager] GET [${storeName}:${key}] =>`, "color: #38bdf8;", result);
+            }
+            return result;
+        } catch (err) {
+            console.error(`[DBManager] Error getting ${key} from ${storeName}:`, err);
+            this._initPromise = null;
+            await this.initDB();
+            return await this.db.get(storeName, key);
+        }
     }
 
     static async save(storeName, id, data) {
-        if (!this.db) await this.initDB();
-        // Storage ID must come AFTER spread to avoid overwrite
-        await this.db.put(storeName, { ...data, id });
+        await this.initDB();
+        try {
+            if (storeName === 'settings' && id === 'messiah_state') {
+                console.log(`%c[DBManager] SAVE [${storeName}:${id}] payload:`, "color: #f472b6;", data);
+            }
+            // Storage ID must come AFTER spread to avoid overwrite
+            await this.db.put(storeName, { ...data, id });
+        } catch (err) {
+            console.error(`[DBManager] Error saving ${id} to ${storeName}:`, err);
+            this._initPromise = null;
+            await this.initDB();
+            await this.db.put(storeName, { ...data, id });
+        }
     }
 
     static async set(storeName, id, data) {

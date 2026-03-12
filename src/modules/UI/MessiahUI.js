@@ -327,8 +327,8 @@ export default class MessiahUI {
     /**
      * Handles power selection
      */
-    handleSelectPower(powerId) {
-        if (messiahManager.setActivePower(powerId)) {
+    async handleSelectPower(powerId) {
+        if (await messiahManager.setActivePower(powerId)) {
             const localizedName = messiahManager.constructor.getLocalizedName(powerId);
             this.uiManager.showToast(localizationManager.t('ui_messiah_selected_toast', [localizedName]));
             this.refresh();

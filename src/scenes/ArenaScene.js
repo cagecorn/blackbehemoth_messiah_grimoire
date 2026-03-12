@@ -480,7 +480,7 @@ export default class ArenaScene extends Phaser.Scene {
     }
 
 
-    handleMessiahTouch(pointer) {
+    async handleMessiahTouch(pointer) {
         if (!this.game.messiahManager) return;
         const mm = this.game.messiahManager;
         const power = mm.getActivePower();
@@ -512,7 +512,7 @@ export default class ArenaScene extends Phaser.Scene {
         }
 
         if (target) {
-            if (mm.consumeStack()) {
+            if (await mm.consumeStack()) {
                 this.showMessiahPowerEffect(target.x, target.y - 20, power, target);
                 const stats = mm.getStats();
                 if (power.type === 'OFFENSE') {

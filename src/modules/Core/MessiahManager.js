@@ -14,6 +14,11 @@ class MessiahManager {
     };
 
     constructor() {
+        // --- DEFENSIVE SINGLETON ---
+        if (typeof window !== 'undefined' && window.__MESSIAH_SINGLETON_HOLDER__) {
+            return window.__MESSIAH_SINGLETON_HOLDER__;
+        }
+
         this.stats = {
             level: 1,
             exp: 0,
@@ -38,7 +43,15 @@ class MessiahManager {
         this.baseCooldown = 5000; // 5 seconds base
         this.isAutoMode = false;
 
+        this._hasLoaded = false;
         this.isInitialized = false;
+        this._saveQueue = Promise.resolve(); // For serializing saves
+        this._instanceId = Math.random().toString(36).substr(2, 9);
+        
+        if (typeof window !== 'undefined') {
+            window.__MESSIAH_SINGLETON_HOLDER__ = this;
+            console.log(`%c[MessiahManager] Unique Singleton Instance [${this._instanceId}] created.`,"color: #8b5cf6; font-weight: bold;");
+        }
     }
 
     static getLocalizedName(powerId) {
@@ -57,31 +70,78 @@ class MessiahManager {
     async init() {
         if (this.isInitialized) return;
 
-        const savedState = await DBManager.get('settings', 'messiah_state');
-        if (savedState) {
-            this.stats = { ...this.stats, ...savedState.stats };
-            this.powers = { ...this.powers, ...savedState.powers };
-            this.activePowerId = savedState.activePowerId || 'JUDGMENT';
-            this.stacks = savedState.stacks || 0;
-            this.isAutoMode = !!savedState.isAutoMode;
-            this.updateMaxStacks();
-            console.log('[MessiahManager] Loaded saved state:', savedState);
+        console.log("%c[MessiahManager] Initializing...", "color: #fbbf24; font-weight: bold;");
+
+        try {
+            const savedState = await DBManager.get('settings', 'messiah_state');
+            console.log("[MessiahManager] DB Load raw result:", savedState);
+
+            if (savedState && savedState.stats) {
+                // Mutative merge to maintain references if any
+                Object.assign(this.stats, savedState.stats);
+                
+                // For powers, we need to deep merge or carefully assign
+                if (savedState.powers) {
+                    Object.keys(savedState.powers).forEach(key => {
+                        if (this.powers[key]) {
+                            Object.assign(this.powers[key], savedState.powers[key]);
+                        }
+                    });
+                }
+
+                this.activePowerId = savedState.activePowerId || 'JUDGMENT';
+                this.stacks = savedState.stacks || 0;
+                this.isAutoMode = !!savedState.isAutoMode;
+                this.updateMaxStacks();
+                console.log(`%c[MessiahManager] Success! Loaded Lv.${this.stats.level} (Exp: ${this.stats.exp})`, "color: #4ade80; font-weight: bold;");
+            } else {
+                console.warn('[MessiahManager] No valid saved state found in DB or data corrupted. Using defaults.');
+            }
+            this._hasLoaded = true; // Mark as loaded safely to allow future saves
+        } catch (e) {
+            console.error('%c[MessiahManager] CRITICAL LOAD ERROR:', "color: #ef4444; font-weight: bold;", e);
         }
 
         this.isInitialized = true;
     }
 
     async saveState() {
-        await DBManager.save('settings', 'messiah_state', {
-            stats: this.stats,
-            powers: this.powers,
-            activePowerId: this.activePowerId,
-            stacks: this.stacks,
-            isAutoMode: this.isAutoMode
+        // Queue the save operation to prevent race conditions
+        this._saveQueue = this._saveQueue.then(async () => {
+            if (!this._hasLoaded) {
+                console.warn(`%c[MessiahManager:${this._instanceId}] saveState BLOCKED: Loading failed or in progress.`, "color: #fca5a5;");
+                return;
+            }
+
+            const stateToSave = {
+                stats: { ...this.stats },
+                powers: JSON.parse(JSON.stringify(this.powers)), 
+                activePowerId: this.activePowerId,
+                stacks: this.stacks,
+                isAutoMode: this.isAutoMode,
+                _timestamp: Date.now()
+            };
+
+            try {
+                console.log(`%c[MessiahManager:${this._instanceId}] Pushing to DB: Lv.${this.stats.level} (Exp: ${this.stats.exp})`, "color: #fbbf24;");
+                await DBManager.save('settings', 'messiah_state', stateToSave);
+                
+                // Verification
+                const verified = await DBManager.get('settings', 'messiah_state');
+                if (verified && verified.stats && verified.stats.level === this.stats.level) {
+                    console.log(`%c[MessiahManager:${this._instanceId}] Save Verified!`, "color: #4ade80;");
+                } else {
+                    console.error(`%c[MessiahManager:${this._instanceId}] SAVE VERIFICATION FAILED!`, "color: #ff0000; font-weight: bold;", { memory: this.stats, db: verified ? verified.stats : 'MISSING' });
+                }
+            } catch (e) {
+                console.error(`[MessiahManager:${this._instanceId}] saveState error:`, e);
+            }
         });
+
+        return this._saveQueue;
     }
 
-    addExp(amount) {
+    async addExp(amount) {
         this.stats.exp += amount;
         let leveledUp = false;
 
@@ -106,22 +166,23 @@ class MessiahManager {
             }
         }
 
-        this.saveState();
+        await this.saveState();
         
         // --- Currency Unification ---
         // Earned Messiah EXP also acts as Divine Essence for upgrades
-        this._awardEssence(amount);
+        await this._awardEssence(amount);
 
         if (leveledUp) {
+            console.log(`%c[MessiahManager] Level Up Verified: ${this.stats.level}`, "color: #fbbf24; font-weight: bold;");
             EventBus.emit('MESSIAH_LEVELED_UP', this.stats.level);
             // Also notify power UI if it's open
             EventBus.emit('MESSIAH_POWER_UPGRADED', this.activePowerId);
         }
     }
 
-    toggleAutoMode() {
+    async toggleAutoMode() {
         this.isAutoMode = !this.isAutoMode;
-        this.saveState();
+        await this.saveState();
         return this.isAutoMode;
     }
 
@@ -129,11 +190,11 @@ class MessiahManager {
         return this.powers[this.activePowerId];
     }
 
-    setActivePower(powerId) {
+    async setActivePower(powerId) {
         if (this.powers[powerId]) {
             this.activePowerId = powerId;
             this.updateMaxStacks();
-            this.saveState();
+            await this.saveState();
             EventBus.emit('MESSIAH_POWER_CHANGED', powerId);
             return true;
         }
@@ -172,11 +233,11 @@ class MessiahManager {
         }
     }
 
-    consumeStack() {
+    async consumeStack() {
         if (this.stacks > 0) {
             this.stacks--;
             EventBus.emit('MESSIAH_STACKS_UPDATED', this.stacks);
-            this.saveState();
+            await this.saveState();
             return true;
         }
         return false;
@@ -230,4 +291,25 @@ class MessiahManager {
 
 // Global instance
 const messiahManager = new MessiahManager();
+
+// --- EXTREME DEBUG HOOK ---
+// This allows checking the state directly from the browser console
+if (typeof window !== 'undefined') {
+    window.MESSIAH_DEBUG = {
+        getStats: () => messiahManager.stats,
+        getPowers: () => messiahManager.powers,
+        getRawDB: async () => await DBManager.get('settings', 'messiah_state'),
+        forceSave: async () => await messiahManager.saveState(),
+        addExp: async (n) => await messiahManager.addExp(n),
+        checkPersistence: async () => {
+            console.log("Checking persistence...");
+            const mem = messiahManager.stats.level;
+            await messiahManager.saveState();
+            const db = await DBManager.get('settings', 'messiah_state');
+            console.log(`Memory Level: ${mem}, DB Level: ${db ? db.stats.level : 'MISSING'}`);
+            return mem === (db ? db.stats.level : -1);
+        }
+    };
+}
+
 export default messiahManager;
